@@ -5,10 +5,13 @@ import {
   Pressable,
   ScrollView,
   Image,
+  Alert,
 } from "react-native";
+import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 
 import { ScreenContainer } from "@/components/screen-container";
+import { useAuth } from "@/lib/auth-context";
 
 const MENU_ITEMS = [
   { id: "orders", label: "Meus pedidos", icon: "shopping-bag" },
@@ -20,6 +23,22 @@ const MENU_ITEMS = [
 ];
 
 export default function ProfileScreen() {
+  const router = useRouter();
+  const { user, signOut } = useAuth();
+
+  const handleLogout = async () => {
+    Alert.alert("Sair", "Tem certeza que deseja sair?", [
+      { text: "Cancelar", onPress: () => {}, style: "cancel" },
+      {
+        text: "Sair",
+        onPress: async () => {
+          await signOut();
+          router.replace("/auth/login" as any);
+        },
+        style: "destructive",
+      },
+    ]);
+  };
   return (
     <ScreenContainer containerClassName="bg-[#F5F5F5]" className="">
       {/* Header */}
@@ -42,9 +61,9 @@ export default function ProfileScreen() {
             </Pressable>
           </View>
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>Pedro Silva</Text>
-            <Text style={styles.userEmail}>pedro.silva@email.com</Text>
-            <Text style={styles.userPhone}>(11) 99999-0000</Text>
+            <Text style={styles.userName}>{user?.name || "Usuário"}</Text>
+            <Text style={styles.userEmail}>{user?.email}</Text>
+            <Text style={styles.userPhone}>{user?.provider}</Text>
           </View>
           <Pressable style={styles.editBtn}>
             <MaterialIcons name="edit" size={18} color="#25D366" />
@@ -94,7 +113,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Logout */}
-        <Pressable style={styles.logoutBtn}>
+        <Pressable style={styles.logoutBtn} onPress={handleLogout}>
           <MaterialIcons name="logout" size={20} color="#EF4444" />
           <Text style={styles.logoutText}>Sair da conta</Text>
         </Pressable>

@@ -20,3 +20,17 @@
 - [x] Gerar logo do app ChamaJá
 - [x] Configurar branding (nome, ícone, splash)
 - [x] Salvar checkpoint final
+
+## Autenticação e Login (Novo)
+
+- [x] Criar tela de Login com OAuth (Google, Microsoft, Apple)
+- [x] Criar tela de Cadastro com email/senha
+- [x] Implementar autenticação via Google OAuth
+- [x] Implementar autenticação via Microsoft OAuth
+- [x] Implementar autenticação via Apple OAuth
+- [x] Criar contexto de autenticação (AuthContext)
+- [x] Configurar persistência de dados com AsyncStorage
+- [x] Criar splash screen com verificação de autenticação
+- [x] Proteger rotas autenticadas
+- [x] Adicionar logout no perfil
+- [ ] Salvar preferências do usuário (favoritos, histórico)
