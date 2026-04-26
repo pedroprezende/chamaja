@@ -11,6 +11,16 @@ export type Service = {
   image: string;
 };
 
+export type Review = {
+  id: string;
+  professionalId: string;
+  userName: string;
+  userAvatar: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+};
+
 export type Professional = {
   id: string;
   name: string;
@@ -294,4 +304,118 @@ export function getProfessionalById(id: string): Professional | undefined {
 
 export function getSectionServices(sectionId: string): Service[] {
   return services.filter((s) => s.categoryId === sectionId).slice(0, 3);
+}
+
+export const reviews: Review[] = [
+  {
+    id: "review-1",
+    professionalId: "eletrica-ze",
+    userName: "Maria Silva",
+    userAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&q=80",
+    rating: 5,
+    comment: "Excelente profissional! Resolveu o problema rápido e com qualidade. Recomendo!",
+    createdAt: "2024-04-20",
+  },
+  {
+    id: "review-2",
+    professionalId: "eletrica-ze",
+    userName: "João Santos",
+    userAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80",
+    rating: 5,
+    comment: "Muito profissional e educado. Fez um ótimo trabalho na instalação.",
+    createdAt: "2024-04-18",
+  },
+  {
+    id: "review-3",
+    professionalId: "eletrica-ze",
+    userName: "Ana Costa",
+    userAvatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&q=80",
+    rating: 4,
+    comment: "Bom profissional, mas chegou um pouco atrasado.",
+    createdAt: "2024-04-15",
+  },
+  {
+    id: "review-4",
+    professionalId: "eletrica-ze",
+    userName: "Pedro Oliveira",
+    userAvatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&q=80",
+    rating: 5,
+    comment: "Serviço impecável! Voltaria a contratar com certeza.",
+    createdAt: "2024-04-12",
+  },
+  {
+    id: "review-5",
+    professionalId: "eletricista-rapido",
+    userName: "Carla Mendes",
+    userAvatar: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=100&q=80",
+    rating: 5,
+    comment: "Chegou super rápido! Resolveu meu problema em minutos.",
+    createdAt: "2024-04-19",
+  },
+  {
+    id: "review-6",
+    professionalId: "eletricista-rapido",
+    userName: "Lucas Ferreira",
+    userAvatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=100&q=80",
+    rating: 4,
+    comment: "Bom atendimento, preço justo.",
+    createdAt: "2024-04-17",
+  },
+  {
+    id: "review-7",
+    professionalId: "cozinheira-1",
+    userName: "Beatriz Lima",
+    userAvatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&q=80",
+    rating: 5,
+    comment: "As refeições são deliciosas! Minha família adora. Muito recomendado!",
+    createdAt: "2024-04-21",
+  },
+  {
+    id: "review-8",
+    professionalId: "cozinheira-1",
+    userName: "Roberto Alves",
+    userAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80",
+    rating: 5,
+    comment: "Profissional muito atenciosa. Respeita as preferências e restrições alimentares.",
+    createdAt: "2024-04-19",
+  },
+  {
+    id: "review-9",
+    professionalId: "baba-1",
+    userName: "Fernanda Gomes",
+    userAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&q=80",
+    rating: 5,
+    comment: "Confio completamente nela com meus filhos. Muito responsável e carinhosa!",
+    createdAt: "2024-04-20",
+  },
+  {
+    id: "review-10",
+    professionalId: "baba-1",
+    userName: "Thiago Rocha",
+    userAvatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&q=80",
+    rating: 5,
+    comment: "Excelente cuidadora. Meu filho pede por ela todos os dias!",
+    createdAt: "2024-04-18",
+  },
+];
+
+export function getReviewsByProfessional(professionalId: string): Review[] {
+  return reviews.filter((r) => r.professionalId === professionalId);
+}
+
+export function getAverageRating(professionalId: string): number {
+  const professionalReviews = getReviewsByProfessional(professionalId);
+  if (professionalReviews.length === 0) return 0;
+  const sum = professionalReviews.reduce((acc, r) => acc + r.rating, 0);
+  return Math.round((sum / professionalReviews.length) * 10) / 10;
+}
+
+export function addReview(review: Omit<Review, "id" | "createdAt">): Review {
+  const newReview: Review = {
+    ...review,
+    id: `review-${Date.now()}`,
+    createdAt: new Date().toISOString().split("T")[0],
+  };
+  reviews.push(newReview);
+  return newReview;
 }

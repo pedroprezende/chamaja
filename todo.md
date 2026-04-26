@@ -34,3 +34,15 @@
 - [x] Proteger rotas autenticadas
 - [x] Adicionar logout no perfil
 - [ ] Salvar preferências do usuário (favoritos, histórico)
+
+
+## Sistema de Avaliações (Novo)
+
+- [x] Criar tipos TypeScript para avaliações (Rating, Review)
+- [x] Adicionar dados mock de avaliações aos profissionais
+- [x] Implementar tela de Avaliações do Profissional com lista de comentários
+- [x] Criar modal de Deixar Avaliação com seletor de estrelas
+- [x] Integrar avaliações no detalhe do profissional
+- [x] Exibir média de avaliações na listagem de profissionais
+- [ ] Permitir filtrar avaliações por estrelas
+- [ ] Testar fluxo completo de avaliações

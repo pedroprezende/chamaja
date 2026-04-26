@@ -12,8 +12,10 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useState } from "react";
 
-import { getProfessionalById } from "@/data/mock";
+import { getProfessionalById, addReview } from "@/data/mock";
+import { LeaveReviewModal } from "@/components/leave-review-modal";
 
 function openWhatsApp(phone: string) {
   const message = encodeURIComponent(
@@ -29,6 +31,7 @@ export default function ProfessionalDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const [showReviewModal, setShowReviewModal] = useState(false);
 
   const professional = id ? getProfessionalById(id) : undefined;
 
@@ -96,7 +99,10 @@ export default function ProfessionalDetailScreen() {
         </View>
 
         {/* Rating */}
-        <Pressable style={styles.ratingRow}>
+        <Pressable
+          style={styles.ratingRow}
+          onPress={() => router.push(`/reviews/${id}` as any)}
+        >
           <MaterialIcons name="star" size={22} color="#F59E0B" />
           <Text style={styles.ratingValue}>{professional.rating.toFixed(1)}</Text>
           <Text style={styles.ratingCount}>
@@ -143,8 +149,18 @@ export default function ProfessionalDetailScreen() {
         </View>
       </ScrollView>
 
-      {/* WhatsApp Button */}
+      {/* Buttons */}
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.reviewButton,
+            pressed && { opacity: 0.85 },
+          ]}
+          onPress={() => setShowReviewModal(true)}
+        >
+          <MaterialIcons name="star-outline" size={20} color="#25D366" />
+          <Text style={styles.reviewButtonText}>Deixar avaliação</Text>
+        </Pressable>
         <Pressable
           style={({ pressed }) => [
             styles.whatsappButton,
@@ -156,6 +172,24 @@ export default function ProfessionalDetailScreen() {
           <Text style={styles.whatsappButtonText}>Chamar no WhatsApp</Text>
         </Pressable>
       </View>
+
+      {/* Review Modal */}
+      <LeaveReviewModal
+        visible={showReviewModal}
+        onClose={() => setShowReviewModal(false)}
+        onSubmit={(rating, comment) => {
+          addReview({
+            professionalId: id || "",
+            userName: "Você",
+            userAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&q=80",
+            rating,
+            comment,
+          });
+          setShowReviewModal(false);
+          Alert.alert("Sucesso", "Sua avaliação foi registrada!");
+        }}
+        professionalName={professional.name}
+      />
     </View>
   );
 }
@@ -295,6 +329,23 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: "#F3F4F6",
+    gap: 8,
+  },
+  reviewButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F0FDF4",
+    borderRadius: 14,
+    paddingVertical: 12,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: "#25D366",
+  },
+  reviewButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#25D366",
   },
   whatsappButton: {
     flexDirection: "row",
