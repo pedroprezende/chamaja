@@ -37,14 +37,23 @@ function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       {isSignedIn ? (
-        <Stack.Screen name="(tabs)" />
+        <>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="admin" />
+        </>
       ) : (
-        <Stack.Screen name="auth" />
+        <>
+          <Stack.Screen name="auth" />
+          <Stack.Screen name="admin" />
+        </>
       )}
       <Stack.Screen name="oauth/callback" />
       <Stack.Screen name="professionals/[category]" />
       <Stack.Screen name="categories/[section]" />
       <Stack.Screen name="professional/[id]" />
+      <Stack.Screen name="admin" />
+      <Stack.Screen name="admin/dashboard-funcional" />
+      <Stack.Screen name="admin/locations" />
     </Stack>
   );
 }

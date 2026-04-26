@@ -31,6 +31,28 @@ const adminDatabase = {
   services: new Map<string, Service>(),
 };
 
+// Inicializar com admin pré-configurado
+const initializeAdminDatabase = () => {
+  const adminId = "admin-pedro";
+  const existingAdmin = adminDatabase.admins.get(adminId);
+  
+  if (!existingAdmin) {
+    const admin: AdminAccount = {
+      id: adminId,
+      email: "pedroprezende33@gmail.com",
+      password: "3404001#Sayajins",
+      name: "Pedro Prezende",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      isActive: true,
+    };
+    adminDatabase.admins.set(adminId, admin);
+  }
+};
+
+// Inicializar ao carregar o módulo
+initializeAdminDatabase();
+
 // Funções para Admin
 export const adminDB = {
   // Admin operations
