@@ -165,3 +165,14 @@
 - [ ] Painel admin acessível diretamente quando logado como admin
 - [ ] Redirecionar para login principal se não autenticado
 - [ ] Verificar e-mail admin (pedroprezende33@gmail.com) no AuthContext
+
+## Upload de Imagem e Integração Home (Novo)
+
+- [x] Adicionar campo imageUri à interface Service no admin-database
+- [x] Implementar upload de imagem de capa via galeria no painel admin
+- [x] Exibir miniatura da imagem nos cards de serviço do painel admin
+- [x] Criar hook useAdminServices para consumir serviços do adminDB
+- [x] Criar tela de detalhe do serviço admin (app/admin-services/[serviceId].tsx)
+- [x] Exibir seção "Serviços Disponíveis" na Home com cards clicáveis dos serviços admin
+- [x] Exibir imagem de capa ou ícone dinâmico por categoria nos cards da Home
+- [x] Navegar para tela de detalhe ao tocar no card de serviço admin

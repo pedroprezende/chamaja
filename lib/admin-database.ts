@@ -23,6 +23,7 @@ export interface Service {
   category: string;
   description: string;
   icon?: string;
+  imageUri?: string;
   createdAt: string;
   updatedAt: string;
   isActive: boolean;
@@ -141,7 +142,8 @@ export const adminDB = {
     name: string,
     category: string,
     description: string,
-    icon?: string
+    icon?: string,
+    imageUri?: string
   ): Promise<Service> => {
     const id = `service-${Date.now()}`;
     const service: Service = {
@@ -151,6 +153,7 @@ export const adminDB = {
       category,
       description,
       icon,
+      imageUri,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       isActive: true,

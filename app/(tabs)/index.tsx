@@ -3,17 +3,19 @@ import {
   Text,
   View,
   TextInput,
-  TouchableOpacity,
   FlatList,
   Image,
   StyleSheet,
   Pressable,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { categories, sections, getSectionServices, getProfessionalsByRanking } from "@/data/mock";
+import { useAdminServices } from "@/hooks/use-admin-services";
+import { useAuth } from "@/lib/auth-context";
 
 const CATEGORY_ICONS: Record<string, string> = {
   "assistencia-tecnica": "settings",
@@ -23,9 +25,36 @@ const CATEGORY_ICONS: Record<string, string> = {
   "aulas": "school",
 };
 
+const ADMIN_CATEGORY_ICONS: Record<string, string> = {
+  eletricista: "electrical-services",
+  encanador: "plumbing",
+  diarista: "cleaning-services",
+  pintor: "format-paint",
+  pedreiro: "construction",
+  marceneiro: "carpenter",
+  jardineiro: "yard",
+  default: "build",
+};
+
+function getAdminIcon(category: string): string {
+  const key = category
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  for (const k of Object.keys(ADMIN_CATEGORY_ICONS)) {
+    if (key.includes(k)) return ADMIN_CATEGORY_ICONS[k];
+  }
+  return ADMIN_CATEGORY_ICONS.default;
+}
+
 export default function HomeScreen() {
   const router = useRouter();
+  const { user } = useAuth();
+  const { services: adminServices, isLoading: adminLoading } = useAdminServices();
   const premiumProfessionals = getProfessionalsByRanking().filter((p) => p.type === "PREMIUM").slice(0, 3);
+
+  // Nome do usuário logado
+  const firstName = user?.name?.split(" ")[0] || "você";
 
   return (
     <ScreenContainer containerClassName="bg-[#F5F5F5]" className="">
@@ -36,7 +65,7 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>Olá, Pedro</Text>
+            <Text style={styles.greeting}>Olá, {firstName}</Text>
           </View>
           <Pressable
             style={({ pressed }) => [styles.bellBtn, pressed && { opacity: 0.7 }]}
@@ -59,7 +88,7 @@ export default function HomeScreen() {
           <Text style={styles.searchPlaceholder}>O que você precisa?</Text>
         </Pressable>
 
-        {/* Categories */}
+        {/* Categories (mock) */}
         <FlatList
           data={categories}
           horizontal
@@ -69,9 +98,7 @@ export default function HomeScreen() {
           renderItem={({ item }) => (
             <Pressable
               style={({ pressed }) => [styles.categoryItem, pressed && { opacity: 0.7 }]}
-              onPress={() =>
-                router.push(`/categories/${item.id}` as any)
-              }
+              onPress={() => router.push(`/categories/${item.id}` as any)}
             >
               <View style={styles.categoryIconBox}>
                 <MaterialIcons
@@ -84,6 +111,67 @@ export default function HomeScreen() {
             </Pressable>
           )}
         />
+
+        {/* ── Serviços do Admin ── */}
+        {(adminLoading || adminServices.length > 0) && (
+          <View style={styles.sectionWrapper}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleRow}>
+                <MaterialIcons name="admin-panel-settings" size={18} color="#25D366" />
+                <Text style={styles.sectionTitle}>Serviços Disponíveis</Text>
+              </View>
+            </View>
+
+            {adminLoading ? (
+              <View style={styles.loadingRow}>
+                <ActivityIndicator size="small" color="#25D366" />
+              </View>
+            ) : (
+              <FlatList
+                data={adminServices}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={styles.adminServicesRow}
+                renderItem={({ item }) => (
+                  <Pressable
+                    style={({ pressed }) => [styles.adminServiceCard, pressed && { opacity: 0.85 }]}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/admin-services/[serviceId]",
+                        params: { serviceId: item.id, title: item.name },
+                      } as any)
+                    }
+                  >
+                    {item.imageUri ? (
+                      <Image
+                        source={{ uri: item.imageUri }}
+                        style={styles.adminServiceImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={styles.adminServiceIconBg}>
+                        <MaterialIcons
+                          name={getAdminIcon(item.category) as any}
+                          size={30}
+                          color="#25D366"
+                        />
+                      </View>
+                    )}
+                    <View style={styles.adminServiceInfo}>
+                      <Text style={styles.adminServiceName} numberOfLines={1}>
+                        {item.name}
+                      </Text>
+                      <Text style={styles.adminServiceCategory} numberOfLines={1}>
+                        {item.category}
+                      </Text>
+                    </View>
+                  </Pressable>
+                )}
+              />
+            )}
+          </View>
+        )}
 
         {/* Premium Professionals */}
         {premiumProfessionals.length > 0 && (
@@ -125,32 +213,23 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* Sections */}
+        {/* Sections (mock) */}
         {sections.map((section) => {
           const sectionServices = getSectionServices(section.id);
           return (
             <View key={section.id} style={styles.sectionWrapper}>
-              {/* Section Header */}
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>{section.title}</Text>
-                <Pressable
-                  onPress={() =>
-router.push(`/categories/${section.id}` as any)
-                  }
-                >
+                <Pressable onPress={() => router.push(`/categories/${section.id}` as any)}>
                   <Text style={styles.seeAll}>Ver tudo</Text>
                 </Pressable>
               </View>
-
-              {/* Service Cards Row */}
               <View style={styles.cardsRow}>
                 {sectionServices.map((service) => (
                   <Pressable
                     key={service.id}
                     style={({ pressed }) => [styles.serviceCard, pressed && { opacity: 0.85 }]}
-                    onPress={() =>
-router.push(`/professionals/${service.id}` as any)
-                    }
+                    onPress={() => router.push(`/professionals/${service.id}` as any)}
                   >
                     <Image
                       source={{ uri: service.image }}
@@ -186,12 +265,8 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#111827",
   },
-  bellBtn: {
-    padding: 4,
-  },
-  bellWrapper: {
-    position: "relative",
-  },
+  bellBtn: { padding: 4 },
+  bellWrapper: { position: "relative" },
   badge: {
     position: "absolute",
     top: -4,
@@ -204,11 +279,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 3,
   },
-  badgeText: {
-    color: "#FFFFFF",
-    fontSize: 9,
-    fontWeight: "700",
-  },
+  badgeText: { color: "#FFFFFF", fontSize: 9, fontWeight: "700" },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -223,21 +294,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E5E7EB",
   },
-  searchPlaceholder: {
-    fontSize: 14,
-    color: "#9CA3AF",
-    flex: 1,
-  },
+  searchPlaceholder: { fontSize: 14, color: "#9CA3AF", flex: 1 },
   categoriesContainer: {
     paddingHorizontal: 16,
     paddingVertical: 16,
     gap: 12,
   },
-  categoryItem: {
-    alignItems: "center",
-    width: 76,
-    gap: 6,
-  },
+  categoryItem: { alignItems: "center", width: 76, gap: 6 },
   categoryIconBox: {
     width: 60,
     height: 60,
@@ -260,31 +323,72 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     lineHeight: 14,
   },
-  sectionWrapper: {
-    marginTop: 8,
-    paddingHorizontal: 16,
-  },
+  sectionWrapper: { marginTop: 8, paddingHorizontal: 16 },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 12,
   },
-  sectionTitle: {
-    fontSize: 17,
+  sectionTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  sectionTitle: { fontSize: 17, fontWeight: "700", color: "#111827" },
+  seeAll: { fontSize: 13, color: "#1A73E8", fontWeight: "500" },
+  loadingRow: {
+    height: 120,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  // Admin services horizontal list
+  adminServicesRow: {
+    gap: 12,
+    paddingBottom: 8,
+  },
+  adminServiceCard: {
+    width: 130,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  adminServiceImage: {
+    width: "100%",
+    height: 90,
+    backgroundColor: "#F3F4F6",
+  },
+  adminServiceIconBg: {
+    width: "100%",
+    height: 90,
+    backgroundColor: "#F0FDF4",
+    alignItems: "center",
+    justifyContent: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#BBF7D0",
+  },
+  adminServiceInfo: {
+    padding: 8,
+    gap: 2,
+  },
+  adminServiceName: {
+    fontSize: 12,
     fontWeight: "700",
     color: "#111827",
   },
-  seeAll: {
-    fontSize: 13,
-    color: "#1A73E8",
-    fontWeight: "500",
+  adminServiceCategory: {
+    fontSize: 11,
+    color: "#6B7280",
   },
-  cardsRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 8,
-  },
+  // Sections
+  cardsRow: { flexDirection: "row", gap: 10, marginBottom: 8 },
   serviceCard: {
     flex: 1,
     backgroundColor: "#FFFFFF",
@@ -298,11 +402,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  serviceImage: {
-    width: "100%",
-    height: 90,
-    backgroundColor: "#F3F4F6",
-  },
+  serviceImage: { width: "100%", height: 90, backgroundColor: "#F3F4F6" },
   serviceName: {
     fontSize: 12,
     fontWeight: "500",
@@ -311,16 +411,8 @@ const styles = StyleSheet.create({
     paddingTop: 6,
     lineHeight: 16,
   },
-  premiumHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  premiumRow: {
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-  },
+  premiumHeaderRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  premiumRow: { gap: 12, paddingHorizontal: 16, paddingBottom: 8 },
   premiumCard: {
     width: 100,
     backgroundColor: "#FFFFFF",
@@ -335,12 +427,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  premiumAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginBottom: 6,
-  },
+  premiumAvatar: { width: 60, height: 60, borderRadius: 30, marginBottom: 6 },
   premiumBadgeHome: {
     position: "absolute",
     top: 6,
@@ -361,14 +448,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 4,
   },
-  premiumRating: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-  },
-  premiumRatingText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#F59E0B",
-  },
+  premiumRating: { flexDirection: "row", alignItems: "center", gap: 2 },
+  premiumRatingText: { fontSize: 11, fontWeight: "600", color: "#F59E0B" },
 });

@@ -9,10 +9,12 @@ import {
   FlatList,
   StyleSheet,
   Pressable,
+  Image,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "@/lib/auth-context";
 import { adminDB, type Service } from "@/lib/admin-database";
 
@@ -52,9 +54,19 @@ function ServiceCard({
   const iconName = getCategoryIcon(item.category) as any;
   return (
     <View style={styles.card}>
-      <View style={styles.iconContainer}>
-        <MaterialIcons name={iconName} size={28} color="#25D366" />
-      </View>
+      {/* Thumbnail ou icone */}
+      {item.imageUri ? (
+        <Image
+          source={{ uri: item.imageUri }}
+          style={styles.cardThumbnail}
+          resizeMode="cover"
+        />
+      ) : (
+        <View style={styles.iconContainer}>
+          <MaterialIcons name={iconName} size={28} color="#25D366" />
+        </View>
+      )}
+
       <View style={styles.cardInfo}>
         <View style={styles.nameRow}>
           <Text style={styles.cardName} numberOfLines={1}>
@@ -71,6 +83,7 @@ function ServiceCard({
           Criado em {new Date(item.createdAt).toLocaleDateString("pt-BR")}
         </Text>
       </View>
+
       <View style={styles.cardActions}>
         <Pressable
           style={({ pressed }) => [
@@ -109,6 +122,7 @@ export default function AdminDashboard() {
     name: "",
     category: "",
     description: "",
+    imageUri: "",
   });
 
   useEffect(() => {
@@ -119,7 +133,7 @@ export default function AdminDashboard() {
     if (user.email !== ADMIN_EMAIL) {
       Alert.alert(
         "Acesso Negado",
-        "Você não tem permissão para acessar este painel.",
+        "Voce nao tem permissao para acessar este painel.",
         [{ text: "OK", onPress: () => router.replace("/(tabs)") }]
       );
       return;
@@ -132,7 +146,7 @@ export default function AdminDashboard() {
       const allServices = await adminDB.getAllServices();
       setServices(allServices);
     } catch (err) {
-      console.error("Erro ao carregar serviços:", err);
+      console.error("Erro ao carregar servicos:", err);
     }
   };
 
@@ -144,20 +158,28 @@ export default function AdminDashboard() {
         style: "destructive",
         onPress: () => {
           signOut()
-            .then(() => {
-              router.replace("/auth/login");
-            })
-            .catch(() => {
-              router.replace("/auth/login");
-            });
+            .then(() => router.replace("/auth/login"))
+            .catch(() => router.replace("/auth/login"));
         },
       },
     ]);
   }, [signOut, router]);
 
+  const handlePickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.85,
+    });
+    if (!result.canceled) {
+      setFormData((prev) => ({ ...prev, imageUri: result.assets[0].uri }));
+    }
+  };
+
   const openCreateModal = () => {
     setEditingService(null);
-    setFormData({ name: "", category: "", description: "" });
+    setFormData({ name: "", category: "", description: "", imageUri: "" });
     setShowModal(true);
   };
 
@@ -167,6 +189,7 @@ export default function AdminDashboard() {
       name: service.name,
       category: service.category,
       description: service.description,
+      imageUri: service.imageUri || "",
     });
     setShowModal(true);
   };
@@ -194,11 +217,7 @@ export default function AdminDashboard() {
   };
 
   const handleSaveService = async () => {
-    if (
-      !formData.name.trim() ||
-      !formData.category.trim() ||
-      !formData.description.trim()
-    ) {
+    if (!formData.name.trim() || !formData.category.trim() || !formData.description.trim()) {
       Alert.alert("Campos obrigatorios", "Preencha nome, categoria e descricao.");
       return;
     }
@@ -208,17 +227,18 @@ export default function AdminDashboard() {
           name: formData.name.trim(),
           category: formData.category.trim(),
           description: formData.description.trim(),
+          imageUri: formData.imageUri || undefined,
         });
-        setServices((prev) =>
-          prev.map((s) => (s.id === updated.id ? updated : s))
-        );
+        setServices((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
       } else {
         if (!user) return;
         const newService = await adminDB.createService(
           user.id,
           formData.name.trim(),
           formData.category.trim(),
-          formData.description.trim()
+          formData.description.trim(),
+          undefined,
+          formData.imageUri || undefined
         );
         setServices((prev) => [...prev, newService]);
       }
@@ -236,14 +256,7 @@ export default function AdminDashboard() {
 
   if (!user || user.email !== ADMIN_EMAIL) {
     return (
-      <View
-        style={{
-          flex: 1,
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: "#F5F5F5",
-        }}
-      >
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F5F5F5" }}>
         <Text style={{ color: "#6B7280" }}>Verificando acesso...</Text>
       </View>
     );
@@ -256,15 +269,11 @@ export default function AdminDashboard() {
         <View style={styles.headerLeft}>
           <Text style={styles.headerTitle}>Painel Admin</Text>
           <Text style={styles.headerSubtitle}>
-            {services.length}{" "}
-            {services.length === 1 ? "servico" : "servicos"}
+            {services.length} {services.length === 1 ? "servico" : "servicos"}
           </Text>
         </View>
         <Pressable
-          style={({ pressed }) => [
-            styles.logoutBtn,
-            pressed && { opacity: 0.7 },
-          ]}
+          style={({ pressed }) => [styles.logoutBtn, pressed && { opacity: 0.7 }]}
           onPress={handleLogout}
         >
           <MaterialIcons name="logout" size={20} color="#EF4444" />
@@ -290,10 +299,7 @@ export default function AdminDashboard() {
           )}
         </View>
         <Pressable
-          style={({ pressed }) => [
-            styles.addBtn,
-            pressed && { opacity: 0.8 },
-          ]}
+          style={({ pressed }) => [styles.addBtn, pressed && { opacity: 0.8 }]}
           onPress={openCreateModal}
         >
           <MaterialIcons name="add" size={22} color="#FFFFFF" />
@@ -352,10 +358,7 @@ export default function AdminDashboard() {
                 {editingService ? "Editar Servico" : "Novo Servico"}
               </Text>
               <Pressable
-                style={({ pressed }) => [
-                  styles.modalCloseBtn,
-                  pressed && { opacity: 0.6 },
-                ]}
+                style={({ pressed }) => [styles.modalCloseBtn, pressed && { opacity: 0.6 }]}
                 onPress={() => setShowModal(false)}
               >
                 <MaterialIcons name="close" size={22} color="#6B7280" />
@@ -363,6 +366,33 @@ export default function AdminDashboard() {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Upload de imagem de capa */}
+              <Text style={styles.fieldLabel}>Imagem de Capa</Text>
+              <Pressable
+                style={({ pressed }) => [styles.imagePickerBtn, pressed && { opacity: 0.8 }]}
+                onPress={handlePickImage}
+              >
+                {formData.imageUri ? (
+                  <View style={styles.imagePreviewWrapper}>
+                    <Image
+                      source={{ uri: formData.imageUri }}
+                      style={styles.imagePreview}
+                      resizeMode="cover"
+                    />
+                    <View style={styles.imageEditOverlay}>
+                      <MaterialIcons name="edit" size={20} color="#FFFFFF" />
+                      <Text style={styles.imageEditText}>Trocar foto</Text>
+                    </View>
+                  </View>
+                ) : (
+                  <View style={styles.imagePlaceholder}>
+                    <MaterialIcons name="add-photo-alternate" size={32} color="#9CA3AF" />
+                    <Text style={styles.imagePlaceholderText}>Adicionar imagem de capa</Text>
+                    <Text style={styles.imagePlaceholderSub}>Toque para selecionar da galeria</Text>
+                  </View>
+                )}
+              </Pressable>
+
               <Text style={styles.fieldLabel}>Nome do Servico</Text>
               <View style={styles.fieldBox}>
                 <MaterialIcons name="build" size={18} color="#9CA3AF" />
@@ -384,9 +414,7 @@ export default function AdminDashboard() {
                   placeholder="Ex: Eletricista, Diarista, Pintor"
                   placeholderTextColor="#9CA3AF"
                   value={formData.category}
-                  onChangeText={(t) =>
-                    setFormData({ ...formData, category: t })
-                  }
+                  onChangeText={(t) => setFormData({ ...formData, category: t })}
                   returnKeyType="next"
                 />
               </View>
@@ -398,9 +426,7 @@ export default function AdminDashboard() {
                   placeholder="Descreva o servico oferecido..."
                   placeholderTextColor="#9CA3AF"
                   value={formData.description}
-                  onChangeText={(t) =>
-                    setFormData({ ...formData, description: t })
-                  }
+                  onChangeText={(t) => setFormData({ ...formData, description: t })}
                   multiline
                   numberOfLines={4}
                   textAlignVertical="top"
@@ -409,26 +435,16 @@ export default function AdminDashboard() {
 
               <View style={styles.modalActions}>
                 <Pressable
-                  style={({ pressed }) => [
-                    styles.cancelBtn,
-                    pressed && { opacity: 0.7 },
-                  ]}
+                  style={({ pressed }) => [styles.cancelBtn, pressed && { opacity: 0.7 }]}
                   onPress={() => setShowModal(false)}
                 >
                   <Text style={styles.cancelBtnText}>Cancelar</Text>
                 </Pressable>
                 <Pressable
-                  style={({ pressed }) => [
-                    styles.saveBtn,
-                    pressed && { opacity: 0.8 },
-                  ]}
+                  style={({ pressed }) => [styles.saveBtn, pressed && { opacity: 0.8 }]}
                   onPress={handleSaveService}
                 >
-                  <MaterialIcons
-                    name={editingService ? "check" : "add"}
-                    size={18}
-                    color="#fff"
-                  />
+                  <MaterialIcons name={editingService ? "check" : "add"} size={18} color="#fff" />
                   <Text style={styles.saveBtnText}>
                     {editingService ? "Salvar" : "Criar Servico"}
                   </Text>
@@ -523,10 +539,17 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  cardThumbnail: {
+    width: 56,
+    height: 56,
+    borderRadius: 10,
+    backgroundColor: "#F3F4F6",
+    marginRight: 12,
+  },
   iconContainer: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: "#F0FDF4",
     alignItems: "center",
     justifyContent: "center",
@@ -541,12 +564,7 @@ const styles = StyleSheet.create({
     gap: 6,
     flexWrap: "wrap",
   },
-  cardName: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#111827",
-    flexShrink: 1,
-  },
+  cardName: { fontSize: 15, fontWeight: "700", color: "#111827", flexShrink: 1 },
   categoryBadge: {
     backgroundColor: "#EFF6FF",
     borderRadius: 4,
@@ -564,36 +582,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  editBtn: {
-    backgroundColor: "#EFF6FF",
-    borderWidth: 1,
-    borderColor: "#BFDBFE",
-  },
-  deleteBtn: {
-    backgroundColor: "#FEF2F2",
-    borderWidth: 1,
-    borderColor: "#FECACA",
-  },
+  editBtn: { backgroundColor: "#EFF6FF", borderWidth: 1, borderColor: "#BFDBFE" },
+  deleteBtn: { backgroundColor: "#FEF2F2", borderWidth: 1, borderColor: "#FECACA" },
   empty: { alignItems: "center", paddingTop: 60, gap: 10 },
   emptyTitle: { fontSize: 16, fontWeight: "600", color: "#374151" },
-  emptySubtitle: {
-    fontSize: 13,
-    color: "#9CA3AF",
-    textAlign: "center",
-    paddingHorizontal: 32,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "flex-end",
-  },
+  emptySubtitle: { fontSize: 13, color: "#9CA3AF", textAlign: "center", paddingHorizontal: 32 },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
   modalSheet: {
     backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 20,
     paddingBottom: 40,
-    maxHeight: "90%",
+    maxHeight: "92%",
   },
   modalHandle: {
     width: 36,
@@ -620,6 +621,52 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  // Image picker
+  imagePickerBtn: {
+    borderRadius: 12,
+    overflow: "hidden",
+    marginBottom: 4,
+  },
+  imagePreviewWrapper: {
+    position: "relative",
+    width: "100%",
+    height: 160,
+  },
+  imagePreview: {
+    width: "100%",
+    height: 160,
+    borderRadius: 12,
+  },
+  imageEditOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+    gap: 6,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+  },
+  imageEditText: { color: "#FFFFFF", fontSize: 13, fontWeight: "600" },
+  imagePlaceholder: {
+    width: "100%",
+    height: 140,
+    backgroundColor: "#F9FAFB",
+    borderWidth: 1.5,
+    borderColor: "#E5E7EB",
+    borderStyle: "dashed",
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  imagePlaceholderText: { fontSize: 14, fontWeight: "600", color: "#374151" },
+  imagePlaceholderSub: { fontSize: 12, color: "#9CA3AF" },
+  // Fields
   fieldLabel: {
     fontSize: 13,
     fontWeight: "600",
