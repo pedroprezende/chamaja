@@ -133,3 +133,15 @@
 - [x] Criar painel do comerciante com dashboard
 - [x] Implementar permissões granulares nas operações CRUD
 - [x] Testar fluxo de autenticação e permissões
+
+
+## Sistema de Login Admin Funcional (Novo)
+
+- [x] Criar sistema de registro de admin com validação
+- [x] Salvar credenciais de admin no banco de dados
+- [x] Implementar login com verificação de credenciais
+- [x] Criar fluxo de navegação (login/registro/dashboard)
+- [x] Proteger rotas do admin (apenas autenticados)
+- [x] Implementar painel admin para criar serviços
+- [x] Implementar painel admin para gerenciar serviços
+- [x] Testar fluxo completo de login e criação de serviços
