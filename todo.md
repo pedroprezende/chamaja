@@ -60,3 +60,36 @@
 - [x] Destacar prestadores PREMIUM na home
 - [x] Permitir atualizar para PREMIUM no perfil do prestador
 - [x] Testar fluxo completo de cadastro e upgrade
+
+
+## Firebase Authentication (Novo)
+
+- [x] Configurar Firebase projeto e credenciais
+- [x] Implementar login com Google via Firebase
+- [x] Implementar login com Apple via Firebase
+- [x] Integrar Firebase Auth no AuthContext
+- [x] Persistir tokens Firebase no AsyncStorage
+- [x] Testar fluxo de autenticação Firebase
+
+## Integração Mercado Pago (Novo)
+
+- [x] Configurar credenciais Mercado Pago (Access Token)
+- [x] Implementar API de criação de preferências de pagamento
+- [x] Suportar PIX como método de pagamento
+- [x] Suportar Cartão de Crédito
+- [x] Suportar Boleto
+- [x] Criar tela de checkout com seleção de método
+- [x] Implementar webhook para confirmação de pagamento
+- [x] Salvar dados de pagamento no banco de dados
+
+## Painel Administrativo (Novo)
+
+- [x] Criar roteamento para painel admin (/admin)
+- [x] Implementar autenticação de admin
+- [x] Criar dashboard com estatísticas gerais
+- [x] Seção de gerenciamento de usuários (listar, bloquear, deletar)
+- [x] Seção de aprovação de prestadores (listar, aprovar, rejeitar)
+- [x] Seção de pagamentos (listar, filtrar por status, exportar)
+- [x] Seção de relatórios (receita, usuários ativos, prestadores premium)
+- [x] Implementar busca e filtros em todas as seções
+- [x] Testar fluxo completo do painel
