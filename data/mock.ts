@@ -21,6 +21,17 @@ export type Review = {
   createdAt: string;
 };
 
+export type ProfessionalType = "FREE" | "PREMIUM";
+
+export type PremiumPlan = {
+  id: string;
+  name: string;
+  price: number;
+  period: "monthly" | "annual";
+  description: string;
+  benefits: string[];
+};
+
 export type Professional = {
   id: string;
   name: string;
@@ -36,6 +47,19 @@ export type Professional = {
   schedule: string;
   paymentMethods: string;
   avatar: string;
+  type: ProfessionalType;
+  city: string;
+  premiumExpiresAt?: string;
+};
+
+export type ProfessionalRegistration = {
+  name: string;
+  category: string;
+  city: string;
+  neighborhood: string;
+  phone: string;
+  avatar: string;
+  description: string;
 };
 
 export const categories: Category[] = [
@@ -142,11 +166,14 @@ export const professionals: Professional[] = [
     distance: "1,2 km",
     phone: "5511999990001",
     description:
-      "Serviços elétricos em geral. Residencial, comercial e predial. Instalações, manutenção e reparos com qualidade e segurança.",
-    serviceArea: "Centro, Vila Nova, Jd. América e regiões",
+      "Mais de 20 anos de experiência em serviços elétricos residenciais e comerciais.",
+    serviceArea: "Centro, Vila Nova, Jd. América e região",
     schedule: "Segunda a Sábado: 7h às 19h",
     paymentMethods: "Dinheiro, Cartão, PIX",
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
+    type: "PREMIUM",
+    city: "São Paulo",
+    premiumExpiresAt: "2025-12-31",
   },
   {
     id: "eletricista-rapido",
@@ -164,6 +191,8 @@ export const professionals: Professional[] = [
     schedule: "Segunda a Domingo: 8h às 20h",
     paymentMethods: "Dinheiro, PIX",
     avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80",
+    type: "FREE",
+    city: "São Paulo",
   },
   {
     id: "mestre-eletrica",
@@ -181,6 +210,9 @@ export const professionals: Professional[] = [
     schedule: "Segunda a Sexta: 7h às 18h",
     paymentMethods: "Dinheiro, Cartão, PIX",
     avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&q=80",
+    type: "PREMIUM",
+    city: "São Paulo",
+    premiumExpiresAt: "2025-06-30",
   },
   {
     id: "luz-forte",
@@ -198,6 +230,8 @@ export const professionals: Professional[] = [
     schedule: "Segunda a Sábado: 8h às 18h",
     paymentMethods: "Dinheiro, PIX",
     avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=200&q=80",
+    type: "FREE",
+    city: "São Paulo",
   },
   {
     id: "eletricista-confiavel",
@@ -215,6 +249,8 @@ export const professionals: Professional[] = [
     schedule: "Segunda a Sábado: 7h às 17h",
     paymentMethods: "Dinheiro, Cartão, PIX",
     avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&q=80",
+    type: "FREE",
+    city: "São Paulo",
   },
   // Marido de aluguel
   {
@@ -233,6 +269,8 @@ export const professionals: Professional[] = [
     schedule: "Segunda a Sábado: 8h às 18h",
     paymentMethods: "Dinheiro, PIX",
     avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200&q=80",
+    type: "FREE",
+    city: "São Paulo",
   },
   // Babá
   {
@@ -251,6 +289,9 @@ export const professionals: Professional[] = [
     schedule: "Segunda a Sexta: 7h às 19h",
     paymentMethods: "Dinheiro, PIX, Transferência",
     avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&q=80",
+    type: "PREMIUM",
+    city: "São Paulo",
+    premiumExpiresAt: "2025-08-15",
   },
   // Cozinheira
   {
@@ -269,6 +310,8 @@ export const professionals: Professional[] = [
     schedule: "Segunda a Sexta: 8h às 17h",
     paymentMethods: "Dinheiro, PIX",
     avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80",
+    type: "FREE",
+    city: "São Paulo",
   },
   // Diarista
   {
@@ -284,11 +327,96 @@ export const professionals: Professional[] = [
     description:
       "Limpeza completa e organização de residências e escritórios.",
     serviceArea: "Brooklin, Santo André e região",
-    schedule: "Segunda a Sábado: 7h às 17h",
+    type: "FREE",
+    city: "São Paulo",
+    schedule: "Segunda a Sexta: 8h às 17h",
     paymentMethods: "Dinheiro, PIX",
-    avatar: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=200&q=80",
+    avatar: "https://images.unsplash.com/photo-1507876466519-514a6da1d4d0?w=200&q=80",
   },
 ];
+
+export const premiumPlans: PremiumPlan[] = [
+  {
+    id: "monthly",
+    name: "Plano Mensal",
+    price: 19.9,
+    period: "monthly",
+    description: "Destaque por 1 mês",
+    benefits: [
+      "Apareça primeiro nos resultados",
+      "Selo Premium no perfil",
+      "Mais visibilidade nas buscas",
+      "Destaque na home",
+    ],
+  },
+  {
+    id: "annual",
+    name: "Plano Anual",
+    price: 99,
+    period: "annual",
+    description: "Destaque por 1 ano (economize 50%)",
+    benefits: [
+      "Apareça primeiro nos resultados",
+      "Selo Premium no perfil",
+      "Mais visibilidade nas buscas",
+      "Destaque na home",
+      "Suporte prioritário",
+    ],
+  },
+];
+
+export function getProfessionalsByRanking(categoryId?: string): Professional[] {
+  let filtered = categoryId
+    ? professionals.filter((p) => p.categoryId === categoryId)
+    : professionals;
+
+  return filtered.sort((a, b) => {
+    if (a.type === "PREMIUM" && b.type === "FREE") return -1;
+    if (a.type === "FREE" && b.type === "PREMIUM") return 1;
+    return b.rating - a.rating;
+  });
+}
+
+export function createProfessional(
+  registration: ProfessionalRegistration
+): Professional {
+  const newProfessional: Professional = {
+    id: `prof-${Date.now()}`,
+    ...registration,
+    categoryId: registration.category.toLowerCase(),
+    rating: 0,
+    reviewCount: 0,
+    distance: "0 km",
+    serviceArea: registration.city,
+    schedule: "Consulte o profissional",
+    paymentMethods: "A combinar",
+    type: "FREE",
+    city: registration.city,
+  };
+  professionals.push(newProfessional);
+  return newProfessional;
+}
+
+export function upgradeToPremium(
+  professionalId: string,
+  planId: string
+): Professional | undefined {
+  const professional = getProfessionalById(professionalId);
+  if (!professional) return undefined;
+
+  const plan = premiumPlans.find((p) => p.id === planId);
+  if (!plan) return undefined;
+
+  const now = new Date();
+  const expiresAt = new Date(
+    now.getTime() +
+      (plan.period === "monthly" ? 30 * 24 * 60 * 60 * 1000 : 365 * 24 * 60 * 60 * 1000)
+  );
+
+  professional.type = "PREMIUM";
+  professional.premiumExpiresAt = expiresAt.toISOString().split("T")[0];
+  return professional;
+};
 
 export function getProfessionalsByService(serviceId: string): Professional[] {
   return professionals.filter((p) => p.categoryId === serviceId);

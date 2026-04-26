@@ -13,7 +13,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { getProfessionalsByService, professionals } from "@/data/mock";
+import { getProfessionalsByService, getProfessionalsByRanking, professionals } from "@/data/mock";
 import type { Professional } from "@/data/mock";
 
 function openWhatsApp(phone: string) {
@@ -40,9 +40,17 @@ function ProfessionalCard({
     >
       <Image source={{ uri: item.avatar }} style={styles.avatar} />
       <View style={styles.info}>
-        <Text style={styles.name} numberOfLines={1}>
-          {item.name}
-        </Text>
+        <View style={styles.nameRow}>
+          <Text style={styles.name} numberOfLines={1}>
+            {item.name}
+          </Text>
+          {item.type === "PREMIUM" && (
+            <View style={styles.premiumBadge}>
+              <MaterialIcons name="star" size={12} color="#FCD34D" />
+              <Text style={styles.premiumText}>Premium</Text>
+            </View>
+          )}
+        </View>
         <View style={styles.ratingRow}>
           <MaterialIcons name="star" size={14} color="#F59E0B" />
           <Text style={styles.rating}>
@@ -79,7 +87,9 @@ export default function ProfessionalsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const data = category ? getProfessionalsByService(category) : professionals;
+  const data = category
+    ? getProfessionalsByRanking(category)
+    : getProfessionalsByRanking();
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -145,6 +155,25 @@ export default function ProfessionalsScreen() {
 }
 
 const styles = StyleSheet.create({
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  premiumBadge: {
+    backgroundColor: "#FCD34D",
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
+  premiumText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#78350F",
+  },
   container: {
     flex: 1,
     backgroundColor: "#F5F5F5",

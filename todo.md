@@ -46,3 +46,17 @@
 - [x] Exibir média de avaliações na listagem de profissionais
 - [ ] Permitir filtrar avaliações por estrelas
 - [ ] Testar fluxo completo de avaliações
+
+
+## Sistema de Cadastro de Prestadores (Novo)
+
+- [x] Criar tipos TypeScript para prestadores (FREE/PREMIUM)
+- [x] Implementar tela de Cadastro de Prestador
+- [x] Validar campos de cadastro (nome, categoria, cidade, WhatsApp, foto)
+- [x] Implementar tela de Planos PREMIUM
+- [x] Criar sistema de pagamento (plano mensal e anual)
+- [x] Integrar ranking (PREMIUM primeiro, depois FREE)
+- [x] Adicionar selo visual PREMIUM
+- [x] Destacar prestadores PREMIUM na home
+- [x] Permitir atualizar para PREMIUM no perfil do prestador
+- [x] Testar fluxo completo de cadastro e upgrade

@@ -13,7 +13,7 @@ import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 
 import { ScreenContainer } from "@/components/screen-container";
-import { categories, sections, getSectionServices } from "@/data/mock";
+import { categories, sections, getSectionServices, getProfessionalsByRanking } from "@/data/mock";
 
 const CATEGORY_ICONS: Record<string, string> = {
   "assistencia-tecnica": "settings",
@@ -25,6 +25,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 
 export default function HomeScreen() {
   const router = useRouter();
+  const premiumProfessionals = getProfessionalsByRanking().filter((p) => p.type === "PREMIUM").slice(0, 3);
 
   return (
     <ScreenContainer containerClassName="bg-[#F5F5F5]" className="">
@@ -83,6 +84,46 @@ export default function HomeScreen() {
             </Pressable>
           )}
         />
+
+        {/* Premium Professionals */}
+        {premiumProfessionals.length > 0 && (
+          <View style={styles.sectionWrapper}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.premiumHeaderRow}>
+                <MaterialIcons name="star" size={20} color="#FCD34D" />
+                <Text style={styles.sectionTitle}>Profissionais em Destaque</Text>
+              </View>
+              <Pressable>
+                <Text style={styles.seeAll}>Ver mais</Text>
+              </Pressable>
+            </View>
+            <FlatList
+              data={premiumProfessionals}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.premiumRow}
+              renderItem={({ item }) => (
+                <Pressable
+                  style={({ pressed }) => [styles.premiumCard, pressed && { opacity: 0.85 }]}
+                  onPress={() => router.push(`/professional/${item.id}` as any)}
+                >
+                  <Image source={{ uri: item.avatar }} style={styles.premiumAvatar} />
+                  <View style={styles.premiumBadgeHome}>
+                    <MaterialIcons name="star" size={12} color="#FCD34D" />
+                  </View>
+                  <Text style={styles.premiumName} numberOfLines={1}>
+                    {item.name}
+                  </Text>
+                  <View style={styles.premiumRating}>
+                    <MaterialIcons name="star" size={12} color="#F59E0B" />
+                    <Text style={styles.premiumRatingText}>{item.rating.toFixed(1)}</Text>
+                  </View>
+                </Pressable>
+              )}
+            />
+          </View>
+        )}
 
         {/* Sections */}
         {sections.map((section) => {
@@ -269,5 +310,65 @@ const styles = StyleSheet.create({
     padding: 8,
     paddingTop: 6,
     lineHeight: 16,
+  },
+  premiumHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  premiumRow: {
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+  premiumCard: {
+    width: 100,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    alignItems: "center",
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#FCD34D",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  premiumAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginBottom: 6,
+  },
+  premiumBadgeHome: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    backgroundColor: "#FCD34D",
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+  },
+  premiumName: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#111827",
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  premiumRating: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
+  premiumRatingText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#F59E0B",
   },
 });
