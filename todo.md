@@ -155,3 +155,5 @@
 - [x] Criar painel admin exclusivo
 - [x] Criar painel de contratante
 - [x] Testar fluxo de autenticação e permissões
+
+- [x] Corrigir erro AdminAuthRealProvider no layout admin
