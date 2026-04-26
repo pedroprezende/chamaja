@@ -120,3 +120,16 @@
 - [x] Implementar deletar local
 - [x] Adicionar busca e filtros de locais
 - [x] Exibir estatísticas de prestadores por local
+
+
+## Sistema de Roles e Permissões (Novo)
+
+- [x] Criar tipos de roles (Admin, Comerciante, Cliente)
+- [x] Implementar autenticação real de admin com e-mail pedroprezende33@gmail.com
+- [x] Criar sistema de senha seguro para admin
+- [x] Adicionar controle de acesso baseado em roles
+- [x] Admin pode gerenciar todos os comércios e comerciantes
+- [x] Comerciante pode criar e editar apenas suas lojas
+- [x] Criar painel do comerciante com dashboard
+- [x] Implementar permissões granulares nas operações CRUD
+- [x] Testar fluxo de autenticação e permissões
