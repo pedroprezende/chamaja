@@ -192,8 +192,8 @@ export const adminDB = {
     return updated;
   },
 
-  deleteService: async (id: string): Promise<void> => {
-    adminDatabase.services.delete(id);
+  deleteService: async (id: string): Promise<boolean> => {
+    return adminDatabase.services.delete(id);
   },
 
   getAllServices: async (): Promise<Service[]> => {

@@ -157,3 +157,11 @@
 - [x] Testar fluxo de autenticação e permissões
 
 - [x] Corrigir erro AdminAuthRealProvider no layout admin
+
+## Unificação de Login Admin (Novo)
+
+- [ ] Remover login separado do admin
+- [ ] Integrar painel admin com AuthContext principal
+- [ ] Painel admin acessível diretamente quando logado como admin
+- [ ] Redirecionar para login principal se não autenticado
+- [ ] Verificar e-mail admin (pedroprezende33@gmail.com) no AuthContext

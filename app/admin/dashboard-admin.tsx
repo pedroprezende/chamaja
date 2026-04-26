@@ -11,12 +11,14 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
-import { useAdminAuthReal } from "@/lib/admin-auth-real";
+import { useAuth } from "@/lib/auth-context";
 import { adminDB, type Service } from "@/lib/admin-database";
+
+const ADMIN_EMAIL = "pedroprezende33@gmail.com";
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const { user, logout } = useAdminAuthReal();
+  const { user, signOut } = useAuth();
   const [services, setServices] = useState<Service[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
@@ -26,25 +28,17 @@ export default function AdminDashboard() {
     description: "",
   });
 
-  // Verificar se é o admin principal
   useEffect(() => {
-    if (!user || user.email !== "pedroprezende33@gmail.com") {
-      Alert.alert(
-        "Acesso Negado",
-        "Apenas o admin principal pode acessar este painel",
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              logout();
-              router.replace("/admin/auth");
-            },
-          },
-        ]
-      );
+    if (!user) {
+      router.replace("/auth/login");
       return;
     }
-
+    if (user.email !== ADMIN_EMAIL) {
+      Alert.alert("Acesso Negado", "Você não tem permissão para acessar este painel.", [
+        { text: "OK", onPress: () => router.replace("/(tabs)") },
+      ]);
+      return;
+    }
     loadServices();
   }, [user]);
 
@@ -62,7 +56,6 @@ export default function AdminDashboard() {
       Alert.alert("Erro", "Preencha todos os campos");
       return;
     }
-
     try {
       if (user) {
         const newService = await adminDB.createService(
@@ -87,16 +80,13 @@ export default function AdminDashboard() {
       Alert.alert("Erro", "Preencha todos os campos");
       return;
     }
-
     try {
       const updated = await adminDB.updateService(editingService.id, {
         name: formData.name,
         category: formData.category,
         description: formData.description,
       });
-      setServices(
-        services.map((s) => (s.id === updated.id ? updated : s))
-      );
+      setServices(services.map((s) => (s.id === updated.id ? updated : s)));
       setFormData({ name: "", category: "", description: "" });
       setEditingService(null);
       setShowModal(false);
@@ -108,9 +98,10 @@ export default function AdminDashboard() {
 
   const handleDeleteService = (serviceId: string) => {
     Alert.alert("Confirmar", "Tem certeza que deseja deletar este serviço?", [
-      { text: "Cancelar", onPress: () => {} },
+      { text: "Cancelar" },
       {
         text: "Deletar",
+        style: "destructive",
         onPress: async () => {
           try {
             await adminDB.deleteService(serviceId);
@@ -135,43 +126,54 @@ export default function AdminDashboard() {
   };
 
   const handleLogout = () => {
-    Alert.alert("Logout", "Tem certeza que deseja sair?", [
-      { text: "Cancelar", onPress: () => {} },
+    Alert.alert("Sair", "Tem certeza que deseja sair?", [
+      { text: "Cancelar" },
       {
         text: "Sair",
+        style: "destructive",
         onPress: async () => {
-          await logout();
-          router.replace("/admin/auth");
+          await signOut();
+          router.replace("/auth/login");
         },
       },
     ]);
   };
 
-  if (!user || user.email !== "pedroprezende33@gmail.com") {
+  if (!user || user.email !== ADMIN_EMAIL) {
     return (
-      <ScreenContainer className="flex items-center justify-center">
-        <Text className="text-lg text-foreground">Carregando...</Text>
+      <ScreenContainer className="flex-1 items-center justify-center">
+        <Text className="text-lg text-foreground">Verificando acesso...</Text>
       </ScreenContainer>
     );
   }
 
   return (
     <ScreenContainer className="flex-1">
-      <ScrollView className="flex-1">
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 32 }}>
         {/* Header */}
         <View className="bg-primary p-6 rounded-b-2xl mb-6">
-          <Text className="text-2xl font-bold text-white mb-2">
-            Painel Admin
-          </Text>
-          <Text className="text-white opacity-90">
-            Gerenciar Serviços e Comércios
-          </Text>
+          <View className="flex-row justify-between items-start">
+            <View>
+              <Text className="text-2xl font-bold text-white mb-1">
+                Painel Admin
+              </Text>
+              <Text className="text-white opacity-80 text-sm">
+                {user.name || user.email}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={handleLogout}
+              style={{ backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}
+            >
+              <Text className="text-white font-semibold text-sm">Sair</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Stats */}
         <View className="px-4 mb-6">
           <View className="bg-surface rounded-xl p-4 border border-border">
-            <Text className="text-sm text-muted mb-2">Total de Serviços</Text>
+            <Text className="text-sm text-muted mb-1">Total de Serviços</Text>
             <Text className="text-3xl font-bold text-foreground">
               {services.length}
             </Text>
@@ -186,22 +188,24 @@ export default function AdminDashboard() {
               setFormData({ name: "", category: "", description: "" });
               setShowModal(true);
             }}
-            className="bg-primary rounded-lg p-4 active:opacity-80"
+            className="bg-primary rounded-xl p-4 active:opacity-80"
           >
-            <Text className="text-white font-semibold text-center">
+            <Text className="text-white font-bold text-center text-base">
               + Criar Novo Serviço
             </Text>
           </TouchableOpacity>
         </View>
 
         {/* Services List */}
-        <View className="px-4 mb-6">
+        <View className="px-4">
           <Text className="text-lg font-bold text-foreground mb-4">
             Serviços Criados
           </Text>
           {services.length === 0 ? (
-            <View className="bg-surface rounded-lg p-6 items-center">
-              <Text className="text-muted">Nenhum serviço criado ainda</Text>
+            <View className="bg-surface rounded-xl p-8 items-center border border-border">
+              <Text className="text-muted text-center">
+                Nenhum serviço criado ainda.{"\n"}Toque em "Criar Novo Serviço" para começar.
+              </Text>
             </View>
           ) : (
             <FlatList
@@ -209,11 +213,11 @@ export default function AdminDashboard() {
               data={services}
               keyExtractor={(item) => item.id}
               renderItem={({ item }) => (
-                <View className="bg-surface rounded-lg p-4 mb-3 border border-border">
-                  <Text className="text-lg font-semibold text-foreground mb-1">
+                <View className="bg-surface rounded-xl p-4 mb-3 border border-border">
+                  <Text className="text-base font-semibold text-foreground mb-1">
                     {item.name}
                   </Text>
-                  <Text className="text-sm text-muted mb-2">
+                  <Text className="text-xs text-primary font-medium mb-2">
                     {item.category}
                   </Text>
                   <Text className="text-sm text-muted mb-3 leading-relaxed">
@@ -222,17 +226,17 @@ export default function AdminDashboard() {
                   <View className="flex-row gap-2">
                     <TouchableOpacity
                       onPress={() => handleEditService(item)}
-                      className="flex-1 bg-blue-500 rounded-lg p-2 active:opacity-80"
+                      style={{ flex: 1, backgroundColor: "#3B82F6", borderRadius: 8, padding: 8 }}
                     >
-                      <Text className="text-white font-semibold text-center">
+                      <Text style={{ color: "#fff", fontWeight: "600", textAlign: "center" }}>
                         Editar
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       onPress={() => handleDeleteService(item.id)}
-                      className="flex-1 bg-red-500 rounded-lg p-2 active:opacity-80"
+                      style={{ flex: 1, backgroundColor: "#EF4444", borderRadius: 8, padding: 8 }}
                     >
-                      <Text className="text-white font-semibold text-center">
+                      <Text style={{ color: "#fff", fontWeight: "600", textAlign: "center" }}>
                         Deletar
                       </Text>
                     </TouchableOpacity>
@@ -242,79 +246,61 @@ export default function AdminDashboard() {
             />
           )}
         </View>
-
-        {/* Logout Button */}
-        <View className="px-4 mb-6">
-          <TouchableOpacity
-            onPress={handleLogout}
-            className="bg-red-500 rounded-lg p-4 active:opacity-80"
-          >
-            <Text className="text-white font-semibold text-center">Logout</Text>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
 
-      {/* Modal */}
+      {/* Modal de Criar/Editar */}
       <Modal
         visible={showModal}
         transparent
         animationType="slide"
         onRequestClose={() => setShowModal(false)}
       >
-        <View className="flex-1 bg-black/50 justify-end">
-          <View className="bg-background rounded-t-3xl p-6 pb-10">
-            <Text className="text-xl font-bold text-foreground mb-4">
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+          <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 }}>
+            <Text style={{ fontSize: 18, fontWeight: "bold", color: "#11181C", marginBottom: 16 }}>
               {editingService ? "Editar Serviço" : "Criar Novo Serviço"}
             </Text>
 
             <TextInput
               placeholder="Nome do Serviço"
               value={formData.name}
-              onChangeText={(text) =>
-                setFormData({ ...formData, name: text })
-              }
-              className="bg-surface border border-border rounded-lg p-3 mb-3 text-foreground"
-              placeholderTextColor="#999"
+              onChangeText={(text) => setFormData({ ...formData, name: text })}
+              style={{ backgroundColor: "#f5f5f5", borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 10, padding: 12, marginBottom: 12, fontSize: 14, color: "#11181C" }}
+              placeholderTextColor="#9BA1A6"
             />
 
             <TextInput
-              placeholder="Categoria"
+              placeholder="Categoria (ex: Eletricista, Diarista)"
               value={formData.category}
-              onChangeText={(text) =>
-                setFormData({ ...formData, category: text })
-              }
-              className="bg-surface border border-border rounded-lg p-3 mb-3 text-foreground"
-              placeholderTextColor="#999"
+              onChangeText={(text) => setFormData({ ...formData, category: text })}
+              style={{ backgroundColor: "#f5f5f5", borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 10, padding: 12, marginBottom: 12, fontSize: 14, color: "#11181C" }}
+              placeholderTextColor="#9BA1A6"
             />
 
             <TextInput
-              placeholder="Descrição"
+              placeholder="Descrição do serviço"
               value={formData.description}
-              onChangeText={(text) =>
-                setFormData({ ...formData, description: text })
-              }
+              onChangeText={(text) => setFormData({ ...formData, description: text })}
               multiline
               numberOfLines={4}
-              className="bg-surface border border-border rounded-lg p-3 mb-4 text-foreground"
-              placeholderTextColor="#999"
+              style={{ backgroundColor: "#f5f5f5", borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 10, padding: 12, marginBottom: 16, fontSize: 14, color: "#11181C", minHeight: 80, textAlignVertical: "top" }}
+              placeholderTextColor="#9BA1A6"
             />
 
-            <View className="flex-row gap-2">
+            <View style={{ flexDirection: "row", gap: 8 }}>
               <TouchableOpacity
                 onPress={() => setShowModal(false)}
-                className="flex-1 bg-gray-500 rounded-lg p-3 active:opacity-80"
+                style={{ flex: 1, backgroundColor: "#6B7280", borderRadius: 10, padding: 12 }}
               >
-                <Text className="text-white font-semibold text-center">
+                <Text style={{ color: "#fff", fontWeight: "600", textAlign: "center" }}>
                   Cancelar
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={
-                  editingService ? handleUpdateService : handleCreateService
-                }
-                className="flex-1 bg-primary rounded-lg p-3 active:opacity-80"
+                onPress={editingService ? handleUpdateService : handleCreateService}
+                style={{ flex: 1, backgroundColor: "#0a7ea4", borderRadius: 10, padding: 12 }}
               >
-                <Text className="text-white font-semibold text-center">
+                <Text style={{ color: "#fff", fontWeight: "600", textAlign: "center" }}>
                   {editingService ? "Atualizar" : "Criar"}
                 </Text>
               </TouchableOpacity>
