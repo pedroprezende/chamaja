@@ -20,6 +20,7 @@ const MENU_ITEMS = [
   { id: "address", label: "Meu endereço", icon: "location-on" },
   { id: "help", label: "Ajuda e suporte", icon: "help-outline" },
   { id: "about", label: "Sobre o ChamaJá", icon: "info-outline" },
+  { id: "admin", label: "Painel Admin", icon: "admin-panel-settings" },
 ];
 
 export default function ProfileScreen() {
@@ -39,6 +40,13 @@ export default function ProfileScreen() {
       },
     ]);
   };
+
+  const handleMenuPress = (itemId: string) => {
+    if (itemId === "admin") {
+      router.push("/admin" as any);
+    }
+  };
+
   return (
     <ScreenContainer containerClassName="bg-[#F5F5F5]" className="">
       {/* Header */}
@@ -100,17 +108,35 @@ export default function ProfileScreen() {
                 styles.menuItem,
                 index < MENU_ITEMS.length - 1 && styles.menuItemBorder,
                 pressed && { backgroundColor: "#F9FAFB" },
+                item.id === "admin" && styles.adminMenuItem,
               ]}
+              onPress={() => handleMenuPress(item.id)}
             >
-              <View style={styles.menuIcon}>
+              <View
+                style={[
+                  styles.menuIcon,
+                  item.id === "admin" && styles.adminMenuIcon,
+                ]}
+              >
                 <MaterialIcons
                   name={item.icon as any}
                   size={20}
-                  color="#6B7280"
+                  color={item.id === "admin" ? "#2563EB" : "#6B7280"}
                 />
               </View>
-              <Text style={styles.menuLabel}>{item.label}</Text>
-              <MaterialIcons name="chevron-right" size={20} color="#D1D5DB" />
+              <Text
+                style={[
+                  styles.menuLabel,
+                  item.id === "admin" && styles.adminMenuLabel,
+                ]}
+              >
+                {item.label}
+              </Text>
+              <MaterialIcons
+                name="chevron-right"
+                size={20}
+                color="#D1D5DB"
+              />
             </Pressable>
           ))}
         </View>
@@ -285,5 +311,15 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     color: "#EF4444",
+  },
+  adminMenuItem: {
+    backgroundColor: "#EFF6FF",
+  },
+  adminMenuIcon: {
+    backgroundColor: "#DBEAFE",
+  },
+  adminMenuLabel: {
+    color: "#2563EB",
+    fontWeight: "600",
   },
 });

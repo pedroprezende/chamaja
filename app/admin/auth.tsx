@@ -41,7 +41,7 @@ export default function AdminAuthScreen() {
       } else {
         await register(email, password, name);
       }
-      router.replace("/admin/dashboard");
+      router.replace("/admin/dashboard-funcional");
     } catch (err) {
       Alert.alert(
         "Erro",

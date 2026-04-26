@@ -11,9 +11,12 @@ export default function AdminLayout() {
             headerShown: false,
           }}
         >
+          <Stack.Screen name="index" />
+          <Stack.Screen name="auth" />
           <Stack.Screen name="login-real" />
           <Stack.Screen name="login" />
           <Stack.Screen name="dashboard" />
+          <Stack.Screen name="dashboard-funcional" />
           <Stack.Screen name="users" />
           <Stack.Screen name="professionals" />
           <Stack.Screen name="locations" />
