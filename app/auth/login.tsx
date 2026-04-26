@@ -111,7 +111,7 @@ export default function LoginScreen() {
             disabled={isLoading}
           >
             <MaterialIcons name="apple" size={20} color="#FFFFFF" />
-            <Text style={styles.oauthText}>Continuar com Apple</Text>
+            <Text style={[styles.oauthText, styles.appleButtonText]}>Continuar com Apple</Text>
           </Pressable>
         </View>
 
@@ -221,6 +221,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     color: "#111827",
+  },
+  appleButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
   dividerContainer: {
     flexDirection: "row",

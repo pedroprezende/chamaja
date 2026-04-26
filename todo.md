@@ -93,3 +93,30 @@
 - [x] Seção de relatórios (receita, usuários ativos, prestadores premium)
 - [x] Implementar busca e filtros em todas as seções
 - [x] Testar fluxo completo do painel
+
+
+## Edição de Perfil e Autenticação de E-mail (Novo)
+
+- [x] Corrigir visibilidade do botão Apple no login
+- [x] Criar tela de edição de perfil do usuário
+- [x] Implementar autenticação de e-mail com código de verificação
+- [x] Permitir alterar nome, foto e dados pessoais
+- [x] Salvar alterações no banco de dados
+
+## Banco de Dados (Novo)
+
+- [x] Criar schema de usuários (id, name, email, phone, avatar, createdAt)
+- [x] Criar schema de comércios/locais (id, name, city, address, coordinates)
+- [x] Criar schema de prestadores (id, name, category, city, avatar, type)
+- [x] Migrar dados mock para banco de dados real
+- [x] Implementar CRUD para usuários
+- [x] Implementar CRUD para comércios
+
+## Painel Admin - Gerenciamento de Locais (Novo)
+
+- [x] Criar tela de listagem de locais/cidades
+- [x] Implementar adicionar novo local
+- [x] Implementar editar local existente
+- [x] Implementar deletar local
+- [x] Adicionar busca e filtros de locais
+- [x] Exibir estatísticas de prestadores por local

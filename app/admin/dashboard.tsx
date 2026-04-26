@@ -86,6 +86,13 @@ export default function AdminDashboardScreen() {
       color: "#8B5CF6",
     },
     {
+      id: "locations",
+      title: "Gerenciar Locais",
+      icon: "location-on",
+      route: "/admin/locations",
+      color: "#EC4899",
+    },
+    {
       id: "payments",
       title: "Pagamentos",
       icon: "payment",

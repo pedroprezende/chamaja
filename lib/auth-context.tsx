@@ -7,6 +7,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  phone?: string;
   avatar?: string;
   provider: AuthProvider;
   createdAt: string;

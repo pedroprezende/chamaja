@@ -13,6 +13,7 @@ export default function AdminLayout() {
         <Stack.Screen name="dashboard" />
         <Stack.Screen name="users" />
         <Stack.Screen name="professionals" />
+        <Stack.Screen name="locations" />
         <Stack.Screen name="payments" />
       </Stack>
     </AdminProvider>

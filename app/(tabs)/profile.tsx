@@ -65,7 +65,10 @@ export default function ProfileScreen() {
             <Text style={styles.userEmail}>{user?.email}</Text>
             <Text style={styles.userPhone}>{user?.provider}</Text>
           </View>
-          <Pressable style={styles.editBtn}>
+          <Pressable
+            style={({ pressed }) => [styles.editBtn, pressed && { opacity: 0.6 }]}
+            onPress={() => router.push("/edit-profile" as any)}
+          >
             <MaterialIcons name="edit" size={18} color="#25D366" />
           </Pressable>
         </View>
