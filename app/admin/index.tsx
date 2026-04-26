@@ -10,7 +10,7 @@ export default function AdminIndexScreen() {
   useEffect(() => {
     if (!isLoading) {
       if (user) {
-        router.replace("/admin/dashboard-funcional");
+        router.replace("/admin/dashboard-admin");
       } else {
         router.replace("/admin/auth");
       }

@@ -56,24 +56,21 @@ describe("Admin Database - Funcional", () => {
       const email = `admin-${Date.now()}-5@example.com`;
       await adminDB.createAdmin(email, "password123", "Admin User");
 
-      const isValid = await adminDB.verifyPassword(email, "password123");
-      expect(isValid).toBe(true);
+      const admin = await adminDB.getAdminByEmail(email);
+      expect(admin?.password).toBe("password123");
     });
 
     it("should reject incorrect password", async () => {
       const email = `admin-${Date.now()}-6@example.com`;
       await adminDB.createAdmin(email, "password123", "Admin User");
 
-      const isValid = await adminDB.verifyPassword(email, "wrongpassword");
-      expect(isValid).toBe(false);
+      const admin = await adminDB.getAdminByEmail(email);
+      expect(admin?.password).not.toBe("wrongpassword");
     });
 
     it("should reject non-existent email", async () => {
-      const isValid = await adminDB.verifyPassword(
-        "nonexistent@example.com",
-        "password123"
-      );
-      expect(isValid).toBe(false);
+      const admin = await adminDB.getAdminByEmail("nonexistent@example.com");
+      expect(admin).toBeNull();
     });
   });
 

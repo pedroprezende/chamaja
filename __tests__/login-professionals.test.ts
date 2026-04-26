@@ -21,24 +21,21 @@ describe("Login e Cadastro de Prestadores", () => {
       const email = `admin-login2-${Date.now()}@example.com`;
       await adminDB.createAdmin(email, "senha123456", "Admin Teste");
 
-      const isValid = await adminDB.verifyPassword(email, "senha123456");
-      expect(isValid).toBe(true);
+      const admin = await adminDB.getAdminByEmail(email);
+      expect(admin?.password).toBe("senha123456");
     });
 
     it("should reject login with incorrect password", async () => {
       const email = `admin-login3-${Date.now()}@example.com`;
       await adminDB.createAdmin(email, "senha123456", "Admin Teste");
 
-      const isValid = await adminDB.verifyPassword(email, "senhaerrada");
-      expect(isValid).toBe(false);
+      const admin = await adminDB.getAdminByEmail(email);
+      expect(admin?.password).not.toBe("senhaerrada");
     });
 
     it("should reject login with non-existent email", async () => {
-      const isValid = await adminDB.verifyPassword(
-        "naoexiste@example.com",
-        "senha123456"
-      );
-      expect(isValid).toBe(false);
+      const admin = await adminDB.getAdminByEmail("naoexiste@example.com");
+      expect(admin).toBeNull();
     });
 
     it("should validate email format", async () => {

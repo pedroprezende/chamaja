@@ -17,6 +17,7 @@ export default function AdminLayout() {
           <Stack.Screen name="login" />
           <Stack.Screen name="dashboard" />
           <Stack.Screen name="dashboard-funcional" />
+          <Stack.Screen name="dashboard-admin" />
           <Stack.Screen name="users" />
           <Stack.Screen name="professionals" />
           <Stack.Screen name="locations" />

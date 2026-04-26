@@ -3,11 +3,14 @@
  * Gerencia contas de admin, serviços e permissões
  */
 
+export type UserRole = "ADMIN" | "CONTRACTOR";
+
 export interface AdminAccount {
   id: string;
   email: string;
-  password: string; // Em produção, usar hash bcrypt
+  password: string;
   name: string;
+  role: UserRole;
   createdAt: string;
   updatedAt: string;
   isActive: boolean;
@@ -42,6 +45,7 @@ const initializeAdminDatabase = () => {
       email: "pedroprezende33@gmail.com",
       password: "3404001#Sayajins",
       name: "Pedro Prezende",
+      role: "ADMIN",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       isActive: true,
@@ -59,7 +63,8 @@ export const adminDB = {
   createAdmin: async (
     email: string,
     password: string,
-    name: string
+    name: string,
+    role: UserRole = "CONTRACTOR"
   ): Promise<AdminAccount> => {
     // Verificar se email já existe
     const existingAdmin = Array.from(adminDatabase.admins.values()).find(
@@ -69,12 +74,18 @@ export const adminDB = {
       throw new Error("E-mail já cadastrado");
     }
 
+    // Apenas o admin principal pode criar outros admins
+    if (role === "ADMIN" && email !== "pedroprezende33@gmail.com") {
+      throw new Error("Apenas o admin principal pode criar outros admins");
+    }
+
     const id = `admin-${Date.now()}`;
     const admin: AdminAccount = {
       id,
       email,
-      password, // Em produção, usar bcrypt.hash()
+      password,
       name,
+      role,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       isActive: true,
@@ -98,13 +109,17 @@ export const adminDB = {
   updateAdmin: async (
     id: string,
     updates: Partial<AdminAccount>
-  ): Promise<AdminAccount | null> => {
+  ): Promise<AdminAccount> => {
     const admin = adminDatabase.admins.get(id);
-    if (!admin) return null;
+    if (!admin) {
+      throw new Error("Admin não encontrado");
+    }
 
-    const updated = {
+    const updated: AdminAccount = {
       ...admin,
       ...updates,
+      id: admin.id,
+      createdAt: admin.createdAt,
       updatedAt: new Date().toISOString(),
     };
 
@@ -112,11 +127,12 @@ export const adminDB = {
     return updated;
   },
 
-  verifyPassword: async (email: string, password: string): Promise<boolean> => {
-    const admin = await adminDB.getAdminByEmail(email);
-    if (!admin) return false;
-    // Em produção, usar bcrypt.compare()
-    return admin.password === password;
+  deleteAdmin: async (id: string): Promise<void> => {
+    adminDatabase.admins.delete(id);
+  },
+
+  getAllAdmins: async (): Promise<AdminAccount[]> => {
+    return Array.from(adminDatabase.admins.values());
   },
 
   // Service operations
@@ -144,26 +160,31 @@ export const adminDB = {
     return service;
   },
 
+  getServiceById: async (id: string): Promise<Service | null> => {
+    return adminDatabase.services.get(id) || null;
+  },
+
   getServicesByAdminId: async (adminId: string): Promise<Service[]> => {
     return Array.from(adminDatabase.services.values()).filter(
       (s) => s.adminId === adminId
     );
   },
 
-  getServiceById: async (id: string): Promise<Service | null> => {
-    return adminDatabase.services.get(id) || null;
-  },
-
   updateService: async (
     id: string,
     updates: Partial<Service>
-  ): Promise<Service | null> => {
+  ): Promise<Service> => {
     const service = adminDatabase.services.get(id);
-    if (!service) return null;
+    if (!service) {
+      throw new Error("Serviço não encontrado");
+    }
 
-    const updated = {
+    const updated: Service = {
       ...service,
       ...updates,
+      id: service.id,
+      adminId: service.adminId,
+      createdAt: service.createdAt,
       updatedAt: new Date().toISOString(),
     };
 
@@ -171,11 +192,32 @@ export const adminDB = {
     return updated;
   },
 
-  deleteService: async (id: string): Promise<boolean> => {
-    return adminDatabase.services.delete(id);
+  deleteService: async (id: string): Promise<void> => {
+    adminDatabase.services.delete(id);
   },
 
   getAllServices: async (): Promise<Service[]> => {
     return Array.from(adminDatabase.services.values());
+  },
+
+  // Verificar permissão
+  canManageService: async (
+    userId: string,
+    serviceId: string
+  ): Promise<boolean> => {
+    const user = await adminDB.getAdminById(userId);
+    if (!user) return false;
+
+    // Admin pode gerenciar todos os serviços
+    if (user.role === "ADMIN") return true;
+
+    // Contratante só pode gerenciar seus próprios serviços
+    const service = await adminDB.getServiceById(serviceId);
+    return service?.adminId === userId;
+  },
+
+  // Verificar se é admin principal
+  isMainAdmin: async (email: string): Promise<boolean> => {
+    return email === "pedroprezende33@gmail.com";
   },
 };

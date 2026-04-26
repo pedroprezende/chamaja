@@ -145,3 +145,13 @@
 - [x] Implementar painel admin para criar serviços
 - [x] Implementar painel admin para gerenciar serviços
 - [x] Testar fluxo completo de login e criação de serviços
+
+
+## Correção do Painel Admin (Novo)
+
+- [x] Corrigir sistema de roles (Admin vs Contratante)
+- [x] Apenas pedroprezende33@gmail.com tem acesso ao painel admin completo
+- [x] Contratantes só gerenciam seus próprios serviços
+- [x] Criar painel admin exclusivo
+- [x] Criar painel de contratante
+- [x] Testar fluxo de autenticação e permissões

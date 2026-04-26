@@ -26,14 +26,12 @@ export function AdminAuthRealProvider({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Verificar se há sessão salva ao inicializar
   useEffect(() => {
     const checkSession = async () => {
       try {
         const savedUser = await AsyncStorage.getItem("@admin_user_real");
         if (savedUser) {
           const parsedUser = JSON.parse(savedUser);
-          // Verificar se a sessão ainda é válida
           const adminUser = await adminDB.getAdminById(parsedUser.id);
           if (adminUser) {
             setUser(adminUser);
@@ -52,98 +50,67 @@ export function AdminAuthRealProvider({
   }, []);
 
   const login = async (email: string, password: string) => {
-    setIsLoading(true);
     setError(null);
-
     try {
-      // Validar campos
-      if (!email || !password) {
-        throw new Error("E-mail e senha são obrigatórios");
-      }
-
-      // Verificar credenciais
-      const isValid = await adminDB.verifyPassword(email, password);
-      if (!isValid) {
-        throw new Error("E-mail ou senha incorretos");
-      }
-
-      // Buscar admin
       const adminUser = await adminDB.getAdminByEmail(email);
       if (!adminUser) {
-        throw new Error("Usuário não encontrado");
+        throw new Error("E-mail não encontrado");
       }
-
-      // Salvar sessão
-      await AsyncStorage.setItem("@admin_user_real", JSON.stringify(adminUser));
+      if (adminUser.password !== password) {
+        throw new Error("Senha incorreta");
+      }
       setUser(adminUser);
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Erro ao fazer login";
+      await AsyncStorage.setItem("@admin_user_real", JSON.stringify(adminUser));
+    } catch (err: any) {
+      const errorMessage = err.message || "Falha ao fazer login";
       setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
-      setIsLoading(false);
+      throw err;
     }
   };
 
-  const register = async (email: string, password: string, name: string) => {
-    setIsLoading(true);
+  const register = async (
+    email: string,
+    password: string,
+    name: string
+  ) => {
     setError(null);
-
     try {
-      // Validar campos
-      if (!email || !password || !name) {
-        throw new Error("Todos os campos são obrigatórios");
-      }
-
-      if (password.length < 6) {
-        throw new Error("Senha deve ter no mínimo 6 caracteres");
-      }
-
-      if (!email.includes("@")) {
-        throw new Error("E-mail inválido");
-      }
-
-      // Criar admin
-      const newAdmin = await adminDB.createAdmin(email, password, name);
-
-      // Salvar sessão
-      await AsyncStorage.setItem("@admin_user_real", JSON.stringify(newAdmin));
-      setUser(newAdmin);
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Erro ao registrar";
+      const adminUser = await adminDB.createAdmin(email, password, name);
+      setUser(adminUser);
+      await AsyncStorage.setItem("@admin_user_real", JSON.stringify(adminUser));
+    } catch (err: any) {
+      const errorMessage = err.message || "Falha ao registrar";
       setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
-      setIsLoading(false);
+      throw err;
     }
   };
 
   const logout = async () => {
     try {
-      await AsyncStorage.removeItem("@admin_user_real");
       setUser(null);
+      await AsyncStorage.removeItem("@admin_user_real");
     } catch (err) {
       console.error("Erro ao fazer logout:", err);
     }
   };
 
-  const clearError = () => setError(null);
+  const clearError = () => {
+    setError(null);
+  };
+
+  const value: AdminAuthContextType = {
+    user,
+    isLoading,
+    isAuthenticated: !!user,
+    login,
+    register,
+    logout,
+    error,
+    clearError,
+  };
 
   return (
-    <AdminAuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        isAuthenticated: !!user,
-        login,
-        register,
-        logout,
-        error,
-        clearError,
-      }}
-    >
+    <AdminAuthContext.Provider value={value}>
       {children}
     </AdminAuthContext.Provider>
   );
@@ -151,7 +118,7 @@ export function AdminAuthRealProvider({
 
 export function useAdminAuthReal() {
   const context = useContext(AdminAuthContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error(
       "useAdminAuthReal deve ser usado dentro de AdminAuthRealProvider"
     );
