@@ -144,9 +144,18 @@ export default function ProfessionalsScreen() {
           />
         )}
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <MaterialIcons name="search-off" size={48} color="#D1D5DB" />
-            <Text style={styles.emptyText}>Nenhum profissional encontrado</Text>
+          <View style={styles.comingSoon}>
+            <View style={styles.comingSoonIconWrapper}>
+              <MaterialIcons name="schedule" size={48} color="#25D366" />
+            </View>
+            <Text style={styles.comingSoonTitle}>Em breve</Text>
+            <Text style={styles.comingSoonSubtitle}>
+              {`Estamos adicionando profissionais nesta categoria.\nVolte em breve!`}
+            </Text>
+            <View style={styles.comingSoonBadge}>
+              <MaterialIcons name="notifications-active" size={14} color="#25D366" />
+              <Text style={styles.comingSoonBadgeText}>Novidades chegando</Text>
+            </View>
           </View>
         }
       />
@@ -331,5 +340,52 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 15,
     color: "#9CA3AF",
+  },
+  comingSoon: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 80,
+    paddingHorizontal: 32,
+    gap: 16,
+  },
+  comingSoonIconWrapper: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: "#F0FDF4",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#BBF7D0",
+  },
+  comingSoonTitle: {
+    fontSize: 26,
+    fontWeight: "800",
+    color: "#111827",
+    letterSpacing: -0.5,
+  },
+  comingSoonSubtitle: {
+    fontSize: 15,
+    color: "#6B7280",
+    textAlign: "center",
+    lineHeight: 22,
+  },
+  comingSoonBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#F0FDF4",
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: "#BBF7D0",
+    marginTop: 4,
+  },
+  comingSoonBadgeText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#25D366",
   },
 });

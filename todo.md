@@ -240,3 +240,7 @@
 ## Correções Críticas Admin (27/04 - v2)
 - [x] Corrigir logout do painel admin (definitivo) — usa signOut() do AuthContext
 - [x] Corrigir seletor de categoria no painel admin — dropdown inline sem Modal aninhado
+
+## Card "Em breve" automático (27/04)
+- [x] Exibir card "Em breve" em categorias sem prestadores cadastrados
+- [x] Ocultar "Em breve" automaticamente quando um prestador for adicionado (baseado nos dados reais)
