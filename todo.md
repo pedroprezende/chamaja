@@ -214,3 +214,11 @@
 - [x] Seletor de categoria no modal de serviço (categorias existentes do app)
 - [x] Toggle "Exibir na Home" por serviço no painel admin
 - [x] Home filtra apenas serviços marcados como visíveis
+
+## Expansão de Categorias e Serviços
+
+- [x] Implementar 13 categorias: Reformas, Assistência Técnica, Domésticos, Externos, Automotivo, Beleza, Profissionais, Saúde, Eventos, Logística, Educação, Comércios, Mobilidade
+- [x] Implementar ~80 serviços distribuídos nas categorias
+- [x] Atualizar Home com chips de todas as categorias
+- [x] Atualizar tela de listagem por categoria
+- [x] Atualizar seletor de categorias no painel admin

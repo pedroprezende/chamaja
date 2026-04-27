@@ -15,14 +15,18 @@ import { ScreenContainer } from "@/components/screen-container";
 import { services, categories } from "@/data/mock";
 
 const POPULAR = [
-  { id: "eletricista", name: "Eletricista", icon: "bolt" },
-  { id: "diarista", name: "Diarista", icon: "cleaning-services" },
-  { id: "ar-condicionado", name: "Ar condicionado", icon: "ac-unit" },
-  { id: "marido-aluguel", name: "Marido de aluguel", icon: "build" },
-  { id: "cozinheira", name: "Cozinheira", icon: "restaurant" },
-  { id: "jardineiro", name: "Jardineiro", icon: "grass" },
-  { id: "celular", name: "Celular", icon: "phone-android" },
-  { id: "baba", name: "Babá", icon: "child-care" },
+  { id: "eletricista",       name: "Eletricista",       icon: "bolt" },
+  { id: "diarista",         name: "Diarista",           icon: "cleaning-services" },
+  { id: "ar-condicionado",  name: "Ar-condicionado",    icon: "ac-unit" },
+  { id: "marido-aluguel",   name: "Marido de aluguel",  icon: "build" },
+  { id: "cozinheira",       name: "Cozinheira",         icon: "restaurant" },
+  { id: "jardineiro",       name: "Jardineiro",         icon: "grass" },
+  { id: "conserto-celular", name: "Conserto de celular",icon: "phone-android" },
+  { id: "baba",             name: "Babá",               icon: "child-care" },
+  { id: "barbeiro",         name: "Barbeiro",           icon: "content-cut" },
+  { id: "mecanico",         name: "Mecânico",           icon: "directions-car" },
+  { id: "fotografo",        name: "Fotógrafo",          icon: "camera-alt" },
+  { id: "personal-trainer", name: "Personal trainer",   icon: "fitness-center" },
 ];
 
 export default function SearchScreen() {

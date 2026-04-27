@@ -213,6 +213,7 @@ export default function ProfessionalDetailScreen() {
             userAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&q=80",
             rating,
             comment,
+            createdAt: new Date().toISOString().split("T")[0],
           });
           setShowReviewModal(false);
           Alert.alert("Sucesso", "Sua avaliação foi registrada!");

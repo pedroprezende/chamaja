@@ -18,11 +18,19 @@ import { useAdminServices } from "@/hooks/use-admin-services";
 import { useAuth } from "@/lib/auth-context";
 
 const CATEGORY_ICONS: Record<string, string> = {
-  "assistencia-tecnica": "settings",
-  "reformas-reparos": "build",
-  "eventos": "celebration",
-  "servicos-domesticos": "home",
-  "aulas": "school",
+  "reformas-reparos":       "build",
+  "assistencia-tecnica":    "settings",
+  "servicos-domesticos":    "home",
+  "servicos-externos":      "yard",
+  "automotivo":             "directions-car",
+  "beleza-estetica":        "content-cut",
+  "servicos-profissionais": "business-center",
+  "saude":                  "local-hospital",
+  "eventos":                "celebration",
+  "logistica":              "local-shipping",
+  "educacao":               "school",
+  "comercios":              "storefront",
+  "mobilidade":             "commute",
 };
 
 const ADMIN_CATEGORY_ICONS: Record<string, string> = {
