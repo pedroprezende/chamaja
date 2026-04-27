@@ -266,3 +266,9 @@
 ## Correções Status Bar e Sino (27/04)
 - [x] Corrigir sino de notificações na Home (adicionado onPress + badge real do NotificationsContext)
 - [x] Ajustar status bar para ícones do sistema visíveis sobre fundo branco (style="dark", translucent=false)
+
+## Edição de Serviços Admin (27/04)
+- [x] Editar nome dos serviços existentes no gerenciador admin (mock e admin)
+- [x] Editar foto dos serviços existentes via galeria no gerenciador admin
+- [x] Editar categoria dos serviços existentes no gerenciador admin
+- [x] Modal de edição funcional para serviços novos e existentes (dropdown inline, sem Modal aninhado)
