@@ -9,6 +9,8 @@ import { Platform } from "react-native";
 import "@/lib/_core/nativewind-pressable";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
+import { ProviderContextProvider } from "@/lib/provider-context";
+import { FavoritesProvider } from "@/lib/favorites-context";
 import {
   SafeAreaFrameContext,
   SafeAreaInsetsContext,
@@ -54,6 +56,12 @@ function RootLayoutNav() {
       <Stack.Screen name="admin" />
       <Stack.Screen name="admin/dashboard-funcional" />
       <Stack.Screen name="admin/locations" />
+      <Stack.Screen name="become-provider" />
+      <Stack.Screen name="provider-dashboard" />
+      <Stack.Screen name="favorites" />
+      <Stack.Screen name="orders-history" />
+      <Stack.Screen name="notifications" />
+      <Stack.Screen name="admin-services/[serviceId]" />
     </Stack>
   );
 }
@@ -115,8 +123,12 @@ export default function RootLayout() {
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            <RootLayoutNav />
-            <StatusBar style="auto" />
+            <ProviderContextProvider>
+              <FavoritesProvider>
+                <RootLayoutNav />
+                <StatusBar style="auto" />
+              </FavoritesProvider>
+            </ProviderContextProvider>
           </AuthProvider>
         </QueryClientProvider>
       </trpc.Provider>

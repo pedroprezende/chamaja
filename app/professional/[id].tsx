@@ -16,12 +16,15 @@ import { useState } from "react";
 
 import { getProfessionalById, addReview } from "@/data/mock";
 import { LeaveReviewModal } from "@/components/leave-review-modal";
+import { useFavorites } from "@/lib/favorites-context";
 
-function openWhatsApp(phone: string) {
+function openWhatsApp(phone: string, name: string) {
+  const cleaned = phone.replace(/\D/g, "");
+  const number = cleaned.startsWith("55") ? cleaned : `55${cleaned}`;
   const message = encodeURIComponent(
-    "Olá, encontrei seu contato no app ChamaJá e gostaria de um serviço."
+    `Olá ${name}, encontrei seu perfil no ChamaJá e gostaria de solicitar um orçamento.`
   );
-  const url = `https://wa.me/${phone}?text=${message}`;
+  const url = `https://wa.me/${number}?text=${message}`;
   Linking.openURL(url).catch(() =>
     Alert.alert("Erro", "Não foi possível abrir o WhatsApp.")
   );
@@ -32,8 +35,10 @@ export default function ProfessionalDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const { isFavorite, toggleFavorite, addOrder } = useFavorites();
 
   const professional = id ? getProfessionalById(id) : undefined;
+  const favored = professional ? isFavorite(professional.id) : false;
 
   if (!professional) {
     return (
@@ -61,6 +66,21 @@ export default function ProfessionalDetailScreen() {
           <MaterialIcons name="arrow-back" size={24} color="#111827" />
         </Pressable>
         <View style={{ flex: 1 }} />
+        <Pressable
+          style={({ pressed }) => [styles.shareBtn, pressed && { opacity: 0.6 }]}
+          onPress={() => professional && toggleFavorite({
+            id: professional.id,
+            name: professional.name,
+            category: professional.category,
+            city: professional.city,
+            avatar: professional.avatar,
+            rating: professional.rating,
+            phone: professional.phone,
+            type: (professional.type?.toLowerCase() as "free" | "premium") ?? "free",
+          })}
+        >
+          <MaterialIcons name={favored ? "favorite" : "favorite-border"} size={22} color={favored ? "#EF4444" : "#111827"} />
+        </Pressable>
         <Pressable
           style={({ pressed }) => [styles.shareBtn, pressed && { opacity: 0.6 }]}
           onPress={() =>
@@ -166,7 +186,16 @@ export default function ProfessionalDetailScreen() {
             styles.whatsappButton,
             pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
           ]}
-          onPress={() => openWhatsApp(professional.phone)}
+          onPress={() => {
+            openWhatsApp(professional.phone, professional.name);
+            addOrder({
+              professionalId: professional.id,
+              professionalName: professional.name,
+              category: professional.category,
+              avatar: professional.avatar,
+              phone: professional.phone,
+            });
+          }}
         >
           <MaterialIcons name="chat" size={22} color="#FFFFFF" />
           <Text style={styles.whatsappButtonText}>Chamar no WhatsApp</Text>

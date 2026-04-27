@@ -176,3 +176,34 @@
 - [x] Exibir seção "Serviços Disponíveis" na Home com cards clicáveis dos serviços admin
 - [x] Exibir imagem de capa ou ícone dinâmico por categoria nos cards da Home
 - [x] Navegar para tela de detalhe ao tocar no card de serviço admin
+
+## Correção Logout Admin + Funcionalidades Completas (Novo)
+
+- [ ] Corrigir logout do painel admin de forma definitiva
+- [ ] Implementar sistema de prestadores com plano R$10/mês e R$99,90/ano
+- [ ] Tela de adesão ao plano de prestador (para usuários não-prestadores)
+- [ ] Dashboard do prestador: listar, adicionar, editar e remover próprios serviços
+- [ ] Busca funcional com filtro por categoria e nome
+- [ ] Favoritos: salvar/remover profissionais favoritos
+- [ ] Pedidos: histórico de contatos/solicitações
+- [ ] Notificações: lista de notificações do app
+- [ ] WhatsApp: abrir app real com mensagem pré-definida
+- [ ] Perfil: exibir dados reais do usuário logado
+- [ ] Persistência de dados com AsyncStorage
+
+## Atualização — Funcionalidades Completas (Novo)
+
+- [x] Corrigir logout do painel admin (lê AsyncStorage diretamente, sem depender do contexto React)
+- [x] Criar ProviderContextProvider com persistência via AsyncStorage
+- [x] Tela become-provider: escolha de plano (R$10/mês ou R$99,90/ano), formulário completo, confirmação de pagamento, tela de sucesso
+- [x] Tela provider-dashboard: perfil do prestador, plano ativo, estatísticas, CRUD de serviços com imagem
+- [x] Criar FavoritesProvider com persistência de favoritos e histórico de pedidos
+- [x] Botão de favorito no detalhe do profissional (coração vermelho/vazio)
+- [x] WhatsApp real com número formatado e mensagem personalizada
+- [x] Registro automático de pedido ao clicar em WhatsApp
+- [x] Tela favorites.tsx: lista de favoritos com WhatsApp e remoção
+- [x] Tela orders-history.tsx: histórico real de contatos com status
+- [x] Tela notifications.tsx: notificações com marcação de lida
+- [x] Perfil atualizado: dados reais do usuário, badges de prestador/admin, stats reais (pedidos, favoritos, serviços)
+- [x] Menu do perfil: "Seja um prestador" ou "Minha área" conforme status
+- [x] Registrar todas as novas rotas no _layout.tsx
