@@ -315,9 +315,16 @@ export default function AdminDashboard() {
       {/* Stats bar */}
       <View style={styles.statsBar}>
         <MaterialIcons name="admin-panel-settings" size={15} color="#25D366" />
-        <Text style={styles.statsText}>
+        <Text style={[styles.statsText, { flex: 1 }]}>
           Logado como <Text style={{ fontWeight: "700" }}>{userName}</Text>
         </Text>
+        <Pressable
+          style={({ pressed }) => [styles.adsNavBtn, pressed && { opacity: 0.75 }]}
+          onPress={() => router.push("/admin/ads" as any)}
+        >
+          <MaterialIcons name="campaign" size={15} color="#1A73E8" />
+          <Text style={styles.adsNavText}>Anúncios</Text>
+        </Pressable>
       </View>
 
       {/* List */}
@@ -714,4 +721,11 @@ const styles = StyleSheet.create({
   pickerItemIconSelected: { backgroundColor: "#25D366" },
   pickerItemText: { flex: 1, fontSize: 15, color: "#374151", fontWeight: "500" },
   pickerItemTextSelected: { color: "#111827", fontWeight: "700" },
+  adsNavBtn: {
+    flexDirection: "row", alignItems: "center", gap: 4,
+    backgroundColor: "#EFF6FF", borderRadius: 8,
+    paddingHorizontal: 10, paddingVertical: 5,
+    borderWidth: 1, borderColor: "#BFDBFE",
+  },
+  adsNavText: { fontSize: 12, fontWeight: "700", color: "#1A73E8" },
 });

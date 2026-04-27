@@ -13,8 +13,10 @@ import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 
 import { ScreenContainer } from "@/components/screen-container";
-import { categories, sections, getSectionServices, getProfessionalsByRanking } from "@/data/mock";
+import { AdsCarousel } from "@/components/ads-carousel";
+import { categories, sections, getSectionServices } from "@/data/mock";
 import { useAdminServices } from "@/hooks/use-admin-services";
+import { useAds } from "@/hooks/use-ads";
 import { useAuth } from "@/lib/auth-context";
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -59,7 +61,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { services: adminServices, isLoading: adminLoading } = useAdminServices(true);
-  const premiumProfessionals = getProfessionalsByRanking().filter((p) => p.type === "PREMIUM").slice(0, 3);
+  const { ads, isLoading: adsLoading } = useAds(true);
 
   // Nome do usuário logado
   const firstName = user?.name?.split(" ")[0] || "você";
@@ -181,43 +183,16 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* Premium Professionals */}
-        {premiumProfessionals.length > 0 && (
+        {/* Anúncios Patrocinados — substitui Profissionais em Destaque */}
+        {!adsLoading && ads.length > 0 && (
           <View style={styles.sectionWrapper}>
             <View style={styles.sectionHeader}>
               <View style={styles.premiumHeaderRow}>
-                <MaterialIcons name="star" size={20} color="#FCD34D" />
-                <Text style={styles.sectionTitle}>Profissionais em Destaque</Text>
+                <MaterialIcons name="campaign" size={20} color="#25D366" />
+                <Text style={styles.sectionTitle}>Destaques</Text>
               </View>
-              <Pressable>
-                <Text style={styles.seeAll}>Ver mais</Text>
-              </Pressable>
             </View>
-            <FlatList
-              data={premiumProfessionals}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              keyExtractor={(item) => item.id}
-              contentContainerStyle={styles.premiumRow}
-              renderItem={({ item }) => (
-                <Pressable
-                  style={({ pressed }) => [styles.premiumCard, pressed && { opacity: 0.85 }]}
-                  onPress={() => router.push(`/professional/${item.id}` as any)}
-                >
-                  <Image source={{ uri: item.avatar }} style={styles.premiumAvatar} />
-                  <View style={styles.premiumBadgeHome}>
-                    <MaterialIcons name="star" size={12} color="#FCD34D" />
-                  </View>
-                  <Text style={styles.premiumName} numberOfLines={1}>
-                    {item.name}
-                  </Text>
-                  <View style={styles.premiumRating}>
-                    <MaterialIcons name="star" size={12} color="#F59E0B" />
-                    <Text style={styles.premiumRatingText}>{item.rating.toFixed(1)}</Text>
-                  </View>
-                </Pressable>
-              )}
-            />
+            <AdsCarousel ads={ads} />
           </View>
         )}
 

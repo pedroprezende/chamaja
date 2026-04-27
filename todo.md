@@ -222,3 +222,13 @@
 - [x] Atualizar Home com chips de todas as categorias
 - [x] Atualizar tela de listagem por categoria
 - [x] Atualizar seletor de categorias no painel admin
+
+## Carrossel de Anúncios Patrocinados
+
+- [x] Criar lib/ads-database.ts com estrutura de anúncios e dados mockados
+- [x] Criar hook useAds para consumir anúncios ativos com reatividade
+- [x] Criar componente AdsCarousel com autoplay (4s), indicadores de posição e navegação ao prestador
+- [x] Substituir seção "Profissionais em Destaque" na Home pelo carrossel
+- [x] Adicionar seção "Anúncios" no painel admin (CRUD + upload de imagem + seletor de prestador)
+- [x] Ocultar seção da Home quando não houver anúncios ativos
+- [x] Botão "Anúncios" na stats bar do dashboard-admin para acesso rápido

@@ -18,6 +18,7 @@ export default function AdminLayout() {
       <Stack.Screen name="professionals" />
       <Stack.Screen name="locations" />
       <Stack.Screen name="payments" />
+      <Stack.Screen name="ads" />
     </Stack>
   );
 }
