@@ -322,10 +322,17 @@ export default function AdminDashboard() {
         </Text>
         <Pressable
           style={({ pressed }) => [styles.adsNavBtn, pressed && { opacity: 0.75 }]}
+          onPress={() => router.push("/admin/services" as any)}
+        >
+          <MaterialIcons name="category" size={15} color="#25D366" />
+          <Text style={[styles.adsNavText, { color: "#25D366" }]}>Serviços</Text>
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.adsNavBtn, pressed && { opacity: 0.75 }]}
           onPress={() => router.push("/admin/ads" as any)}
         >
           <MaterialIcons name="campaign" size={15} color="#1A73E8" />
-          <Text style={styles.adsNavText}>Anuncios</Text>
+          <Text style={styles.adsNavText}>Anúncios</Text>
         </Pressable>
       </View>
 

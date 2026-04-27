@@ -19,6 +19,7 @@ export default function AdminLayout() {
       <Stack.Screen name="locations" />
       <Stack.Screen name="payments" />
       <Stack.Screen name="ads" />
+      <Stack.Screen name="services" />
     </Stack>
   );
 }

@@ -244,3 +244,12 @@
 ## Card "Em breve" automático (27/04)
 - [x] Exibir card "Em breve" em categorias sem prestadores cadastrados
 - [x] Ocultar "Em breve" automaticamente quando um prestador for adicionado (baseado nos dados reais)
+
+## Tela de Gerenciamento de Serviços no Admin (27/04)
+- [x] Criar tela admin/services.tsx com layout da Home (seções por categoria)
+- [x] Cards horizontais com botões Editar e Excluir
+- [x] Modal de criação/edição de serviço (nome, categoria, imagem)
+- [x] Confirmação de exclusão com Alert
+- [x] Card "Em breve" para categorias sem serviços
+- [x] Botão "Serviços" na stats bar do dashboard-admin
+- [x] Alterações refletem imediatamente na Home via useAdminServices
