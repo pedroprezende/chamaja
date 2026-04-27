@@ -13,8 +13,8 @@ import { useRouter } from "expo-router";
 import type { Ad } from "@/lib/ads-database";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const CARD_MARGIN = 16;
-const CARD_WIDTH = SCREEN_WIDTH - CARD_MARGIN * 2;
+const CARD_HORIZONTAL_PADDING = 16; // padding do wrapper
+const CARD_WIDTH = SCREEN_WIDTH - CARD_HORIZONTAL_PADDING * 2;
 const AUTOPLAY_INTERVAL = 4000;
 
 type AdsCarouselProps = {
@@ -139,7 +139,7 @@ export function AdsCarousel({ ads }: AdsCarouselProps) {
 const styles = StyleSheet.create({
   wrapper: {
     marginTop: 8,
-    paddingHorizontal: CARD_MARGIN,
+    paddingHorizontal: CARD_HORIZONTAL_PADDING,
   },
   listContent: {
     gap: 12,
