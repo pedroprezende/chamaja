@@ -50,7 +50,7 @@ function getAdminIcon(category: string): string {
 export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { services: adminServices, isLoading: adminLoading } = useAdminServices();
+  const { services: adminServices, isLoading: adminLoading } = useAdminServices(true);
   const premiumProfessionals = getProfessionalsByRanking().filter((p) => p.type === "PREMIUM").slice(0, 3);
 
   // Nome do usuário logado

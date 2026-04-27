@@ -207,3 +207,10 @@
 - [x] Perfil atualizado: dados reais do usuário, badges de prestador/admin, stats reais (pedidos, favoritos, serviços)
 - [x] Menu do perfil: "Seja um prestador" ou "Minha área" conforme status
 - [x] Registrar todas as novas rotas no _layout.tsx
+
+## Painel Admin — Melhorias (Novo)
+
+- [x] Botão voltar no canto superior esquerdo do painel admin (volta para o app)
+- [x] Seletor de categoria no modal de serviço (categorias existentes do app)
+- [x] Toggle "Exibir na Home" por serviço no painel admin
+- [x] Home filtra apenas serviços marcados como visíveis

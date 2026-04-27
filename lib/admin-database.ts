@@ -21,9 +21,11 @@ export interface Service {
   adminId: string;
   name: string;
   category: string;
+  categoryId: string;
   description: string;
   icon?: string;
   imageUri?: string;
+  showOnHome: boolean;
   createdAt: string;
   updatedAt: string;
   isActive: boolean;
@@ -143,7 +145,9 @@ export const adminDB = {
     category: string,
     description: string,
     icon?: string,
-    imageUri?: string
+    imageUri?: string,
+    categoryId?: string,
+    showOnHome?: boolean
   ): Promise<Service> => {
     const id = `service-${Date.now()}`;
     const service: Service = {
@@ -151,9 +155,11 @@ export const adminDB = {
       adminId,
       name,
       category,
+      categoryId: categoryId || "",
       description,
       icon,
       imageUri,
+      showOnHome: showOnHome ?? false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       isActive: true,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   StyleSheet,
   Pressable,
   Image,
+  Switch,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -17,41 +18,35 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { adminDB, type Service } from "@/lib/admin-database";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { categories } from "@/data/mock";
 
 const ADMIN_EMAIL = "pedroprezende33@gmail.com";
 
-const CATEGORY_ICONS: Record<string, string> = {
-  eletricista: "electrical-services",
-  encanador: "plumbing",
-  diarista: "cleaning-services",
-  pintor: "format-paint",
-  pedreiro: "construction",
-  marceneiro: "carpenter",
-  jardineiro: "yard",
-  default: "build",
+// Mapeamento de ícones por categoria
+const CATEGORY_ICON_MAP: Record<string, string> = {
+  "assistencia-tecnica": "settings",
+  "reformas-reparos": "build",
+  "eventos": "celebration",
+  "servicos-domesticos": "home",
+  "aulas": "school",
 };
 
-function getCategoryIcon(category: string): string {
-  const key = category
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-  for (const k of Object.keys(CATEGORY_ICONS)) {
-    if (key.includes(k)) return CATEGORY_ICONS[k];
-  }
-  return CATEGORY_ICONS.default;
+function getCategoryIcon(categoryId: string): string {
+  return CATEGORY_ICON_MAP[categoryId] || "build";
 }
 
 function ServiceCard({
   item,
   onEdit,
   onDelete,
+  onToggleHome,
 }: {
   item: Service;
   onEdit: () => void;
   onDelete: () => void;
+  onToggleHome: () => void;
 }) {
-  const iconName = getCategoryIcon(item.category) as any;
+  const iconName = getCategoryIcon(item.categoryId) as any;
   return (
     <View style={styles.card}>
       {item.imageUri ? (
@@ -69,9 +64,27 @@ function ServiceCard({
           </View>
         </View>
         <Text style={styles.cardDescription} numberOfLines={2}>{item.description}</Text>
-        <Text style={styles.cardDate}>
-          Criado em {new Date(item.createdAt).toLocaleDateString("pt-BR")}
-        </Text>
+        {/* Toggle Exibir na Home */}
+        <Pressable
+          style={styles.homeToggleRow}
+          onPress={onToggleHome}
+        >
+          <MaterialIcons
+            name="home"
+            size={14}
+            color={item.showOnHome ? "#25D366" : "#9CA3AF"}
+          />
+          <Text style={[styles.homeToggleText, item.showOnHome && styles.homeToggleTextActive]}>
+            {item.showOnHome ? "Visível na Home" : "Oculto na Home"}
+          </Text>
+          <Switch
+            value={item.showOnHome}
+            onValueChange={onToggleHome}
+            trackColor={{ false: "#E5E7EB", true: "#BBF7D0" }}
+            thumbColor={item.showOnHome ? "#25D366" : "#9CA3AF"}
+            style={{ transform: [{ scaleX: 0.75 }, { scaleY: 0.75 }] }}
+          />
+        </Pressable>
       </View>
       <View style={styles.cardActions}>
         <Pressable
@@ -101,23 +114,24 @@ export default function AdminDashboard() {
   const [showModal, setShowModal] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [searchText, setSearchText] = useState("");
-  const [formData, setFormData] = useState({ name: "", category: "", description: "", imageUri: "" });
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    category: "",
+    categoryId: "",
+    description: "",
+    imageUri: "",
+    showOnHome: false,
+  });
   const isLoggingOut = useRef(false);
 
-  // Ler usuário diretamente do AsyncStorage para evitar dependência do contexto React
   useEffect(() => {
     (async () => {
       try {
         const raw = await AsyncStorage.getItem("@chamaja_user");
-        if (!raw) {
-          router.replace("/auth/login");
-          return;
-        }
+        if (!raw) { router.replace("/auth/login"); return; }
         const u = JSON.parse(raw);
-        if (u.email !== ADMIN_EMAIL) {
-          router.replace("/(tabs)");
-          return;
-        }
+        if (u.email !== ADMIN_EMAIL) { router.replace("/(tabs)"); return; }
         setUserEmail(u.email);
         setUserName(u.name || u.email);
         setAuthorized(true);
@@ -139,10 +153,7 @@ export default function AdminDashboard() {
         onPress: async () => {
           if (isLoggingOut.current) return;
           isLoggingOut.current = true;
-          try {
-            await AsyncStorage.removeItem("@chamaja_user");
-          } catch {}
-          // Navegar imediatamente após limpar storage
+          try { await AsyncStorage.removeItem("@chamaja_user"); } catch {}
           router.replace("/auth/login");
         },
       },
@@ -163,7 +174,7 @@ export default function AdminDashboard() {
 
   const openCreateModal = () => {
     setEditingService(null);
-    setFormData({ name: "", category: "", description: "", imageUri: "" });
+    setFormData({ name: "", category: "", categoryId: "", description: "", imageUri: "", showOnHome: false });
     setShowModal(true);
   };
 
@@ -172,14 +183,16 @@ export default function AdminDashboard() {
     setFormData({
       name: service.name,
       category: service.category,
+      categoryId: service.categoryId || "",
       description: service.description,
       imageUri: service.imageUri || "",
+      showOnHome: service.showOnHome ?? false,
     });
     setShowModal(true);
   };
 
   const handleDeleteService = (serviceId: string, serviceName: string) => {
-    Alert.alert("Deletar Servico", `Deletar "${serviceName}"?`, [
+    Alert.alert("Deletar Serviço", `Deletar "${serviceName}"?`, [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Deletar",
@@ -192,18 +205,25 @@ export default function AdminDashboard() {
     ]);
   };
 
+  const handleToggleHome = async (service: Service) => {
+    const updated = await adminDB.updateService(service.id, { showOnHome: !service.showOnHome });
+    setServices((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+  };
+
   const handleSaveService = async () => {
-    if (!formData.name.trim() || !formData.category.trim() || !formData.description.trim()) {
-      Alert.alert("Campos obrigatorios", "Preencha nome, categoria e descricao.");
+    if (!formData.name.trim() || !formData.categoryId || !formData.description.trim()) {
+      Alert.alert("Campos obrigatórios", "Preencha nome, categoria e descrição.");
       return;
     }
     try {
       if (editingService) {
         const updated = await adminDB.updateService(editingService.id, {
           name: formData.name.trim(),
-          category: formData.category.trim(),
+          category: formData.category,
+          categoryId: formData.categoryId,
           description: formData.description.trim(),
           imageUri: formData.imageUri || undefined,
+          showOnHome: formData.showOnHome,
         });
         setServices((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
       } else {
@@ -212,10 +232,12 @@ export default function AdminDashboard() {
         const newService = await adminDB.createService(
           u.id,
           formData.name.trim(),
-          formData.category.trim(),
+          formData.category,
           formData.description.trim(),
           undefined,
-          formData.imageUri || undefined
+          formData.imageUri || undefined,
+          formData.categoryId,
+          formData.showOnHome
         );
         setServices((prev) => [...prev, newService]);
       }
@@ -231,6 +253,8 @@ export default function AdminDashboard() {
       s.category.toLowerCase().includes(searchText.toLowerCase())
   );
 
+  const homeCount = services.filter((s) => s.showOnHome).length;
+
   if (authorized === null) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F5F5F5" }}>
@@ -241,12 +265,18 @@ export default function AdminDashboard() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header */}
+      {/* Header com botão voltar */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
+        <Pressable
+          style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
+          onPress={() => router.replace("/(tabs)")}
+        >
+          <MaterialIcons name="arrow-back" size={24} color="#111827" />
+        </Pressable>
+        <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Painel Admin</Text>
           <Text style={styles.headerSubtitle}>
-            {services.length} {services.length === 1 ? "servico" : "servicos"}
+            {services.length} {services.length === 1 ? "serviço" : "serviços"} • {homeCount} na Home
           </Text>
         </View>
         <Pressable
@@ -254,7 +284,6 @@ export default function AdminDashboard() {
           onPress={handleLogout}
         >
           <MaterialIcons name="logout" size={20} color="#EF4444" />
-          <Text style={styles.logoutText}>Sair</Text>
         </Pressable>
       </View>
 
@@ -264,7 +293,7 @@ export default function AdminDashboard() {
           <MaterialIcons name="search" size={18} color="#9CA3AF" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Buscar servico ou categoria..."
+            placeholder="Buscar serviço ou categoria..."
             placeholderTextColor="#9CA3AF"
             value={searchText}
             onChangeText={setSearchText}
@@ -302,13 +331,14 @@ export default function AdminDashboard() {
             item={item}
             onEdit={() => handleEditService(item)}
             onDelete={() => handleDeleteService(item.id, item.name)}
+            onToggleHome={() => handleToggleHome(item)}
           />
         )}
         ListEmptyComponent={
           <View style={styles.empty}>
             <MaterialIcons name="inbox" size={52} color="#D1D5DB" />
             <Text style={styles.emptyTitle}>
-              {searchText ? "Nenhum resultado" : "Nenhum servico ainda"}
+              {searchText ? "Nenhum resultado" : "Nenhum serviço ainda"}
             </Text>
             <Text style={styles.emptySubtitle}>
               {searchText ? "Tente outro termo" : 'Toque em "+" para criar'}
@@ -317,13 +347,13 @@ export default function AdminDashboard() {
         }
       />
 
-      {/* Modal */}
+      {/* Modal de criação/edição */}
       <Modal visible={showModal} transparent animationType="slide" onRequestClose={() => setShowModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
             <View style={styles.modalHandle} />
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{editingService ? "Editar Servico" : "Novo Servico"}</Text>
+              <Text style={styles.modalTitle}>{editingService ? "Editar Serviço" : "Novo Serviço"}</Text>
               <Pressable
                 style={({ pressed }) => [styles.modalCloseBtn, pressed && { opacity: 0.6 }]}
                 onPress={() => setShowModal(false)}
@@ -332,7 +362,8 @@ export default function AdminDashboard() {
               </Pressable>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              {/* Imagem */}
               <Text style={styles.fieldLabel}>Imagem de Capa</Text>
               <Pressable
                 style={({ pressed }) => [styles.imagePickerBtn, pressed && { opacity: 0.8 }]}
@@ -355,7 +386,8 @@ export default function AdminDashboard() {
                 )}
               </Pressable>
 
-              <Text style={styles.fieldLabel}>Nome do Servico</Text>
+              {/* Nome */}
+              <Text style={styles.fieldLabel}>Nome do Serviço</Text>
               <View style={styles.fieldBox}>
                 <MaterialIcons name="build" size={18} color="#9CA3AF" />
                 <TextInput
@@ -368,30 +400,63 @@ export default function AdminDashboard() {
                 />
               </View>
 
+              {/* Categoria — seletor */}
               <Text style={styles.fieldLabel}>Categoria</Text>
-              <View style={styles.fieldBox}>
-                <MaterialIcons name="category" size={18} color="#9CA3AF" />
-                <TextInput
-                  style={styles.fieldInput}
-                  placeholder="Ex: Eletricista, Diarista, Pintor"
-                  placeholderTextColor="#9CA3AF"
-                  value={formData.category}
-                  onChangeText={(t) => setFormData({ ...formData, category: t })}
-                  returnKeyType="next"
-                />
-              </View>
+              <Pressable
+                style={({ pressed }) => [styles.fieldBox, styles.categorySelector, pressed && { opacity: 0.85 }]}
+                onPress={() => setShowCategoryPicker(true)}
+              >
+                {formData.categoryId ? (
+                  <View style={styles.selectedCategoryRow}>
+                    <View style={styles.selectedCategoryIcon}>
+                      <MaterialIcons
+                        name={getCategoryIcon(formData.categoryId) as any}
+                        size={18}
+                        color="#25D366"
+                      />
+                    </View>
+                    <Text style={styles.selectedCategoryText}>{formData.category}</Text>
+                  </View>
+                ) : (
+                  <>
+                    <MaterialIcons name="category" size={18} color="#9CA3AF" />
+                    <Text style={styles.categoryPlaceholder}>Selecionar categoria...</Text>
+                  </>
+                )}
+                <MaterialIcons name="expand-more" size={20} color="#9CA3AF" />
+              </Pressable>
 
-              <Text style={styles.fieldLabel}>Descricao</Text>
+              {/* Descrição */}
+              <Text style={styles.fieldLabel}>Descrição</Text>
               <View style={[styles.fieldBox, styles.fieldBoxMultiline]}>
                 <TextInput
                   style={[styles.fieldInput, styles.fieldInputMultiline]}
-                  placeholder="Descreva o servico..."
+                  placeholder="Descreva o serviço..."
                   placeholderTextColor="#9CA3AF"
                   value={formData.description}
                   onChangeText={(t) => setFormData({ ...formData, description: t })}
                   multiline
                   numberOfLines={4}
                   textAlignVertical="top"
+                />
+              </View>
+
+              {/* Toggle Exibir na Home */}
+              <View style={styles.homeToggleCard}>
+                <View style={styles.homeToggleInfo}>
+                  <MaterialIcons name="home" size={20} color={formData.showOnHome ? "#25D366" : "#6B7280"} />
+                  <View>
+                    <Text style={styles.homeToggleCardTitle}>Exibir na tela inicial</Text>
+                    <Text style={styles.homeToggleCardSub}>
+                      {formData.showOnHome ? "Visível para todos os usuários" : "Oculto da tela inicial"}
+                    </Text>
+                  </View>
+                </View>
+                <Switch
+                  value={formData.showOnHome}
+                  onValueChange={(v) => setFormData({ ...formData, showOnHome: v })}
+                  trackColor={{ false: "#E5E7EB", true: "#BBF7D0" }}
+                  thumbColor={formData.showOnHome ? "#25D366" : "#9CA3AF"}
                 />
               </View>
 
@@ -407,12 +472,59 @@ export default function AdminDashboard() {
                   onPress={handleSaveService}
                 >
                   <MaterialIcons name={editingService ? "check" : "add"} size={18} color="#fff" />
-                  <Text style={styles.saveBtnText}>{editingService ? "Salvar" : "Criar Servico"}</Text>
+                  <Text style={styles.saveBtnText}>{editingService ? "Salvar" : "Criar Serviço"}</Text>
                 </Pressable>
               </View>
             </ScrollView>
           </View>
         </View>
+      </Modal>
+
+      {/* Modal seletor de categoria */}
+      <Modal
+        visible={showCategoryPicker}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowCategoryPicker(false)}
+      >
+        <Pressable style={styles.pickerOverlay} onPress={() => setShowCategoryPicker(false)}>
+          <View style={styles.pickerSheet}>
+            <Text style={styles.pickerTitle}>Selecionar Categoria</Text>
+            {categories.map((cat) => {
+              const isSelected = formData.categoryId === cat.id;
+              return (
+                <Pressable
+                  key={cat.id}
+                  style={({ pressed }) => [
+                    styles.pickerItem,
+                    isSelected && styles.pickerItemSelected,
+                    pressed && { opacity: 0.8 },
+                  ]}
+                  onPress={() => {
+                    setFormData({
+                      ...formData,
+                      categoryId: cat.id,
+                      category: cat.name.replace("\n", " "),
+                    });
+                    setShowCategoryPicker(false);
+                  }}
+                >
+                  <View style={[styles.pickerItemIcon, isSelected && styles.pickerItemIconSelected]}>
+                    <MaterialIcons
+                      name={cat.icon as any}
+                      size={20}
+                      color={isSelected ? "#FFFFFF" : "#25D366"}
+                    />
+                  </View>
+                  <Text style={[styles.pickerItemText, isSelected && styles.pickerItemTextSelected]}>
+                    {cat.name.replace("\n", " ")}
+                  </Text>
+                  {isSelected && <MaterialIcons name="check" size={18} color="#25D366" />}
+                </Pressable>
+              );
+            })}
+          </View>
+        </Pressable>
       </Modal>
     </View>
   );
@@ -423,26 +535,25 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#F3F4F6",
+    gap: 8,
   },
-  headerLeft: { gap: 2 },
-  headerTitle: { fontSize: 18, fontWeight: "700", color: "#111827" },
+  backBtn: {
+    width: 40, height: 40, borderRadius: 20,
+    alignItems: "center", justifyContent: "center",
+    backgroundColor: "#F3F4F6",
+  },
+  headerCenter: { flex: 1 },
+  headerTitle: { fontSize: 17, fontWeight: "700", color: "#111827" },
   headerSubtitle: { fontSize: 12, color: "#6B7280" },
   logoutBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
+    width: 40, height: 40, borderRadius: 20,
+    alignItems: "center", justifyContent: "center",
     backgroundColor: "#FEF2F2",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderWidth: 1,
-    borderColor: "#FECACA",
   },
   logoutText: { fontSize: 13, fontWeight: "600", color: "#EF4444" },
   searchRow: {
@@ -452,87 +563,63 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     gap: 10,
     backgroundColor: "#FFFFFF",
-  },
-  searchBox: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F3F4F6",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 8,
-  },
-  searchInput: { flex: 1, fontSize: 14, color: "#111827", padding: 0 },
-  addBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-    backgroundColor: "#25D366",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  statsBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    gap: 6,
-    backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#F3F4F6",
   },
-  statsText: { fontSize: 13, color: "#374151" },
+  searchBox: {
+    flex: 1, flexDirection: "row", alignItems: "center",
+    backgroundColor: "#F3F4F6", borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 9, gap: 8,
+  },
+  searchInput: { flex: 1, fontSize: 14, color: "#111827", padding: 0 },
+  addBtn: {
+    width: 44, height: 44, borderRadius: 12,
+    backgroundColor: "#25D366", alignItems: "center", justifyContent: "center",
+  },
+  statsBar: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    paddingHorizontal: 16, paddingVertical: 8,
+    backgroundColor: "#F0FDF4",
+  },
+  statsText: { fontSize: 12, color: "#374151" },
   listContent: { padding: 16, paddingBottom: 32 },
   card: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: "#F3F4F6",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF",
+    borderRadius: 14, marginBottom: 10, overflow: "hidden",
+    borderWidth: 1, borderColor: "#F3F4F6",
+    shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
   },
-  cardThumbnail: { width: 56, height: 56, borderRadius: 10, backgroundColor: "#F3F4F6", marginRight: 12 },
+  cardThumbnail: { width: 72, height: 72, backgroundColor: "#F3F4F6" },
   iconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#F0FDF4",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-    borderWidth: 1,
-    borderColor: "#BBF7D0",
+    width: 72, height: 72, backgroundColor: "#F0FDF4",
+    alignItems: "center", justifyContent: "center",
+    borderRightWidth: 1, borderRightColor: "#E5E7EB",
   },
-  cardInfo: { flex: 1, gap: 3 },
+  cardInfo: { flex: 1, paddingHorizontal: 12, paddingVertical: 10, gap: 3 },
   nameRow: { flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" },
-  cardName: { fontSize: 15, fontWeight: "700", color: "#111827", flexShrink: 1 },
-  categoryBadge: { backgroundColor: "#EFF6FF", borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
-  categoryBadgeText: { fontSize: 10, fontWeight: "700", color: "#2563EB" },
-  cardDescription: { fontSize: 12, color: "#6B7280", lineHeight: 17 },
-  cardDate: { fontSize: 11, color: "#9CA3AF", marginTop: 2 },
-  cardActions: { flexDirection: "column", gap: 6, marginLeft: 8 },
+  cardName: { fontSize: 14, fontWeight: "700", color: "#111827", flexShrink: 1 },
+  categoryBadge: {
+    backgroundColor: "#DBEAFE", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2,
+  },
+  categoryBadgeText: { fontSize: 10, fontWeight: "600", color: "#1D4ED8" },
+  cardDescription: { fontSize: 12, color: "#6B7280", lineHeight: 16 },
+  homeToggleRow: {
+    flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2,
+  },
+  homeToggleText: { fontSize: 11, color: "#9CA3AF", flex: 1 },
+  homeToggleTextActive: { color: "#25D366", fontWeight: "600" },
+  cardActions: { flexDirection: "column", gap: 6, paddingRight: 10 },
   actionBtn: { width: 34, height: 34, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   editBtn: { backgroundColor: "#EFF6FF", borderWidth: 1, borderColor: "#BFDBFE" },
   deleteBtn: { backgroundColor: "#FEF2F2", borderWidth: 1, borderColor: "#FECACA" },
-  empty: { alignItems: "center", paddingTop: 60, gap: 10 },
+  empty: { alignItems: "center", paddingVertical: 60, gap: 8 },
   emptyTitle: { fontSize: 16, fontWeight: "600", color: "#374151" },
-  emptySubtitle: { fontSize: 13, color: "#9CA3AF", textAlign: "center", paddingHorizontal: 32 },
+  emptySubtitle: { fontSize: 13, color: "#9CA3AF" },
+  // Modal
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
   modalSheet: {
-    backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-    maxHeight: "92%",
+    backgroundColor: "#FFFFFF", borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    paddingHorizontal: 20, paddingBottom: 40, maxHeight: "92%",
   },
   modalHandle: {
     width: 36, height: 4, borderRadius: 2, backgroundColor: "#E5E7EB",
@@ -548,22 +635,21 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
   },
   imagePickerBtn: { borderRadius: 12, overflow: "hidden", marginBottom: 4 },
-  imagePreviewWrapper: { position: "relative", width: "100%", height: 160 },
-  imagePreview: { width: "100%", height: 160, borderRadius: 12 },
+  imagePreviewWrapper: { position: "relative", width: "100%", height: 140 },
+  imagePreview: { width: "100%", height: 140, borderRadius: 12 },
   imageEditOverlay: {
     position: "absolute", bottom: 0, left: 0, right: 0,
-    backgroundColor: "rgba(0,0,0,0.45)", flexDirection: "row",
-    alignItems: "center", justifyContent: "center",
-    paddingVertical: 8, gap: 6,
+    backgroundColor: "rgba(0,0,0,0.4)", flexDirection: "row",
+    alignItems: "center", justifyContent: "center", paddingVertical: 7, gap: 5,
     borderBottomLeftRadius: 12, borderBottomRightRadius: 12,
   },
   imageEditText: { color: "#FFFFFF", fontSize: 13, fontWeight: "600" },
   imagePlaceholder: {
-    width: "100%", height: 140, backgroundColor: "#F9FAFB",
+    width: "100%", height: 110, backgroundColor: "#F9FAFB",
     borderWidth: 1.5, borderColor: "#E5E7EB", borderStyle: "dashed",
-    borderRadius: 12, alignItems: "center", justifyContent: "center", gap: 6,
+    borderRadius: 12, alignItems: "center", justifyContent: "center", gap: 4,
   },
-  imagePlaceholderText: { fontSize: 14, fontWeight: "600", color: "#374151" },
+  imagePlaceholderText: { fontSize: 14, color: "#6B7280", fontWeight: "500" },
   imagePlaceholderSub: { fontSize: 12, color: "#9CA3AF" },
   fieldLabel: { fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6, marginTop: 12 },
   fieldBox: {
@@ -574,7 +660,26 @@ const styles = StyleSheet.create({
   fieldBoxMultiline: { alignItems: "flex-start", paddingTop: 12 },
   fieldInput: { flex: 1, fontSize: 14, color: "#111827", padding: 0 },
   fieldInputMultiline: { minHeight: 80, textAlignVertical: "top" },
-  modalActions: { flexDirection: "row", gap: 10, marginTop: 24 },
+  // Category selector
+  categorySelector: { justifyContent: "space-between" },
+  selectedCategoryRow: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8 },
+  selectedCategoryIcon: {
+    width: 28, height: 28, borderRadius: 14, backgroundColor: "#F0FDF4",
+    alignItems: "center", justifyContent: "center",
+  },
+  selectedCategoryText: { fontSize: 14, color: "#111827", fontWeight: "500" },
+  categoryPlaceholder: { flex: 1, fontSize: 14, color: "#9CA3AF" },
+  // Home toggle card
+  homeToggleCard: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    backgroundColor: "#F9FAFB", borderWidth: 1.5, borderColor: "#E5E7EB",
+    borderRadius: 12, padding: 14, marginTop: 12, gap: 12,
+  },
+  homeToggleInfo: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
+  homeToggleCardTitle: { fontSize: 14, fontWeight: "600", color: "#111827" },
+  homeToggleCardSub: { fontSize: 12, color: "#6B7280" },
+  // Modal actions
+  modalActions: { flexDirection: "row", gap: 10, marginTop: 20, marginBottom: 8 },
   cancelBtn: {
     flex: 1, backgroundColor: "#F3F4F6", borderRadius: 12,
     paddingVertical: 14, alignItems: "center",
@@ -586,4 +691,27 @@ const styles = StyleSheet.create({
     justifyContent: "center", gap: 6,
   },
   saveBtnText: { fontSize: 15, fontWeight: "700", color: "#FFFFFF" },
+  // Category picker modal
+  pickerOverlay: {
+    flex: 1, backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center", alignItems: "center", padding: 32,
+  },
+  pickerSheet: {
+    backgroundColor: "#FFFFFF", borderRadius: 20, padding: 20,
+    width: "100%", gap: 4,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 8,
+  },
+  pickerTitle: { fontSize: 17, fontWeight: "700", color: "#111827", marginBottom: 12 },
+  pickerItem: {
+    flexDirection: "row", alignItems: "center", gap: 12,
+    paddingVertical: 12, paddingHorizontal: 8, borderRadius: 12,
+  },
+  pickerItemSelected: { backgroundColor: "#F0FDF4" },
+  pickerItemIcon: {
+    width: 40, height: 40, borderRadius: 20, backgroundColor: "#F0FDF4",
+    alignItems: "center", justifyContent: "center",
+  },
+  pickerItemIconSelected: { backgroundColor: "#25D366" },
+  pickerItemText: { flex: 1, fontSize: 15, color: "#374151", fontWeight: "500" },
+  pickerItemTextSelected: { color: "#111827", fontWeight: "700" },
 });
