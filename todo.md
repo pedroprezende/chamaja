@@ -232,3 +232,7 @@
 - [x] Adicionar seção "Anúncios" no painel admin (CRUD + upload de imagem + seletor de prestador)
 - [x] Ocultar seção da Home quando não houver anúncios ativos
 - [x] Botão "Anúncios" na stats bar do dashboard-admin para acesso rápido
+
+## Correções UI (27/04)
+- [x] Corrigir seletor de categoria no painel admin (stopPropagation no sheet + ScrollView para todas as 13 categorias)
+- [x] Ajustar imagens cortadas no carrossel de Destaques da Home (altura 210, dimensões explícitas)

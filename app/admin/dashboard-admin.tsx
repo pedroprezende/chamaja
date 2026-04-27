@@ -494,43 +494,47 @@ export default function AdminDashboard() {
         animationType="fade"
         onRequestClose={() => setShowCategoryPicker(false)}
       >
+        {/* Overlay fecha ao tocar fora do sheet */}
         <Pressable style={styles.pickerOverlay} onPress={() => setShowCategoryPicker(false)}>
-          <View style={styles.pickerSheet}>
+          {/* stopPropagation impede que toques no sheet fechem o modal */}
+          <Pressable style={styles.pickerSheet} onPress={(e) => e.stopPropagation()}>
             <Text style={styles.pickerTitle}>Selecionar Categoria</Text>
-            {categories.map((cat) => {
-              const isSelected = formData.categoryId === cat.id;
-              return (
-                <Pressable
-                  key={cat.id}
-                  style={({ pressed }) => [
-                    styles.pickerItem,
-                    isSelected && styles.pickerItemSelected,
-                    pressed && { opacity: 0.8 },
-                  ]}
-                  onPress={() => {
-                    setFormData({
-                      ...formData,
-                      categoryId: cat.id,
-                      category: cat.name.replace("\n", " "),
-                    });
-                    setShowCategoryPicker(false);
-                  }}
-                >
-                  <View style={[styles.pickerItemIcon, isSelected && styles.pickerItemIconSelected]}>
-                    <MaterialIcons
-                      name={cat.icon as any}
-                      size={20}
-                      color={isSelected ? "#FFFFFF" : "#25D366"}
-                    />
-                  </View>
-                  <Text style={[styles.pickerItemText, isSelected && styles.pickerItemTextSelected]}>
-                    {cat.name.replace("\n", " ")}
-                  </Text>
-                  {isSelected && <MaterialIcons name="check" size={18} color="#25D366" />}
-                </Pressable>
-              );
-            })}
-          </View>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
+              {categories.map((cat) => {
+                const isSelected = formData.categoryId === cat.id;
+                return (
+                  <Pressable
+                    key={cat.id}
+                    style={({ pressed }) => [
+                      styles.pickerItem,
+                      isSelected && styles.pickerItemSelected,
+                      pressed && { backgroundColor: "#F0FDF4" },
+                    ]}
+                    onPress={() => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        categoryId: cat.id,
+                        category: cat.name.replace(/\n/g, " "),
+                      }));
+                      setShowCategoryPicker(false);
+                    }}
+                  >
+                    <View style={[styles.pickerItemIcon, isSelected && styles.pickerItemIconSelected]}>
+                      <MaterialIcons
+                        name={cat.icon as any}
+                        size={20}
+                        color={isSelected ? "#FFFFFF" : "#25D366"}
+                      />
+                    </View>
+                    <Text style={[styles.pickerItemText, isSelected && styles.pickerItemTextSelected]}>
+                      {cat.name.replace(/\n/g, " ")}
+                    </Text>
+                    {isSelected && <MaterialIcons name="check" size={18} color="#25D366" />}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </Pressable>
         </Pressable>
       </Modal>
     </View>
