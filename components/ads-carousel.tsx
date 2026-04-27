@@ -5,16 +5,17 @@ import {
   StyleSheet,
   Pressable,
   Dimensions,
-  FlatList,
-  ViewToken,
+  ScrollView,
 } from "react-native";
 import { useRef, useState, useCallback, useEffect } from "react";
 import { useRouter } from "expo-router";
 import type { Ad } from "@/lib/ads-database";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const CARD_HORIZONTAL_PADDING = 16; // padding do wrapper
-const CARD_WIDTH = SCREEN_WIDTH - CARD_HORIZONTAL_PADDING * 2;
+// O container pai (sectionWrapper) já tem paddingHorizontal: 16 em cada lado
+// Portanto o card deve ocupar toda a largura disponível dentro desse container
+const CARD_WIDTH = SCREEN_WIDTH - 32; // 16px de cada lado do sectionWrapper
+const CARD_HEIGHT = 180;
 const AUTOPLAY_INTERVAL = 4000;
 
 type AdsCarouselProps = {
@@ -23,9 +24,18 @@ type AdsCarouselProps = {
 
 export function AdsCarousel({ ads }: AdsCarouselProps) {
   const router = useRouter();
-  const flatListRef = useRef<FlatList<Ad>>(null);
+  const scrollRef = useRef<ScrollView>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const autoplayRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isUserScrolling = useRef(false);
+
+  const scrollToIndex = useCallback(
+    (index: number) => {
+      scrollRef.current?.scrollTo({ x: index * CARD_WIDTH, animated: true });
+      setActiveIndex(index);
+    },
+    []
+  );
 
   const stopAutoplay = useCallback(() => {
     if (autoplayRef.current) {
@@ -38,11 +48,13 @@ export function AdsCarousel({ ads }: AdsCarouselProps) {
     stopAutoplay();
     if (ads.length <= 1) return;
     autoplayRef.current = setInterval(() => {
-      setActiveIndex((prev) => {
-        const next = (prev + 1) % ads.length;
-        flatListRef.current?.scrollToIndex({ index: next, animated: true });
-        return next;
-      });
+      if (!isUserScrolling.current) {
+        setActiveIndex((prev) => {
+          const next = (prev + 1) % ads.length;
+          scrollRef.current?.scrollTo({ x: next * CARD_WIDTH, animated: true });
+          return next;
+        });
+      }
     }, AUTOPLAY_INTERVAL);
   }, [ads.length, stopAutoplay]);
 
@@ -51,42 +63,34 @@ export function AdsCarousel({ ads }: AdsCarouselProps) {
     return stopAutoplay;
   }, [startAutoplay, stopAutoplay]);
 
-  const onViewableItemsChanged = useCallback(
-    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      if (viewableItems.length > 0 && viewableItems[0].index !== null) {
-        setActiveIndex(viewableItems[0].index);
-      }
-    },
-    []
-  );
-
-  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 });
-
   if (ads.length === 0) return null;
 
   return (
-    <View style={styles.wrapper}>
-      <FlatList
-        ref={flatListRef}
-        data={ads}
+    <View>
+      <ScrollView
+        ref={scrollRef}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        keyExtractor={(item) => item.id}
-        snapToInterval={CARD_WIDTH + 12}
+        scrollEventThrottle={16}
+        onScrollBeginDrag={() => {
+          isUserScrolling.current = true;
+          stopAutoplay();
+        }}
+        onMomentumScrollEnd={(e) => {
+          isUserScrolling.current = false;
+          const index = Math.round(e.nativeEvent.contentOffset.x / CARD_WIDTH);
+          setActiveIndex(index);
+          startAutoplay();
+        }}
+        style={{ width: CARD_WIDTH }}
+        contentContainerStyle={{ flexDirection: "row" }}
+        snapToInterval={CARD_WIDTH}
         decelerationRate="fast"
-        contentContainerStyle={styles.listContent}
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={viewabilityConfig.current}
-        onScrollBeginDrag={stopAutoplay}
-        onMomentumScrollEnd={startAutoplay}
-        getItemLayout={(_, index) => ({
-          length: CARD_WIDTH + 12,
-          offset: (CARD_WIDTH + 12) * index,
-          index,
-        })}
-        renderItem={({ item }) => (
+      >
+        {ads.map((item) => (
           <Pressable
+            key={item.id}
             style={({ pressed }) => [styles.card, pressed && { opacity: 0.92 }]}
             onPress={() => router.push(`/professional/${item.providerId}` as any)}
           >
@@ -118,17 +122,16 @@ export function AdsCarousel({ ads }: AdsCarouselProps) {
               </View>
             </View>
           </Pressable>
-        )}
-      />
+        ))}
+      </ScrollView>
 
       {/* Dot indicators */}
       {ads.length > 1 && (
         <View style={styles.dots}>
           {ads.map((_, i) => (
-            <View
-              key={i}
-              style={[styles.dot, i === activeIndex && styles.dotActive]}
-            />
+            <Pressable key={i} onPress={() => scrollToIndex(i)}>
+              <View style={[styles.dot, i === activeIndex && styles.dotActive]} />
+            </Pressable>
           ))}
         </View>
       )}
@@ -137,31 +140,24 @@ export function AdsCarousel({ ads }: AdsCarouselProps) {
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    marginTop: 8,
-    paddingHorizontal: CARD_HORIZONTAL_PADDING,
-  },
-  listContent: {
-    gap: 12,
-  },
   card: {
     width: CARD_WIDTH,
-    height: 210,
+    height: CARD_HEIGHT,
     borderRadius: 16,
     overflow: "hidden",
     backgroundColor: "#1F2937",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
   },
   image: {
     position: "absolute",
     top: 0,
     left: 0,
     width: CARD_WIDTH,
-    height: 210,
+    height: CARD_HEIGHT,
   },
   overlay: {
     position: "absolute",
