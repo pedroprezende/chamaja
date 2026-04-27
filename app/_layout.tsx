@@ -11,6 +11,7 @@ import { ThemeProvider } from "@/lib/theme-provider";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { ProviderContextProvider } from "@/lib/provider-context";
 import { FavoritesProvider } from "@/lib/favorites-context";
+import { NotificationsProvider } from "@/lib/notifications-context";
 import {
   SafeAreaFrameContext,
   SafeAreaInsetsContext,
@@ -125,8 +126,10 @@ export default function RootLayout() {
           <AuthProvider>
             <ProviderContextProvider>
               <FavoritesProvider>
-                <RootLayoutNav />
-                <StatusBar style="auto" />
+                <NotificationsProvider>
+                  <RootLayoutNav />
+                  <StatusBar style="auto" />
+                </NotificationsProvider>
               </FavoritesProvider>
             </ProviderContextProvider>
           </AuthProvider>

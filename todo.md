@@ -253,3 +253,12 @@
 - [x] Card "Em breve" para categorias sem serviços
 - [x] Botão "Serviços" na stats bar do dashboard-admin
 - [x] Alterações refletem imediatamente na Home via useAdminServices
+
+## Perfil e Notificações Funcionais (27/04)
+- [x] Edição de perfil: upload de foto da galeria (expo-image-picker, crop 1:1)
+- [x] Edição de perfil: alterar nome com persistência no AsyncStorage
+- [x] AuthContext: suporte a updateProfile (nome + avatar)
+- [x] Sistema de notificações: contexto global (NotificationsContext) com persistência
+- [x] Badge de contagem de não lidas na tab Perfil e no item de menu
+- [x] Tela de notificações funcional com lista, marcar como lida e limpar tudo
+- [x] Notificações de boas-vindas na primeira abertura do app

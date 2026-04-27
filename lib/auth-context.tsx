@@ -24,6 +24,7 @@ export interface AuthContextType {
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateUserPreferences: (preferences: Record<string, any>) => Promise<void>;
+  updateProfile: (name: string, avatar?: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -176,6 +177,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateProfile = async (name: string, avatar?: string) => {
+    try {
+      if (!user) throw new Error("Usuário não autenticado");
+      if (!name.trim()) throw new Error("Nome não pode ser vazio");
+      const updatedUser: User = {
+        ...user,
+        name: name.trim(),
+        ...(avatar !== undefined ? { avatar } : {}),
+      };
+      await saveUser(updatedUser);
+    } catch (error) {
+      console.error("Erro ao atualizar perfil:", error);
+      throw error;
+    }
+  };
+
   const value: AuthContextType = {
     user,
     isLoading,
@@ -187,6 +204,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signInWithEmail,
     signOut,
     updateUserPreferences,
+    updateProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

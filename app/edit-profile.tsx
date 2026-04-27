@@ -15,88 +15,64 @@ import {
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as ImagePicker from "expo-image-picker";
+import * as Haptics from "expo-haptics";
 import { useAuth } from "@/lib/auth-context";
-import { ScreenContainer } from "@/components/screen-container";
 
 export default function EditProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
 
   const [name, setName] = useState(user?.name || "");
-  const [email, setEmail] = useState(user?.email || "");
-  const [phone, setPhone] = useState(user?.phone || "");
-  const [isLoading, setIsLoading] = useState(false);
-  const [emailVerified, setEmailVerified] = useState(false);
-  const [verificationCode, setVerificationCode] = useState("");
-  const [showVerification, setShowVerification] = useState(false);
+  const [avatarUri, setAvatarUri] = useState(user?.avatar || "");
+  const [saving, setSaving] = useState(false);
 
-  const handleSendVerificationCode = async () => {
-    if (!email) {
-      Alert.alert("Erro", "Preencha o e-mail");
-      return;
-    }
+  const displayAvatar =
+    avatarUri ||
+    "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=80";
 
-    setIsLoading(true);
-    try {
-      // Mock: simular envio de código
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      console.log("Código de verificação enviado:", code);
+  const handlePickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
       Alert.alert(
-        "Código Enviado",
-        `Um código de verificação foi enviado para ${email}\n\nCódigo para teste: ${code}`
+        "Permissão necessária",
+        "Permita o acesso à galeria para alterar sua foto de perfil."
       );
-      setShowVerification(true);
-    } catch (error) {
-      Alert.alert("Erro", "Não foi possível enviar o código");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleVerifyEmail = async () => {
-    if (!verificationCode) {
-      Alert.alert("Erro", "Digite o código de verificação");
       return;
     }
-
-    setIsLoading(true);
-    try {
-      // Mock: simular verificação
-      if (verificationCode.length === 6) {
-        setEmailVerified(true);
-        Alert.alert("Sucesso", "E-mail verificado com sucesso!");
-        setShowVerification(false);
-        setVerificationCode("");
-      } else {
-        Alert.alert("Erro", "Código inválido");
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.85,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setAvatarUri(result.assets[0].uri);
+      if (Platform.OS !== "web") {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const handleSaveProfile = async () => {
-    if (!name || !email || !phone) {
-      Alert.alert("Erro", "Preencha todos os campos");
+    if (!name.trim()) {
+      Alert.alert("Atenção", "O nome não pode estar vazio.");
       return;
     }
-
-    if (!emailVerified) {
-      Alert.alert("Erro", "Verifique seu e-mail antes de salvar");
-      return;
-    }
-
-    setIsLoading(true);
+    setSaving(true);
     try {
-      // Mock: simular salvamento
-      console.log("Perfil atualizado:", { name, email, phone });
-      Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
-      router.back();
-    } catch (error) {
-      Alert.alert("Erro", "Não foi possível salvar o perfil");
+      await updateProfile(name.trim(), avatarUri || undefined);
+      if (Platform.OS !== "web") {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      Alert.alert("Perfil atualizado", "Suas informações foram salvas com sucesso.", [
+        { text: "OK", onPress: () => router.back() },
+      ]);
+    } catch (e: any) {
+      Alert.alert("Erro", e.message || "Não foi possível salvar o perfil.");
     } finally {
-      setIsLoading(false);
+      setSaving(false);
     }
   };
 
@@ -105,9 +81,9 @@ export default function EditProfileScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={{ flex: 1 }}
     >
-      <ScreenContainer containerClassName="bg-white">
+      <View style={[styles.container, { paddingTop: insets.top }]}>
         {/* Header */}
-        <View style={[styles.header, { paddingTop: insets.top }]}>
+        <View style={styles.header}>
           <Pressable
             style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
             onPress={() => router.back()}
@@ -115,381 +91,177 @@ export default function EditProfileScreen() {
             <MaterialIcons name="arrow-back" size={24} color="#111827" />
           </Pressable>
           <Text style={styles.headerTitle}>Editar Perfil</Text>
-          <View style={{ width: 40 }} />
+          <Pressable
+            style={({ pressed }) => [styles.saveHeaderBtn, pressed && { opacity: 0.75 }, saving && { opacity: 0.5 }]}
+            onPress={handleSaveProfile}
+            disabled={saving}
+          >
+            {saving ? (
+              <ActivityIndicator size="small" color="#25D366" />
+            ) : (
+              <Text style={styles.saveHeaderText}>Salvar</Text>
+            )}
+          </Pressable>
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false} style={styles.content}>
-          {/* Avatar Section */}
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+          {/* Avatar */}
           <View style={styles.avatarSection}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {name.charAt(0).toUpperCase() || "U"}
-              </Text>
-            </View>
-            <Pressable style={styles.changeAvatarBtn}>
-              <MaterialIcons name="camera-alt" size={20} color="#FFFFFF" />
+            <Pressable
+              style={({ pressed }) => [styles.avatarWrapper, pressed && { opacity: 0.85 }]}
+              onPress={handlePickImage}
+            >
+              <Image source={{ uri: displayAvatar }} style={styles.avatar} />
+              <View style={styles.avatarOverlay}>
+                <MaterialIcons name="photo-camera" size={22} color="#FFFFFF" />
+              </View>
             </Pressable>
+            <Text style={styles.avatarHint}>Toque para alterar a foto</Text>
           </View>
 
-          {/* Form */}
-          <View style={styles.form}>
-            {/* Name Input */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Nome Completo</Text>
+          {/* Formulário */}
+          <View style={styles.formSection}>
+            <Text style={styles.sectionTitle}>Informações pessoais</Text>
+
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>Nome completo</Text>
               <View style={styles.inputWrapper}>
-                <MaterialIcons name="person" size={20} color="#9CA3AF" />
+                <MaterialIcons name="person-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Seu nome"
-                  placeholderTextColor="#D1D5DB"
                   value={name}
                   onChangeText={setName}
-                  editable={!isLoading}
+                  placeholder="Seu nome completo"
+                  placeholderTextColor="#9CA3AF"
+                  returnKeyType="done"
+                  onSubmitEditing={handleSaveProfile}
+                  autoCapitalize="words"
                 />
               </View>
             </View>
 
-            {/* Email Input */}
-            <View style={styles.inputGroup}>
-              <View style={styles.emailLabelRow}>
-                <Text style={styles.label}>E-mail</Text>
-                {emailVerified && (
-                  <View style={styles.verifiedBadge}>
-                    <MaterialIcons name="check-circle" size={14} color="#25D366" />
-                    <Text style={styles.verifiedText}>Verificado</Text>
-                  </View>
-                )}
-              </View>
-              <View style={styles.inputWrapper}>
-                <MaterialIcons name="email" size={20} color="#9CA3AF" />
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>E-mail</Text>
+              <View style={[styles.inputWrapper, styles.inputDisabled]}>
+                <MaterialIcons name="email" size={20} color="#D1D5DB" style={styles.inputIcon} />
                 <TextInput
-                  style={styles.input}
-                  placeholder="seu@email.com"
+                  style={[styles.input, { color: "#9CA3AF" }]}
+                  value={user?.email || ""}
+                  editable={false}
+                  placeholder="E-mail"
                   placeholderTextColor="#D1D5DB"
-                  value={email}
-                  onChangeText={setEmail}
-                  editable={!isLoading && !emailVerified}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
                 />
+                <MaterialIcons name="lock-outline" size={16} color="#D1D5DB" />
               </View>
-
-              {!emailVerified && (
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.verifyBtn,
-                    pressed && { opacity: 0.8 },
-                    isLoading && { opacity: 0.6 },
-                  ]}
-                  onPress={handleSendVerificationCode}
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <ActivityIndicator color="#FFFFFF" size="small" />
-                  ) : (
-                    <>
-                      <MaterialIcons name="mail-outline" size={16} color="#FFFFFF" />
-                      <Text style={styles.verifyBtnText}>Enviar Código</Text>
-                    </>
-                  )}
-                </Pressable>
-              )}
+              <Text style={styles.fieldHint}>O e-mail não pode ser alterado.</Text>
             </View>
-
-            {/* Email Verification */}
-            {showVerification && !emailVerified && (
-              <View style={styles.verificationBox}>
-                <Text style={styles.verificationTitle}>Verificar E-mail</Text>
-                <Text style={styles.verificationSubtitle}>
-                  Digite o código de 6 dígitos enviado para {email}
-                </Text>
-
-                <TextInput
-                  style={styles.verificationInput}
-                  placeholder="000000"
-                  placeholderTextColor="#D1D5DB"
-                  value={verificationCode}
-                  onChangeText={setVerificationCode}
-                  keyboardType="number-pad"
-                  maxLength={6}
-                  editable={!isLoading}
-                />
-
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.confirmVerifyBtn,
-                    pressed && { opacity: 0.8 },
-                    isLoading && { opacity: 0.6 },
-                  ]}
-                  onPress={handleVerifyEmail}
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <ActivityIndicator color="#FFFFFF" size="small" />
-                  ) : (
-                    <Text style={styles.confirmVerifyBtnText}>Confirmar</Text>
-                  )}
-                </Pressable>
-              </View>
-            )}
-
-            {/* Phone Input */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Telefone</Text>
-              <View style={styles.inputWrapper}>
-                <MaterialIcons name="phone" size={20} color="#9CA3AF" />
-                <TextInput
-                  style={styles.input}
-                  placeholder="(11) 99999-9999"
-                  placeholderTextColor="#D1D5DB"
-                  value={phone}
-                  onChangeText={setPhone}
-                  editable={!isLoading}
-                  keyboardType="phone-pad"
-                />
-              </View>
-            </View>
-
-            {/* Save Button */}
-            <Pressable
-              style={({ pressed }) => [
-                styles.saveBtn,
-                pressed && { opacity: 0.9 },
-                isLoading && { opacity: 0.6 },
-              ]}
-              onPress={handleSaveProfile}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <>
-                  <MaterialIcons name="save" size={18} color="#FFFFFF" />
-                  <Text style={styles.saveBtnText}>Salvar Alterações</Text>
-                </>
-              )}
-            </Pressable>
-
-            {/* Delete Account */}
-            <Pressable
-              style={({ pressed }) => [
-                styles.deleteBtn,
-                pressed && { opacity: 0.8 },
-              ]}
-              onPress={() => {
-                Alert.alert(
-                  "Deletar Conta",
-                  "Esta ação é irreversível. Tem certeza?",
-                  [
-                    { text: "Cancelar", style: "cancel" },
-                    {
-                      text: "Deletar",
-                      style: "destructive",
-                      onPress: () => {
-                        Alert.alert("Conta deletada", "Sua conta foi removida");
-                        router.replace("/auth/login" as any);
-                      },
-                    },
-                  ]
-                );
-              }}
-            >
-              <MaterialIcons name="delete" size={18} color="#EF4444" />
-              <Text style={styles.deleteBtnText}>Deletar Conta</Text>
-            </Pressable>
           </View>
+
+          {/* Botão salvar */}
+          <Pressable
+            style={({ pressed }) => [
+              styles.saveBtn,
+              pressed && { opacity: 0.85 },
+              saving && { opacity: 0.6 },
+            ]}
+            onPress={handleSaveProfile}
+            disabled={saving}
+          >
+            {saving ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <>
+                <MaterialIcons name="check" size={20} color="#FFFFFF" />
+                <Text style={styles.saveBtnText}>Salvar alterações</Text>
+              </>
+            )}
+          </Pressable>
+
+          <View style={{ height: 40 }} />
         </ScrollView>
-      </ScreenContainer>
+      </View>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#F5F5F5" },
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#FFFFFF",
     paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: "#F3F4F6",
   },
-  backBtn: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
+  backBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
+  headerTitle: { fontSize: 17, fontWeight: "700", color: "#111827" },
+  saveHeaderBtn: { paddingHorizontal: 12, paddingVertical: 6 },
+  saveHeaderText: { fontSize: 15, fontWeight: "600", color: "#25D366" },
+  scrollContent: { paddingBottom: 32 },
   avatarSection: {
     alignItems: "center",
-    marginVertical: 24,
-    position: "relative",
+    paddingVertical: 32,
+    backgroundColor: "#FFFFFF",
+    marginBottom: 16,
   },
+  avatarWrapper: { position: "relative" },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "#25D366",
-    alignItems: "center",
-    justifyContent: "center",
+    width: 100, height: 100, borderRadius: 50,
+    backgroundColor: "#E5E7EB",
+    borderWidth: 3, borderColor: "#FFFFFF",
   },
-  avatarText: {
-    fontSize: 40,
-    fontWeight: "700",
-    color: "#FFFFFF",
-  },
-  changeAvatarBtn: {
+  avatarOverlay: {
     position: "absolute",
-    bottom: 0,
-    right: 0,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    bottom: 0, right: 0,
+    width: 34, height: 34, borderRadius: 17,
     backgroundColor: "#25D366",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 3,
-    borderColor: "#FFFFFF",
+    alignItems: "center", justifyContent: "center",
+    borderWidth: 2, borderColor: "#FFFFFF",
   },
-  form: {
-    gap: 20,
-    paddingBottom: 24,
+  avatarHint: { marginTop: 10, fontSize: 13, color: "#6B7280" },
+  formSection: {
+    backgroundColor: "#FFFFFF",
+    marginHorizontal: 16,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  inputGroup: {
-    gap: 8,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#111827",
-  },
-  emailLabelRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  verifiedBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "rgba(37, 211, 102, 0.1)",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  verifiedText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#25D366",
-  },
+  sectionTitle: { fontSize: 13, fontWeight: "700", color: "#6B7280", marginBottom: 14, textTransform: "uppercase", letterSpacing: 0.5 },
+  field: { marginBottom: 16 },
+  fieldLabel: { fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6 },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F9FAFB",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    gap: 10,
+    borderWidth: 1.5, borderColor: "#E5E7EB",
+    borderRadius: 12, paddingHorizontal: 12, paddingVertical: 12,
+    backgroundColor: "#FAFAFA", gap: 8,
   },
-  input: {
-    flex: 1,
-    paddingVertical: 12,
-    fontSize: 14,
-    color: "#111827",
-  },
-  verifyBtn: {
-    backgroundColor: "#25D366",
-    borderRadius: 8,
-    paddingVertical: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-  },
-  verifyBtnText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#FFFFFF",
-  },
-  verificationBox: {
-    backgroundColor: "#F0FDF4",
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#DCFCE7",
-    gap: 12,
-  },
-  verificationTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#15803D",
-  },
-  verificationSubtitle: {
-    fontSize: 12,
-    color: "#4B5563",
-    lineHeight: 18,
-  },
-  verificationInput: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#111827",
-    textAlign: "center",
-    letterSpacing: 8,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-  },
-  confirmVerifyBtn: {
-    backgroundColor: "#25D366",
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  confirmVerifyBtnText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#FFFFFF",
-  },
+  inputDisabled: { backgroundColor: "#F9FAFB", borderColor: "#F3F4F6" },
+  inputIcon: {},
+  input: { flex: 1, fontSize: 15, color: "#111827" },
+  fieldHint: { fontSize: 11, color: "#9CA3AF", marginTop: 4 },
   saveBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginHorizontal: 16,
     backgroundColor: "#25D366",
-    borderRadius: 12,
-    paddingVertical: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    marginTop: 8,
+    borderRadius: 14,
+    paddingVertical: 16,
+    shadowColor: "#25D366",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  saveBtnText: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#FFFFFF",
-  },
-  deleteBtn: {
-    backgroundColor: "#FEE2E2",
-    borderRadius: 12,
-    paddingVertical: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    borderWidth: 1,
-    borderColor: "#FECACA",
-  },
-  deleteBtnText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#EF4444",
-  },
+  saveBtnText: { fontSize: 16, fontWeight: "700", color: "#FFFFFF" },
 });

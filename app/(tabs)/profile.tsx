@@ -14,6 +14,7 @@ import { ScreenContainer } from "@/components/screen-container";
 import { useAuth } from "@/lib/auth-context";
 import { useProvider } from "@/lib/provider-context";
 import { useFavorites } from "@/lib/favorites-context";
+import { useNotifications } from "@/lib/notifications-context";
 
 const ADMIN_EMAIL = "pedroprezende33@gmail.com";
 
@@ -22,6 +23,7 @@ export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const { isProvider, provider } = useProvider();
   const { favorites, orders } = useFavorites();
+  const { unreadCount } = useNotifications();
 
   const isAdmin = user?.email === ADMIN_EMAIL;
 
@@ -42,7 +44,7 @@ export default function ProfileScreen() {
   const MENU_ITEMS = [
     { id: "orders", label: "Meus pedidos", icon: "shopping-bag", badge: orders.length > 0 ? String(orders.length) : undefined },
     { id: "favorites", label: "Favoritos", icon: "favorite-border", badge: favorites.length > 0 ? String(favorites.length) : undefined },
-    { id: "notifications", label: "Notificações", icon: "notifications-none" },
+    { id: "notifications", label: "Notificações", icon: "notifications-none", badge: unreadCount > 0 ? String(unreadCount) : undefined },
     { id: "provider", label: isProvider ? "Minha área de prestador" : "Seja um prestador", icon: isProvider ? "work" : "add-business", highlight: !isProvider },
     { id: "help", label: "Ajuda e suporte", icon: "help-outline" },
     { id: "about", label: "Sobre o ChamaJá", icon: "info-outline" },
