@@ -262,3 +262,7 @@
 - [x] Badge de contagem de não lidas na tab Perfil e no item de menu
 - [x] Tela de notificações funcional com lista, marcar como lida e limpar tudo
 - [x] Notificações de boas-vindas na primeira abertura do app
+
+## Correções Status Bar e Sino (27/04)
+- [x] Corrigir sino de notificações na Home (adicionado onPress + badge real do NotificationsContext)
+- [x] Ajustar status bar para ícones do sistema visíveis sobre fundo branco (style="dark", translucent=false)

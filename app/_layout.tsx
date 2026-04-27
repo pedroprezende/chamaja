@@ -128,7 +128,7 @@ export default function RootLayout() {
               <FavoritesProvider>
                 <NotificationsProvider>
                   <RootLayoutNav />
-                  <StatusBar style="auto" />
+                  <StatusBar style="dark" backgroundColor="#FFFFFF" translucent={false} />
                 </NotificationsProvider>
               </FavoritesProvider>
             </ProviderContextProvider>

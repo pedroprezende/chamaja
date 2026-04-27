@@ -18,6 +18,8 @@ import { categories, sections, getSectionServices } from "@/data/mock";
 import { useAdminServices } from "@/hooks/use-admin-services";
 import { useAds } from "@/hooks/use-ads";
 import { useAuth } from "@/lib/auth-context";
+import { useNotifications } from "@/lib/notifications-context";
+import { StatusBar } from "expo-status-bar";
 
 const CATEGORY_ICONS: Record<string, string> = {
   "reformas-reparos":       "build",
@@ -60,6 +62,7 @@ function getAdminIcon(category: string): string {
 export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const { unreadCount } = useNotifications();
   const { services: adminServices, isLoading: adminLoading } = useAdminServices(true);
   const { ads, isLoading: adsLoading } = useAds(true);
 
@@ -68,6 +71,7 @@ export default function HomeScreen() {
 
   return (
     <ScreenContainer containerClassName="bg-[#F5F5F5]" className="">
+      <StatusBar style="dark" backgroundColor="#FFFFFF" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 24 }}
@@ -79,12 +83,15 @@ export default function HomeScreen() {
           </View>
           <Pressable
             style={({ pressed }) => [styles.bellBtn, pressed && { opacity: 0.7 }]}
+            onPress={() => router.push("/notifications" as any)}
           >
             <View style={styles.bellWrapper}>
               <MaterialIcons name="notifications-none" size={26} color="#111827" />
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>3</Text>
-              </View>
+              {unreadCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{unreadCount > 9 ? "9+" : unreadCount}</Text>
+                </View>
+              )}
             </View>
           </Pressable>
         </View>
