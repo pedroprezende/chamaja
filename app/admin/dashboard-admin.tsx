@@ -1,4 +1,3 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -18,16 +17,27 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { adminDB, type Service } from "@/lib/admin-database";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuth } from "@/lib/auth-context";
 import { categories } from "@/data/mock";
+import { useEffect, useState, useCallback, useRef } from "react";
 
 const ADMIN_EMAIL = "pedroprezende33@gmail.com";
 
-// Mapeamento de ícones por categoria
+// Mapeamento de icones por categoria
 const CATEGORY_ICON_MAP: Record<string, string> = {
   "assistencia-tecnica": "settings",
   "reformas-reparos": "build",
   "eventos": "celebration",
   "servicos-domesticos": "home",
+  "servicos-externos": "yard",
+  "automotivo": "directions-car",
+  "beleza-estetica": "content-cut",
+  "servicos-profissionais": "business-center",
+  "saude": "local-hospital",
+  "logistica": "local-shipping",
+  "educacao": "school",
+  "comercios": "storefront",
+  "mobilidade": "commute",
   "aulas": "school",
 };
 
@@ -64,18 +74,10 @@ function ServiceCard({
           </View>
         </View>
         <Text style={styles.cardDescription} numberOfLines={2}>{item.description}</Text>
-        {/* Toggle Exibir na Home */}
-        <Pressable
-          style={styles.homeToggleRow}
-          onPress={onToggleHome}
-        >
-          <MaterialIcons
-            name="home"
-            size={14}
-            color={item.showOnHome ? "#25D366" : "#9CA3AF"}
-          />
+        <Pressable style={styles.homeToggleRow} onPress={onToggleHome}>
+          <MaterialIcons name="home" size={14} color={item.showOnHome ? "#25D366" : "#9CA3AF"} />
           <Text style={[styles.homeToggleText, item.showOnHome && styles.homeToggleTextActive]}>
-            {item.showOnHome ? "Visível na Home" : "Oculto na Home"}
+            {item.showOnHome ? "Visivel na Home" : "Oculto na Home"}
           </Text>
           <Switch
             value={item.showOnHome}
@@ -107,14 +109,14 @@ function ServiceCard({
 export default function AdminDashboard() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [userName, setUserName] = useState<string | null>(null);
+  const { user, signOut } = useAuth();
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [services, setServices] = useState<Service[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [searchText, setSearchText] = useState("");
-  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  // Controla se o dropdown de categorias esta aberto DENTRO do modal
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     category: "",
@@ -123,7 +125,6 @@ export default function AdminDashboard() {
     imageUri: "",
     showOnHome: false,
   });
-  const isLoggingOut = useRef(false);
 
   useEffect(() => {
     (async () => {
@@ -132,8 +133,6 @@ export default function AdminDashboard() {
         if (!raw) { router.replace("/auth/login"); return; }
         const u = JSON.parse(raw);
         if (u.email !== ADMIN_EMAIL) { router.replace("/(tabs)"); return; }
-        setUserEmail(u.email);
-        setUserName(u.name || u.email);
         setAuthorized(true);
         const all = await adminDB.getAllServices();
         setServices(all);
@@ -143,22 +142,23 @@ export default function AdminDashboard() {
     })();
   }, []);
 
+  // LOGOUT: usa signOut do AuthContext que limpa o estado React + AsyncStorage corretamente
   const handleLogout = useCallback(() => {
-    if (isLoggingOut.current) return;
     Alert.alert("Sair do Painel", "Tem certeza que deseja sair?", [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Sair",
         style: "destructive",
         onPress: async () => {
-          if (isLoggingOut.current) return;
-          isLoggingOut.current = true;
-          try { await AsyncStorage.removeItem("@chamaja_user"); } catch {}
+          try {
+            await signOut();
+          } catch {}
+          // Navega independente do resultado do signOut
           router.replace("/auth/login");
         },
       },
     ]);
-  }, [router]);
+  }, [signOut, router]);
 
   const handlePickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -175,6 +175,7 @@ export default function AdminDashboard() {
   const openCreateModal = () => {
     setEditingService(null);
     setFormData({ name: "", category: "", categoryId: "", description: "", imageUri: "", showOnHome: false });
+    setShowCategoryDropdown(false);
     setShowModal(true);
   };
 
@@ -188,11 +189,12 @@ export default function AdminDashboard() {
       imageUri: service.imageUri || "",
       showOnHome: service.showOnHome ?? false,
     });
+    setShowCategoryDropdown(false);
     setShowModal(true);
   };
 
   const handleDeleteService = (serviceId: string, serviceName: string) => {
-    Alert.alert("Deletar Serviço", `Deletar "${serviceName}"?`, [
+    Alert.alert("Deletar Servico", `Deletar "${serviceName}"?`, [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Deletar",
@@ -212,7 +214,7 @@ export default function AdminDashboard() {
 
   const handleSaveService = async () => {
     if (!formData.name.trim() || !formData.categoryId || !formData.description.trim()) {
-      Alert.alert("Campos obrigatórios", "Preencha nome, categoria e descrição.");
+      Alert.alert("Campos obrigatorios", "Preencha nome, categoria e descricao.");
       return;
     }
     try {
@@ -265,7 +267,7 @@ export default function AdminDashboard() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header com botão voltar */}
+      {/* Header */}
       <View style={styles.header}>
         <Pressable
           style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
@@ -276,7 +278,7 @@ export default function AdminDashboard() {
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Painel Admin</Text>
           <Text style={styles.headerSubtitle}>
-            {services.length} {services.length === 1 ? "serviço" : "serviços"} • {homeCount} na Home
+            {services.length} {services.length === 1 ? "servico" : "servicos"} • {homeCount} na Home
           </Text>
         </View>
         <Pressable
@@ -293,7 +295,7 @@ export default function AdminDashboard() {
           <MaterialIcons name="search" size={18} color="#9CA3AF" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Buscar serviço ou categoria..."
+            placeholder="Buscar servico ou categoria..."
             placeholderTextColor="#9CA3AF"
             value={searchText}
             onChangeText={setSearchText}
@@ -316,14 +318,14 @@ export default function AdminDashboard() {
       <View style={styles.statsBar}>
         <MaterialIcons name="admin-panel-settings" size={15} color="#25D366" />
         <Text style={[styles.statsText, { flex: 1 }]}>
-          Logado como <Text style={{ fontWeight: "700" }}>{userName}</Text>
+          Logado como <Text style={{ fontWeight: "700" }}>{user?.name || user?.email || "Admin"}</Text>
         </Text>
         <Pressable
           style={({ pressed }) => [styles.adsNavBtn, pressed && { opacity: 0.75 }]}
           onPress={() => router.push("/admin/ads" as any)}
         >
           <MaterialIcons name="campaign" size={15} color="#1A73E8" />
-          <Text style={styles.adsNavText}>Anúncios</Text>
+          <Text style={styles.adsNavText}>Anuncios</Text>
         </Pressable>
       </View>
 
@@ -345,7 +347,7 @@ export default function AdminDashboard() {
           <View style={styles.empty}>
             <MaterialIcons name="inbox" size={52} color="#D1D5DB" />
             <Text style={styles.emptyTitle}>
-              {searchText ? "Nenhum resultado" : "Nenhum serviço ainda"}
+              {searchText ? "Nenhum resultado" : "Nenhum servico ainda"}
             </Text>
             <Text style={styles.emptySubtitle}>
               {searchText ? "Tente outro termo" : 'Toque em "+" para criar'}
@@ -354,13 +356,13 @@ export default function AdminDashboard() {
         }
       />
 
-      {/* Modal de criação/edição */}
+      {/* Modal de criacao/edicao — SEM modal aninhado para categoria */}
       <Modal visible={showModal} transparent animationType="slide" onRequestClose={() => setShowModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
             <View style={styles.modalHandle} />
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{editingService ? "Editar Serviço" : "Novo Serviço"}</Text>
+              <Text style={styles.modalTitle}>{editingService ? "Editar Servico" : "Novo Servico"}</Text>
               <Pressable
                 style={({ pressed }) => [styles.modalCloseBtn, pressed && { opacity: 0.6 }]}
                 onPress={() => setShowModal(false)}
@@ -369,7 +371,11 @@ export default function AdminDashboard() {
               </Pressable>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              nestedScrollEnabled
+            >
               {/* Imagem */}
               <Text style={styles.fieldLabel}>Imagem de Capa</Text>
               <Pressable
@@ -394,7 +400,7 @@ export default function AdminDashboard() {
               </Pressable>
 
               {/* Nome */}
-              <Text style={styles.fieldLabel}>Nome do Serviço</Text>
+              <Text style={styles.fieldLabel}>Nome do Servico</Text>
               <View style={styles.fieldBox}>
                 <MaterialIcons name="build" size={18} color="#9CA3AF" />
                 <TextInput
@@ -407,11 +413,16 @@ export default function AdminDashboard() {
                 />
               </View>
 
-              {/* Categoria — seletor */}
+              {/* Categoria — dropdown INLINE (sem Modal aninhado) */}
               <Text style={styles.fieldLabel}>Categoria</Text>
               <Pressable
-                style={({ pressed }) => [styles.fieldBox, styles.categorySelector, pressed && { opacity: 0.85 }]}
-                onPress={() => setShowCategoryPicker(true)}
+                style={({ pressed }) => [
+                  styles.fieldBox,
+                  styles.categorySelector,
+                  showCategoryDropdown && styles.categorySelectorOpen,
+                  pressed && { opacity: 0.85 },
+                ]}
+                onPress={() => setShowCategoryDropdown((v) => !v)}
               >
                 {formData.categoryId ? (
                   <View style={styles.selectedCategoryRow}>
@@ -430,15 +441,58 @@ export default function AdminDashboard() {
                     <Text style={styles.categoryPlaceholder}>Selecionar categoria...</Text>
                   </>
                 )}
-                <MaterialIcons name="expand-more" size={20} color="#9CA3AF" />
+                <MaterialIcons
+                  name={showCategoryDropdown ? "expand-less" : "expand-more"}
+                  size={20}
+                  color="#9CA3AF"
+                />
               </Pressable>
 
-              {/* Descrição */}
-              <Text style={styles.fieldLabel}>Descrição</Text>
+              {/* Lista de categorias inline — aparece abaixo do botao quando aberta */}
+              {showCategoryDropdown && (
+                <View style={styles.categoryDropdown}>
+                  {categories.map((cat) => {
+                    const isSelected = formData.categoryId === cat.id;
+                    return (
+                      <Pressable
+                        key={cat.id}
+                        style={({ pressed }) => [
+                          styles.dropdownItem,
+                          isSelected && styles.dropdownItemSelected,
+                          pressed && { backgroundColor: "#F0FDF4" },
+                        ]}
+                        onPress={() => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            categoryId: cat.id,
+                            category: cat.name.replace(/\n/g, " "),
+                          }));
+                          setShowCategoryDropdown(false);
+                        }}
+                      >
+                        <View style={[styles.dropdownItemIcon, isSelected && styles.dropdownItemIconSelected]}>
+                          <MaterialIcons
+                            name={getCategoryIcon(cat.id) as any}
+                            size={18}
+                            color={isSelected ? "#FFFFFF" : "#25D366"}
+                          />
+                        </View>
+                        <Text style={[styles.dropdownItemText, isSelected && styles.dropdownItemTextSelected]}>
+                          {cat.name.replace(/\n/g, " ")}
+                        </Text>
+                        {isSelected && <MaterialIcons name="check" size={16} color="#25D366" />}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              )}
+
+              {/* Descricao */}
+              <Text style={styles.fieldLabel}>Descricao</Text>
               <View style={[styles.fieldBox, styles.fieldBoxMultiline]}>
                 <TextInput
                   style={[styles.fieldInput, styles.fieldInputMultiline]}
-                  placeholder="Descreva o serviço..."
+                  placeholder="Descreva o servico..."
                   placeholderTextColor="#9CA3AF"
                   value={formData.description}
                   onChangeText={(t) => setFormData({ ...formData, description: t })}
@@ -455,7 +509,7 @@ export default function AdminDashboard() {
                   <View>
                     <Text style={styles.homeToggleCardTitle}>Exibir na tela inicial</Text>
                     <Text style={styles.homeToggleCardSub}>
-                      {formData.showOnHome ? "Visível para todos os usuários" : "Oculto da tela inicial"}
+                      {formData.showOnHome ? "Visivel para todos os usuarios" : "Oculto da tela inicial"}
                     </Text>
                   </View>
                 </View>
@@ -479,63 +533,12 @@ export default function AdminDashboard() {
                   onPress={handleSaveService}
                 >
                   <MaterialIcons name={editingService ? "check" : "add"} size={18} color="#fff" />
-                  <Text style={styles.saveBtnText}>{editingService ? "Salvar" : "Criar Serviço"}</Text>
+                  <Text style={styles.saveBtnText}>{editingService ? "Salvar" : "Criar Servico"}</Text>
                 </Pressable>
               </View>
             </ScrollView>
           </View>
         </View>
-      </Modal>
-
-      {/* Modal seletor de categoria */}
-      <Modal
-        visible={showCategoryPicker}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowCategoryPicker(false)}
-      >
-        {/* Overlay fecha ao tocar fora do sheet */}
-        <Pressable style={styles.pickerOverlay} onPress={() => setShowCategoryPicker(false)}>
-          {/* stopPropagation impede que toques no sheet fechem o modal */}
-          <Pressable style={styles.pickerSheet} onPress={(e) => e.stopPropagation()}>
-            <Text style={styles.pickerTitle}>Selecionar Categoria</Text>
-            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
-              {categories.map((cat) => {
-                const isSelected = formData.categoryId === cat.id;
-                return (
-                  <Pressable
-                    key={cat.id}
-                    style={({ pressed }) => [
-                      styles.pickerItem,
-                      isSelected && styles.pickerItemSelected,
-                      pressed && { backgroundColor: "#F0FDF4" },
-                    ]}
-                    onPress={() => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        categoryId: cat.id,
-                        category: cat.name.replace(/\n/g, " "),
-                      }));
-                      setShowCategoryPicker(false);
-                    }}
-                  >
-                    <View style={[styles.pickerItemIcon, isSelected && styles.pickerItemIconSelected]}>
-                      <MaterialIcons
-                        name={cat.icon as any}
-                        size={20}
-                        color={isSelected ? "#FFFFFF" : "#25D366"}
-                      />
-                    </View>
-                    <Text style={[styles.pickerItemText, isSelected && styles.pickerItemTextSelected]}>
-                      {cat.name.replace(/\n/g, " ")}
-                    </Text>
-                    {isSelected && <MaterialIcons name="check" size={18} color="#25D366" />}
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </Pressable>
-        </Pressable>
       </Modal>
     </View>
   );
@@ -544,38 +547,25 @@ export default function AdminDashboard() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F5F5" },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
-    gap: 8,
+    flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF",
+    paddingHorizontal: 12, paddingVertical: 12,
+    borderBottomWidth: 1, borderBottomColor: "#F3F4F6", gap: 8,
   },
   backBtn: {
     width: 40, height: 40, borderRadius: 20,
-    alignItems: "center", justifyContent: "center",
-    backgroundColor: "#F3F4F6",
+    alignItems: "center", justifyContent: "center", backgroundColor: "#F3F4F6",
   },
   headerCenter: { flex: 1 },
   headerTitle: { fontSize: 17, fontWeight: "700", color: "#111827" },
   headerSubtitle: { fontSize: 12, color: "#6B7280" },
   logoutBtn: {
     width: 40, height: 40, borderRadius: 20,
-    alignItems: "center", justifyContent: "center",
-    backgroundColor: "#FEF2F2",
+    alignItems: "center", justifyContent: "center", backgroundColor: "#FEF2F2",
   },
-  logoutText: { fontSize: 13, fontWeight: "600", color: "#EF4444" },
   searchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 10,
-    backgroundColor: "#FFFFFF",
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
+    flexDirection: "row", alignItems: "center",
+    paddingHorizontal: 16, paddingVertical: 12, gap: 10,
+    backgroundColor: "#FFFFFF", borderBottomWidth: 1, borderBottomColor: "#F3F4F6",
   },
   searchBox: {
     flex: 1, flexDirection: "row", alignItems: "center",
@@ -589,8 +579,7 @@ const styles = StyleSheet.create({
   },
   statsBar: {
     flexDirection: "row", alignItems: "center", gap: 6,
-    paddingHorizontal: 16, paddingVertical: 8,
-    backgroundColor: "#F0FDF4",
+    paddingHorizontal: 16, paddingVertical: 8, backgroundColor: "#F0FDF4",
   },
   statsText: { fontSize: 12, color: "#374151" },
   listContent: { padding: 16, paddingBottom: 32 },
@@ -598,7 +587,8 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF",
     borderRadius: 14, marginBottom: 10, overflow: "hidden",
     borderWidth: 1, borderColor: "#F3F4F6",
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
   },
   cardThumbnail: { width: 72, height: 72, backgroundColor: "#F3F4F6" },
   iconContainer: {
@@ -614,9 +604,7 @@ const styles = StyleSheet.create({
   },
   categoryBadgeText: { fontSize: 10, fontWeight: "600", color: "#1D4ED8" },
   cardDescription: { fontSize: 12, color: "#6B7280", lineHeight: 16 },
-  homeToggleRow: {
-    flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2,
-  },
+  homeToggleRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
   homeToggleText: { fontSize: 11, color: "#9CA3AF", flex: 1 },
   homeToggleTextActive: { color: "#25D366", fontWeight: "600" },
   cardActions: { flexDirection: "column", gap: 6, paddingRight: 10 },
@@ -671,8 +659,9 @@ const styles = StyleSheet.create({
   fieldBoxMultiline: { alignItems: "flex-start", paddingTop: 12 },
   fieldInput: { flex: 1, fontSize: 14, color: "#111827", padding: 0 },
   fieldInputMultiline: { minHeight: 80, textAlignVertical: "top" },
-  // Category selector
+  // Category selector inline
   categorySelector: { justifyContent: "space-between" },
+  categorySelectorOpen: { borderColor: "#25D366", borderBottomLeftRadius: 0, borderBottomRightRadius: 0 },
   selectedCategoryRow: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8 },
   selectedCategoryIcon: {
     width: 28, height: 28, borderRadius: 14, backgroundColor: "#F0FDF4",
@@ -680,6 +669,25 @@ const styles = StyleSheet.create({
   },
   selectedCategoryText: { fontSize: 14, color: "#111827", fontWeight: "500" },
   categoryPlaceholder: { flex: 1, fontSize: 14, color: "#9CA3AF" },
+  // Dropdown inline de categorias
+  categoryDropdown: {
+    backgroundColor: "#FFFFFF", borderWidth: 1.5, borderColor: "#25D366",
+    borderTopWidth: 0, borderBottomLeftRadius: 10, borderBottomRightRadius: 10,
+    marginBottom: 4, maxHeight: 300, overflow: "hidden",
+  },
+  dropdownItem: {
+    flexDirection: "row", alignItems: "center", gap: 10,
+    paddingVertical: 11, paddingHorizontal: 12,
+    borderBottomWidth: 1, borderBottomColor: "#F3F4F6",
+  },
+  dropdownItemSelected: { backgroundColor: "#F0FDF4" },
+  dropdownItemIcon: {
+    width: 34, height: 34, borderRadius: 17, backgroundColor: "#F0FDF4",
+    alignItems: "center", justifyContent: "center",
+  },
+  dropdownItemIconSelected: { backgroundColor: "#25D366" },
+  dropdownItemText: { flex: 1, fontSize: 14, color: "#374151", fontWeight: "500" },
+  dropdownItemTextSelected: { color: "#111827", fontWeight: "700" },
   // Home toggle card
   homeToggleCard: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
@@ -702,29 +710,7 @@ const styles = StyleSheet.create({
     justifyContent: "center", gap: 6,
   },
   saveBtnText: { fontSize: 15, fontWeight: "700", color: "#FFFFFF" },
-  // Category picker modal
-  pickerOverlay: {
-    flex: 1, backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "center", alignItems: "center", padding: 32,
-  },
-  pickerSheet: {
-    backgroundColor: "#FFFFFF", borderRadius: 20, padding: 20,
-    width: "100%", gap: 4,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 8,
-  },
-  pickerTitle: { fontSize: 17, fontWeight: "700", color: "#111827", marginBottom: 12 },
-  pickerItem: {
-    flexDirection: "row", alignItems: "center", gap: 12,
-    paddingVertical: 12, paddingHorizontal: 8, borderRadius: 12,
-  },
-  pickerItemSelected: { backgroundColor: "#F0FDF4" },
-  pickerItemIcon: {
-    width: 40, height: 40, borderRadius: 20, backgroundColor: "#F0FDF4",
-    alignItems: "center", justifyContent: "center",
-  },
-  pickerItemIconSelected: { backgroundColor: "#25D366" },
-  pickerItemText: { flex: 1, fontSize: 15, color: "#374151", fontWeight: "500" },
-  pickerItemTextSelected: { color: "#111827", fontWeight: "700" },
+  // Stats nav
   adsNavBtn: {
     flexDirection: "row", alignItems: "center", gap: 4,
     backgroundColor: "#EFF6FF", borderRadius: 8,

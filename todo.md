@@ -236,3 +236,7 @@
 ## Correções UI (27/04)
 - [x] Corrigir seletor de categoria no painel admin (stopPropagation no sheet + ScrollView para todas as 13 categorias)
 - [x] Ajustar imagens cortadas no carrossel de Destaques da Home (altura 210, dimensões explícitas)
+
+## Correções Críticas Admin (27/04 - v2)
+- [x] Corrigir logout do painel admin (definitivo) — usa signOut() do AuthContext
+- [x] Corrigir seletor de categoria no painel admin — dropdown inline sem Modal aninhado
