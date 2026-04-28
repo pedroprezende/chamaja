@@ -1,7 +1,10 @@
 /**
  * Sistema de banco de dados para admin
  * Gerencia contas de admin, serviços e permissões
+ * Persistência via AsyncStorage — dados sobrevivem ao reiniciar o app
  */
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export type UserRole = "ADMIN" | "CONTRACTOR";
 
@@ -31,60 +34,98 @@ export interface Service {
   isActive: boolean;
 }
 
-// Banco de dados em memória (em produção, usar PostgreSQL)
-const adminDatabase = {
-  admins: new Map<string, AdminAccount>(),
-  services: new Map<string, Service>(),
+// ── Chaves do AsyncStorage ──────────────────────────────────────────────────
+const STORAGE_KEY_SERVICES = "@chamaja_admin_services";
+const STORAGE_KEY_ADMINS   = "@chamaja_admin_accounts";
+
+// ── Estado em memória (cache) ───────────────────────────────────────────────
+let _servicesInitialized = false;
+let _adminsInitialized   = false;
+let _services: Service[]      = [];
+let _admins:   AdminAccount[] = [];
+
+// ── Admin padrão ────────────────────────────────────────────────────────────
+const DEFAULT_ADMIN: AdminAccount = {
+  id: "admin-pedro",
+  email: "pedroprezende33@gmail.com",
+  password: "3404001#Sayajins",
+  name: "Pedro Prezende",
+  role: "ADMIN",
+  createdAt: "2024-01-01T00:00:00.000Z",
+  updatedAt: "2024-01-01T00:00:00.000Z",
+  isActive: true,
 };
 
-// Inicializar com admin pré-configurado
-const initializeAdminDatabase = () => {
-  const adminId = "admin-pedro";
-  const existingAdmin = adminDatabase.admins.get(adminId);
-  
-  if (!existingAdmin) {
-    const admin: AdminAccount = {
-      id: adminId,
-      email: "pedroprezende33@gmail.com",
-      password: "3404001#Sayajins",
-      name: "Pedro Prezende",
-      role: "ADMIN",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      isActive: true,
-    };
-    adminDatabase.admins.set(adminId, admin);
+// ── Helpers de persistência ─────────────────────────────────────────────────
+async function ensureServicesLoaded(): Promise<void> {
+  if (_servicesInitialized) return;
+  try {
+    const raw = await AsyncStorage.getItem(STORAGE_KEY_SERVICES);
+    if (raw) {
+      _services = JSON.parse(raw) as Service[];
+    } else {
+      _services = [];
+    }
+  } catch {
+    _services = [];
   }
-};
+  _servicesInitialized = true;
+}
 
-// Inicializar ao carregar o módulo
-initializeAdminDatabase();
+async function persistServices(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(STORAGE_KEY_SERVICES, JSON.stringify(_services));
+  } catch {
+    // silently ignore
+  }
+}
 
-// Funções para Admin
+async function ensureAdminsLoaded(): Promise<void> {
+  if (_adminsInitialized) return;
+  try {
+    const raw = await AsyncStorage.getItem(STORAGE_KEY_ADMINS);
+    if (raw) {
+      _admins = JSON.parse(raw) as AdminAccount[];
+      // Garantir que o admin principal sempre exista
+      if (!_admins.find((a) => a.id === DEFAULT_ADMIN.id)) {
+        _admins.unshift(DEFAULT_ADMIN);
+        await persistAdmins();
+      }
+    } else {
+      _admins = [DEFAULT_ADMIN];
+      await persistAdmins();
+    }
+  } catch {
+    _admins = [DEFAULT_ADMIN];
+  }
+  _adminsInitialized = true;
+}
+
+async function persistAdmins(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(STORAGE_KEY_ADMINS, JSON.stringify(_admins));
+  } catch {
+    // silently ignore
+  }
+}
+
+// ── API pública ─────────────────────────────────────────────────────────────
 export const adminDB = {
-  // Admin operations
+  // ── Admin operations ──────────────────────────────────────────────────────
   createAdmin: async (
     email: string,
     password: string,
     name: string,
     role: UserRole = "CONTRACTOR"
   ): Promise<AdminAccount> => {
-    // Verificar se email já existe
-    const existingAdmin = Array.from(adminDatabase.admins.values()).find(
-      (a) => a.email === email
-    );
-    if (existingAdmin) {
-      throw new Error("E-mail já cadastrado");
-    }
-
-    // Apenas o admin principal pode criar outros admins
-    if (role === "ADMIN" && email !== "pedroprezende33@gmail.com") {
+    await ensureAdminsLoaded();
+    const existing = _admins.find((a) => a.email === email);
+    if (existing) throw new Error("E-mail já cadastrado");
+    if (role === "ADMIN" && email !== DEFAULT_ADMIN.email) {
       throw new Error("Apenas o admin principal pode criar outros admins");
     }
-
-    const id = `admin-${Date.now()}`;
     const admin: AdminAccount = {
-      id,
+      id: `admin-${Date.now()}`,
       email,
       password,
       name,
@@ -93,52 +134,51 @@ export const adminDB = {
       updatedAt: new Date().toISOString(),
       isActive: true,
     };
-
-    adminDatabase.admins.set(id, admin);
+    _admins.push(admin);
+    await persistAdmins();
     return admin;
   },
 
   getAdminByEmail: async (email: string): Promise<AdminAccount | null> => {
-    const admin = Array.from(adminDatabase.admins.values()).find(
-      (a) => a.email === email
-    );
-    return admin || null;
+    await ensureAdminsLoaded();
+    return _admins.find((a) => a.email === email) ?? null;
   },
 
   getAdminById: async (id: string): Promise<AdminAccount | null> => {
-    return adminDatabase.admins.get(id) || null;
+    await ensureAdminsLoaded();
+    return _admins.find((a) => a.id === id) ?? null;
   },
 
   updateAdmin: async (
     id: string,
     updates: Partial<AdminAccount>
   ): Promise<AdminAccount> => {
-    const admin = adminDatabase.admins.get(id);
-    if (!admin) {
-      throw new Error("Admin não encontrado");
-    }
-
-    const updated: AdminAccount = {
-      ...admin,
+    await ensureAdminsLoaded();
+    const idx = _admins.findIndex((a) => a.id === id);
+    if (idx === -1) throw new Error("Admin não encontrado");
+    _admins[idx] = {
+      ..._admins[idx],
       ...updates,
-      id: admin.id,
-      createdAt: admin.createdAt,
+      id: _admins[idx].id,
+      createdAt: _admins[idx].createdAt,
       updatedAt: new Date().toISOString(),
     };
-
-    adminDatabase.admins.set(id, updated);
-    return updated;
+    await persistAdmins();
+    return _admins[idx];
   },
 
   deleteAdmin: async (id: string): Promise<void> => {
-    adminDatabase.admins.delete(id);
+    await ensureAdminsLoaded();
+    _admins = _admins.filter((a) => a.id !== id);
+    await persistAdmins();
   },
 
   getAllAdmins: async (): Promise<AdminAccount[]> => {
-    return Array.from(adminDatabase.admins.values());
+    await ensureAdminsLoaded();
+    return [..._admins];
   },
 
-  // Service operations
+  // ── Service operations ────────────────────────────────────────────────────
   createService: async (
     adminId: string,
     name: string,
@@ -149,9 +189,9 @@ export const adminDB = {
     categoryId?: string,
     showOnHome?: boolean
   ): Promise<Service> => {
-    const id = `service-${Date.now()}`;
+    await ensureServicesLoaded();
     const service: Service = {
-      id,
+      id: `service-${Date.now()}`,
       adminId,
       name,
       category,
@@ -164,49 +204,54 @@ export const adminDB = {
       updatedAt: new Date().toISOString(),
       isActive: true,
     };
-
-    adminDatabase.services.set(id, service);
+    _services.push(service);
+    await persistServices();
     return service;
   },
 
   getServiceById: async (id: string): Promise<Service | null> => {
-    return adminDatabase.services.get(id) || null;
+    await ensureServicesLoaded();
+    return _services.find((s) => s.id === id) ?? null;
   },
 
   getServicesByAdminId: async (adminId: string): Promise<Service[]> => {
-    return Array.from(adminDatabase.services.values()).filter(
-      (s) => s.adminId === adminId
-    );
+    await ensureServicesLoaded();
+    return _services.filter((s) => s.adminId === adminId);
   },
 
   updateService: async (
     id: string,
     updates: Partial<Service>
   ): Promise<Service> => {
-    const service = adminDatabase.services.get(id);
-    if (!service) {
-      throw new Error("Serviço não encontrado");
-    }
-
-    const updated: Service = {
-      ...service,
+    await ensureServicesLoaded();
+    const idx = _services.findIndex((s) => s.id === id);
+    if (idx === -1) throw new Error("Serviço não encontrado");
+    _services[idx] = {
+      ..._services[idx],
       ...updates,
-      id: service.id,
-      adminId: service.adminId,
-      createdAt: service.createdAt,
+      id: _services[idx].id,
+      adminId: _services[idx].adminId,
+      createdAt: _services[idx].createdAt,
       updatedAt: new Date().toISOString(),
     };
-
-    adminDatabase.services.set(id, updated);
-    return updated;
+    await persistServices();
+    return _services[idx];
   },
 
   deleteService: async (id: string): Promise<boolean> => {
-    return adminDatabase.services.delete(id);
+    await ensureServicesLoaded();
+    const before = _services.length;
+    _services = _services.filter((s) => s.id !== id);
+    if (_services.length < before) {
+      await persistServices();
+      return true;
+    }
+    return false;
   },
 
   getAllServices: async (): Promise<Service[]> => {
-    return Array.from(adminDatabase.services.values());
+    await ensureServicesLoaded();
+    return [..._services];
   },
 
   // Verificar permissão
@@ -216,17 +261,23 @@ export const adminDB = {
   ): Promise<boolean> => {
     const user = await adminDB.getAdminById(userId);
     if (!user) return false;
-
-    // Admin pode gerenciar todos os serviços
     if (user.role === "ADMIN") return true;
-
-    // Contratante só pode gerenciar seus próprios serviços
     const service = await adminDB.getServiceById(serviceId);
     return service?.adminId === userId;
   },
 
-  // Verificar se é admin principal
   isMainAdmin: async (email: string): Promise<boolean> => {
-    return email === "pedroprezende33@gmail.com";
+    return email === DEFAULT_ADMIN.email;
+  },
+
+  /**
+   * Invalida o cache em memória para forçar releitura do AsyncStorage.
+   * Útil para garantir dados frescos após reinicialização do app.
+   */
+  resetCache: (): void => {
+    _servicesInitialized = false;
+    _adminsInitialized   = false;
+    _services = [];
+    _admins   = [];
   },
 };

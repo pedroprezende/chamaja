@@ -272,3 +272,8 @@
 - [x] Editar foto dos serviços existentes via galeria no gerenciador admin
 - [x] Editar categoria dos serviços existentes no gerenciador admin
 - [x] Modal de edição funcional para serviços novos e existentes (dropdown inline, sem Modal aninhado)
+
+## Persistência de Dados Admin (27/04)
+- [x] Migrar adminDB (serviços) para AsyncStorage com carregamento na inicialização e resetCache
+- [x] adsDB (anúncios) já tinha persistência — verificado e correto
+- [x] Dados persistem ao reiniciar o app (AsyncStorage @chamaja_admin_services e @chamaja_ads)
