@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { providersDB } from "@/lib/providers-database";
 
 export type PlanType = "monthly" | "annual" | null;
 
@@ -92,12 +93,43 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
       services: [],
     };
     await save(newProvider);
+    // Persistir no banco global de prestadores
+    await providersDB.upsertProvider({
+      userId,
+      name: data.name,
+      category: data.category,
+      city: data.city,
+      neighborhood: data.neighborhood,
+      phone: data.phone,
+      avatar: data.avatar,
+      description: data.description,
+      plan,
+      planExpiresAt: expiresAt,
+      isActive: true,
+      createdAt: now.toISOString(),
+      rating: 5.0,
+      reviewCount: 0,
+      services: [],
+    });
   };
 
   const updateProvider = async (data: Partial<ProviderProfile>) => {
     if (!provider) return;
     const updated = { ...provider, ...data };
     await save(updated);
+    // Sincronizar com o banco global
+    await providersDB.updateProvider(provider.userId, {
+      name: updated.name,
+      category: updated.category,
+      city: updated.city,
+      neighborhood: updated.neighborhood,
+      phone: updated.phone,
+      avatar: updated.avatar,
+      description: updated.description,
+      plan: updated.plan,
+      planExpiresAt: updated.planExpiresAt,
+      isActive: updated.isActive,
+    });
   };
 
   const addService = async (service: Omit<ProviderService, "id" | "createdAt">) => {

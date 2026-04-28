@@ -277,3 +277,10 @@
 - [x] Migrar adminDB (serviços) para AsyncStorage com carregamento na inicialização e resetCache
 - [x] adsDB (anúncios) já tinha persistência — verificado e correto
 - [x] Dados persistem ao reiniciar o app (AsyncStorage @chamaja_admin_services e @chamaja_ads)
+
+## Correções e Melhorias (28/04)
+- [x] Ocultar serviço padrão quando houver versão personalizada no admin (ID override-{mockId})
+- [x] Corrigir mapeamento de categoryId no painel admin (upsertServiceWithId com ID correto)
+- [x] Persistência global dos prestadores cadastrados (providersDB + AsyncStorage @chamaja_providers)
+- [x] Barra de pesquisa funcional para todos os serviços (mock + admin + prestadores reais)
+- [x] Listagem de profissionais por categoria inclui prestadores reais do providersDB

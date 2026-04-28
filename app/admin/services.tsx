@@ -149,8 +149,10 @@ export default function AdminServicesScreen() {
           showOnHome: formShowOnHome,
         });
       } else if (editingMockId) {
-        // Criar override do serviço mock
-        await adminDB.createService(
+        // Criar/atualizar override do serviço mock com ID fixo
+        const overrideId = `override-${editingMockId}`;
+        await adminDB.upsertServiceWithId(
+          overrideId,
           adminId,
           formName.trim(),
           categoryName,
@@ -203,8 +205,14 @@ export default function AdminServicesScreen() {
 
   // ── Montar lista de itens por categoria ──
   const buildSectionData = useCallback((categoryId: string): ServiceItem[] => {
+    // IDs de mocks que têm override admin (override-{mockId})
+    const overriddenMockIds = new Set(
+      adminServices
+        .filter((s) => s.id.startsWith("override-"))
+        .map((s) => s.id.replace("override-", ""))
+    );
     const mock = mockServices
-      .filter((s) => s.categoryId === categoryId)
+      .filter((s) => s.categoryId === categoryId && !overriddenMockIds.has(s.id))
       .map((s): ServiceItem => ({ source: "mock", data: s }));
     const admin = adminServices
       .filter((s) => s.categoryId === categoryId && s.isActive)

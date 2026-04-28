@@ -12,9 +12,11 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useState, useEffect, useMemo } from "react";
 
-import { getProfessionalsByService, getProfessionalsByRanking, professionals } from "@/data/mock";
+import { getProfessionalsByRanking } from "@/data/mock";
 import type { Professional } from "@/data/mock";
+import { providersDB, type StoredProvider } from "@/lib/providers-database";
 
 function openWhatsApp(phone: string) {
   const message = encodeURIComponent(
@@ -24,6 +26,28 @@ function openWhatsApp(phone: string) {
   Linking.openURL(url).catch(() =>
     Alert.alert("Erro", "Não foi possível abrir o WhatsApp.")
   );
+}
+
+// Converte StoredProvider para o formato Professional do mock
+function providerToProfessional(p: StoredProvider): Professional {
+  return {
+    id: p.userId,
+    name: p.name,
+    category: p.category,
+    categoryId: p.categoryId || "",
+    type: p.plan ? "PREMIUM" : "FREE",
+    rating: p.rating,
+    reviewCount: p.reviewCount,
+    phone: p.phone,
+    avatar: p.avatar || `https://i.pravatar.cc/150?u=${p.userId}`,
+    neighborhood: p.neighborhood,
+    city: p.city,
+    distance: "Próximo",
+    description: p.description,
+    serviceArea: p.city,
+    schedule: "Consultar disponibilidade",
+    paymentMethods: "Consultar",
+  };
 }
 
 function ProfessionalCard({
@@ -86,10 +110,53 @@ export default function ProfessionalsScreen() {
   }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [realProviders, setRealProviders] = useState<Professional[]>([]);
 
-  const data = category
-    ? getProfessionalsByRanking(category)
-    : getProfessionalsByRanking();
+  // Carregar prestadores reais do banco global
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const stored = category
+          ? await providersDB.getByCategory(category)
+          : await providersDB.getAllActive();
+        setRealProviders(stored.map(providerToProfessional));
+      } catch {
+        setRealProviders([]);
+      }
+    };
+    load();
+  }, [category]);
+
+  // Combinar mock + reais, sem duplicatas
+  const allProfessionals = useMemo(() => {
+    const mockData = category
+      ? getProfessionalsByRanking(category)
+      : getProfessionalsByRanking();
+    // Evitar duplicatas: se um prestador real tem o mesmo ID de um mock, usar o real
+    const realIds = new Set(realProviders.map((p) => p.id));
+    const filteredMock = mockData.filter((p) => !realIds.has(p.id));
+    // PREMIUM primeiro
+    const combined = [...realProviders, ...filteredMock];
+    return combined.sort((a, b) => {
+      if (a.type === "PREMIUM" && b.type !== "PREMIUM") return -1;
+      if (a.type !== "PREMIUM" && b.type === "PREMIUM") return 1;
+      return b.rating - a.rating;
+    });
+  }, [realProviders, category]);
+
+  // Filtrar por busca
+  const filteredData = useMemo(() => {
+    if (!searchQuery.trim()) return allProfessionals;
+    const q = searchQuery.toLowerCase();
+    return allProfessionals.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.neighborhood.toLowerCase().includes(q) ||
+        p.city?.toLowerCase().includes(q) ||
+        p.description?.toLowerCase().includes(q)
+    );
+  }, [allProfessionals, searchQuery]);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -107,7 +174,7 @@ export default function ProfessionalsScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      {/* Search + Filter */}
+      {/* Search */}
       <View style={styles.searchRow}>
         <View style={styles.searchBox}>
           <MaterialIcons name="search" size={18} color="#9CA3AF" />
@@ -115,7 +182,15 @@ export default function ProfessionalsScreen() {
             style={styles.searchInput}
             placeholder={`Buscar ${title || "profissional"}...`}
             placeholderTextColor="#9CA3AF"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            returnKeyType="search"
           />
+          {searchQuery.length > 0 && (
+            <Pressable onPress={() => setSearchQuery("")}>
+              <MaterialIcons name="close" size={18} color="#9CA3AF" />
+            </Pressable>
+          )}
         </View>
         <Pressable style={styles.filterBtn}>
           <MaterialIcons name="filter-list" size={22} color="#374151" />
@@ -129,9 +204,18 @@ export default function ProfessionalsScreen() {
         <MaterialIcons name="keyboard-arrow-down" size={18} color="#374151" />
       </Pressable>
 
+      {/* Count */}
+      {filteredData.length > 0 && (
+        <View style={styles.countRow}>
+          <Text style={styles.countText}>
+            {filteredData.length} profissional{filteredData.length !== 1 ? "is" : ""} encontrado{filteredData.length !== 1 ? "s" : ""}
+          </Text>
+        </View>
+      )}
+
       {/* List */}
       <FlatList
-        data={data}
+        data={filteredData}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
@@ -144,19 +228,31 @@ export default function ProfessionalsScreen() {
           />
         )}
         ListEmptyComponent={
-          <View style={styles.comingSoon}>
-            <View style={styles.comingSoonIconWrapper}>
-              <MaterialIcons name="schedule" size={48} color="#25D366" />
+          searchQuery.trim() ? (
+            <View style={styles.comingSoon}>
+              <View style={styles.comingSoonIconWrapper}>
+                <MaterialIcons name="search-off" size={48} color="#9CA3AF" />
+              </View>
+              <Text style={styles.comingSoonTitle}>Sem resultados</Text>
+              <Text style={styles.comingSoonSubtitle}>
+                Nenhum profissional encontrado para "{searchQuery}".{"\n"}Tente outro termo.
+              </Text>
             </View>
-            <Text style={styles.comingSoonTitle}>Em breve</Text>
-            <Text style={styles.comingSoonSubtitle}>
-              {`Estamos adicionando profissionais nesta categoria.\nVolte em breve!`}
-            </Text>
-            <View style={styles.comingSoonBadge}>
-              <MaterialIcons name="notifications-active" size={14} color="#25D366" />
-              <Text style={styles.comingSoonBadgeText}>Novidades chegando</Text>
+          ) : (
+            <View style={styles.comingSoon}>
+              <View style={styles.comingSoonIconWrapper}>
+                <MaterialIcons name="schedule" size={48} color="#25D366" />
+              </View>
+              <Text style={styles.comingSoonTitle}>Em breve</Text>
+              <Text style={styles.comingSoonSubtitle}>
+                {`Estamos adicionando profissionais nesta categoria.\nVolte em breve!`}
+              </Text>
+              <View style={styles.comingSoonBadge}>
+                <MaterialIcons name="notifications-active" size={14} color="#25D366" />
+                <Text style={styles.comingSoonBadgeText}>Novidades chegando</Text>
+              </View>
             </View>
-          </View>
+          )
         }
       />
     </View>
@@ -256,6 +352,18 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#374151",
     marginRight: 2,
+  },
+  countRow: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: "#F9FAFB",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  countText: {
+    fontSize: 13,
+    color: "#6B7280",
+    fontWeight: "500",
   },
   listContent: {
     padding: 16,

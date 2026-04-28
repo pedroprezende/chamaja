@@ -254,6 +254,59 @@ export const adminDB = {
     return [..._services];
   },
 
+  /**
+   * Cria um serviço com ID customizado (usado para overrides de serviços mock).
+   * Se já existir um serviço com esse ID, atualiza em vez de criar.
+   */
+  upsertServiceWithId: async (
+    id: string,
+    adminId: string,
+    name: string,
+    category: string,
+    description: string,
+    icon?: string,
+    imageUri?: string,
+    categoryId?: string,
+    showOnHome?: boolean
+  ): Promise<Service> => {
+    await ensureServicesLoaded();
+    const existingIdx = _services.findIndex((s) => s.id === id);
+    if (existingIdx !== -1) {
+      // Atualizar existente
+      _services[existingIdx] = {
+        ..._services[existingIdx],
+        name,
+        category,
+        categoryId: categoryId || "",
+        description,
+        icon,
+        imageUri,
+        showOnHome: showOnHome ?? false,
+        updatedAt: new Date().toISOString(),
+      };
+      await persistServices();
+      return _services[existingIdx];
+    }
+    // Criar novo com ID customizado
+    const service: Service = {
+      id,
+      adminId,
+      name,
+      category,
+      categoryId: categoryId || "",
+      description,
+      icon,
+      imageUri,
+      showOnHome: showOnHome ?? false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      isActive: true,
+    };
+    _services.push(service);
+    await persistServices();
+    return service;
+  },
+
   // Verificar permissão
   canManageService: async (
     userId: string,
