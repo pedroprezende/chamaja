@@ -28,6 +28,7 @@ export interface Service {
   description: string;
   icon?: string;
   imageUri?: string;
+  whatsapp?: string;
   showOnHome: boolean;
   createdAt: string;
   updatedAt: string;
@@ -187,7 +188,8 @@ export const adminDB = {
     icon?: string,
     imageUri?: string,
     categoryId?: string,
-    showOnHome?: boolean
+    showOnHome?: boolean,
+    whatsapp?: string
   ): Promise<Service> => {
     await ensureServicesLoaded();
     const service: Service = {
@@ -199,6 +201,7 @@ export const adminDB = {
       description,
       icon,
       imageUri,
+      whatsapp,
       showOnHome: showOnHome ?? false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -267,7 +270,8 @@ export const adminDB = {
     icon?: string,
     imageUri?: string,
     categoryId?: string,
-    showOnHome?: boolean
+    showOnHome?: boolean,
+    whatsapp?: string
   ): Promise<Service> => {
     await ensureServicesLoaded();
     const existingIdx = _services.findIndex((s) => s.id === id);
@@ -281,6 +285,7 @@ export const adminDB = {
         description,
         icon,
         imageUri,
+        whatsapp,
         showOnHome: showOnHome ?? false,
         updatedAt: new Date().toISOString(),
       };
@@ -297,6 +302,7 @@ export const adminDB = {
       description,
       icon,
       imageUri,
+      whatsapp,
       showOnHome: showOnHome ?? false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

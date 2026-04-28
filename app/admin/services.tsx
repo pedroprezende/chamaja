@@ -57,6 +57,7 @@ export default function AdminServicesScreen() {
   const [formName, setFormName] = useState("");
   const [formCategoryId, setFormCategoryId] = useState("");
   const [formImageUri, setFormImageUri] = useState("");
+  const [formWhatsapp, setFormWhatsapp] = useState("");
   const [formShowOnHome, setFormShowOnHome] = useState(false);
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -68,6 +69,7 @@ export default function AdminServicesScreen() {
     setFormName("");
     setFormCategoryId("");
     setFormImageUri("");
+    setFormWhatsapp("");
     setFormShowOnHome(false);
     setCategoryDropdownOpen(false);
     setModalVisible(true);
@@ -80,6 +82,7 @@ export default function AdminServicesScreen() {
     setFormName(svc.name);
     setFormCategoryId(svc.categoryId || "");
     setFormImageUri(svc.imageUri || "");
+    setFormWhatsapp(svc.whatsapp || "");
     setFormShowOnHome(svc.showOnHome);
     setCategoryDropdownOpen(false);
     setModalVisible(true);
@@ -101,6 +104,7 @@ export default function AdminServicesScreen() {
     setFormName(svc.name);
     setFormCategoryId(svc.categoryId);
     setFormImageUri(svc.image || "");
+    setFormWhatsapp("");
     setFormShowOnHome(false);
     setCategoryDropdownOpen(false);
     setModalVisible(true);
@@ -138,6 +142,7 @@ export default function AdminServicesScreen() {
     try {
       const categoryName = categories.find((c) => c.id === formCategoryId)?.name.replace("\n", " ") || formCategoryId;
       const adminId = user?.id || "admin-pedro";
+      const whatsappClean = formWhatsapp.trim() || undefined;
 
       if (editingService) {
         // Editar serviço admin existente
@@ -146,6 +151,7 @@ export default function AdminServicesScreen() {
           category: categoryName,
           categoryId: formCategoryId,
           imageUri: formImageUri || undefined,
+          whatsapp: whatsappClean,
           showOnHome: formShowOnHome,
         });
       } else if (editingMockId) {
@@ -160,7 +166,8 @@ export default function AdminServicesScreen() {
           undefined,
           formImageUri || undefined,
           formCategoryId,
-          formShowOnHome
+          formShowOnHome,
+          whatsappClean
         );
       } else {
         // Criar novo serviço
@@ -172,7 +179,8 @@ export default function AdminServicesScreen() {
           undefined,
           formImageUri || undefined,
           formCategoryId,
-          formShowOnHome
+          formShowOnHome,
+          whatsappClean
         );
       }
       reload();
@@ -182,7 +190,7 @@ export default function AdminServicesScreen() {
     } finally {
       setSaving(false);
     }
-  }, [formName, formCategoryId, formImageUri, formShowOnHome, editingService, editingMockId, user, reload]);
+  }, [formName, formCategoryId, formImageUri, formWhatsapp, formShowOnHome, editingService, editingMockId, user, reload]);
 
   // ── Excluir serviço admin ──
   const handleDeleteAdmin = useCallback((svc: AdminService) => {
@@ -456,6 +464,21 @@ export default function AdminServicesScreen() {
                 )}
               </Pressable>
 
+              {/* WhatsApp */}
+              <Text style={styles.fieldLabel}>WhatsApp do prestador</Text>
+              <TextInput
+                style={styles.textInput}
+                value={formWhatsapp}
+                onChangeText={setFormWhatsapp}
+                placeholder="Ex: (11) 99999-9999"
+                placeholderTextColor="#9CA3AF"
+                keyboardType="phone-pad"
+                returnKeyType="done"
+              />
+              <Text style={styles.fieldHint}>
+                Ao tocar no serviço, o usuário será direcionado para este WhatsApp.
+              </Text>
+
               {/* Toggle Exibir na Home */}
               <Pressable
                 style={styles.toggleRow}
@@ -638,6 +661,9 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 13, fontWeight: "600", color: "#374151",
     marginBottom: 6, marginTop: 14,
+  },
+  fieldHint: {
+    fontSize: 11, color: "#9CA3AF", marginTop: 4, lineHeight: 16,
   },
   textInput: {
     borderWidth: 1.5, borderColor: "#E5E7EB",

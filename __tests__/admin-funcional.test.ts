@@ -1,7 +1,10 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { adminDB, type AdminAccount, type Service } from "../lib/admin-database";
-
 describe("Admin Database - Funcional", () => {
+  beforeEach(() => {
+    adminDB.resetCache();
+  });
+
   describe("Admin Registration", () => {
     it("should create a new admin account", async () => {
       const email = `admin-${Date.now()}-1@example.com`;

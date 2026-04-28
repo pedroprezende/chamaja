@@ -284,3 +284,14 @@
 - [x] Persistência global dos prestadores cadastrados (providersDB + AsyncStorage @chamaja_providers)
 - [x] Barra de pesquisa funcional para todos os serviços (mock + admin + prestadores reais)
 - [x] Listagem de profissionais por categoria inclui prestadores reais do providersDB
+
+## Campo WhatsApp nos Serviços Admin (28/04)
+- [ ] Adicionar campo `whatsapp` na interface Service (admin-database.ts)
+- [ ] Adicionar input de WhatsApp no formulário de criação/edição do painel admin
+- [ ] Exibir botão "Chamar no WhatsApp" na tela de detalhe do serviço quando whatsapp estiver preenchido
+- [ ] Abrir WhatsApp com mensagem pré-definida ao tocar no botão
+## Campo WhatsApp nos Serviços Admin (28/04)
+- [x] Adicionar campo `whatsapp` na interface Service (admin-database.ts)
+- [x] Adicionar input de WhatsApp no formulário de criação/edição do painel admin
+- [x] Exibir botão "Chamar no WhatsApp" na tela de detalhe do serviço quando whatsapp estiver preenchido
+- [x] Abrir WhatsApp com mensagem pré-definida ao tocar no botão
