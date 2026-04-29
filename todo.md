@@ -309,3 +309,12 @@
 - [x] Cards com borda verde e sombra destacada no Modo Edição
 - [x] Campo displayOrder adicionado à interface Service
 - [x] Método reorderServices adicionado ao adminDB
+
+## Bug Fix: Serviços admin por categoria (29/04)
+- [x] Corrigir tela categories/[section].tsx para buscar serviços do adminDB
+- [x] Filtro duplo: por categoryId (exato) + fallback por nome normalizado da categoria
+- [x] Serviços admin aparecem antes dos mock na listagem
+- [x] Badge verde "verificado" nos cards de serviços admin
+- [x] Botão WhatsApp nos cards da tela de categoria
+- [x] Contador de serviços com indicação de quantos são do admin
+- [x] Estado de loading enquanto busca no adminDB
