@@ -7,11 +7,15 @@ import {
   ScrollView,
   Linking,
   Alert,
+  Dimensions,
+  FlatList,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAdminServices } from "@/hooks/use-admin-services";
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 const CATEGORY_ICONS: Record<string, string> = {
   eletricista: "electrical-services",
@@ -37,9 +41,7 @@ function getCategoryIcon(category: string): string {
 
 /** Normaliza número brasileiro e abre WhatsApp */
 function openWhatsApp(phone: string, serviceName: string) {
-  // Remove tudo que não é dígito
   let number = phone.replace(/\D/g, "");
-  // Adiciona código do Brasil se não tiver
   if (!number.startsWith("55")) {
     number = "55" + number;
   }
@@ -89,6 +91,11 @@ export default function AdminServiceDetailScreen() {
 
   const iconName = getCategoryIcon(service.category) as any;
   const hasWhatsapp = !!service.whatsapp?.trim();
+  const hasGallery = Array.isArray(service.gallery) && service.gallery.length > 0;
+  const allImages = [
+    ...(service.imageUri ? [service.imageUri] : []),
+    ...(hasGallery ? service.gallery! : []),
+  ];
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -106,9 +113,25 @@ export default function AdminServiceDetailScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
-        {/* Imagem de capa */}
-        {service.imageUri ? (
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+        {/* ── Galeria de imagens ── */}
+        {allImages.length > 1 ? (
+          <FlatList
+            data={allImages}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(_, i) => String(i)}
+            style={{ height: 240 }}
+            renderItem={({ item }) => (
+              <Image
+                source={{ uri: item }}
+                style={{ width: SCREEN_WIDTH, height: 240 }}
+                resizeMode="cover"
+              />
+            )}
+          />
+        ) : service.imageUri ? (
           <Image
             source={{ uri: service.imageUri }}
             style={styles.coverImage}
@@ -120,8 +143,9 @@ export default function AdminServiceDetailScreen() {
           </View>
         )}
 
-        {/* Info */}
+        {/* ── Conteúdo ── */}
         <View style={styles.content}>
+          {/* Título e categoria */}
           <View style={styles.titleRow}>
             <Text style={styles.serviceName}>{service.name}</Text>
             <View style={styles.categoryBadge}>
@@ -129,27 +153,38 @@ export default function AdminServiceDetailScreen() {
             </View>
           </View>
 
-          {service.description ? (
-            <Text style={styles.description}>{service.description}</Text>
+          {/* Endereço */}
+          {service.address ? (
+            <View style={styles.infoRow}>
+              <MaterialIcons name="location-on" size={16} color="#6B7280" />
+              <Text style={styles.infoText}>{service.address}</Text>
+            </View>
           ) : null}
 
-          <View style={styles.metaRow}>
+          {/* Descrição */}
+          {service.description ? (
+            <View style={styles.descriptionBox}>
+              <Text style={styles.descriptionLabel}>Sobre o serviço</Text>
+              <Text style={styles.descriptionText}>{service.description}</Text>
+            </View>
+          ) : null}
+
+          {/* Data de cadastro */}
+          <View style={styles.infoRow}>
             <MaterialIcons name="calendar-today" size={14} color="#9CA3AF" />
             <Text style={styles.metaText}>
               Disponível desde {new Date(service.createdAt).toLocaleDateString("pt-BR")}
             </Text>
           </View>
 
-          {/* Contato via WhatsApp — exibido apenas quando número estiver cadastrado */}
+          {/* ── Contato via WhatsApp ── */}
           {hasWhatsapp ? (
             <>
-              {/* Número visível */}
               <View style={styles.whatsappInfoRow}>
                 <MaterialIcons name="phone" size={16} color="#25D366" />
                 <Text style={styles.whatsappNumber}>{service.whatsapp}</Text>
               </View>
 
-              {/* Botão principal WhatsApp */}
               <Pressable
                 style={({ pressed }) => [styles.whatsappBtn, pressed && { opacity: 0.85 }]}
                 onPress={() => openWhatsApp(service.whatsapp!, service.name)}
@@ -158,7 +193,6 @@ export default function AdminServiceDetailScreen() {
                 <Text style={styles.whatsappBtnText}>Chamar no WhatsApp</Text>
               </Pressable>
 
-              {/* Divisor */}
               <View style={styles.divider} />
             </>
           ) : null}
@@ -189,6 +223,25 @@ export default function AdminServiceDetailScreen() {
               Buscar profissionais de {service.category}
             </Text>
           </Pressable>
+
+          {/* Miniaturas da galeria (quando há mais de 1 imagem) */}
+          {hasGallery && service.gallery!.length > 0 && (
+            <View style={styles.gallerySection}>
+              <Text style={styles.gallerySectionTitle}>Fotos do local</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }}>
+                <View style={styles.galleryRow}>
+                  {service.gallery!.map((uri, idx) => (
+                    <Image
+                      key={idx}
+                      source={{ uri }}
+                      style={styles.galleryThumb}
+                      resizeMode="cover"
+                    />
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
+          )}
         </View>
       </ScrollView>
     </View>
@@ -221,7 +274,7 @@ const styles = StyleSheet.create({
   },
   coverImage: {
     width: "100%",
-    height: 220,
+    height: 240,
     backgroundColor: "#F3F4F6",
   },
   coverPlaceholder: {
@@ -235,7 +288,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
-    gap: 12,
+    gap: 14,
   },
   titleRow: {
     flexDirection: "row",
@@ -260,19 +313,39 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#2563EB",
   },
-  description: {
-    fontSize: 15,
-    color: "#374151",
-    lineHeight: 22,
-  },
-  metaRow: {
+  infoRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
   },
+  infoText: {
+    fontSize: 14,
+    color: "#374151",
+    flexShrink: 1,
+  },
   metaText: {
     fontSize: 13,
     color: "#9CA3AF",
+  },
+  descriptionBox: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    gap: 6,
+  },
+  descriptionLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#374151",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  descriptionText: {
+    fontSize: 15,
+    color: "#374151",
+    lineHeight: 22,
   },
   // WhatsApp
   whatsappInfoRow: {
@@ -353,6 +426,28 @@ const styles = StyleSheet.create({
   },
   searchBtnTextOutline: {
     color: "#25D366",
+  },
+  // Galeria
+  gallerySection: {
+    marginTop: 8,
+  },
+  gallerySectionTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#374151",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  galleryRow: {
+    flexDirection: "row",
+    gap: 10,
+    paddingRight: 20,
+  },
+  galleryThumb: {
+    width: 120,
+    height: 90,
+    borderRadius: 10,
+    backgroundColor: "#F3F4F6",
   },
   empty: {
     flex: 1,

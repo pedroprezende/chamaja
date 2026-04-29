@@ -97,6 +97,9 @@ const EMPTY_FORM = {
   categoryId: "",
   imageUri: "",
   whatsapp: "",
+  description: "",
+  address: "",
+  gallery: [] as string[],
   showOnHome: true,
 };
 
@@ -162,6 +165,9 @@ export default function HomeScreen() {
       categoryId: svc.categoryId,
       imageUri: svc.imageUri || "",
       whatsapp: svc.whatsapp || "",
+      description: svc.description || "",
+      address: svc.address || "",
+      gallery: svc.gallery || [],
       showOnHome: svc.showOnHome,
     });
     setCatDropOpen(false);
@@ -202,6 +208,10 @@ export default function HomeScreen() {
       const adminId = user?.id || "admin-pedro";
       const whatsapp = form.whatsapp.trim() || undefined;
 
+      const description = form.description.trim() || undefined;
+      const address = form.address.trim() || undefined;
+      const gallery = form.gallery.length > 0 ? form.gallery : undefined;
+
       if (editingService) {
         await adminDB.updateService(editingService.id, {
           name: form.name.trim(),
@@ -209,6 +219,9 @@ export default function HomeScreen() {
           categoryId: form.categoryId,
           imageUri: form.imageUri || undefined,
           whatsapp,
+          description: description || "",
+          address,
+          gallery,
           showOnHome: form.showOnHome,
         });
       } else {
@@ -216,12 +229,14 @@ export default function HomeScreen() {
           adminId,
           form.name.trim(),
           catName,
-          "",
+          description || "",
           undefined,
           form.imageUri || undefined,
           form.categoryId,
           form.showOnHome,
-          whatsapp
+          whatsapp,
+          address,
+          gallery
         );
       }
       setModalVisible(false);
@@ -714,6 +729,30 @@ export default function HomeScreen() {
                 <Text style={styles.fieldHint}>
                   Ao tocar no serviço, o usuário será direcionado para este WhatsApp.
                 </Text>
+
+                {/* Descrição */}
+                <Text style={styles.fieldLabel}>Descrição</Text>
+                <TextInput
+                  style={[styles.textInput, { height: 90, textAlignVertical: "top" }]}
+                  value={form.description}
+                  onChangeText={(v) => setForm((f) => ({ ...f, description: v }))}
+                  placeholder="Ex: Especialidades, experiência, diferenciais..."
+                  placeholderTextColor="#9CA3AF"
+                  multiline
+                  numberOfLines={4}
+                  returnKeyType="default"
+                />
+
+                {/* Endereço */}
+                <Text style={styles.fieldLabel}>Endereço (bairro/cidade)</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={form.address}
+                  onChangeText={(v) => setForm((f) => ({ ...f, address: v }))}
+                  placeholder="Ex: Centro, São Paulo - SP"
+                  placeholderTextColor="#9CA3AF"
+                  returnKeyType="done"
+                />
 
                 {/* Toggle Exibir na Home */}
                 <Pressable

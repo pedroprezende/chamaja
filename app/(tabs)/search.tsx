@@ -34,7 +34,7 @@ const POPULAR = [
 
 type SearchResult = {
   id: string;
-  type: "service" | "professional" | "category";
+  type: "service" | "admin-service" | "professional" | "category";
   name: string;
   subtitle?: string;
   avatar?: string;
@@ -54,13 +54,15 @@ export default function SearchScreen() {
       try {
         const aServices = await adminDB.getAllServices();
         setAdminServices(
-          aServices.map((s: { id: string; name: string; category: string; categoryId: string }) => ({
-            id: s.id,
-            type: "service" as const,
-            name: s.name,
-            subtitle: s.category,
-            categoryId: s.categoryId || s.category.toLowerCase().replace(/\s+/g, "-"),
-          }))
+          aServices
+            .filter((s) => s.isActive)
+            .map((s) => ({
+              id: s.id,
+              type: "admin-service" as const,
+              name: s.name,
+              subtitle: s.category,
+              categoryId: s.categoryId || s.category.toLowerCase().replace(/\s+/g, "-"),
+            }))
         );
       } catch {}
 
@@ -137,8 +139,14 @@ export default function SearchScreen() {
   const handleResultPress = (item: SearchResult) => {
     if (item.type === "professional") {
       router.push(`/professional/${item.id}` as any);
+    } else if (item.type === "admin-service") {
+      // Serviço criado no painel admin → vai para a tela de detalhe do serviço
+      router.push({
+        pathname: "/admin-services/[serviceId]",
+        params: { serviceId: item.id, title: item.name },
+      } as any);
     } else {
-      // service ou category → vai para a listagem de profissionais
+      // service mock ou category → vai para a listagem de profissionais
       const catId = item.categoryId || item.id;
       router.push({
         pathname: "/professionals/[category]",
@@ -206,9 +214,15 @@ export default function SearchScreen() {
                   </Text>
                 ) : null}
               </View>
-              <View style={styles.resultTypeBadge}>
-                <Text style={styles.resultTypeText}>
-                  {item.type === "professional" ? "Profissional" : "Serviço"}
+              <View style={[
+                styles.resultTypeBadge,
+                item.type === "admin-service" && styles.resultTypeBadgeAdmin,
+              ]}>
+                <Text style={[
+                  styles.resultTypeText,
+                  item.type === "admin-service" && styles.resultTypeTextAdmin,
+                ]}>
+                  {item.type === "professional" ? "Profissional" : item.type === "admin-service" ? "Serviço" : "Serviço"}
                 </Text>
               </View>
               <MaterialIcons name="chevron-right" size={20} color="#D1D5DB" />
@@ -373,6 +387,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "600",
     color: "#25D366",
+  },
+  resultTypeBadgeAdmin: {
+    backgroundColor: "#EFF6FF",
+    borderColor: "#BFDBFE",
+  },
+  resultTypeTextAdmin: {
+    color: "#2563EB",
   },
   empty: {
     alignItems: "center",

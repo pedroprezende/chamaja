@@ -318,3 +318,13 @@
 - [x] Botão WhatsApp nos cards da tela de categoria
 - [x] Contador de serviços com indicação de quantos são do admin
 - [x] Estado de loading enquanto busca no adminDB
+
+## Bug Fix + Melhoria: Serviço admin na busca e campos completos (29/04)
+- [x] Corrigir bug "Em breve" ao clicar em serviço admin na busca
+- [x] Garantir que busca navega para /admin-services/[serviceId] para serviços admin
+- [x] Adicionar campo descrição no formulário admin
+- [x] Adicionar campo endereço (bairro/cidade) no formulário admin
+- [x] Adicionar galeria de fotos (múltiplas imagens) no formulário admin
+- [x] Atualizar interface Service com novos campos
+- [x] Atualizar tela de detalhe do serviço admin para exibir descrição, endereço e galeria
+- [x] Atualizar formulário inline da Home com novos campos

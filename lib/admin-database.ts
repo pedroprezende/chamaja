@@ -29,6 +29,8 @@ export interface Service {
   icon?: string;
   imageUri?: string;
   whatsapp?: string;
+  address?: string;
+  gallery?: string[];
   showOnHome: boolean;
   displayOrder: number;
   createdAt: string;
@@ -190,7 +192,9 @@ export const adminDB = {
     imageUri?: string,
     categoryId?: string,
     showOnHome?: boolean,
-    whatsapp?: string
+    whatsapp?: string,
+    address?: string,
+    gallery?: string[]
   ): Promise<Service> => {
     await ensureServicesLoaded();
     const maxOrder = _services.length > 0 ? Math.max(..._services.map((s) => s.displayOrder ?? 0)) : -1;
@@ -204,6 +208,8 @@ export const adminDB = {
       icon,
       imageUri,
       whatsapp,
+      address,
+      gallery,
       showOnHome: showOnHome ?? false,
       displayOrder: maxOrder + 1,
       createdAt: new Date().toISOString(),
