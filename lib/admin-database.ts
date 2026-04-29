@@ -30,6 +30,7 @@ export interface Service {
   imageUri?: string;
   whatsapp?: string;
   showOnHome: boolean;
+  displayOrder: number;
   createdAt: string;
   updatedAt: string;
   isActive: boolean;
@@ -192,6 +193,7 @@ export const adminDB = {
     whatsapp?: string
   ): Promise<Service> => {
     await ensureServicesLoaded();
+    const maxOrder = _services.length > 0 ? Math.max(..._services.map((s) => s.displayOrder ?? 0)) : -1;
     const service: Service = {
       id: `service-${Date.now()}`,
       adminId,
@@ -203,6 +205,7 @@ export const adminDB = {
       imageUri,
       whatsapp,
       showOnHome: showOnHome ?? false,
+      displayOrder: maxOrder + 1,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       isActive: true,
@@ -210,6 +213,21 @@ export const adminDB = {
     _services.push(service);
     await persistServices();
     return service;
+  },
+
+  /**
+   * Reordena serviços salvando a nova ordem no AsyncStorage.
+   * Recebe array de IDs na ordem desejada.
+   */
+  reorderServices: async (orderedIds: string[]): Promise<void> => {
+    await ensureServicesLoaded();
+    orderedIds.forEach((id, index) => {
+      const idx = _services.findIndex((s) => s.id === id);
+      if (idx !== -1) {
+        _services[idx] = { ..._services[idx], displayOrder: index };
+      }
+    });
+    await persistServices();
   },
 
   getServiceById: async (id: string): Promise<Service | null> => {
@@ -254,7 +272,12 @@ export const adminDB = {
 
   getAllServices: async (): Promise<Service[]> => {
     await ensureServicesLoaded();
-    return [..._services];
+    // Garantir displayOrder nos serviços antigos que não têm o campo
+    _services = _services.map((s, i) => ({
+      ...s,
+      displayOrder: s.displayOrder ?? i,
+    }));
+    return [..._services].sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
   },
 
   /**
@@ -293,6 +316,7 @@ export const adminDB = {
       return _services[existingIdx];
     }
     // Criar novo com ID customizado
+    const maxOrder2 = _services.length > 0 ? Math.max(..._services.map((s) => s.displayOrder ?? 0)) : -1;
     const service: Service = {
       id,
       adminId,
@@ -304,6 +328,7 @@ export const adminDB = {
       imageUri,
       whatsapp,
       showOnHome: showOnHome ?? false,
+      displayOrder: maxOrder2 + 1,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       isActive: true,

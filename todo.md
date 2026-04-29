@@ -295,3 +295,17 @@
 - [x] Adicionar input de WhatsApp no formulário de criação/edição do painel admin
 - [x] Exibir botão "Chamar no WhatsApp" na tela de detalhe do serviço quando whatsapp estiver preenchido
 - [x] Abrir WhatsApp com mensagem pré-definida ao tocar no botão
+
+## Modo Edição Admin na Home (28/04)
+- [x] Botão discreto de ativação do Modo Edição no header (apenas para admin)
+- [x] Banner verde indicando que o Modo Edição está ativo
+- [x] Botão "+ Adicionar" serviço visível no Modo Edição
+- [x] Modal de criação de serviço com campos: nome, categoria, imagem, WhatsApp, exibir na Home
+- [x] Botão de edição (lápis azul) em cada card no Modo Edição
+- [x] Botão de exclusão (lixeira vermelha) em cada card com confirmação
+- [x] Drag-and-drop para reordenar serviços (segurar e arrastar)
+- [x] Persistência da ordem no AsyncStorage via displayOrder
+- [x] Botão WhatsApp (ícone verde) em cada card quando número estiver cadastrado
+- [x] Cards com borda verde e sombra destacada no Modo Edição
+- [x] Campo displayOrder adicionado à interface Service
+- [x] Método reorderServices adicionado ao adminDB
