@@ -353,3 +353,21 @@
 - [x] Combinar prestadores mock + reais na lista de seleção
 - [x] Adicionar busca por nome no picker de prestadores
 - [x] Exibir foto, nome e categoria do prestador selecionado
+
+## Layout Visual com Imagens nas Categorias (30/04/2026)
+- [ ] Adicionar campo imageUrl nas subcategorias do mock.ts com fotos reais via URL
+- [ ] Criar banco de imagens de subcategorias editável pelo admin (AsyncStorage)
+- [ ] Atualizar tela de categoria para exibir cards com imagem grande (estilo grid)
+- [ ] Criar tela de gerenciamento de imagens de subcategorias no painel admin
+- [ ] Adicionar galeria de fotos do local no formulário admin (múltiplas fotos)
+- [ ] Exibir galeria de fotos do local na tela de detalhe do serviço
+
+## Layout Visual com Imagens Reais (29/04/2026)
+- [x] Adicionar imageUrl em todas as subcategorias do mock.ts
+- [x] Criar subcategory-images-db.ts para overrides de imagem pelo admin
+- [x] Atualizar tela de categoria para cards com imagem grande (2 colunas)
+- [x] Adicionar galeria de fotos do local no formulário do prestador (provider-dashboard)
+- [x] Expandir ProviderService com campo gallery[]
+- [x] Sincronizar addService e updateService com providersDB
+- [x] Criar tela admin/subcategory-images.tsx para gerenciar imagens
+- [x] Adicionar botão "Imagens" no dashboard-admin para acessar a tela

@@ -25,6 +25,8 @@ export interface ProviderService {
   name: string;
   description: string;
   imageUri?: string;
+  /** Galeria de fotos do local (frente, interior, etc.) */
+  gallery?: string[];
   createdAt: string;
 }
 
@@ -141,6 +143,8 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
     };
     const updated = { ...provider, services: [...provider.services, newService] };
     await save(updated);
+    // Sincronizar com o banco global
+    await providersDB.updateProvider(provider.userId, { services: updated.services });
   };
 
   const updateService = async (id: string, data: Partial<ProviderService>) => {
@@ -150,6 +154,8 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
       services: provider.services.map((s) => (s.id === id ? { ...s, ...data } : s)),
     };
     await save(updated);
+    // Sincronizar com o banco global
+    await providersDB.updateProvider(provider.userId, { services: updated.services });
   };
 
   const deleteService = async (id: string) => {

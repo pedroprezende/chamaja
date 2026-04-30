@@ -2,8 +2,8 @@
  * Tela de Categoria — exibe as SUBCATEGORIAS de uma categoria.
  * Nível 2 da hierarquia: Categoria → Subcategoria → Serviços
  *
- * Ao tocar numa subcategoria, navega para /subcategory/[subcategoryId]
- * que lista os serviços daquela subcategoria.
+ * Cards com imagem grande (2 colunas), nome abaixo e badge de quantidade.
+ * Admin pode sobrescrever a imagem de cada subcategoria pelo painel.
  */
 import React, { useState, useEffect, useCallback } from "react";
 import {
@@ -13,6 +13,8 @@ import {
   StyleSheet,
   Pressable,
   ActivityIndicator,
+  Image,
+  Dimensions,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -24,6 +26,13 @@ import {
   type Subcategory,
 } from "@/data/mock";
 import { adminDB } from "@/lib/admin-database";
+import { subcategoryImagesDB } from "@/lib/subcategory-images-db";
+
+const SCREEN_WIDTH = Dimensions.get("window").width;
+const CARD_GAP = 12;
+const CARD_PADDING = 16;
+const CARD_WIDTH = (SCREEN_WIDTH - CARD_PADDING * 2 - CARD_GAP) / 2;
+const CARD_IMAGE_HEIGHT = CARD_WIDTH * 0.65;
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function CategoryScreen() {
@@ -34,57 +43,66 @@ export default function CategoryScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  // Título da categoria
   const categoryTitle =
     title ||
     categories.find((c) => c.id === section)?.name.replace("\n", " ") ||
     "Categoria";
 
-  // Subcategorias do mock
   const subcategories: Subcategory[] = section ? getSubcategories(section) : [];
 
-  // Contar serviços admin por subcategoria (para mostrar badge de quantidade)
   const [adminCountBySubcat, setAdminCountBySubcat] = useState<Record<string, number>>({});
+  const [imageOverrides, setImageOverrides] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
-  const loadAdminCounts = useCallback(async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       adminDB.resetCache();
+      subcategoryImagesDB.resetCache();
+
+      // Carregar contagens de serviços admin por subcategoria
       const all = await adminDB.getAllServices();
       const active = all.filter((s) => s.isActive);
-
-      // Contar por subcategoryId
       const counts: Record<string, number> = {};
       for (const svc of active) {
         if (svc.subcategoryId) {
           counts[svc.subcategoryId] = (counts[svc.subcategoryId] || 0) + 1;
         }
-        // Fallback: se categoryId corresponde à seção e não tem subcategoria, conta em "_root"
         if (!svc.subcategoryId && svc.categoryId === section) {
           counts["_root"] = (counts["_root"] || 0) + 1;
         }
       }
       setAdminCountBySubcat(counts);
+
+      // Carregar overrides de imagem do admin
+      const overrides = await subcategoryImagesDB.getAll();
+      const overrideMap: Record<string, string> = {};
+      for (const o of overrides) {
+        overrideMap[o.subcategoryId] = o.imageUrl;
+      }
+      setImageOverrides(overrideMap);
     } catch (e) {
-      console.error("Erro ao carregar contagens admin:", e);
+      console.error("Erro ao carregar dados da categoria:", e);
     } finally {
       setLoading(false);
     }
   }, [section]);
 
   useEffect(() => {
-    loadAdminCounts();
-  }, [loadAdminCounts]);
+    loadData();
+  }, [loadData]);
 
   const totalAdminServices = Object.values(adminCountBySubcat).reduce((a, b) => a + b, 0);
 
-  // ── Render subcategoria ──
+  // ── Render subcategoria como card com imagem grande ──
   const renderSubcategory = ({ item }: { item: Subcategory }) => {
     const count = adminCountBySubcat[item.id] || 0;
+    // Prioridade: override admin > imageUrl do mock > null (ícone)
+    const imageUrl = imageOverrides[item.id] || item.imageUrl;
+
     return (
       <Pressable
-        style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
+        style={({ pressed }) => [styles.card, pressed && { opacity: 0.88 }]}
         onPress={() =>
           router.push({
             pathname: "/subcategory/[subcategoryId]" as any,
@@ -92,21 +110,40 @@ export default function CategoryScreen() {
           })
         }
       >
-        <View style={styles.cardIconBg}>
-          <MaterialIcons
-            name={(item.icon || "label") as any}
-            size={28}
-            color="#25D366"
-          />
+        {/* Imagem */}
+        <View style={styles.cardImageContainer}>
+          {imageUrl ? (
+            <Image
+              source={{ uri: imageUrl }}
+              style={styles.cardImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={styles.cardImageFallback}>
+              <MaterialIcons
+                name={(item.icon || "label") as any}
+                size={36}
+                color="#25D366"
+              />
+            </View>
+          )}
+          {/* Gradiente escuro no rodapé da imagem */}
+          <View style={styles.cardImageOverlay} />
+          {/* Badge de quantidade */}
+          {count > 0 && (
+            <View style={styles.countBadge}>
+              <Text style={styles.countBadgeText}>{count}</Text>
+            </View>
+          )}
         </View>
-        <Text style={styles.cardName} numberOfLines={2}>
-          {item.name}
-        </Text>
-        {count > 0 && (
-          <View style={styles.countBadge}>
-            <Text style={styles.countBadgeText}>{count}</Text>
-          </View>
-        )}
+
+        {/* Nome */}
+        <View style={styles.cardBody}>
+          <Text style={styles.cardName} numberOfLines={2}>
+            {item.name}
+          </Text>
+          <MaterialIcons name="chevron-right" size={16} color="#9CA3AF" />
+        </View>
       </Pressable>
     );
   };
@@ -131,13 +168,15 @@ export default function CategoryScreen() {
       {!loading && (
         <View style={styles.subtitleRow}>
           <Text style={styles.subtitleText}>
-            {subcategories.length} subcategoria{subcategories.length !== 1 ? "s" : ""}
-            {totalAdminServices > 0 ? ` · ${totalAdminServices} serviço${totalAdminServices !== 1 ? "s" : ""} disponível${totalAdminServices !== 1 ? "s" : ""}` : ""}
+            {subcategories.length} especialidade{subcategories.length !== 1 ? "s" : ""}
+            {totalAdminServices > 0
+              ? ` · ${totalAdminServices} serviço${totalAdminServices !== 1 ? "s" : ""} disponível${totalAdminServices !== 1 ? "s" : ""}`
+              : ""}
           </Text>
         </View>
       )}
 
-      {/* Lista de subcategorias */}
+      {/* Grid de subcategorias */}
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#25D366" />
@@ -152,7 +191,7 @@ export default function CategoryScreen() {
         <FlatList
           data={subcategories}
           keyExtractor={(item) => item.id}
-          numColumns={3}
+          numColumns={2}
           contentContainerStyle={styles.gridContent}
           showsVerticalScrollIndicator={false}
           columnWrapperStyle={styles.row}
@@ -212,56 +251,81 @@ const styles = StyleSheet.create({
     color: "#9CA3AF",
   },
   gridContent: {
-    padding: 12,
-    paddingBottom: 24,
+    padding: CARD_PADDING,
+    paddingBottom: 32,
   },
   row: {
-    gap: 10,
-    marginBottom: 10,
+    gap: CARD_GAP,
+    marginBottom: CARD_GAP,
   },
   card: {
-    flex: 1,
+    width: CARD_WIDTH,
     backgroundColor: "#FFFFFF",
     borderRadius: 14,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    alignItems: "center",
-    paddingVertical: 16,
-    paddingHorizontal: 8,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  cardIconBg: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#F0FDF4",
+  cardImageContainer: {
+    width: "100%",
+    height: CARD_IMAGE_HEIGHT,
+    backgroundColor: "#F3F4F6",
+    position: "relative",
+  },
+  cardImage: {
+    width: "100%",
+    height: "100%",
+  },
+  cardImageFallback: {
+    width: "100%",
+    height: "100%",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 8,
+    backgroundColor: "#F0FDF4",
   },
-  cardName: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#111827",
-    textAlign: "center",
-    lineHeight: 16,
+  cardImageOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 30,
+    backgroundColor: "rgba(0,0,0,0.12)",
   },
   countBadge: {
-    marginTop: 6,
+    position: "absolute",
+    top: 8,
+    right: 8,
     backgroundColor: "#25D366",
     borderRadius: 10,
-    paddingHorizontal: 8,
+    paddingHorizontal: 7,
     paddingVertical: 2,
+    minWidth: 22,
+    alignItems: "center",
   },
   countBadgeText: {
     fontSize: 11,
     color: "#FFFFFF",
     fontWeight: "700",
+  },
+  cardBody: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+  },
+  cardName: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#111827",
+    lineHeight: 18,
+    marginRight: 4,
   },
   empty: {
     flex: 1,

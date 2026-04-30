@@ -23,7 +23,7 @@ export default function ProviderDashboard() {
   const { provider, isProvider, addService, updateService, deleteService, renewPlan } = useProvider();
   const [showModal, setShowModal] = useState(false);
   const [editingService, setEditingService] = useState<ProviderService | null>(null);
-  const [form, setForm] = useState({ name: "", description: "", imageUri: "" });
+  const [form, setForm] = useState({ name: "", description: "", imageUri: "", gallery: [] as string[] });
 
   if (!isProvider || !provider) {
     return (
@@ -47,14 +47,36 @@ export default function ProviderDashboard() {
 
   const openCreateModal = () => {
     setEditingService(null);
-    setForm({ name: "", description: "", imageUri: "" });
+    setForm({ name: "", description: "", imageUri: "", gallery: [] });
     setShowModal(true);
   };
 
   const openEditModal = (service: ProviderService) => {
     setEditingService(service);
-    setForm({ name: service.name, description: service.description, imageUri: service.imageUri || "" });
+    setForm({
+      name: service.name,
+      description: service.description,
+      imageUri: service.imageUri || "",
+      gallery: service.gallery || [],
+    });
     setShowModal(true);
+  };
+
+  const handlePickGalleryPhoto = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: false,
+      quality: 0.85,
+      allowsMultipleSelection: true,
+    });
+    if (!result.canceled) {
+      const newUris = result.assets.map((a) => a.uri);
+      setForm((prev) => ({ ...prev, gallery: [...prev.gallery, ...newUris].slice(0, 8) }));
+    }
+  };
+
+  const removeGalleryPhoto = (index: number) => {
+    setForm((prev) => ({ ...prev, gallery: prev.gallery.filter((_, i) => i !== index) }));
   };
 
   const handlePickImage = async () => {
@@ -79,12 +101,14 @@ export default function ProviderDashboard() {
         name: form.name.trim(),
         description: form.description.trim(),
         imageUri: form.imageUri || undefined,
+        gallery: form.gallery.length > 0 ? form.gallery : undefined,
       });
     } else {
       await addService({
         name: form.name.trim(),
         description: form.description.trim(),
         imageUri: form.imageUri || undefined,
+        gallery: form.gallery.length > 0 ? form.gallery : undefined,
       });
     }
     setShowModal(false);
@@ -276,6 +300,34 @@ export default function ProviderDashboard() {
                 />
               </View>
 
+              {/* Galeria de fotos do local */}
+              <Text style={styles.fieldLabel}>Galeria de fotos do local (máx. 8)</Text>
+              <Text style={[styles.fieldLabel, { fontSize: 11, color: "#9CA3AF", marginTop: -8, marginBottom: 8 }]}>
+                Adicione fotos da fachada, interior e ambiente
+              </Text>
+              <View style={styles.galleryRow}>
+                {form.gallery.map((uri, idx) => (
+                  <View key={idx} style={styles.galleryThumbWrapper}>
+                    <Image source={{ uri }} style={styles.galleryThumb} resizeMode="cover" />
+                    <Pressable
+                      style={styles.galleryRemoveBtn}
+                      onPress={() => removeGalleryPhoto(idx)}
+                    >
+                      <MaterialIcons name="close" size={12} color="#fff" />
+                    </Pressable>
+                  </View>
+                ))}
+                {form.gallery.length < 8 && (
+                  <Pressable
+                    style={({ pressed }) => [styles.galleryAddBtn, pressed && { opacity: 0.7 }]}
+                    onPress={handlePickGalleryPhoto}
+                  >
+                    <MaterialIcons name="add-photo-alternate" size={22} color="#25D366" />
+                    <Text style={styles.galleryAddText}>Foto</Text>
+                  </Pressable>
+                )}
+              </View>
+
               <View style={styles.modalActions}>
                 <Pressable
                   style={({ pressed }) => [styles.cancelBtn, pressed && { opacity: 0.7 }]}
@@ -352,6 +404,51 @@ const styles = StyleSheet.create({
   emptyServices: { alignItems: "center", paddingVertical: 40, gap: 8 },
   emptyTitle: { fontSize: 16, fontWeight: "600", color: "#374151" },
   emptySubtitle: { fontSize: 13, color: "#9CA3AF" },
+  galleryRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 16,
+  },
+  galleryThumbWrapper: {
+    width: 72,
+    height: 72,
+    borderRadius: 8,
+    overflow: "hidden",
+    position: "relative",
+  },
+  galleryThumb: {
+    width: "100%",
+    height: "100%",
+  },
+  galleryRemoveBtn: {
+    position: "absolute",
+    top: 3,
+    right: 3,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  galleryAddBtn: {
+    width: 72,
+    height: 72,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: "#25D366",
+    borderStyle: "dashed",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    backgroundColor: "#F0FDF4",
+  },
+  galleryAddText: {
+    fontSize: 10,
+    color: "#25D366",
+    fontWeight: "600",
+  },
   serviceCard: {
     flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF",
     marginHorizontal: 16, marginBottom: 10, borderRadius: 14, padding: 14,

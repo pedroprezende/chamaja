@@ -321,6 +321,13 @@ export default function AdminDashboard() {
           <MaterialIcons name="campaign" size={15} color="#1A73E8" />
           <Text style={styles.adsNavText}>Anúncios</Text>
         </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.adsNavBtn, pressed && { opacity: 0.75 }]}
+          onPress={() => router.push("/admin/subcategory-images" as any)}
+        >
+          <MaterialIcons name="image" size={15} color="#8B5CF6" />
+          <Text style={[styles.adsNavText, { color: "#8B5CF6" }]}>Imagens</Text>
+        </Pressable>
       </View>
 
       {/* List */}
