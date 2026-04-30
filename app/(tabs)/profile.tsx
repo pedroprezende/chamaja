@@ -16,16 +16,12 @@ import { useProvider } from "@/lib/provider-context";
 import { useFavorites } from "@/lib/favorites-context";
 import { useNotifications } from "@/lib/notifications-context";
 
-const ADMIN_EMAIL = "pedroprezende33@gmail.com";
-
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   const { isProvider, provider } = useProvider();
   const { favorites, orders } = useFavorites();
   const { unreadCount } = useNotifications();
-
-  const isAdmin = user?.email === ADMIN_EMAIL;
 
   const handleLogout = () => {
     Alert.alert("Sair", "Tem certeza que deseja sair?", [

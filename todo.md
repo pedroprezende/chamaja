@@ -328,3 +328,12 @@
 - [x] Atualizar interface Service com novos campos
 - [x] Atualizar tela de detalhe do serviço admin para exibir descrição, endereço e galeria
 - [x] Atualizar formulário inline da Home com novos campos
+
+## Sistema de Roles Admin/User (29/04)
+- [x] Adicionar campo role ("admin" | "user") na interface User do AuthContext
+- [x] Verificar role via admin-database ao fazer login (email match → admin)
+- [x] Expor isAdmin no AuthContext para uso em todo o app
+- [x] Proteger Modo Edição na Home: ocultar botão para usuários comuns
+- [x] Proteger painel admin: redirecionar usuários sem role admin
+- [x] Criar hook useIsAdmin para centralizar verificação de permissão
+- [x] Verificação backend via adminProcedure no tRPC

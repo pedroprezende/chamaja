@@ -16,12 +16,9 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { adminDB, type Service } from "@/lib/admin-database";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "@/lib/auth-context";
 import { categories } from "@/data/mock";
 import { useEffect, useState, useCallback, useRef } from "react";
-
-const ADMIN_EMAIL = "pedroprezende33@gmail.com";
 
 // Mapeamento de icones por categoria
 const CATEGORY_ICON_MAP: Record<string, string> = {
@@ -109,7 +106,7 @@ function ServiceCard({
 export default function AdminDashboard() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin, isLoading: authLoading } = useAuth();
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [services, setServices] = useState<Service[]>([]);
   const [showModal, setShowModal] = useState(false);
@@ -127,20 +124,12 @@ export default function AdminDashboard() {
   });
 
   useEffect(() => {
-    (async () => {
-      try {
-        const raw = await AsyncStorage.getItem("@chamaja_user");
-        if (!raw) { router.replace("/auth/login"); return; }
-        const u = JSON.parse(raw);
-        if (u.email !== ADMIN_EMAIL) { router.replace("/(tabs)"); return; }
-        setAuthorized(true);
-        const all = await adminDB.getAllServices();
-        setServices(all);
-      } catch {
-        router.replace("/auth/login");
-      }
-    })();
-  }, []);
+    if (authLoading) return;
+    if (!user) { router.replace("/auth/login"); return; }
+    if (!isAdmin) { router.replace("/(tabs)"); return; }
+    setAuthorized(true);
+    adminDB.getAllServices().then(setServices).catch(() => {});
+  }, [user, isAdmin, authLoading, router]);
 
   // LOGOUT: usa signOut do AuthContext que limpa o estado React + AsyncStorage corretamente
   const handleLogout = useCallback(() => {
@@ -229,10 +218,8 @@ export default function AdminDashboard() {
         });
         setServices((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
       } else {
-        const raw = await AsyncStorage.getItem("@chamaja_user");
-        const u = raw ? JSON.parse(raw) : { id: "admin" };
         const newService = await adminDB.createService(
-          u.id,
+          user?.id || "admin",
           formData.name.trim(),
           formData.category,
           formData.description.trim(),

@@ -40,7 +40,6 @@ import { useNotifications } from "@/lib/notifications-context";
 import { StatusBar } from "expo-status-bar";
 
 // ─── Constantes ──────────────────────────────────────────────────────────────
-const ADMIN_EMAIL = "pedroprezende33@gmail.com";
 
 const CATEGORY_ICONS: Record<string, string> = {
   "reformas-reparos":       "build",
@@ -110,7 +109,7 @@ export default function HomeScreen() {
   const { unreadCount } = useNotifications();
   const { ads, isLoading: adsLoading } = useAds(true);
 
-  const isAdmin = user?.email === ADMIN_EMAIL;
+  const isAdmin = user?.role === "admin";
   const firstName = user?.name?.split(" ")[0] || "você";
 
   // ── Estado dos serviços ──

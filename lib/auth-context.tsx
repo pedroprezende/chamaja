@@ -3,6 +3,19 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export type AuthProvider = "google" | "microsoft" | "apple" | "email";
 
+/** Roles do sistema. "admin" tem acesso total; "user" é o padrão. */
+export type UserRole = "admin" | "user";
+
+/** Lista de e-mails que são automaticamente promovidos a admin */
+const ADMIN_EMAILS: string[] = [
+  "pedroprezende33@gmail.com",
+];
+
+/** Determina o role com base no e-mail do usuário */
+function resolveRole(email: string): UserRole {
+  return ADMIN_EMAILS.includes(email.toLowerCase().trim()) ? "admin" : "user";
+}
+
 export interface User {
   id: string;
   email: string;
@@ -10,6 +23,7 @@ export interface User {
   phone?: string;
   avatar?: string;
   provider: AuthProvider;
+  role: UserRole;
   createdAt: string;
 }
 
@@ -17,6 +31,8 @@ export interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isSignedIn: boolean;
+  /** true se o usuário logado tem role "admin" */
+  isAdmin: boolean;
   signInWithGoogle: () => Promise<void>;
   signInWithMicrosoft: () => Promise<void>;
   signInWithApple: () => Promise<void>;
@@ -42,7 +58,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const userJson = await AsyncStorage.getItem("@chamaja_user");
       if (userJson) {
-        setUser(JSON.parse(userJson));
+        const parsed = JSON.parse(userJson) as User;
+        // Garantir que o role está sempre correto (retrocompatibilidade)
+        parsed.role = resolveRole(parsed.email);
+        setUser(parsed);
       }
     } catch (e) {
       console.error("Erro ao restaurar sessão:", e);
@@ -52,20 +71,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const saveUser = async (userData: User) => {
-    await AsyncStorage.setItem("@chamaja_user", JSON.stringify(userData));
-    setUser(userData);
+    // Sempre recalcular o role ao salvar
+    const withRole: User = { ...userData, role: resolveRole(userData.email) };
+    await AsyncStorage.setItem("@chamaja_user", JSON.stringify(withRole));
+    setUser(withRole);
   };
 
   const signInWithGoogle = async () => {
     try {
-      // Simulação de login com Google
-      // Em produção, isso seria integrado com o backend OAuth
       const mockUser: User = {
         id: `google_${Date.now()}`,
         email: "user@gmail.com",
         name: "Google User",
         avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
         provider: "google",
+        role: "user",
         createdAt: new Date().toISOString(),
       };
       await saveUser(mockUser);
@@ -77,13 +97,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithMicrosoft = async () => {
     try {
-      // Simulação de login com Microsoft
       const mockUser: User = {
         id: `microsoft_${Date.now()}`,
         email: "user@outlook.com",
         name: "Microsoft User",
         avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80",
         provider: "microsoft",
+        role: "user",
         createdAt: new Date().toISOString(),
       };
       await saveUser(mockUser);
@@ -95,13 +115,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithApple = async () => {
     try {
-      // Simulação de login com Apple
       const mockUser: User = {
         id: `apple_${Date.now()}`,
         email: "user@icloud.com",
         name: "Apple User",
         avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&q=80",
         provider: "apple",
+        role: "user",
         createdAt: new Date().toISOString(),
       };
       await saveUser(mockUser);
@@ -113,7 +133,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUpWithEmail = async (email: string, password: string, name: string) => {
     try {
-      // Validação básica
       if (!email || !password || !name) {
         throw new Error("Todos os campos são obrigatórios");
       }
@@ -126,6 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
         name,
         provider: "email",
+        role: resolveRole(email),
         createdAt: new Date().toISOString(),
       };
       await saveUser(mockUser);
@@ -146,6 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
         name: email.split("@")[0],
         provider: "email",
+        role: resolveRole(email),
         createdAt: new Date().toISOString(),
       };
       await saveUser(mockUser);
@@ -197,6 +218,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     isLoading,
     isSignedIn: user !== null,
+    isAdmin: user?.role === "admin",
     signInWithGoogle,
     signInWithMicrosoft,
     signInWithApple,
@@ -216,4 +238,10 @@ export function useAuth() {
     throw new Error("useAuth deve ser usado dentro de um AuthProvider");
   }
   return context;
+}
+
+/** Hook de conveniência — retorna true se o usuário logado é admin */
+export function useIsAdmin(): boolean {
+  const { isAdmin } = useAuth();
+  return isAdmin;
 }
