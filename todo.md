@@ -347,3 +347,9 @@
 - [x] Atualizar tela de categoria para exibir subcategorias (não serviços diretamente)
 - [x] Criar tela de subcategoria para listar serviços dentro da subcategoria
 - [x] Corrigir "Em breve" para aparecer apenas quando não há serviços na subcategoria
+
+## Fix: Dropdown de Prestador Vinculado nos Anúncios (30/04/2026)
+- [x] Carregar prestadores reais do providersDB no picker de anúncios
+- [x] Combinar prestadores mock + reais na lista de seleção
+- [x] Adicionar busca por nome no picker de prestadores
+- [x] Exibir foto, nome e categoria do prestador selecionado

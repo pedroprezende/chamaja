@@ -14,12 +14,22 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import * as ImagePicker from "expo-image-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { adsDB, type Ad, type CreateAdInput } from "@/lib/ads-database";
 import { professionals } from "@/data/mock";
+import { providersDB, type StoredProvider } from "@/lib/providers-database";
+
+// ─── Tipo unificado para o picker ─────────────────────────────────────────────
+type PickerProvider = {
+  id: string;
+  name: string;
+  category: string;
+  avatar?: string;
+  isReal: boolean; // true = do providersDB, false = mock
+};
 
 const EMPTY_FORM: CreateAdInput = {
   title: "",
@@ -42,7 +52,62 @@ export default function AdminAdsScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingAd, setEditingAd] = useState<Ad | null>(null);
   const [form, setForm] = useState<CreateAdInput>(EMPTY_FORM);
+
+  // ── Provider picker ──
   const [showProviderPicker, setShowProviderPicker] = useState(false);
+  const [pickerSearch, setPickerSearch] = useState("");
+  const [realProviders, setRealProviders] = useState<StoredProvider[]>([]);
+  const [loadingProviders, setLoadingProviders] = useState(false);
+
+  // Carregar prestadores reais do banco
+  const loadRealProviders = useCallback(async () => {
+    try {
+      setLoadingProviders(true);
+      providersDB.resetCache();
+      const all = await providersDB.getAllActive();
+      setRealProviders(all);
+    } catch (e) {
+      console.error("Erro ao carregar prestadores:", e);
+    } finally {
+      setLoadingProviders(false);
+    }
+  }, []);
+
+  // Combinar mock + reais (reais primeiro, sem duplicatas por nome)
+  const allProviders = useMemo<PickerProvider[]>(() => {
+    const realNames = new Set(realProviders.map((p) => p.name.toLowerCase()));
+
+    const fromReal: PickerProvider[] = realProviders.map((p) => ({
+      id: p.userId,
+      name: p.name,
+      category: p.category,
+      avatar: p.avatar,
+      isReal: true,
+    }));
+
+    const fromMock: PickerProvider[] = professionals
+      .filter((p) => !realNames.has(p.name.toLowerCase()))
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        category: p.category,
+        avatar: p.avatar,
+        isReal: false,
+      }));
+
+    return [...fromReal, ...fromMock];
+  }, [realProviders]);
+
+  // Filtrar por busca
+  const filteredProviders = useMemo<PickerProvider[]>(() => {
+    if (!pickerSearch.trim()) return allProviders;
+    const q = pickerSearch.toLowerCase();
+    return allProviders.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q)
+    );
+  }, [allProviders, pickerSearch]);
 
   const loadAds = useCallback(async () => {
     setLoading(true);
@@ -87,8 +152,14 @@ export default function AdminAdsScreen() {
     }
   };
 
-  const handleSelectProvider = (id: string, name: string) => {
-    setForm((f) => ({ ...f, providerId: id, providerName: name }));
+  const openProviderPicker = () => {
+    setPickerSearch("");
+    loadRealProviders();
+    setShowProviderPicker(true);
+  };
+
+  const handleSelectProvider = (provider: PickerProvider) => {
+    setForm((f) => ({ ...f, providerId: provider.id, providerName: provider.name }));
     setShowProviderPicker(false);
   };
 
@@ -260,7 +331,7 @@ export default function AdminAdsScreen() {
         />
       )}
 
-      {/* Create / Edit Modal */}
+      {/* ── Modal criar/editar anúncio ── */}
       <Modal
         visible={modalVisible}
         animationType="slide"
@@ -302,7 +373,7 @@ export default function AdminAdsScreen() {
               ) : (
                 <View style={styles.imagePlaceholder}>
                   <MaterialIcons name="add-photo-alternate" size={36} color="#9CA3AF" />
-                  <Text style={styles.imagePlaceholderText}>Toque para adicionar imagem</Text>
+                  <Text style={styles.imagePlaceholderText}>Toque para adicionar banner</Text>
                   <Text style={styles.imagePlaceholderSub}>Recomendado: 16:9 (ex: 800×450px)</Text>
                 </View>
               )}
@@ -337,11 +408,11 @@ export default function AdminAdsScreen() {
             <Text style={styles.fieldLabel}>Prestador vinculado *</Text>
             <Pressable
               style={({ pressed }) => [styles.providerPicker, pressed && { opacity: 0.8 }]}
-              onPress={() => setShowProviderPicker(true)}
+              onPress={openProviderPicker}
             >
               {form.providerId ? (
                 <View style={styles.providerSelected}>
-                  <MaterialIcons name="person" size={18} color="#25D366" />
+                  <MaterialIcons name="check-circle" size={18} color="#25D366" />
                   <Text style={styles.providerSelectedText}>{form.providerName}</Text>
                 </View>
               ) : (
@@ -352,6 +423,15 @@ export default function AdminAdsScreen() {
               )}
               <MaterialIcons name="chevron-right" size={20} color="#9CA3AF" />
             </Pressable>
+            {form.providerId && (
+              <Pressable
+                style={styles.clearProvider}
+                onPress={() => setForm((f) => ({ ...f, providerId: "", providerName: "" }))}
+              >
+                <MaterialIcons name="close" size={14} color="#9CA3AF" />
+                <Text style={styles.clearProviderText}>Remover vínculo</Text>
+              </Pressable>
+            )}
 
             {/* Display order */}
             <Text style={styles.fieldLabel}>Ordem de exibição</Text>
@@ -399,7 +479,7 @@ export default function AdminAdsScreen() {
         </View>
       </Modal>
 
-      {/* Provider picker modal */}
+      {/* ── Modal picker de prestadores ── */}
       <Modal
         visible={showProviderPicker}
         animationType="slide"
@@ -416,29 +496,88 @@ export default function AdminAdsScreen() {
               <MaterialIcons name="close" size={24} color="#6B7280" />
             </Pressable>
           </View>
-          <FlatList
-            data={professionals}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={{ padding: 16, gap: 10 }}
-            renderItem={({ item }) => (
-              <Pressable
-                style={({ pressed }) => [styles.providerRow, pressed && { opacity: 0.7 }]}
-                onPress={() => handleSelectProvider(item.id, item.name)}
-              >
-                <Image
-                  source={{ uri: item.avatar }}
-                  style={styles.providerAvatar}
-                />
-                <View style={styles.providerInfo}>
-                  <Text style={styles.providerName}>{item.name}</Text>
-                  <Text style={styles.providerCategory}>{item.category}</Text>
-                </View>
-                {form.providerId === item.id && (
-                  <MaterialIcons name="check-circle" size={22} color="#25D366" />
-                )}
+
+          {/* Barra de busca */}
+          <View style={styles.searchBar}>
+            <MaterialIcons name="search" size={18} color="#9CA3AF" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Buscar por nome ou categoria..."
+              placeholderTextColor="#9CA3AF"
+              value={pickerSearch}
+              onChangeText={setPickerSearch}
+              returnKeyType="search"
+              autoFocus
+            />
+            {pickerSearch.length > 0 && (
+              <Pressable onPress={() => setPickerSearch("")}>
+                <MaterialIcons name="close" size={16} color="#9CA3AF" />
               </Pressable>
             )}
-          />
+          </View>
+
+          {/* Contagem */}
+          <View style={styles.pickerCountRow}>
+            <Text style={styles.pickerCountText}>
+              {filteredProviders.length} prestador{filteredProviders.length !== 1 ? "es" : ""}
+              {realProviders.length > 0 && ` · ${realProviders.length} cadastrado${realProviders.length !== 1 ? "s" : ""} no app`}
+            </Text>
+          </View>
+
+          {loadingProviders ? (
+            <View style={styles.loadingCenter}>
+              <ActivityIndicator size="large" color="#25D366" />
+              <Text style={styles.loadingText}>Carregando prestadores...</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={filteredProviders}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 40 }}
+              showsVerticalScrollIndicator={false}
+              ListEmptyComponent={
+                <View style={styles.pickerEmpty}>
+                  <MaterialIcons name="person-search" size={40} color="#D1D5DB" />
+                  <Text style={styles.pickerEmptyText}>
+                    {pickerSearch ? `Nenhum resultado para "${pickerSearch}"` : "Nenhum prestador encontrado"}
+                  </Text>
+                </View>
+              }
+              renderItem={({ item }) => (
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.providerRow,
+                    form.providerId === item.id && styles.providerRowSelected,
+                    pressed && { opacity: 0.7 },
+                  ]}
+                  onPress={() => handleSelectProvider(item)}
+                >
+                  {item.avatar ? (
+                    <Image source={{ uri: item.avatar }} style={styles.providerAvatar} />
+                  ) : (
+                    <View style={[styles.providerAvatar, styles.providerAvatarPlaceholder]}>
+                      <MaterialIcons name="person" size={22} color="#9CA3AF" />
+                    </View>
+                  )}
+                  <View style={styles.providerInfo}>
+                    <View style={styles.providerNameRow}>
+                      <Text style={styles.providerName}>{item.name}</Text>
+                      {item.isReal && (
+                        <View style={styles.realBadge}>
+                          <MaterialIcons name="verified" size={10} color="#FFFFFF" />
+                          <Text style={styles.realBadgeText}>App</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.providerCategory}>{item.category}</Text>
+                  </View>
+                  {form.providerId === item.id && (
+                    <MaterialIcons name="check-circle" size={22} color="#25D366" />
+                  )}
+                </Pressable>
+              )}
+            />
+          )}
         </View>
       </Modal>
     </View>
@@ -470,7 +609,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#25D366",
     alignItems: "center", justifyContent: "center",
   },
-  loadingCenter: { flex: 1, alignItems: "center", justifyContent: "center" },
+  loadingCenter: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
+  loadingText: { fontSize: 14, color: "#9CA3AF" },
   listContent: { padding: 16, gap: 12, paddingBottom: 32 },
   empty: { alignItems: "center", paddingTop: 80, gap: 12, paddingHorizontal: 32 },
   emptyTitle: { fontSize: 17, fontWeight: "700", color: "#374151" },
@@ -564,6 +704,11 @@ const styles = StyleSheet.create({
   providerSelectedText: { fontSize: 14, color: "#111827", fontWeight: "500" },
   providerPlaceholder: { flexDirection: "row", alignItems: "center", gap: 8 },
   providerPlaceholderText: { fontSize: 14, color: "#9CA3AF" },
+  clearProvider: {
+    flexDirection: "row", alignItems: "center", gap: 4,
+    marginTop: 6, paddingLeft: 2,
+  },
+  clearProviderText: { fontSize: 12, color: "#9CA3AF" },
 
   toggleRow: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
@@ -578,14 +723,47 @@ const styles = StyleSheet.create({
   },
   saveBtnText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
 
-  // Provider list
+  // Provider picker modal
+  searchBar: {
+    flexDirection: "row", alignItems: "center", gap: 10,
+    marginHorizontal: 16, marginTop: 12, marginBottom: 4,
+    backgroundColor: "#F9FAFB",
+    borderWidth: 1, borderColor: "#E5E7EB",
+    borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10,
+  },
+  searchInput: {
+    flex: 1, fontSize: 14, color: "#111827",
+  },
+  pickerCountRow: {
+    paddingHorizontal: 16, paddingVertical: 8,
+    borderBottomWidth: 1, borderBottomColor: "#F3F4F6",
+  },
+  pickerCountText: { fontSize: 12, color: "#9CA3AF" },
+  pickerEmpty: {
+    alignItems: "center", paddingTop: 60, gap: 12,
+  },
+  pickerEmptyText: { fontSize: 14, color: "#9CA3AF", textAlign: "center" },
   providerRow: {
     flexDirection: "row", alignItems: "center", gap: 12,
     backgroundColor: "#FFFFFF", borderRadius: 12, padding: 12,
     borderWidth: 1, borderColor: "#E5E7EB",
   },
+  providerRowSelected: {
+    borderColor: "#86EFAC", backgroundColor: "#F0FDF4",
+  },
   providerAvatar: { width: 44, height: 44, borderRadius: 22 },
+  providerAvatarPlaceholder: {
+    backgroundColor: "#F3F4F6",
+    alignItems: "center", justifyContent: "center",
+  },
   providerInfo: { flex: 1 },
+  providerNameRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   providerName: { fontSize: 14, fontWeight: "600", color: "#111827" },
+  realBadge: {
+    flexDirection: "row", alignItems: "center", gap: 2,
+    backgroundColor: "#25D366", borderRadius: 6,
+    paddingHorizontal: 5, paddingVertical: 2,
+  },
+  realBadgeText: { fontSize: 10, color: "#FFFFFF", fontWeight: "700" },
   providerCategory: { fontSize: 12, color: "#6B7280", marginTop: 2 },
 });
