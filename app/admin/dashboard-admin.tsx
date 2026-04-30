@@ -301,11 +301,17 @@ export default function AdminDashboard() {
         </Pressable>
       </View>
 
-      {/* Stats bar */}
-      <View style={styles.statsBar}>
+      {/* Stats bar — scroll horizontal */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.statsBar}
+        contentContainerStyle={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 12, gap: 4 }}
+        keyboardShouldPersistTaps="handled"
+      >
         <MaterialIcons name="admin-panel-settings" size={15} color="#25D366" />
-        <Text style={[styles.statsText, { flex: 1 }]}>
-          Logado como <Text style={{ fontWeight: "700" }}>{user?.name || user?.email || "Admin"}</Text>
+        <Text style={[styles.statsText, { marginRight: 6 }]} numberOfLines={1}>
+          <Text style={{ fontWeight: "700" }}>{user?.name?.split(" ")[0] || "Admin"}</Text>
         </Text>
         <Pressable
           style={({ pressed }) => [styles.adsNavBtn, pressed && { opacity: 0.75 }]}
@@ -335,7 +341,7 @@ export default function AdminDashboard() {
           <MaterialIcons name="people" size={15} color="#F59E0B" />
           <Text style={[styles.adsNavText, { color: "#F59E0B" }]}>Prestadores</Text>
         </Pressable>
-      </View>
+      </ScrollView>
 
       {/* List */}
       <FlatList

@@ -62,6 +62,19 @@ export default function AdminProvidersScreen() {
 
   const [searchText, setSearchText] = useState("");
   const [showServicePicker, setShowServicePicker] = useState(false);
+  const [serviceSearchQuery, setServiceSearchQuery] = useState("");
+
+  // Filtra serviços pelo campo de busca dentro do picker
+  const filteredServices = useMemo(() => {
+    if (!serviceSearchQuery.trim()) return services;
+    const q = serviceSearchQuery.toLowerCase();
+    return services.filter(
+      (s) =>
+        s.name.toLowerCase().includes(q) ||
+        s.category.toLowerCase().includes(q) ||
+        (s.subcategoryName ?? "").toLowerCase().includes(q)
+    );
+  }, [services, serviceSearchQuery]);
 
   // ── Carregar dados ──────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
@@ -436,15 +449,34 @@ export default function AdminProvidersScreen() {
               {/* Lista inline de serviços */}
               {showServicePicker && !form.serviceId && (
                 <View style={styles.inlineServiceList}>
-                  {services.length === 0 ? (
+                  {/* Campo de busca dentro do picker */}
+                  <View style={styles.serviceSearchRow}>
+                    <MaterialIcons name="search" size={16} color="#9CA3AF" />
+                    <TextInput
+                      style={styles.serviceSearchInput}
+                      placeholder="Buscar serviço..."
+                      placeholderTextColor="#9CA3AF"
+                      value={serviceSearchQuery}
+                      onChangeText={setServiceSearchQuery}
+                      autoCorrect={false}
+                    />
+                    {serviceSearchQuery.length > 0 && (
+                      <Pressable onPress={() => setServiceSearchQuery("")}>
+                        <MaterialIcons name="close" size={14} color="#9CA3AF" />
+                      </Pressable>
+                    )}
+                  </View>
+                  {filteredServices.length === 0 ? (
                     <View style={styles.noServicesMsg}>
                       <MaterialIcons name="info-outline" size={20} color="#9CA3AF" />
                       <Text style={styles.noServicesMsgText}>
-                        Nenhum serviço cadastrado. Crie um serviço primeiro.
+                        {services.length === 0
+                          ? "Nenhum serviço cadastrado. Crie um serviço primeiro."
+                          : "Nenhum serviço encontrado."}
                       </Text>
                     </View>
                   ) : (
-                    services.map((svc) => (
+                    filteredServices.map((svc) => (
                       <Pressable
                         key={svc.id}
                         style={({ pressed }) => [styles.serviceRow, pressed && { opacity: 0.7 }]}
@@ -457,6 +489,7 @@ export default function AdminProvidersScreen() {
                             subcategoryName: svc.subcategoryName ?? svc.name,
                           }));
                           setShowServicePicker(false);
+                          setServiceSearchQuery("");
                         }}
                       >
                         {svc.imageUri ? (
@@ -470,6 +503,7 @@ export default function AdminProvidersScreen() {
                           <Text style={styles.serviceRowName}>{svc.name}</Text>
                           <Text style={styles.serviceRowCat}>{svc.subcategoryName || svc.category}</Text>
                         </View>
+                        <MaterialIcons name="chevron-right" size={16} color="#D1D5DB" />
                       </Pressable>
                     ))
                   )}
@@ -787,6 +821,24 @@ const styles = StyleSheet.create({
   serviceRowImgPlaceholder: { backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   serviceRowName: { fontSize: 14, fontWeight: "600", color: "#111827" },
   serviceRowCat: { fontSize: 12, color: "#6B7280" },
+  serviceSearchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F9FAFB",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginBottom: 8,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  serviceSearchInput: {
+    flex: 1,
+    fontSize: 13,
+    color: "#111827",
+    paddingVertical: 0,
+  },
   noServicesMsg: {
     flexDirection: "row",
     alignItems: "center",

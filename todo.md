@@ -398,3 +398,9 @@
 - [x] Atualizar tela de subcategoria para incluir prestadores admin
 - [x] Criar tela de detalhe do prestador admin (admin-provider/[providerId].tsx)
 - [x] Prestadores admin aparecem na tela de subcategoria com badge verificado
+
+## Melhorias de Sincronização e UI (30/04/2026)
+- [ ] Foto dos serviços admin nos resultados de busca
+- [ ] Scroll horizontal na stats bar do painel admin (acessar Prestadores)
+- [ ] Dropdown de serviço vinculado usa serviços do adminDB (editável)
+- [ ] Sincronização completa de dados entre admin e app

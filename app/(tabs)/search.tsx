@@ -16,6 +16,7 @@ import { ScreenContainer } from "@/components/screen-container";
 import { services, categories, professionals, getProfessionalsByRanking } from "@/data/mock";
 import { adminDB } from "@/lib/admin-database";
 import { providersDB } from "@/lib/providers-database";
+import { adminProvidersDB } from "@/lib/admin-providers-db";
 
 const POPULAR = [
   { id: "eletricista",       name: "Eletricista",        icon: "bolt" },
@@ -34,7 +35,7 @@ const POPULAR = [
 
 type SearchResult = {
   id: string;
-  type: "service" | "admin-service" | "professional" | "category";
+  type: "service" | "admin-service" | "admin-provider" | "professional" | "category";
   name: string;
   subtitle?: string;
   avatar?: string;
@@ -48,7 +49,9 @@ export default function SearchScreen() {
   const [realProviders, setRealProviders] = useState<SearchResult[]>([]);
   const router = useRouter();
 
-  // Carregar serviços admin e prestadores reais
+  const [adminProviders, setAdminProviders] = useState<SearchResult[]>([]);
+
+  // Carregar serviços admin, prestadores admin e prestadores reais
   useEffect(() => {
     const load = async () => {
       try {
@@ -61,8 +64,22 @@ export default function SearchScreen() {
               type: "admin-service" as const,
               name: s.name,
               subtitle: s.category,
+              avatar: s.imageUri,          // foto do serviço admin
               categoryId: s.categoryId || s.category.toLowerCase().replace(/\s+/g, "-"),
             }))
+        );
+      } catch {}
+
+      try {
+        const aProviders = await adminProvidersDB.getAll();
+        setAdminProviders(
+          aProviders.map((p) => ({
+            id: p.id,
+            type: "admin-provider" as const,
+            name: p.name,
+            subtitle: `${p.serviceName}${p.address ? ` \u2022 ${p.address}` : ""}`,
+            avatar: p.avatarUri,
+          }))
         );
       } catch {}
 
@@ -73,7 +90,7 @@ export default function SearchScreen() {
             id: p.userId,
             type: "professional" as const,
             name: p.name,
-            subtitle: `${p.category} • ${p.city}`,
+            subtitle: `${p.category} \u2022 ${p.city}`,
             avatar: p.avatar,
           }))
         );
@@ -114,10 +131,11 @@ export default function SearchScreen() {
     const q = query.toLowerCase();
 
     const allResults: SearchResult[] = [
-      ...mockServiceResults,
-      ...adminServices,
+      ...adminServices,          // serviços admin primeiro (com foto)
+      ...adminProviders,         // prestadores admin segundo
+      ...realProviders,          // prestadores reais
+      ...mockServiceResults,     // mock por último
       ...mockProfessionalResults,
-      ...realProviders,
     ];
 
     // Deduplicar por ID
@@ -140,13 +158,16 @@ export default function SearchScreen() {
     if (item.type === "professional") {
       router.push(`/professional/${item.id}` as any);
     } else if (item.type === "admin-service") {
-      // Serviço criado no painel admin → vai para a tela de detalhe do serviço
       router.push({
         pathname: "/admin-services/[serviceId]",
         params: { serviceId: item.id, title: item.name },
       } as any);
+    } else if (item.type === "admin-provider") {
+      router.push({
+        pathname: "/admin-provider/[providerId]",
+        params: { providerId: item.id, title: item.name },
+      } as any);
     } else {
-      // service mock ou category → vai para a listagem de profissionais
       const catId = item.categoryId || item.id;
       router.push({
         pathname: "/professionals/[category]",
@@ -195,12 +216,16 @@ export default function SearchScreen() {
               style={({ pressed }) => [styles.resultItem, pressed && { opacity: 0.7 }]}
               onPress={() => handleResultPress(item)}
             >
-              {item.type === "professional" && item.avatar ? (
+              {item.avatar ? (
                 <Image source={{ uri: item.avatar }} style={styles.resultAvatar} />
               ) : (
                 <View style={styles.resultIcon}>
                   <MaterialIcons
-                    name={item.type === "professional" ? "person" : "build"}
+                    name={
+                      item.type === "professional" || item.type === "admin-provider"
+                        ? "person"
+                        : "build"
+                    }
                     size={20}
                     color="#6B7280"
                   />
@@ -216,13 +241,13 @@ export default function SearchScreen() {
               </View>
               <View style={[
                 styles.resultTypeBadge,
-                item.type === "admin-service" && styles.resultTypeBadgeAdmin,
+                (item.type === "admin-service" || item.type === "admin-provider") && styles.resultTypeBadgeAdmin,
               ]}>
                 <Text style={[
                   styles.resultTypeText,
-                  item.type === "admin-service" && styles.resultTypeTextAdmin,
+                  (item.type === "admin-service" || item.type === "admin-provider") && styles.resultTypeTextAdmin,
                 ]}>
-                  {item.type === "professional" ? "Profissional" : item.type === "admin-service" ? "Serviço" : "Serviço"}
+                  {item.type === "professional" ? "Profissional" : item.type === "admin-provider" ? "Prestador" : "Serviço"}
                 </Text>
               </View>
               <MaterialIcons name="chevron-right" size={20} color="#D1D5DB" />
