@@ -406,33 +406,110 @@ export default function AdminAdsScreen() {
               maxLength={160}
             />
 
-            {/* Provider picker */}
+            {/* Provider picker inline */}
             <Text style={styles.fieldLabel}>Prestador vinculado *</Text>
-            <Pressable
-              style={({ pressed }) => [styles.providerPicker, pressed && { opacity: 0.8 }]}
-              onPress={openProviderPicker}
-            >
-              {form.providerId ? (
-                <View style={styles.providerSelected}>
-                  <MaterialIcons name="check-circle" size={18} color="#25D366" />
-                  <Text style={styles.providerSelectedText}>{form.providerName}</Text>
-                </View>
-              ) : (
+            {form.providerId ? (
+              <View style={styles.providerSelectedCard}>
+                <MaterialIcons name="check-circle" size={18} color="#25D366" />
+                <Text style={styles.providerSelectedText}>{form.providerName}</Text>
+                <Pressable
+                  style={({ pressed }) => [styles.clearProviderBtn, pressed && { opacity: 0.7 }]}
+                  onPress={() => {
+                    setForm((f) => ({ ...f, providerId: "", providerName: "" }));
+                    setShowProviderPicker(true);
+                    loadRealProviders();
+                  }}
+                >
+                  <MaterialIcons name="swap-horiz" size={16} color="#6B7280" />
+                  <Text style={styles.clearProviderText}>Trocar</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <Pressable
+                style={({ pressed }) => [styles.providerPicker, pressed && { opacity: 0.8 }]}
+                onPress={() => {
+                  setPickerSearch("");
+                  loadRealProviders();
+                  setShowProviderPicker((v) => !v);
+                }}
+              >
                 <View style={styles.providerPlaceholder}>
                   <MaterialIcons name="person-add" size={18} color="#9CA3AF" />
                   <Text style={styles.providerPlaceholderText}>Selecionar prestador</Text>
                 </View>
-              )}
-              <MaterialIcons name="chevron-right" size={20} color="#9CA3AF" />
-            </Pressable>
-            {form.providerId && (
-              <Pressable
-                style={styles.clearProvider}
-                onPress={() => setForm((f) => ({ ...f, providerId: "", providerName: "" }))}
-              >
-                <MaterialIcons name="close" size={14} color="#9CA3AF" />
-                <Text style={styles.clearProviderText}>Remover vínculo</Text>
+                <MaterialIcons
+                  name={showProviderPicker ? "expand-less" : "expand-more"}
+                  size={22}
+                  color="#9CA3AF"
+                />
               </Pressable>
+            )}
+
+            {/* Lista inline de prestadores */}
+            {showProviderPicker && !form.providerId && (
+              <View style={styles.inlinePicker}>
+                {/* Busca */}
+                <View style={styles.searchBar}>
+                  <MaterialIcons name="search" size={16} color="#9CA3AF" />
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Buscar prestador..."
+                    placeholderTextColor="#9CA3AF"
+                    value={pickerSearch}
+                    onChangeText={setPickerSearch}
+                    returnKeyType="search"
+                  />
+                  {pickerSearch.length > 0 && (
+                    <Pressable onPress={() => setPickerSearch("")}>
+                      <MaterialIcons name="close" size={14} color="#9CA3AF" />
+                    </Pressable>
+                  )}
+                </View>
+                {loadingProviders ? (
+                  <View style={styles.pickerLoadingRow}>
+                    <ActivityIndicator size="small" color="#25D366" />
+                    <Text style={styles.pickerCountText}>Carregando...</Text>
+                  </View>
+                ) : filteredProviders.length === 0 ? (
+                  <View style={styles.pickerEmpty}>
+                    <MaterialIcons name="person-search" size={32} color="#D1D5DB" />
+                    <Text style={styles.pickerEmptyText}>
+                      {pickerSearch ? `Nenhum resultado para "${pickerSearch}"` : "Nenhum prestador encontrado"}
+                    </Text>
+                  </View>
+                ) : (
+                  filteredProviders.slice(0, 8).map((item) => (
+                    <Pressable
+                      key={item.id}
+                      style={({ pressed }) => [styles.providerRow, pressed && { opacity: 0.7 }]}
+                      onPress={() => {
+                        setForm((f) => ({ ...f, providerId: item.id, providerName: item.name }));
+                        setShowProviderPicker(false);
+                      }}
+                    >
+                      {item.avatar ? (
+                        <Image source={{ uri: item.avatar }} style={styles.providerAvatar} />
+                      ) : (
+                        <View style={[styles.providerAvatar, styles.providerAvatarPlaceholder]}>
+                          <MaterialIcons name="person" size={20} color="#9CA3AF" />
+                        </View>
+                      )}
+                      <View style={styles.providerInfo}>
+                        <View style={styles.providerNameRow}>
+                          <Text style={styles.providerName}>{item.name}</Text>
+                          {item.isReal && (
+                            <View style={styles.realBadge}>
+                              <MaterialIcons name="verified" size={9} color="#FFFFFF" />
+                              <Text style={styles.realBadgeText}>App</Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text style={styles.providerCategory}>{item.category}</Text>
+                      </View>
+                    </Pressable>
+                  ))
+                )}
+              </View>
             )}
 
             {/* Display order */}
@@ -482,110 +559,7 @@ export default function AdminAdsScreen() {
         </View>
       </Modal>
 
-      {/* ── Modal picker de prestadores ── */}
-      <Modal
-        visible={showProviderPicker}
-        animationType="slide"
-        transparent
-        statusBarTranslucent
-        onRequestClose={() => setShowProviderPicker(false)}
-      >
-        <View style={styles.modalOverlay}>
-        <View style={styles.modal}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Selecionar prestador</Text>
-            <Pressable
-              style={({ pressed }) => [styles.modalClose, pressed && { opacity: 0.6 }]}
-              onPress={() => setShowProviderPicker(false)}
-            >
-              <MaterialIcons name="close" size={24} color="#6B7280" />
-            </Pressable>
-          </View>
 
-          {/* Barra de busca */}
-          <View style={styles.searchBar}>
-            <MaterialIcons name="search" size={18} color="#9CA3AF" />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Buscar por nome ou categoria..."
-              placeholderTextColor="#9CA3AF"
-              value={pickerSearch}
-              onChangeText={setPickerSearch}
-              returnKeyType="search"
-              autoFocus
-            />
-            {pickerSearch.length > 0 && (
-              <Pressable onPress={() => setPickerSearch("")}>
-                <MaterialIcons name="close" size={16} color="#9CA3AF" />
-              </Pressable>
-            )}
-          </View>
-
-          {/* Contagem */}
-          <View style={styles.pickerCountRow}>
-            <Text style={styles.pickerCountText}>
-              {filteredProviders.length} prestador{filteredProviders.length !== 1 ? "es" : ""}
-              {realProviders.length > 0 && ` · ${realProviders.length} cadastrado${realProviders.length !== 1 ? "s" : ""} no app`}
-            </Text>
-          </View>
-
-          {loadingProviders ? (
-            <View style={styles.loadingCenter}>
-              <ActivityIndicator size="large" color="#25D366" />
-              <Text style={styles.loadingText}>Carregando prestadores...</Text>
-            </View>
-          ) : (
-            <FlatList
-              data={filteredProviders}
-              keyExtractor={(item) => item.id}
-              contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 40 }}
-              showsVerticalScrollIndicator={false}
-              ListEmptyComponent={
-                <View style={styles.pickerEmpty}>
-                  <MaterialIcons name="person-search" size={40} color="#D1D5DB" />
-                  <Text style={styles.pickerEmptyText}>
-                    {pickerSearch ? `Nenhum resultado para "${pickerSearch}"` : "Nenhum prestador encontrado"}
-                  </Text>
-                </View>
-              }
-              renderItem={({ item }) => (
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.providerRow,
-                    form.providerId === item.id && styles.providerRowSelected,
-                    pressed && { opacity: 0.7 },
-                  ]}
-                  onPress={() => handleSelectProvider(item)}
-                >
-                  {item.avatar ? (
-                    <Image source={{ uri: item.avatar }} style={styles.providerAvatar} />
-                  ) : (
-                    <View style={[styles.providerAvatar, styles.providerAvatarPlaceholder]}>
-                      <MaterialIcons name="person" size={22} color="#9CA3AF" />
-                    </View>
-                  )}
-                  <View style={styles.providerInfo}>
-                    <View style={styles.providerNameRow}>
-                      <Text style={styles.providerName}>{item.name}</Text>
-                      {item.isReal && (
-                        <View style={styles.realBadge}>
-                          <MaterialIcons name="verified" size={10} color="#FFFFFF" />
-                          <Text style={styles.realBadgeText}>App</Text>
-                        </View>
-                      )}
-                    </View>
-                    <Text style={styles.providerCategory}>{item.category}</Text>
-                  </View>
-                  {form.providerId === item.id && (
-                    <MaterialIcons name="check-circle" size={22} color="#25D366" />
-                  )}
-                </Pressable>
-              )}
-            />
-          )}
-        </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -718,7 +692,42 @@ const styles = StyleSheet.create({
     borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12,
   },
   providerSelected: { flexDirection: "row", alignItems: "center", gap: 8 },
-  providerSelectedText: { fontSize: 14, color: "#111827", fontWeight: "500" },
+  providerSelectedCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#F0FDF4",
+    borderWidth: 1,
+    borderColor: "#86EFAC",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 4,
+  },
+  providerSelectedText: { fontSize: 14, color: "#111827", fontWeight: "500", flex: 1 },
+  clearProviderBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#F3F4F6",
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  inlinePicker: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    marginBottom: 12,
+    overflow: "hidden",
+  },
+  pickerLoadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    padding: 16,
+  },
   providerPlaceholder: { flexDirection: "row", alignItems: "center", gap: 8 },
   providerPlaceholderText: { fontSize: 14, color: "#9CA3AF" },
   clearProvider: {
