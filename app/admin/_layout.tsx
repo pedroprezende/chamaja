@@ -20,6 +20,8 @@ export default function AdminLayout() {
       <Stack.Screen name="payments" />
       <Stack.Screen name="ads" />
       <Stack.Screen name="services" />
+      <Stack.Screen name="providers" />
+      <Stack.Screen name="subcategory-images" />
     </Stack>
   );
 }

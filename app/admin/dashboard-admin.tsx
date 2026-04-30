@@ -10,6 +10,7 @@ import {
   Pressable,
   Image,
   Switch,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -18,9 +19,9 @@ import * as ImagePicker from "expo-image-picker";
 import { adminDB, type Service } from "@/lib/admin-database";
 import { useAuth } from "@/lib/auth-context";
 import { categories } from "@/data/mock";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 
-// Mapeamento de icones por categoria
+// Mapeamento de ícones por categoria
 const CATEGORY_ICON_MAP: Record<string, string> = {
   "assistencia-tecnica": "settings",
   "reformas-reparos": "build",
@@ -42,6 +43,7 @@ function getCategoryIcon(categoryId: string): string {
   return CATEGORY_ICON_MAP[categoryId] || "build";
 }
 
+// ─── Componente de Card de Serviço ─────────────────────────────────────────
 function ServiceCard({
   item,
   onEdit,
@@ -56,63 +58,108 @@ function ServiceCard({
   const iconName = getCategoryIcon(item.categoryId) as any;
   return (
     <View style={styles.card}>
+      {/* Thumbnail / Ícone */}
       {item.imageUri ? (
-        <Image source={{ uri: item.imageUri }} style={styles.cardThumbnail} resizeMode="cover" />
+        <Image source={{ uri: item.imageUri }} style={styles.cardThumb} resizeMode="cover" />
       ) : (
-        <View style={styles.iconContainer}>
-          <MaterialIcons name={iconName} size={28} color="#25D366" />
+        <View style={styles.cardIconBox}>
+          <MaterialIcons name={iconName} size={26} color="#25D366" />
         </View>
       )}
-      <View style={styles.cardInfo}>
-        <View style={styles.nameRow}>
-          <Text style={styles.cardName} numberOfLines={1}>{item.name}</Text>
-          <View style={styles.categoryBadge}>
-            <Text style={styles.categoryBadgeText}>{item.category}</Text>
+
+      {/* Informações */}
+      <View style={styles.cardBody}>
+        <Text style={styles.cardName} numberOfLines={1} ellipsizeMode="tail">
+          {item.name}
+        </Text>
+        <View style={styles.cardMeta}>
+          <View style={styles.categoryPill}>
+            <Text style={styles.categoryPillText} numberOfLines={1} ellipsizeMode="tail">
+              {item.category}
+            </Text>
           </View>
+          {item.showOnHome && (
+            <View style={styles.homePill}>
+              <MaterialIcons name="home" size={10} color="#15803D" />
+              <Text style={styles.homePillText}>Home</Text>
+            </View>
+          )}
         </View>
-        <Text style={styles.cardDescription} numberOfLines={2}>{item.description}</Text>
-        <Pressable style={styles.homeToggleRow} onPress={onToggleHome}>
-          <MaterialIcons name="home" size={14} color={item.showOnHome ? "#25D366" : "#9CA3AF"} />
-          <Text style={[styles.homeToggleText, item.showOnHome && styles.homeToggleTextActive]}>
-            {item.showOnHome ? "Visivel na Home" : "Oculto na Home"}
+        {!!item.description && (
+          <Text style={styles.cardDesc} numberOfLines={2} ellipsizeMode="tail">
+            {item.description}
           </Text>
+        )}
+        {/* Toggle visibilidade */}
+        <Pressable style={styles.toggleRow} onPress={onToggleHome}>
           <Switch
             value={item.showOnHome}
             onValueChange={onToggleHome}
             trackColor={{ false: "#E5E7EB", true: "#BBF7D0" }}
-            thumbColor={item.showOnHome ? "#25D366" : "#9CA3AF"}
-            style={{ transform: [{ scaleX: 0.75 }, { scaleY: 0.75 }] }}
+            thumbColor={item.showOnHome ? "#25D366" : "#D1D5DB"}
+            style={{ transform: [{ scaleX: 0.7 }, { scaleY: 0.7 }], marginLeft: -4 }}
           />
+          <Text style={[styles.toggleLabel, item.showOnHome && styles.toggleLabelOn]}>
+            {item.showOnHome ? "Visível na Home" : "Oculto"}
+          </Text>
         </Pressable>
       </View>
+
+      {/* Ações */}
       <View style={styles.cardActions}>
         <Pressable
-          style={({ pressed }) => [styles.actionBtn, styles.editBtn, pressed && { opacity: 0.7 }]}
+          style={({ pressed }) => [styles.actionBtn, styles.editBtn, pressed && { opacity: 0.65 }]}
           onPress={onEdit}
+          hitSlop={6}
         >
-          <MaterialIcons name="edit" size={16} color="#3B82F6" />
+          <MaterialIcons name="edit" size={15} color="#2563EB" />
         </Pressable>
         <Pressable
-          style={({ pressed }) => [styles.actionBtn, styles.deleteBtn, pressed && { opacity: 0.7 }]}
+          style={({ pressed }) => [styles.actionBtn, styles.deleteBtn, pressed && { opacity: 0.65 }]}
           onPress={onDelete}
+          hitSlop={6}
         >
-          <MaterialIcons name="delete-outline" size={16} color="#EF4444" />
+          <MaterialIcons name="delete-outline" size={15} color="#DC2626" />
         </Pressable>
       </View>
     </View>
   );
 }
 
+// ─── Botão de navegação da barra de seções ──────────────────────────────────
+function NavChip({
+  icon,
+  label,
+  color,
+  onPress,
+}: {
+  icon: string;
+  label: string;
+  color: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.navChip, pressed && { opacity: 0.7 }]}
+      onPress={onPress}
+    >
+      <MaterialIcons name={icon as any} size={16} color={color} />
+      <Text style={[styles.navChipText, { color }]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+// ─── Tela Principal ──────────────────────────────────────────────────────────
 export default function AdminDashboard() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user, signOut, isAdmin, isLoading: authLoading } = useAuth();
+
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [services, setServices] = useState<Service[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [searchText, setSearchText] = useState("");
-  // Controla se o dropdown de categorias esta aberto DENTRO do modal
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -131,7 +178,6 @@ export default function AdminDashboard() {
     adminDB.getAllServices().then(setServices).catch(() => {});
   }, [user, isAdmin, authLoading, router]);
 
-  // LOGOUT: usa signOut do AuthContext que limpa o estado React + AsyncStorage corretamente
   const handleLogout = useCallback(() => {
     Alert.alert("Sair do Painel", "Tem certeza que deseja sair?", [
       { text: "Cancelar", style: "cancel" },
@@ -139,10 +185,7 @@ export default function AdminDashboard() {
         text: "Sair",
         style: "destructive",
         onPress: async () => {
-          try {
-            await signOut();
-          } catch {}
-          // Navega independente do resultado do signOut
+          try { await signOut(); } catch {}
           router.replace("/auth/login");
         },
       },
@@ -183,10 +226,10 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteService = (serviceId: string, serviceName: string) => {
-    Alert.alert("Deletar Servico", `Deletar "${serviceName}"?`, [
+    Alert.alert("Excluir Serviço", `Deseja excluir "${serviceName}"?`, [
       { text: "Cancelar", style: "cancel" },
       {
-        text: "Deletar",
+        text: "Excluir",
         style: "destructive",
         onPress: async () => {
           await adminDB.deleteService(serviceId);
@@ -203,7 +246,7 @@ export default function AdminDashboard() {
 
   const handleSaveService = async () => {
     if (!formData.name.trim() || !formData.categoryId || !formData.description.trim()) {
-      Alert.alert("Campos obrigatorios", "Preencha nome, categoria e descricao.");
+      Alert.alert("Campos obrigatórios", "Preencha nome, categoria e descrição.");
       return;
     }
     try {
@@ -246,104 +289,100 @@ export default function AdminDashboard() {
 
   if (authorized === null) {
     return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F5F5F5" }}>
-        <Text style={{ color: "#6B7280" }}>Verificando acesso...</Text>
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Verificando acesso...</Text>
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header */}
+    <View style={[styles.root, { paddingTop: insets.top }]}>
+
+      {/* ── Header ── */}
       <View style={styles.header}>
         <Pressable
-          style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
+          style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.6 }]}
           onPress={() => router.replace("/(tabs)")}
+          hitSlop={8}
         >
-          <MaterialIcons name="arrow-back" size={24} color="#111827" />
+          <MaterialIcons name="arrow-back" size={22} color="#374151" />
         </Pressable>
+
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Painel Admin</Text>
-          <Text style={styles.headerSubtitle}>
-            {services.length} {services.length === 1 ? "servico" : "servicos"} • {homeCount} na Home
+          <Text style={styles.headerSub} numberOfLines={1}>
+            {user?.name?.split(" ")[0] || "Admin"} · {services.length} serviços
           </Text>
         </View>
+
         <Pressable
-          style={({ pressed }) => [styles.logoutBtn, pressed && { opacity: 0.7 }]}
+          style={({ pressed }) => [styles.iconBtn, styles.logoutIconBtn, pressed && { opacity: 0.7 }]}
           onPress={handleLogout}
+          hitSlop={8}
         >
-          <MaterialIcons name="logout" size={20} color="#EF4444" />
+          <MaterialIcons name="logout" size={20} color="#DC2626" />
         </Pressable>
       </View>
 
-      {/* Search + Add */}
+      {/* ── Stats Cards ── */}
+      <View style={styles.statsRow}>
+        <View style={styles.statCard}>
+          <Text style={styles.statValue}>{services.length}</Text>
+          <Text style={styles.statLabel}>Total</Text>
+        </View>
+        <View style={[styles.statCard, styles.statCardGreen]}>
+          <Text style={[styles.statValue, { color: "#15803D" }]}>{homeCount}</Text>
+          <Text style={[styles.statLabel, { color: "#166534" }]}>Na Home</Text>
+        </View>
+        <View style={[styles.statCard, styles.statCardBlue]}>
+          <Text style={[styles.statValue, { color: "#1D4ED8" }]}>
+            {services.filter((s) => !!s.imageUri).length}
+          </Text>
+          <Text style={[styles.statLabel, { color: "#1E40AF" }]}>Com Foto</Text>
+        </View>
+      </View>
+
+      {/* ── Navegação entre seções ── */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.navBar}
+        contentContainerStyle={styles.navBarContent}
+      >
+        <NavChip icon="category" label="Serviços" color="#25D366" onPress={() => router.push("/admin/services" as any)} />
+        <NavChip icon="campaign" label="Anúncios" color="#2563EB" onPress={() => router.push("/admin/ads" as any)} />
+        <NavChip icon="image" label="Imagens" color="#7C3AED" onPress={() => router.push("/admin/subcategory-images" as any)} />
+        <NavChip icon="people" label="Prestadores" color="#D97706" onPress={() => router.push("/admin/providers" as any)} />
+      </ScrollView>
+
+      {/* ── Barra de busca + botão adicionar ── */}
       <View style={styles.searchRow}>
         <View style={styles.searchBox}>
           <MaterialIcons name="search" size={18} color="#9CA3AF" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Buscar servico ou categoria..."
+            placeholder="Buscar serviço ou categoria..."
             placeholderTextColor="#9CA3AF"
             value={searchText}
             onChangeText={setSearchText}
+            returnKeyType="search"
           />
           {searchText.length > 0 && (
-            <Pressable onPress={() => setSearchText("")}>
-              <MaterialIcons name="close" size={18} color="#9CA3AF" />
+            <Pressable onPress={() => setSearchText("")} hitSlop={8}>
+              <MaterialIcons name="close" size={16} color="#9CA3AF" />
             </Pressable>
           )}
         </View>
         <Pressable
-          style={({ pressed }) => [styles.addBtn, pressed && { opacity: 0.8 }]}
+          style={({ pressed }) => [styles.addBtn, pressed && { opacity: 0.8, transform: [{ scale: 0.96 }] }]}
           onPress={openCreateModal}
         >
           <MaterialIcons name="add" size={22} color="#FFFFFF" />
+          <Text style={styles.addBtnText}>Novo</Text>
         </Pressable>
       </View>
 
-      {/* Stats bar — scroll horizontal */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.statsBar}
-        contentContainerStyle={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 12, gap: 4 }}
-        keyboardShouldPersistTaps="handled"
-      >
-        <MaterialIcons name="admin-panel-settings" size={15} color="#25D366" />
-        <Text style={[styles.statsText, { marginRight: 6 }]} numberOfLines={1}>
-          <Text style={{ fontWeight: "700" }}>{user?.name?.split(" ")[0] || "Admin"}</Text>
-        </Text>
-        <Pressable
-          style={({ pressed }) => [styles.adsNavBtn, pressed && { opacity: 0.75 }]}
-          onPress={() => router.push("/admin/services" as any)}
-        >
-          <MaterialIcons name="category" size={15} color="#25D366" />
-          <Text style={[styles.adsNavText, { color: "#25D366" }]}>Serviços</Text>
-        </Pressable>
-        <Pressable
-          style={({ pressed }) => [styles.adsNavBtn, pressed && { opacity: 0.75 }]}
-          onPress={() => router.push("/admin/ads" as any)}
-        >
-          <MaterialIcons name="campaign" size={15} color="#1A73E8" />
-          <Text style={styles.adsNavText}>Anúncios</Text>
-        </Pressable>
-        <Pressable
-          style={({ pressed }) => [styles.adsNavBtn, pressed && { opacity: 0.75 }]}
-          onPress={() => router.push("/admin/subcategory-images" as any)}
-        >
-          <MaterialIcons name="image" size={15} color="#8B5CF6" />
-          <Text style={[styles.adsNavText, { color: "#8B5CF6" }]}>Imagens</Text>
-        </Pressable>
-        <Pressable
-          style={({ pressed }) => [styles.adsNavBtn, pressed && { opacity: 0.75 }]}
-          onPress={() => router.push("/admin/providers" as any)}
-        >
-          <MaterialIcons name="people" size={15} color="#F59E0B" />
-          <Text style={[styles.adsNavText, { color: "#F59E0B" }]}>Prestadores</Text>
-        </Pressable>
-      </ScrollView>
-
-      {/* List */}
+      {/* ── Lista de Serviços ── */}
       <FlatList
         data={filteredServices}
         keyExtractor={(item) => item.id}
@@ -358,30 +397,48 @@ export default function AdminDashboard() {
           />
         )}
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <MaterialIcons name="inbox" size={52} color="#D1D5DB" />
+          <View style={styles.emptyState}>
+            <View style={styles.emptyIconBox}>
+              <MaterialIcons name="inbox" size={40} color="#D1D5DB" />
+            </View>
             <Text style={styles.emptyTitle}>
-              {searchText ? "Nenhum resultado" : "Nenhum servico ainda"}
+              {searchText ? "Nenhum resultado encontrado" : "Nenhum serviço cadastrado"}
             </Text>
             <Text style={styles.emptySubtitle}>
-              {searchText ? "Tente outro termo" : 'Toque em "+" para criar'}
+              {searchText ? `Sem resultados para "${searchText}"` : 'Toque em "+ Novo" para adicionar'}
             </Text>
           </View>
         }
       />
 
-      {/* Modal de criacao/edicao — SEM modal aninhado para categoria */}
-      <Modal visible={showModal} transparent animationType="slide" onRequestClose={() => setShowModal(false)}>
+      {/* ── Modal de Criação / Edição ── */}
+      <Modal
+        visible={showModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowModal(false)}
+      >
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
+            {/* Handle */}
             <View style={styles.modalHandle} />
+
+            {/* Cabeçalho do modal */}
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{editingService ? "Editar Servico" : "Novo Servico"}</Text>
+              <View>
+                <Text style={styles.modalTitle}>
+                  {editingService ? "Editar Serviço" : "Novo Serviço"}
+                </Text>
+                <Text style={styles.modalSubtitle}>
+                  {editingService ? "Atualize as informações abaixo" : "Preencha os dados do serviço"}
+                </Text>
+              </View>
               <Pressable
                 style={({ pressed }) => [styles.modalCloseBtn, pressed && { opacity: 0.6 }]}
                 onPress={() => setShowModal(false)}
+                hitSlop={8}
               >
-                <MaterialIcons name="close" size={22} color="#6B7280" />
+                <MaterialIcons name="close" size={20} color="#6B7280" />
               </Pressable>
             </View>
 
@@ -389,152 +446,170 @@ export default function AdminDashboard() {
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
               nestedScrollEnabled
+              contentContainerStyle={styles.modalScrollContent}
             >
-              {/* Imagem */}
-              <Text style={styles.fieldLabel}>Imagem de Capa</Text>
-              <Pressable
-                style={({ pressed }) => [styles.imagePickerBtn, pressed && { opacity: 0.8 }]}
-                onPress={handlePickImage}
-              >
-                {formData.imageUri ? (
-                  <View style={styles.imagePreviewWrapper}>
-                    <Image source={{ uri: formData.imageUri }} style={styles.imagePreview} resizeMode="cover" />
-                    <View style={styles.imageEditOverlay}>
-                      <MaterialIcons name="edit" size={20} color="#FFFFFF" />
-                      <Text style={styles.imageEditText}>Trocar foto</Text>
+              {/* ── Seção: Imagem ── */}
+              <View style={styles.formSection}>
+                <Text style={styles.sectionTitle}>
+                  <MaterialIcons name="image" size={14} color="#6B7280" /> Imagem de Capa
+                </Text>
+                <Pressable
+                  style={({ pressed }) => [styles.imagePicker, pressed && { opacity: 0.8 }]}
+                  onPress={handlePickImage}
+                >
+                  {formData.imageUri ? (
+                    <View style={styles.imagePreviewWrap}>
+                      <Image source={{ uri: formData.imageUri }} style={styles.imagePreview} resizeMode="cover" />
+                      <View style={styles.imageOverlay}>
+                        <MaterialIcons name="edit" size={18} color="#FFFFFF" />
+                        <Text style={styles.imageOverlayText}>Trocar foto</Text>
+                      </View>
                     </View>
-                  </View>
-                ) : (
-                  <View style={styles.imagePlaceholder}>
-                    <MaterialIcons name="add-photo-alternate" size={32} color="#9CA3AF" />
-                    <Text style={styles.imagePlaceholderText}>Adicionar imagem de capa</Text>
-                    <Text style={styles.imagePlaceholderSub}>Toque para selecionar da galeria</Text>
+                  ) : (
+                    <View style={styles.imagePlaceholder}>
+                      <MaterialIcons name="add-photo-alternate" size={32} color="#9CA3AF" />
+                      <Text style={styles.imagePlaceholderTitle}>Adicionar imagem</Text>
+                      <Text style={styles.imagePlaceholderSub}>Toque para selecionar da galeria</Text>
+                    </View>
+                  )}
+                </Pressable>
+              </View>
+
+              {/* ── Seção: Dados do Serviço ── */}
+              <View style={styles.formSection}>
+                <Text style={styles.sectionTitle}>
+                  <MaterialIcons name="info-outline" size={14} color="#6B7280" /> Dados do Serviço
+                </Text>
+
+                <Text style={styles.fieldLabel}>Nome do Serviço *</Text>
+                <View style={styles.inputWrap}>
+                  <MaterialIcons name="build" size={17} color="#9CA3AF" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Ex: Eletricista Residencial"
+                    placeholderTextColor="#9CA3AF"
+                    value={formData.name}
+                    onChangeText={(t) => setFormData({ ...formData, name: t })}
+                    returnKeyType="next"
+                  />
+                </View>
+
+                <Text style={styles.fieldLabel}>Categoria *</Text>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.inputWrap,
+                    styles.selectWrap,
+                    showCategoryDropdown && styles.selectWrapOpen,
+                    pressed && { opacity: 0.85 },
+                  ]}
+                  onPress={() => setShowCategoryDropdown((v) => !v)}
+                >
+                  {formData.categoryId ? (
+                    <View style={styles.selectedCatRow}>
+                      <View style={styles.selectedCatIcon}>
+                        <MaterialIcons name={getCategoryIcon(formData.categoryId) as any} size={16} color="#25D366" />
+                      </View>
+                      <Text style={styles.selectedCatText} numberOfLines={1}>
+                        {formData.category}
+                      </Text>
+                    </View>
+                  ) : (
+                    <>
+                      <MaterialIcons name="category" size={17} color="#9CA3AF" style={styles.inputIcon} />
+                      <Text style={styles.selectPlaceholder}>Selecionar categoria...</Text>
+                    </>
+                  )}
+                  <MaterialIcons
+                    name={showCategoryDropdown ? "expand-less" : "expand-more"}
+                    size={20}
+                    color="#9CA3AF"
+                  />
+                </Pressable>
+
+                {/* Dropdown de categorias */}
+                {showCategoryDropdown && (
+                  <View style={styles.dropdown}>
+                    {categories.map((cat) => {
+                      const isSelected = formData.categoryId === cat.id;
+                      return (
+                        <Pressable
+                          key={cat.id}
+                          style={({ pressed }) => [
+                            styles.dropdownItem,
+                            isSelected && styles.dropdownItemActive,
+                            pressed && { backgroundColor: "#F0FDF4" },
+                          ]}
+                          onPress={() => {
+                            setFormData((prev) => ({
+                              ...prev,
+                              categoryId: cat.id,
+                              category: cat.name.replace(/\n/g, " "),
+                            }));
+                            setShowCategoryDropdown(false);
+                          }}
+                        >
+                          <View style={[styles.dropdownItemIcon, isSelected && styles.dropdownItemIconActive]}>
+                            <MaterialIcons
+                              name={getCategoryIcon(cat.id) as any}
+                              size={16}
+                              color={isSelected ? "#FFFFFF" : "#25D366"}
+                            />
+                          </View>
+                          <Text
+                            style={[styles.dropdownItemText, isSelected && styles.dropdownItemTextActive]}
+                            numberOfLines={1}
+                          >
+                            {cat.name.replace(/\n/g, " ")}
+                          </Text>
+                          {isSelected && <MaterialIcons name="check" size={16} color="#25D366" />}
+                        </Pressable>
+                      );
+                    })}
                   </View>
                 )}
-              </Pressable>
 
-              {/* Nome */}
-              <Text style={styles.fieldLabel}>Nome do Servico</Text>
-              <View style={styles.fieldBox}>
-                <MaterialIcons name="build" size={18} color="#9CA3AF" />
-                <TextInput
-                  style={styles.fieldInput}
-                  placeholder="Ex: Eletricista Residencial"
-                  placeholderTextColor="#9CA3AF"
-                  value={formData.name}
-                  onChangeText={(t) => setFormData({ ...formData, name: t })}
-                  returnKeyType="next"
-                />
+                <Text style={styles.fieldLabel}>Descrição *</Text>
+                <View style={[styles.inputWrap, styles.textareaWrap]}>
+                  <TextInput
+                    style={[styles.input, styles.textarea]}
+                    placeholder="Descreva o serviço oferecido..."
+                    placeholderTextColor="#9CA3AF"
+                    value={formData.description}
+                    onChangeText={(t) => setFormData({ ...formData, description: t })}
+                    multiline
+                    numberOfLines={4}
+                    textAlignVertical="top"
+                  />
+                </View>
               </View>
 
-              {/* Categoria — dropdown INLINE (sem Modal aninhado) */}
-              <Text style={styles.fieldLabel}>Categoria</Text>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.fieldBox,
-                  styles.categorySelector,
-                  showCategoryDropdown && styles.categorySelectorOpen,
-                  pressed && { opacity: 0.85 },
-                ]}
-                onPress={() => setShowCategoryDropdown((v) => !v)}
-              >
-                {formData.categoryId ? (
-                  <View style={styles.selectedCategoryRow}>
-                    <View style={styles.selectedCategoryIcon}>
-                      <MaterialIcons
-                        name={getCategoryIcon(formData.categoryId) as any}
-                        size={18}
-                        color="#25D366"
-                      />
+              {/* ── Seção: Visibilidade ── */}
+              <View style={styles.formSection}>
+                <Text style={styles.sectionTitle}>
+                  <MaterialIcons name="visibility" size={14} color="#6B7280" /> Visibilidade
+                </Text>
+                <View style={styles.toggleCard}>
+                  <View style={styles.toggleCardLeft}>
+                    <View style={[styles.toggleCardIcon, formData.showOnHome && styles.toggleCardIconOn]}>
+                      <MaterialIcons name="home" size={18} color={formData.showOnHome ? "#15803D" : "#9CA3AF"} />
                     </View>
-                    <Text style={styles.selectedCategoryText}>{formData.category}</Text>
+                    <View style={styles.toggleCardText}>
+                      <Text style={styles.toggleCardTitle}>Exibir na tela inicial</Text>
+                      <Text style={styles.toggleCardSub}>
+                        {formData.showOnHome ? "Visível para todos os usuários" : "Oculto da tela inicial"}
+                      </Text>
+                    </View>
                   </View>
-                ) : (
-                  <>
-                    <MaterialIcons name="category" size={18} color="#9CA3AF" />
-                    <Text style={styles.categoryPlaceholder}>Selecionar categoria...</Text>
-                  </>
-                )}
-                <MaterialIcons
-                  name={showCategoryDropdown ? "expand-less" : "expand-more"}
-                  size={20}
-                  color="#9CA3AF"
-                />
-              </Pressable>
-
-              {/* Lista de categorias inline — aparece abaixo do botao quando aberta */}
-              {showCategoryDropdown && (
-                <View style={styles.categoryDropdown}>
-                  {categories.map((cat) => {
-                    const isSelected = formData.categoryId === cat.id;
-                    return (
-                      <Pressable
-                        key={cat.id}
-                        style={({ pressed }) => [
-                          styles.dropdownItem,
-                          isSelected && styles.dropdownItemSelected,
-                          pressed && { backgroundColor: "#F0FDF4" },
-                        ]}
-                        onPress={() => {
-                          setFormData((prev) => ({
-                            ...prev,
-                            categoryId: cat.id,
-                            category: cat.name.replace(/\n/g, " "),
-                          }));
-                          setShowCategoryDropdown(false);
-                        }}
-                      >
-                        <View style={[styles.dropdownItemIcon, isSelected && styles.dropdownItemIconSelected]}>
-                          <MaterialIcons
-                            name={getCategoryIcon(cat.id) as any}
-                            size={18}
-                            color={isSelected ? "#FFFFFF" : "#25D366"}
-                          />
-                        </View>
-                        <Text style={[styles.dropdownItemText, isSelected && styles.dropdownItemTextSelected]}>
-                          {cat.name.replace(/\n/g, " ")}
-                        </Text>
-                        {isSelected && <MaterialIcons name="check" size={16} color="#25D366" />}
-                      </Pressable>
-                    );
-                  })}
+                  <Switch
+                    value={formData.showOnHome}
+                    onValueChange={(v) => setFormData({ ...formData, showOnHome: v })}
+                    trackColor={{ false: "#E5E7EB", true: "#BBF7D0" }}
+                    thumbColor={formData.showOnHome ? "#25D366" : "#D1D5DB"}
+                  />
                 </View>
-              )}
-
-              {/* Descricao */}
-              <Text style={styles.fieldLabel}>Descricao</Text>
-              <View style={[styles.fieldBox, styles.fieldBoxMultiline]}>
-                <TextInput
-                  style={[styles.fieldInput, styles.fieldInputMultiline]}
-                  placeholder="Descreva o servico..."
-                  placeholderTextColor="#9CA3AF"
-                  value={formData.description}
-                  onChangeText={(t) => setFormData({ ...formData, description: t })}
-                  multiline
-                  numberOfLines={4}
-                  textAlignVertical="top"
-                />
               </View>
 
-              {/* Toggle Exibir na Home */}
-              <View style={styles.homeToggleCard}>
-                <View style={styles.homeToggleInfo}>
-                  <MaterialIcons name="home" size={20} color={formData.showOnHome ? "#25D366" : "#6B7280"} />
-                  <View>
-                    <Text style={styles.homeToggleCardTitle}>Exibir na tela inicial</Text>
-                    <Text style={styles.homeToggleCardSub}>
-                      {formData.showOnHome ? "Visivel para todos os usuarios" : "Oculto da tela inicial"}
-                    </Text>
-                  </View>
-                </View>
-                <Switch
-                  value={formData.showOnHome}
-                  onValueChange={(v) => setFormData({ ...formData, showOnHome: v })}
-                  trackColor={{ false: "#E5E7EB", true: "#BBF7D0" }}
-                  thumbColor={formData.showOnHome ? "#25D366" : "#9CA3AF"}
-                />
-              </View>
-
+              {/* ── Botões de ação ── */}
               <View style={styles.modalActions}>
                 <Pressable
                   style={({ pressed }) => [styles.cancelBtn, pressed && { opacity: 0.7 }]}
@@ -543,11 +618,13 @@ export default function AdminDashboard() {
                   <Text style={styles.cancelBtnText}>Cancelar</Text>
                 </Pressable>
                 <Pressable
-                  style={({ pressed }) => [styles.saveBtn, pressed && { opacity: 0.8 }]}
+                  style={({ pressed }) => [styles.saveBtn, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
                   onPress={handleSaveService}
                 >
-                  <MaterialIcons name={editingService ? "check" : "add"} size={18} color="#fff" />
-                  <Text style={styles.saveBtnText}>{editingService ? "Salvar" : "Criar Servico"}</Text>
+                  <MaterialIcons name={editingService ? "check" : "add"} size={18} color="#FFFFFF" />
+                  <Text style={styles.saveBtnText}>
+                    {editingService ? "Salvar Alterações" : "Criar Serviço"}
+                  </Text>
                 </Pressable>
               </View>
             </ScrollView>
@@ -558,178 +635,405 @@ export default function AdminDashboard() {
   );
 }
 
+// ─── Estilos ─────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F5F5" },
+  root: { flex: 1, backgroundColor: "#F8FAFC" },
+  loadingContainer: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F8FAFC" },
+  loadingText: { fontSize: 14, color: "#6B7280" },
+
+  // Header
   header: {
-    flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF",
-    paddingHorizontal: 12, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: "#F3F4F6", gap: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+    gap: 12,
+    ...Platform.select({
+      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3 },
+      android: { elevation: 2 },
+    }),
   },
-  backBtn: {
-    width: 40, height: 40, borderRadius: 20,
-    alignItems: "center", justifyContent: "center", backgroundColor: "#F3F4F6",
+  iconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
   },
+  logoutIconBtn: { backgroundColor: "#FEF2F2" },
   headerCenter: { flex: 1 },
-  headerTitle: { fontSize: 17, fontWeight: "700", color: "#111827" },
-  headerSubtitle: { fontSize: 12, color: "#6B7280" },
-  logoutBtn: {
-    width: 40, height: 40, borderRadius: 20,
-    alignItems: "center", justifyContent: "center", backgroundColor: "#FEF2F2",
+  headerTitle: { fontSize: 18, fontWeight: "700", color: "#0F172A", letterSpacing: -0.3 },
+  headerSub: { fontSize: 12, color: "#64748B", marginTop: 1 },
+
+  // Stats
+  statsRow: {
+    flexDirection: "row",
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
   },
+  statCard: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  statCardGreen: { backgroundColor: "#F0FDF4", borderColor: "#BBF7D0" },
+  statCardBlue: { backgroundColor: "#EFF6FF", borderColor: "#BFDBFE" },
+  statValue: { fontSize: 22, fontWeight: "800", color: "#0F172A", lineHeight: 28 },
+  statLabel: { fontSize: 11, color: "#64748B", fontWeight: "500", marginTop: 2 },
+
+  // Nav bar
+  navBar: {
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+    maxHeight: 52,
+  },
+  navBarContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  navChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "#F8FAFC",
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  navChipText: { fontSize: 13, fontWeight: "600" },
+
+  // Search row
   searchRow: {
-    flexDirection: "row", alignItems: "center",
-    paddingHorizontal: 16, paddingVertical: 12, gap: 10,
-    backgroundColor: "#FFFFFF", borderBottomWidth: 1, borderBottomColor: "#F3F4F6",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
   },
   searchBox: {
-    flex: 1, flexDirection: "row", alignItems: "center",
-    backgroundColor: "#F3F4F6", borderRadius: 10,
-    paddingHorizontal: 12, paddingVertical: 9, gap: 8,
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F1F5F9",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: Platform.OS === "ios" ? 10 : 8,
+    gap: 8,
   },
-  searchInput: { flex: 1, fontSize: 14, color: "#111827", padding: 0 },
+  searchInput: { flex: 1, fontSize: 14, color: "#0F172A", padding: 0 },
   addBtn: {
-    width: 44, height: 44, borderRadius: 12,
-    backgroundColor: "#25D366", alignItems: "center", justifyContent: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "#25D366",
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
-  statsBar: {
-    flexDirection: "row", alignItems: "center", gap: 6,
-    paddingHorizontal: 16, paddingVertical: 8, backgroundColor: "#F0FDF4",
-  },
-  statsText: { fontSize: 12, color: "#374151" },
-  listContent: { padding: 16, paddingBottom: 32 },
+  addBtnText: { fontSize: 14, fontWeight: "700", color: "#FFFFFF" },
+
+  // List
+  listContent: { padding: 16, paddingBottom: 40 },
+
+  // Card
   card: {
-    flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF",
-    borderRadius: 14, marginBottom: 10, overflow: "hidden",
-    borderWidth: 1, borderColor: "#F3F4F6",
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#F1F5F9",
+    overflow: "hidden",
+    ...Platform.select({
+      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6 },
+      android: { elevation: 2 },
+    }),
   },
-  cardThumbnail: { width: 72, height: 72, backgroundColor: "#F3F4F6" },
-  iconContainer: {
-    width: 72, height: 72, backgroundColor: "#F0FDF4",
-    alignItems: "center", justifyContent: "center",
-    borderRightWidth: 1, borderRightColor: "#E5E7EB",
+  cardThumb: { width: 76, height: 76, backgroundColor: "#F1F5F9" },
+  cardIconBox: {
+    width: 76,
+    height: 76,
+    backgroundColor: "#F0FDF4",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRightWidth: 1,
+    borderRightColor: "#E2E8F0",
   },
-  cardInfo: { flex: 1, paddingHorizontal: 12, paddingVertical: 10, gap: 3 },
-  nameRow: { flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" },
-  cardName: { fontSize: 14, fontWeight: "700", color: "#111827", flexShrink: 1 },
-  categoryBadge: {
-    backgroundColor: "#DBEAFE", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2,
+  cardBody: { flex: 1, paddingHorizontal: 12, paddingVertical: 10, gap: 4 },
+  cardName: { fontSize: 14, fontWeight: "700", color: "#0F172A", lineHeight: 20 },
+  cardMeta: { flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" },
+  categoryPill: {
+    backgroundColor: "#EFF6FF",
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    maxWidth: 120,
   },
-  categoryBadgeText: { fontSize: 10, fontWeight: "600", color: "#1D4ED8" },
-  cardDescription: { fontSize: 12, color: "#6B7280", lineHeight: 16 },
-  homeToggleRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
-  homeToggleText: { fontSize: 11, color: "#9CA3AF", flex: 1 },
-  homeToggleTextActive: { color: "#25D366", fontWeight: "600" },
-  cardActions: { flexDirection: "column", gap: 6, paddingRight: 10 },
-  actionBtn: { width: 34, height: 34, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  categoryPillText: { fontSize: 10, fontWeight: "600", color: "#1D4ED8" },
+  homePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: "#F0FDF4",
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  homePillText: { fontSize: 10, fontWeight: "600", color: "#15803D" },
+  cardDesc: { fontSize: 12, color: "#64748B", lineHeight: 17 },
+  toggleRow: { flexDirection: "row", alignItems: "center", gap: 2, marginTop: 2 },
+  toggleLabel: { fontSize: 11, color: "#94A3B8" },
+  toggleLabelOn: { color: "#16A34A", fontWeight: "600" },
+  cardActions: { flexDirection: "column", gap: 6, paddingRight: 12 },
+  actionBtn: { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   editBtn: { backgroundColor: "#EFF6FF", borderWidth: 1, borderColor: "#BFDBFE" },
   deleteBtn: { backgroundColor: "#FEF2F2", borderWidth: 1, borderColor: "#FECACA" },
-  empty: { alignItems: "center", paddingVertical: 60, gap: 8 },
+
+  // Empty state
+  emptyState: { alignItems: "center", paddingVertical: 64, gap: 10 },
+  emptyIconBox: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
   emptyTitle: { fontSize: 16, fontWeight: "600", color: "#374151" },
-  emptySubtitle: { fontSize: 13, color: "#9CA3AF" },
+  emptySubtitle: { fontSize: 13, color: "#9CA3AF", textAlign: "center" },
+
   // Modal
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
   modalSheet: {
-    backgroundColor: "#FFFFFF", borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    paddingHorizontal: 20, paddingBottom: 40, maxHeight: "92%",
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    maxHeight: "92%",
+    paddingBottom: 24,
   },
   modalHandle: {
-    width: 36, height: 4, borderRadius: 2, backgroundColor: "#E5E7EB",
-    alignSelf: "center", marginTop: 12, marginBottom: 8,
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#E2E8F0",
+    alignSelf: "center",
+    marginTop: 14,
+    marginBottom: 4,
   },
   modalHeader: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingVertical: 12, marginBottom: 4,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
   },
-  modalTitle: { fontSize: 18, fontWeight: "700", color: "#111827" },
+  modalTitle: { fontSize: 18, fontWeight: "700", color: "#0F172A" },
+  modalSubtitle: { fontSize: 13, color: "#64748B", marginTop: 2 },
   modalCloseBtn: {
-    width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6",
-    alignItems: "center", justifyContent: "center",
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  imagePickerBtn: { borderRadius: 12, overflow: "hidden", marginBottom: 4 },
-  imagePreviewWrapper: { position: "relative", width: "100%", height: 140 },
-  imagePreview: { width: "100%", height: 140, borderRadius: 12 },
-  imageEditOverlay: {
-    position: "absolute", bottom: 0, left: 0, right: 0,
-    backgroundColor: "rgba(0,0,0,0.4)", flexDirection: "row",
-    alignItems: "center", justifyContent: "center", paddingVertical: 7, gap: 5,
-    borderBottomLeftRadius: 12, borderBottomRightRadius: 12,
+  modalScrollContent: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 16 },
+
+  // Form sections
+  formSection: {
+    marginTop: 20,
+    backgroundColor: "#F8FAFC",
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    gap: 4,
   },
-  imageEditText: { color: "#FFFFFF", fontSize: 13, fontWeight: "600" },
-  imagePlaceholder: {
-    width: "100%", height: 110, backgroundColor: "#F9FAFB",
-    borderWidth: 1.5, borderColor: "#E5E7EB", borderStyle: "dashed",
-    borderRadius: 12, alignItems: "center", justifyContent: "center", gap: 4,
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#64748B",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 10,
   },
-  imagePlaceholderText: { fontSize: 14, color: "#6B7280", fontWeight: "500" },
-  imagePlaceholderSub: { fontSize: 12, color: "#9CA3AF" },
-  fieldLabel: { fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6, marginTop: 12 },
-  fieldBox: {
-    flexDirection: "row", alignItems: "center", backgroundColor: "#F9FAFB",
-    borderWidth: 1.5, borderColor: "#E5E7EB", borderRadius: 10,
-    paddingHorizontal: 12, paddingVertical: 12, gap: 8,
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#374151",
+    marginBottom: 6,
+    marginTop: 12,
   },
-  fieldBoxMultiline: { alignItems: "flex-start", paddingTop: 12 },
-  fieldInput: { flex: 1, fontSize: 14, color: "#111827", padding: 0 },
-  fieldInputMultiline: { minHeight: 80, textAlignVertical: "top" },
-  // Category selector inline
-  categorySelector: { justifyContent: "space-between" },
-  categorySelectorOpen: { borderColor: "#25D366", borderBottomLeftRadius: 0, borderBottomRightRadius: 0 },
-  selectedCategoryRow: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8 },
-  selectedCategoryIcon: {
-    width: 28, height: 28, borderRadius: 14, backgroundColor: "#F0FDF4",
-    alignItems: "center", justifyContent: "center",
+
+  // Inputs
+  inputWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: Platform.OS === "ios" ? 12 : 10,
+    gap: 8,
   },
-  selectedCategoryText: { fontSize: 14, color: "#111827", fontWeight: "500" },
-  categoryPlaceholder: { flex: 1, fontSize: 14, color: "#9CA3AF" },
-  // Dropdown inline de categorias
-  categoryDropdown: {
-    backgroundColor: "#FFFFFF", borderWidth: 1.5, borderColor: "#25D366",
-    borderTopWidth: 0, borderBottomLeftRadius: 10, borderBottomRightRadius: 10,
-    marginBottom: 4, maxHeight: 300, overflow: "hidden",
+  inputIcon: { marginRight: 2 },
+  input: { flex: 1, fontSize: 14, color: "#0F172A", padding: 0 },
+  textareaWrap: { alignItems: "flex-start", paddingTop: 12 },
+  textarea: { minHeight: 90, textAlignVertical: "top" },
+
+  // Select / Dropdown
+  selectWrap: { justifyContent: "space-between" },
+  selectWrapOpen: {
+    borderColor: "#25D366",
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+  },
+  selectedCatRow: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8 },
+  selectedCatIcon: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: "#F0FDF4",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  selectedCatText: { flex: 1, fontSize: 14, color: "#0F172A", fontWeight: "500" },
+  selectPlaceholder: { flex: 1, fontSize: 14, color: "#9CA3AF" },
+  dropdown: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
+    borderColor: "#25D366",
+    borderTopWidth: 0,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    overflow: "hidden",
+    marginBottom: 4,
+    maxHeight: 280,
   },
   dropdownItem: {
-    flexDirection: "row", alignItems: "center", gap: 10,
-    paddingVertical: 11, paddingHorizontal: 12,
-    borderBottomWidth: 1, borderBottomColor: "#F3F4F6",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
   },
-  dropdownItemSelected: { backgroundColor: "#F0FDF4" },
+  dropdownItemActive: { backgroundColor: "#F0FDF4" },
   dropdownItemIcon: {
-    width: 34, height: 34, borderRadius: 17, backgroundColor: "#F0FDF4",
-    alignItems: "center", justifyContent: "center",
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#F0FDF4",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  dropdownItemIconSelected: { backgroundColor: "#25D366" },
+  dropdownItemIconActive: { backgroundColor: "#25D366" },
   dropdownItemText: { flex: 1, fontSize: 14, color: "#374151", fontWeight: "500" },
-  dropdownItemTextSelected: { color: "#111827", fontWeight: "700" },
-  // Home toggle card
-  homeToggleCard: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    backgroundColor: "#F9FAFB", borderWidth: 1.5, borderColor: "#E5E7EB",
-    borderRadius: 12, padding: 14, marginTop: 12, gap: 12,
+  dropdownItemTextActive: { color: "#0F172A", fontWeight: "700" },
+
+  // Image picker styles
+  imagePicker: { borderRadius: 12, overflow: "hidden", marginTop: 4 },
+  imagePreviewWrap: { position: "relative", width: "100%", height: 140 },
+  imagePreview: { width: "100%", height: 140, borderRadius: 12 },
+  imageOverlay: {
+    position: "absolute", bottom: 0, left: 0, right: 0,
+    backgroundColor: "rgba(0,0,0,0.45)", flexDirection: "row",
+    alignItems: "center", justifyContent: "center",
+    paddingVertical: 8, gap: 6,
+    borderBottomLeftRadius: 12, borderBottomRightRadius: 12,
   },
-  homeToggleInfo: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
-  homeToggleCardTitle: { fontSize: 14, fontWeight: "600", color: "#111827" },
-  homeToggleCardSub: { fontSize: 12, color: "#6B7280" },
+  imageOverlayText: { color: "#FFFFFF", fontSize: 13, fontWeight: "600" },
+  imagePlaceholder: {
+    width: "100%", height: 110, backgroundColor: "#FFFFFF",
+    borderWidth: 1.5, borderColor: "#E2E8F0", borderStyle: "dashed",
+    borderRadius: 12, alignItems: "center", justifyContent: "center", gap: 4,
+  },
+  imagePlaceholderTitle: { fontSize: 14, color: "#374151", fontWeight: "500" },
+  imagePlaceholderSub: { fontSize: 12, color: "#9CA3AF" },
+
+  // Toggle card
+  toggleCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    gap: 12,
+  },
+  toggleCardLeft: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
+  toggleCardIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  toggleCardIconOn: { backgroundColor: "#DCFCE7" },
+  toggleCardText: { flex: 1 },
+  toggleCardTitle: { fontSize: 14, fontWeight: "600", color: "#0F172A" },
+  toggleCardSub: { fontSize: 12, color: "#64748B", marginTop: 2 },
+
   // Modal actions
-  modalActions: { flexDirection: "row", gap: 10, marginTop: 20, marginBottom: 8 },
+  modalActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 24,
+  },
   cancelBtn: {
-    flex: 1, backgroundColor: "#F3F4F6", borderRadius: 12,
-    paddingVertical: 14, alignItems: "center",
+    flex: 1,
+    backgroundColor: "#F1F5F9",
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
   },
   cancelBtnText: { fontSize: 15, fontWeight: "600", color: "#374151" },
   saveBtn: {
-    flex: 2, backgroundColor: "#25D366", borderRadius: 12,
-    paddingVertical: 14, flexDirection: "row", alignItems: "center",
-    justifyContent: "center", gap: 6,
+    flex: 2,
+    backgroundColor: "#25D366",
+    borderRadius: 14,
+    paddingVertical: 15,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    ...Platform.select({
+      ios: { shadowColor: "#25D366", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
+      android: { elevation: 4 },
+    }),
   },
   saveBtnText: { fontSize: 15, fontWeight: "700", color: "#FFFFFF" },
-  // Stats nav
-  adsNavBtn: {
-    flexDirection: "row", alignItems: "center", gap: 4,
-    backgroundColor: "#EFF6FF", borderRadius: 8,
-    paddingHorizontal: 10, paddingVertical: 5,
-    borderWidth: 1, borderColor: "#BFDBFE",
-  },
-  adsNavText: { fontSize: 12, fontWeight: "700", color: "#1A73E8" },
 });

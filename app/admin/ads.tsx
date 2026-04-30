@@ -11,6 +11,7 @@ import {
   Modal,
   Switch,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -29,7 +30,7 @@ type PickerProvider = {
   name: string;
   category: string;
   avatar?: string;
-  isReal: boolean; // true = do providersDB, false = mock
+  isReal: boolean;
 };
 
 const EMPTY_FORM: CreateAdInput = {
@@ -42,6 +43,96 @@ const EMPTY_FORM: CreateAdInput = {
   displayOrder: 1,
 };
 
+// ─── Card de Anúncio ──────────────────────────────────────────────────────────
+function AdCard({
+  item,
+  onEdit,
+  onDelete,
+  onToggle,
+}: {
+  item: Ad;
+  onEdit: () => void;
+  onDelete: () => void;
+  onToggle: () => void;
+}) {
+  return (
+    <View style={styles.adCard}>
+      {/* Banner */}
+      {item.imageUrl ? (
+        <Image source={{ uri: item.imageUrl }} style={styles.adBanner} resizeMode="cover" />
+      ) : (
+        <View style={styles.adBannerPlaceholder}>
+          <MaterialIcons name="image" size={32} color="#CBD5E1" />
+          <Text style={styles.adBannerPlaceholderText}>Sem imagem</Text>
+        </View>
+      )}
+
+      {/* Badge de status */}
+      <View style={[styles.statusBadge, item.isActive ? styles.statusBadgeActive : styles.statusBadgeInactive]}>
+        <View style={[styles.statusDot, item.isActive ? styles.statusDotActive : styles.statusDotInactive]} />
+        <Text style={[styles.statusText, item.isActive ? styles.statusTextActive : styles.statusTextInactive]}>
+          {item.isActive ? "Ativo" : "Inativo"}
+        </Text>
+      </View>
+
+      {/* Conteúdo */}
+      <View style={styles.adContent}>
+        <Text style={styles.adTitle} numberOfLines={2} ellipsizeMode="tail">
+          {item.title}
+        </Text>
+        {!!item.description && (
+          <Text style={styles.adDesc} numberOfLines={2} ellipsizeMode="tail">
+            {item.description}
+          </Text>
+        )}
+
+        <View style={styles.adMeta}>
+          <View style={styles.adMetaItem}>
+            <MaterialIcons name="person" size={13} color="#64748B" />
+            <Text style={styles.adMetaText} numberOfLines={1} ellipsizeMode="tail">
+              {item.providerName}
+            </Text>
+          </View>
+          <View style={styles.adMetaItem}>
+            <MaterialIcons name="sort" size={13} color="#64748B" />
+            <Text style={styles.adMetaText}>Ordem {item.displayOrder}</Text>
+          </View>
+        </View>
+
+        {/* Ações */}
+        <View style={styles.adActions}>
+          <Pressable
+            style={({ pressed }) => [styles.adActionBtn, styles.adToggleBtn, pressed && { opacity: 0.7 }]}
+            onPress={onToggle}
+          >
+            <MaterialIcons
+              name={item.isActive ? "visibility-off" : "visibility"}
+              size={14}
+              color="#64748B"
+            />
+            <Text style={styles.adActionText}>{item.isActive ? "Desativar" : "Ativar"}</Text>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.adActionBtn, styles.adEditBtn, pressed && { opacity: 0.7 }]}
+            onPress={onEdit}
+          >
+            <MaterialIcons name="edit" size={14} color="#2563EB" />
+            <Text style={[styles.adActionText, { color: "#2563EB" }]}>Editar</Text>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.adActionBtn, styles.adDeleteBtn, pressed && { opacity: 0.7 }]}
+            onPress={onDelete}
+          >
+            <MaterialIcons name="delete-outline" size={14} color="#DC2626" />
+            <Text style={[styles.adActionText, { color: "#DC2626" }]}>Excluir</Text>
+          </Pressable>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// ─── Tela Principal ──────────────────────────────────────────────────────────
 export default function AdminAdsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -54,13 +145,13 @@ export default function AdminAdsScreen() {
   const [editingAd, setEditingAd] = useState<Ad | null>(null);
   const [form, setForm] = useState<CreateAdInput>(EMPTY_FORM);
 
-  // ── Provider picker ──
+  // Provider picker
   const [showProviderPicker, setShowProviderPicker] = useState(false);
   const [pickerSearch, setPickerSearch] = useState("");
   const [realProviders, setRealProviders] = useState<StoredProvider[]>([]);
   const [adminServices, setAdminServices] = useState<AdminService[]>([]);
   const [loadingProviders, setLoadingProviders] = useState(false);
-  // Carregar prestadores reais + serviços admin do banco
+
   const loadRealProviders = useCallback(async () => {
     try {
       setLoadingProviders(true);
@@ -77,11 +168,10 @@ export default function AdminAdsScreen() {
       setLoadingProviders(false);
     }
   }, []);
-  // Combinar: serviços admin + prestadores reais + mock (sem duplicatas)
+
   const allProviders = useMemo<PickerProvider[]>(() => {
     const realNames = new Set(realProviders.map((p) => p.name.toLowerCase()));
     const adminNames = new Set(adminServices.map((s) => s.name.toLowerCase()));
-    // 1) Serviços criados pelo admin (aparecem primeiro)
     const fromAdmin: PickerProvider[] = adminServices.map((s) => ({
       id: `admin-svc-${s.id}`,
       name: s.name,
@@ -89,7 +179,6 @@ export default function AdminAdsScreen() {
       avatar: s.imageUri,
       isReal: true,
     }));
-    // 2) Prestadores cadastrados no app
     const fromReal: PickerProvider[] = realProviders.map((p) => ({
       id: p.userId,
       name: p.name,
@@ -97,7 +186,6 @@ export default function AdminAdsScreen() {
       avatar: p.avatar,
       isReal: true,
     }));
-    // 3) Mock (sem duplicatas com admin ou reais)
     const fromMock: PickerProvider[] = professionals
       .filter(
         (p) =>
@@ -113,7 +201,7 @@ export default function AdminAdsScreen() {
       }));
     return [...fromAdmin, ...fromReal, ...fromMock];
   }, [realProviders, adminServices]);
-  // Filtrar por busca
+
   const filteredProviders = useMemo<PickerProvider[]>(() => {
     if (!pickerSearch.trim()) return allProviders;
     const q = pickerSearch.toLowerCase();
@@ -138,6 +226,8 @@ export default function AdminAdsScreen() {
   const openCreate = () => {
     setEditingAd(null);
     setForm({ ...EMPTY_FORM, displayOrder: ads.length + 1 });
+    setShowProviderPicker(false);
+    setPickerSearch("");
     setModalVisible(true);
   };
 
@@ -152,6 +242,8 @@ export default function AdminAdsScreen() {
       isActive: ad.isActive,
       displayOrder: ad.displayOrder,
     });
+    setShowProviderPicker(false);
+    setPickerSearch("");
     setModalVisible(true);
   };
 
@@ -167,28 +259,17 @@ export default function AdminAdsScreen() {
     }
   };
 
-  const openProviderPicker = () => {
-    setPickerSearch("");
-    loadRealProviders();
-    setShowProviderPicker(true);
-  };
-
-  const handleSelectProvider = (provider: PickerProvider) => {
-    setForm((f) => ({ ...f, providerId: provider.id, providerName: provider.name }));
-    setShowProviderPicker(false);
-  };
-
   const handleSave = async () => {
     if (!form.title.trim()) {
-      Alert.alert("Erro", "Digite o título do anúncio.");
+      Alert.alert("Campo obrigatório", "Digite o título do anúncio.");
       return;
     }
     if (!form.providerId) {
-      Alert.alert("Erro", "Selecione um prestador para o anúncio.");
+      Alert.alert("Campo obrigatório", "Selecione um prestador para o anúncio.");
       return;
     }
     if (!form.imageUrl) {
-      Alert.alert("Erro", "Adicione uma imagem ao anúncio.");
+      Alert.alert("Campo obrigatório", "Adicione uma imagem ao anúncio.");
       return;
     }
     setSaving(true);
@@ -210,7 +291,7 @@ export default function AdminAdsScreen() {
   const handleDelete = (ad: Ad) => {
     Alert.alert(
       "Excluir anúncio",
-      `Tem certeza que deseja excluir "${ad.title}"?`,
+      `Deseja excluir "${ad.title}"?`,
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -230,28 +311,38 @@ export default function AdminAdsScreen() {
     await loadAds();
   };
 
+  const activeCount = ads.filter((a) => a.isActive).length;
+
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header */}
+    <View style={[styles.root, { paddingTop: insets.top }]}>
+
+      {/* ── Header ── */}
       <View style={styles.header}>
         <Pressable
-          style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
+          style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.6 }]}
           onPress={() => router.back()}
+          hitSlop={8}
         >
-          <MaterialIcons name="arrow-back" size={24} color="#111827" />
+          <MaterialIcons name="arrow-back" size={22} color="#374151" />
         </Pressable>
-        <Text style={styles.headerTitle}>Anúncios</Text>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Anúncios</Text>
+          <Text style={styles.headerSub}>{ads.length} total · {activeCount} ativos</Text>
+        </View>
         <Pressable
-          style={({ pressed }) => [styles.addBtn, pressed && { opacity: 0.8 }]}
+          style={({ pressed }) => [styles.addBtn, pressed && { opacity: 0.8, transform: [{ scale: 0.96 }] }]}
           onPress={openCreate}
         >
-          <MaterialIcons name="add" size={22} color="#FFFFFF" />
+          <MaterialIcons name="add" size={20} color="#FFFFFF" />
+          <Text style={styles.addBtnText}>Novo</Text>
         </Pressable>
       </View>
 
+      {/* ── Lista ── */}
       {loading ? (
-        <View style={styles.loadingCenter}>
+        <View style={styles.loadingBox}>
           <ActivityIndicator size="large" color="#25D366" />
+          <Text style={styles.loadingText}>Carregando anúncios...</Text>
         </View>
       ) : (
         <FlatList
@@ -260,93 +351,28 @@ export default function AdminAdsScreen() {
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <MaterialIcons name="campaign" size={52} color="#D1D5DB" />
+            <View style={styles.emptyState}>
+              <View style={styles.emptyIconBox}>
+                <MaterialIcons name="campaign" size={40} color="#CBD5E1" />
+              </View>
               <Text style={styles.emptyTitle}>Nenhum anúncio</Text>
               <Text style={styles.emptySubtitle}>
-                Toque em + para criar o primeiro anúncio patrocinado.
+                Toque em "+ Novo" para criar o primeiro anúncio patrocinado.
               </Text>
             </View>
           }
           renderItem={({ item }) => (
-            <View style={styles.adCard}>
-              {item.imageUrl ? (
-                <Image
-                  source={{ uri: item.imageUrl }}
-                  style={styles.adImage}
-                  resizeMode="cover"
-                />
-              ) : (
-                <View style={styles.adImagePlaceholder}>
-                  <MaterialIcons name="image" size={32} color="#9CA3AF" />
-                </View>
-              )}
-              <View style={styles.adBody}>
-                <View style={styles.adTopRow}>
-                  <Text style={styles.adTitle} numberOfLines={1}>
-                    {item.title}
-                  </Text>
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      item.isActive ? styles.statusActive : styles.statusInactive,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.statusText,
-                        item.isActive ? styles.statusTextActive : styles.statusTextInactive,
-                      ]}
-                    >
-                      {item.isActive ? "Ativo" : "Inativo"}
-                    </Text>
-                  </View>
-                </View>
-                <Text style={styles.adProvider} numberOfLines={1}>
-                  <MaterialIcons name="person" size={12} color="#6B7280" /> {item.providerName}
-                </Text>
-                {item.description ? (
-                  <Text style={styles.adDesc} numberOfLines={2}>
-                    {item.description}
-                  </Text>
-                ) : null}
-                <Text style={styles.adOrder}>Ordem: {item.displayOrder}</Text>
-                <View style={styles.adActions}>
-                  <Pressable
-                    style={({ pressed }) => [styles.actionBtn, styles.toggleBtn, pressed && { opacity: 0.7 }]}
-                    onPress={() => handleToggle(item)}
-                  >
-                    <MaterialIcons
-                      name={item.isActive ? "visibility-off" : "visibility"}
-                      size={15}
-                      color="#6B7280"
-                    />
-                    <Text style={styles.actionBtnText}>
-                      {item.isActive ? "Desativar" : "Ativar"}
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    style={({ pressed }) => [styles.actionBtn, styles.editBtn, pressed && { opacity: 0.7 }]}
-                    onPress={() => openEdit(item)}
-                  >
-                    <MaterialIcons name="edit" size={15} color="#1A73E8" />
-                    <Text style={[styles.actionBtnText, { color: "#1A73E8" }]}>Editar</Text>
-                  </Pressable>
-                  <Pressable
-                    style={({ pressed }) => [styles.actionBtn, styles.deleteBtn, pressed && { opacity: 0.7 }]}
-                    onPress={() => handleDelete(item)}
-                  >
-                    <MaterialIcons name="delete-outline" size={15} color="#EF4444" />
-                    <Text style={[styles.actionBtnText, { color: "#EF4444" }]}>Excluir</Text>
-                  </Pressable>
-                </View>
-              </View>
-            </View>
+            <AdCard
+              item={item}
+              onEdit={() => openEdit(item)}
+              onDelete={() => handleDelete(item)}
+              onToggle={() => handleToggle(item)}
+            />
           )}
         />
       )}
 
-      {/* ── Modal criar/editar anúncio ── */}
+      {/* ── Modal criar/editar ── */}
       <Modal
         visible={modalVisible}
         animationType="slide"
@@ -355,232 +381,296 @@ export default function AdminAdsScreen() {
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-        <View style={styles.modal}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>
-              {editingAd ? "Editar anúncio" : "Novo anúncio"}
-            </Text>
-            <Pressable
-              style={({ pressed }) => [styles.modalClose, pressed && { opacity: 0.6 }]}
-              onPress={() => setModalVisible(false)}
-            >
-              <MaterialIcons name="close" size={24} color="#6B7280" />
-            </Pressable>
-          </View>
+          <View style={styles.modalSheet}>
+            {/* Handle */}
+            <View style={styles.modalHandle} />
 
-          <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-            {/* Image picker */}
-            <Text style={styles.fieldLabel}>Imagem do banner *</Text>
-            <Pressable
-              style={({ pressed }) => [styles.imagePicker, pressed && { opacity: 0.8 }]}
-              onPress={handlePickImage}
-            >
-              {form.imageUrl ? (
-                <>
-                  <Image
-                    source={{ uri: form.imageUrl }}
-                    style={styles.imagePreview}
-                    resizeMode="cover"
-                  />
-                  <View style={styles.imageOverlay}>
-                    <MaterialIcons name="photo-camera" size={22} color="#FFFFFF" />
-                    <Text style={styles.imageOverlayText}>Trocar imagem</Text>
-                  </View>
-                </>
-              ) : (
-                <View style={styles.imagePlaceholder}>
-                  <MaterialIcons name="add-photo-alternate" size={36} color="#9CA3AF" />
-                  <Text style={styles.imagePlaceholderText}>Toque para adicionar banner</Text>
-                  <Text style={styles.imagePlaceholderSub}>Recomendado: 16:9 (ex: 800×450px)</Text>
-                </View>
-              )}
-            </Pressable>
-
-            {/* Title */}
-            <Text style={styles.fieldLabel}>Título *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ex: Elétrica do Zé — 20 anos de experiência"
-              placeholderTextColor="#9CA3AF"
-              value={form.title}
-              onChangeText={(v) => setForm((f) => ({ ...f, title: v }))}
-              maxLength={80}
-              returnKeyType="next"
-            />
-
-            {/* Description */}
-            <Text style={styles.fieldLabel}>Descrição (opcional)</Text>
-            <TextInput
-              style={[styles.input, styles.inputMultiline]}
-              placeholder="Breve descrição do anúncio..."
-              placeholderTextColor="#9CA3AF"
-              value={form.description}
-              onChangeText={(v) => setForm((f) => ({ ...f, description: v }))}
-              multiline
-              numberOfLines={3}
-              maxLength={160}
-            />
-
-            {/* Provider picker inline */}
-            <Text style={styles.fieldLabel}>Prestador vinculado *</Text>
-            {form.providerId ? (
-              <View style={styles.providerSelectedCard}>
-                <MaterialIcons name="check-circle" size={18} color="#25D366" />
-                <Text style={styles.providerSelectedText}>{form.providerName}</Text>
-                <Pressable
-                  style={({ pressed }) => [styles.clearProviderBtn, pressed && { opacity: 0.7 }]}
-                  onPress={() => {
-                    setForm((f) => ({ ...f, providerId: "", providerName: "" }));
-                    setShowProviderPicker(true);
-                    loadRealProviders();
-                  }}
-                >
-                  <MaterialIcons name="swap-horiz" size={16} color="#6B7280" />
-                  <Text style={styles.clearProviderText}>Trocar</Text>
-                </Pressable>
-              </View>
-            ) : (
-              <Pressable
-                style={({ pressed }) => [styles.providerPicker, pressed && { opacity: 0.8 }]}
-                onPress={() => {
-                  setPickerSearch("");
-                  loadRealProviders();
-                  setShowProviderPicker((v) => !v);
-                }}
-              >
-                <View style={styles.providerPlaceholder}>
-                  <MaterialIcons name="person-add" size={18} color="#9CA3AF" />
-                  <Text style={styles.providerPlaceholderText}>Selecionar prestador</Text>
-                </View>
-                <MaterialIcons
-                  name={showProviderPicker ? "expand-less" : "expand-more"}
-                  size={22}
-                  color="#9CA3AF"
-                />
-              </Pressable>
-            )}
-
-            {/* Lista inline de prestadores */}
-            {showProviderPicker && !form.providerId && (
-              <View style={styles.inlinePicker}>
-                {/* Busca */}
-                <View style={styles.searchBar}>
-                  <MaterialIcons name="search" size={16} color="#9CA3AF" />
-                  <TextInput
-                    style={styles.searchInput}
-                    placeholder="Buscar prestador..."
-                    placeholderTextColor="#9CA3AF"
-                    value={pickerSearch}
-                    onChangeText={setPickerSearch}
-                    returnKeyType="search"
-                  />
-                  {pickerSearch.length > 0 && (
-                    <Pressable onPress={() => setPickerSearch("")}>
-                      <MaterialIcons name="close" size={14} color="#9CA3AF" />
-                    </Pressable>
-                  )}
-                </View>
-                {loadingProviders ? (
-                  <View style={styles.pickerLoadingRow}>
-                    <ActivityIndicator size="small" color="#25D366" />
-                    <Text style={styles.pickerCountText}>Carregando...</Text>
-                  </View>
-                ) : filteredProviders.length === 0 ? (
-                  <View style={styles.pickerEmpty}>
-                    <MaterialIcons name="person-search" size={32} color="#D1D5DB" />
-                    <Text style={styles.pickerEmptyText}>
-                      {pickerSearch ? `Nenhum resultado para "${pickerSearch}"` : "Nenhum prestador encontrado"}
-                    </Text>
-                  </View>
-                ) : (
-                  filteredProviders.slice(0, 8).map((item) => (
-                    <Pressable
-                      key={item.id}
-                      style={({ pressed }) => [styles.providerRow, pressed && { opacity: 0.7 }]}
-                      onPress={() => {
-                        setForm((f) => ({ ...f, providerId: item.id, providerName: item.name }));
-                        setShowProviderPicker(false);
-                      }}
-                    >
-                      {item.avatar ? (
-                        <Image source={{ uri: item.avatar }} style={styles.providerAvatar} />
-                      ) : (
-                        <View style={[styles.providerAvatar, styles.providerAvatarPlaceholder]}>
-                          <MaterialIcons name="person" size={20} color="#9CA3AF" />
-                        </View>
-                      )}
-                      <View style={styles.providerInfo}>
-                        <View style={styles.providerNameRow}>
-                          <Text style={styles.providerName}>{item.name}</Text>
-                          {item.isReal && (
-                            <View style={styles.realBadge}>
-                              <MaterialIcons name="verified" size={9} color="#FFFFFF" />
-                              <Text style={styles.realBadgeText}>App</Text>
-                            </View>
-                          )}
-                        </View>
-                        <Text style={styles.providerCategory}>{item.category}</Text>
-                      </View>
-                    </Pressable>
-                  ))
-                )}
-              </View>
-            )}
-
-            {/* Display order */}
-            <Text style={styles.fieldLabel}>Ordem de exibição</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="1"
-              placeholderTextColor="#9CA3AF"
-              value={String(form.displayOrder)}
-              onChangeText={(v) => setForm((f) => ({ ...f, displayOrder: parseInt(v) || 1 }))}
-              keyboardType="number-pad"
-              returnKeyType="done"
-            />
-
-            {/* Active toggle */}
-            <View style={styles.toggleRow}>
+            {/* Cabeçalho */}
+            <View style={styles.modalHeader}>
               <View>
-                <Text style={styles.fieldLabel}>Anúncio ativo</Text>
-                <Text style={styles.toggleSubtitle}>Exibir na tela inicial</Text>
+                <Text style={styles.modalTitle}>
+                  {editingAd ? "Editar Anúncio" : "Novo Anúncio"}
+                </Text>
+                <Text style={styles.modalSubtitle}>
+                  {editingAd ? "Atualize as informações abaixo" : "Preencha os dados do anúncio"}
+                </Text>
               </View>
-              <Switch
-                value={form.isActive}
-                onValueChange={(v) => setForm((f) => ({ ...f, isActive: v }))}
-                trackColor={{ false: "#E5E7EB", true: "#86EFAC" }}
-                thumbColor={form.isActive ? "#25D366" : "#9CA3AF"}
-              />
+              <Pressable
+                style={({ pressed }) => [styles.modalCloseBtn, pressed && { opacity: 0.6 }]}
+                onPress={() => setModalVisible(false)}
+                hitSlop={8}
+              >
+                <MaterialIcons name="close" size={20} color="#6B7280" />
+              </Pressable>
             </View>
 
-            {/* Save button */}
-            <Pressable
-              style={({ pressed }) => [styles.saveBtn, pressed && { opacity: 0.85 }, saving && { opacity: 0.6 }]}
-              onPress={handleSave}
-              disabled={saving}
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.modalScrollContent}
             >
-              {saving ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <Text style={styles.saveBtnText}>
-                  {editingAd ? "Salvar alterações" : "Criar anúncio"}
-                </Text>
-              )}
-            </Pressable>
+              {/* ── Seção: Imagem ── */}
+              <View style={styles.formSection}>
+                <Text style={styles.sectionTitle}>Imagem do Banner</Text>
+                <Pressable
+                  style={({ pressed }) => [styles.bannerPicker, pressed && { opacity: 0.85 }]}
+                  onPress={handlePickImage}
+                >
+                  {form.imageUrl ? (
+                    <View style={{ position: "relative" }}>
+                      <Image source={{ uri: form.imageUrl }} style={styles.bannerPreview} resizeMode="cover" />
+                      <View style={styles.bannerOverlay}>
+                        <MaterialIcons name="photo-camera" size={18} color="#FFFFFF" />
+                        <Text style={styles.bannerOverlayText}>Trocar imagem</Text>
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={styles.bannerPlaceholder}>
+                      <MaterialIcons name="add-photo-alternate" size={36} color="#94A3B8" />
+                      <Text style={styles.bannerPlaceholderTitle}>Adicionar banner</Text>
+                      <Text style={styles.bannerPlaceholderSub}>Recomendado: proporção 16:9</Text>
+                    </View>
+                  )}
+                </Pressable>
+              </View>
 
-            <View style={{ height: 40 }} />
-          </ScrollView>
-        </View>
+              {/* ── Seção: Dados do Anúncio ── */}
+              <View style={styles.formSection}>
+                <Text style={styles.sectionTitle}>Dados do Anúncio</Text>
+
+                <Text style={styles.fieldLabel}>Título *</Text>
+                <View style={styles.inputWrap}>
+                  <MaterialIcons name="title" size={17} color="#94A3B8" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Ex: Elétrica do Zé — 20 anos de experiência"
+                    placeholderTextColor="#94A3B8"
+                    value={form.title}
+                    onChangeText={(v) => setForm((f) => ({ ...f, title: v }))}
+                    maxLength={80}
+                    returnKeyType="next"
+                  />
+                </View>
+
+                <Text style={styles.fieldLabel}>Descrição (opcional)</Text>
+                <View style={[styles.inputWrap, styles.textareaWrap]}>
+                  <TextInput
+                    style={[styles.input, styles.textarea]}
+                    placeholder="Breve descrição do anúncio..."
+                    placeholderTextColor="#94A3B8"
+                    value={form.description}
+                    onChangeText={(v) => setForm((f) => ({ ...f, description: v }))}
+                    multiline
+                    numberOfLines={3}
+                    maxLength={160}
+                    textAlignVertical="top"
+                  />
+                </View>
+
+                <Text style={styles.fieldLabel}>Ordem de exibição</Text>
+                <View style={styles.inputWrap}>
+                  <MaterialIcons name="sort" size={17} color="#94A3B8" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="1"
+                    placeholderTextColor="#94A3B8"
+                    value={String(form.displayOrder)}
+                    onChangeText={(v) => setForm((f) => ({ ...f, displayOrder: parseInt(v) || 1 }))}
+                    keyboardType="number-pad"
+                    returnKeyType="done"
+                  />
+                </View>
+              </View>
+
+              {/* ── Seção: Prestador Vinculado ── */}
+              <View style={styles.formSection}>
+                <Text style={styles.sectionTitle}>Prestador Vinculado</Text>
+
+                {form.providerId ? (
+                  /* Prestador selecionado */
+                  <View style={styles.providerSelected}>
+                    <View style={styles.providerSelectedIcon}>
+                      <MaterialIcons name="check-circle" size={22} color="#16A34A" />
+                    </View>
+                    <Text style={styles.providerSelectedName} numberOfLines={1} ellipsizeMode="tail">
+                      {form.providerName}
+                    </Text>
+                    <Pressable
+                      style={({ pressed }) => [styles.changeProviderBtn, pressed && { opacity: 0.7 }]}
+                      onPress={() => {
+                        setForm((f) => ({ ...f, providerId: "", providerName: "" }));
+                        setPickerSearch("");
+                        loadRealProviders();
+                        setShowProviderPicker(true);
+                      }}
+                    >
+                      <MaterialIcons name="swap-horiz" size={15} color="#2563EB" />
+                      <Text style={styles.changeProviderText}>Trocar</Text>
+                    </Pressable>
+                  </View>
+                ) : (
+                  /* Botão para abrir picker */
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.providerPickerBtn,
+                      showProviderPicker && styles.providerPickerBtnOpen,
+                      pressed && { opacity: 0.85 },
+                    ]}
+                    onPress={() => {
+                      setPickerSearch("");
+                      loadRealProviders();
+                      setShowProviderPicker((v) => !v);
+                    }}
+                  >
+                    <MaterialIcons name="person-add" size={17} color="#94A3B8" />
+                    <Text style={styles.providerPickerBtnText}>Selecionar prestador...</Text>
+                    <MaterialIcons
+                      name={showProviderPicker ? "expand-less" : "expand-more"}
+                      size={20}
+                      color="#94A3B8"
+                    />
+                  </Pressable>
+                )}
+
+                {/* Lista inline de prestadores */}
+                {showProviderPicker && !form.providerId && (
+                  <View style={styles.providerList}>
+                    {/* Busca */}
+                    <View style={styles.providerSearchBox}>
+                      <MaterialIcons name="search" size={16} color="#94A3B8" />
+                      <TextInput
+                        style={styles.providerSearchInput}
+                        placeholder="Buscar prestador..."
+                        placeholderTextColor="#94A3B8"
+                        value={pickerSearch}
+                        onChangeText={setPickerSearch}
+                        returnKeyType="search"
+                      />
+                      {pickerSearch.length > 0 && (
+                        <Pressable onPress={() => setPickerSearch("")} hitSlop={8}>
+                          <MaterialIcons name="close" size={14} color="#94A3B8" />
+                        </Pressable>
+                      )}
+                    </View>
+
+                    {loadingProviders ? (
+                      <View style={styles.providerLoadingRow}>
+                        <ActivityIndicator size="small" color="#25D366" />
+                        <Text style={styles.providerLoadingText}>Carregando...</Text>
+                      </View>
+                    ) : filteredProviders.length === 0 ? (
+                      <View style={styles.providerEmptyRow}>
+                        <Text style={styles.providerEmptyText}>
+                          {pickerSearch ? `Sem resultados para "${pickerSearch}"` : "Nenhum prestador encontrado"}
+                        </Text>
+                      </View>
+                    ) : (
+                      filteredProviders.slice(0, 8).map((item) => (
+                        <Pressable
+                          key={item.id}
+                          style={({ pressed }) => [styles.providerItem, pressed && { backgroundColor: "#F0FDF4" }]}
+                          onPress={() => {
+                            setForm((f) => ({ ...f, providerId: item.id, providerName: item.name }));
+                            setShowProviderPicker(false);
+                          }}
+                        >
+                          {item.avatar ? (
+                            <Image source={{ uri: item.avatar }} style={styles.providerAvatar} />
+                          ) : (
+                            <View style={[styles.providerAvatar, styles.providerAvatarFallback]}>
+                              <MaterialIcons name="person" size={18} color="#94A3B8" />
+                            </View>
+                          )}
+                          <View style={styles.providerItemInfo}>
+                            <View style={styles.providerItemNameRow}>
+                              <Text style={styles.providerItemName} numberOfLines={1} ellipsizeMode="tail">
+                                {item.name}
+                              </Text>
+                              {item.isReal && (
+                                <View style={styles.verifiedBadge}>
+                                  <MaterialIcons name="verified" size={9} color="#FFFFFF" />
+                                  <Text style={styles.verifiedBadgeText}>App</Text>
+                                </View>
+                              )}
+                            </View>
+                            <Text style={styles.providerItemCategory} numberOfLines={1}>
+                              {item.category}
+                            </Text>
+                          </View>
+                          <MaterialIcons name="chevron-right" size={18} color="#CBD5E1" />
+                        </Pressable>
+                      ))
+                    )}
+                  </View>
+                )}
+              </View>
+
+              {/* ── Seção: Configurações ── */}
+              <View style={styles.formSection}>
+                <Text style={styles.sectionTitle}>Configurações</Text>
+                <View style={styles.toggleCard}>
+                  <View style={styles.toggleCardLeft}>
+                    <View style={[styles.toggleCardIcon, form.isActive && styles.toggleCardIconOn]}>
+                      <MaterialIcons name="campaign" size={18} color={form.isActive ? "#15803D" : "#94A3B8"} />
+                    </View>
+                    <View style={styles.toggleCardText}>
+                      <Text style={styles.toggleCardTitle}>Anúncio ativo</Text>
+                      <Text style={styles.toggleCardSub}>
+                        {form.isActive ? "Visível na tela inicial" : "Oculto da tela inicial"}
+                      </Text>
+                    </View>
+                  </View>
+                  <Switch
+                    value={form.isActive}
+                    onValueChange={(v) => setForm((f) => ({ ...f, isActive: v }))}
+                    trackColor={{ false: "#E2E8F0", true: "#BBF7D0" }}
+                    thumbColor={form.isActive ? "#25D366" : "#CBD5E1"}
+                  />
+                </View>
+              </View>
+
+              {/* ── Botões de ação ── */}
+              <View style={styles.modalActions}>
+                <Pressable
+                  style={({ pressed }) => [styles.cancelBtn, pressed && { opacity: 0.7 }]}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Text style={styles.cancelBtnText}>Cancelar</Text>
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.saveBtn,
+                    pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
+                    saving && { opacity: 0.6 },
+                  ]}
+                  onPress={handleSave}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <>
+                      <MaterialIcons name={editingAd ? "check" : "add"} size={18} color="#FFFFFF" />
+                      <Text style={styles.saveBtnText}>
+                        {editingAd ? "Salvar Alterações" : "Criar Anúncio"}
+                      </Text>
+                    </>
+                  )}
+                </Pressable>
+              </View>
+            </ScrollView>
+          </View>
         </View>
       </Modal>
-
-
     </View>
   );
 }
 
+// ─── Estilos ─────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F5F5" },
+  root: { flex: 1, backgroundColor: "#F8FAFC" },
+
+  // Header
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -588,223 +678,384 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
+    borderBottomColor: "#F1F5F9",
+    gap: 12,
+    ...Platform.select({
+      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3 },
+      android: { elevation: 2 },
+    }),
   },
-  backBtn: {
-    width: 40, height: 40,
-    alignItems: "center", justifyContent: "center",
+  iconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  headerTitle: {
-    flex: 1,
-    fontSize: 17, fontWeight: "700", color: "#111827",
-    textAlign: "center",
-  },
+  headerCenter: { flex: 1 },
+  headerTitle: { fontSize: 18, fontWeight: "700", color: "#0F172A", letterSpacing: -0.3 },
+  headerSub: { fontSize: 12, color: "#64748B", marginTop: 1 },
   addBtn: {
-    width: 36, height: 36, borderRadius: 18,
-    backgroundColor: "#25D366",
-    alignItems: "center", justifyContent: "center",
-  },
-  loadingCenter: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
-  loadingText: { fontSize: 14, color: "#9CA3AF" },
-  listContent: { padding: 16, gap: 12, paddingBottom: 32 },
-  empty: { alignItems: "center", paddingTop: 80, gap: 12, paddingHorizontal: 32 },
-  emptyTitle: { fontSize: 17, fontWeight: "700", color: "#374151" },
-  emptySubtitle: { fontSize: 14, color: "#9CA3AF", textAlign: "center", lineHeight: 20 },
-
-  adCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 14,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  adImage: { width: "100%", height: 130 },
-  adImagePlaceholder: {
-    width: "100%", height: 130,
-    backgroundColor: "#F3F4F6",
-    alignItems: "center", justifyContent: "center",
-  },
-  adBody: { padding: 12, gap: 4 },
-  adTopRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  adTitle: { fontSize: 15, fontWeight: "700", color: "#111827", flex: 1, marginRight: 8 },
-  statusBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-  statusActive: { backgroundColor: "#DCFCE7" },
-  statusInactive: { backgroundColor: "#F3F4F6" },
-  statusText: { fontSize: 11, fontWeight: "600" },
-  statusTextActive: { color: "#16A34A" },
-  statusTextInactive: { color: "#9CA3AF" },
-  adProvider: { fontSize: 12, color: "#6B7280", marginTop: 2 },
-  adDesc: { fontSize: 12, color: "#6B7280", lineHeight: 17 },
-  adOrder: { fontSize: 11, color: "#9CA3AF" },
-  adActions: { flexDirection: "row", gap: 8, marginTop: 8 },
-  actionBtn: {
-    flexDirection: "row", alignItems: "center", gap: 4,
-    borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6,
-  },
-  toggleBtn: { backgroundColor: "#F9FAFB", borderWidth: 1, borderColor: "#E5E7EB" },
-  editBtn: { backgroundColor: "#EFF6FF", borderWidth: 1, borderColor: "#BFDBFE" },
-  deleteBtn: { backgroundColor: "#FEF2F2", borderWidth: 1, borderColor: "#FECACA" },
-  actionBtnText: { fontSize: 12, fontWeight: "600", color: "#6B7280" },
-
-  // Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end",
-  },
-  modal: {
-    backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    height: "90%",
-    paddingBottom: 20,
-  },
-  modalHeader: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16,
-    borderBottomWidth: 1, borderBottomColor: "#F3F4F6",
-  },
-  modalTitle: { fontSize: 18, fontWeight: "700", color: "#111827" },
-  modalClose: { padding: 4 },
-  modalBody: { flex: 1, padding: 20 },
-
-  fieldLabel: { fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6, marginTop: 16 },
-
-  imagePicker: {
-    width: "100%", height: 160, borderRadius: 12,
-    overflow: "hidden", backgroundColor: "#F3F4F6",
-    borderWidth: 2, borderColor: "#E5E7EB", borderStyle: "dashed",
-  },
-  imagePreview: { width: "100%", height: "100%" },
-  imageOverlay: {
-    position: "absolute", bottom: 0, left: 0, right: 0,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    flexDirection: "row", alignItems: "center", justifyContent: "center",
-    paddingVertical: 8, gap: 6,
-  },
-  imageOverlayText: { color: "#FFFFFF", fontSize: 13, fontWeight: "600" },
-  imagePlaceholder: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8 },
-  imagePlaceholderText: { fontSize: 14, color: "#6B7280", fontWeight: "500" },
-  imagePlaceholderSub: { fontSize: 11, color: "#9CA3AF" },
-
-  input: {
-    backgroundColor: "#F9FAFB",
-    borderWidth: 1, borderColor: "#E5E7EB",
-    borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12,
-    fontSize: 14, color: "#111827",
-  },
-  inputMultiline: { minHeight: 80, textAlignVertical: "top" },
-
-  providerPicker: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    backgroundColor: "#F9FAFB",
-    borderWidth: 1, borderColor: "#E5E7EB",
-    borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12,
-  },
-  providerSelected: { flexDirection: "row", alignItems: "center", gap: 8 },
-  providerSelectedCard: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    backgroundColor: "#F0FDF4",
-    borderWidth: 1,
-    borderColor: "#86EFAC",
+    gap: 5,
+    backgroundColor: "#25D366",
     borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  addBtnText: { fontSize: 14, fontWeight: "700", color: "#FFFFFF" },
+
+  // Loading / Empty
+  loadingBox: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
+  loadingText: { fontSize: 14, color: "#64748B" },
+  emptyState: { alignItems: "center", paddingVertical: 64, paddingHorizontal: 32, gap: 10 },
+  emptyIconBox: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 4,
   },
-  providerSelectedText: { fontSize: 14, color: "#111827", fontWeight: "500", flex: 1 },
-  clearProviderBtn: {
+  emptyTitle: { fontSize: 16, fontWeight: "600", color: "#374151" },
+  emptySubtitle: { fontSize: 13, color: "#94A3B8", textAlign: "center", lineHeight: 20 },
+
+  // List
+  listContent: { padding: 16, gap: 12, paddingBottom: 40 },
+
+  // Ad Card
+  adCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#F1F5F9",
+    ...Platform.select({
+      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8 },
+      android: { elevation: 3 },
+    }),
+  },
+  adBanner: { width: "100%", height: 140 },
+  adBannerPlaceholder: {
+    width: "100%",
+    height: 100,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  adBannerPlaceholderText: { fontSize: 12, color: "#94A3B8" },
+  statusBadge: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  statusBadgeActive: { backgroundColor: "rgba(220,252,231,0.95)" },
+  statusBadgeInactive: { backgroundColor: "rgba(241,245,249,0.95)" },
+  statusDot: { width: 6, height: 6, borderRadius: 3 },
+  statusDotActive: { backgroundColor: "#16A34A" },
+  statusDotInactive: { backgroundColor: "#94A3B8" },
+  statusText: { fontSize: 11, fontWeight: "700" },
+  statusTextActive: { color: "#15803D" },
+  statusTextInactive: { color: "#64748B" },
+  adContent: { padding: 14, gap: 6 },
+  adTitle: { fontSize: 15, fontWeight: "700", color: "#0F172A", lineHeight: 22 },
+  adDesc: { fontSize: 13, color: "#64748B", lineHeight: 18 },
+  adMeta: { flexDirection: "row", alignItems: "center", gap: 14, flexWrap: "wrap" },
+  adMetaItem: { flexDirection: "row", alignItems: "center", gap: 4 },
+  adMetaText: { fontSize: 12, color: "#64748B", maxWidth: 150 },
+  adActions: { flexDirection: "row", gap: 8, marginTop: 6, flexWrap: "wrap" },
+  adActionBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#F3F4F6",
     borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
-  inlinePicker: {
+  adToggleBtn: { backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#E2E8F0" },
+  adEditBtn: { backgroundColor: "#EFF6FF", borderWidth: 1, borderColor: "#BFDBFE" },
+  adDeleteBtn: { backgroundColor: "#FEF2F2", borderWidth: 1, borderColor: "#FECACA" },
+  adActionText: { fontSize: 12, fontWeight: "600", color: "#64748B" },
+
+  // Modal
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
+  modalSheet: {
     backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    maxHeight: "93%",
+    paddingBottom: 24,
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#E2E8F0",
+    alignSelf: "center",
+    marginTop: 14,
+    marginBottom: 4,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+  modalTitle: { fontSize: 18, fontWeight: "700", color: "#0F172A" },
+  modalSubtitle: { fontSize: 13, color: "#64748B", marginTop: 2 },
+  modalCloseBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalScrollContent: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 16 },
+
+  // Form sections
+  formSection: {
+    marginTop: 20,
+    backgroundColor: "#F8FAFC",
+    borderRadius: 16,
+    padding: 16,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
+    borderColor: "#E2E8F0",
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#64748B",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
     marginBottom: 12,
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#374151",
+    marginBottom: 6,
+    marginTop: 12,
+  },
+
+  // Inputs
+  inputWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: Platform.OS === "ios" ? 12 : 10,
+    gap: 8,
+  },
+  inputIcon: {},
+  input: { flex: 1, fontSize: 14, color: "#0F172A", padding: 0 },
+  textareaWrap: { alignItems: "flex-start", paddingTop: 12 },
+  textarea: { minHeight: 80, textAlignVertical: "top" },
+
+  // Banner picker
+  bannerPicker: {
+    borderRadius: 12,
+    overflow: "hidden",
+    backgroundColor: "#F1F5F9",
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
+    borderStyle: "dashed",
+  },
+  bannerPreview: { width: "100%", height: 160 },
+  bannerOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+    gap: 6,
+  },
+  bannerOverlayText: { color: "#FFFFFF", fontSize: 13, fontWeight: "600" },
+  bannerPlaceholder: {
+    height: 130,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  bannerPlaceholderTitle: { fontSize: 14, color: "#374151", fontWeight: "500" },
+  bannerPlaceholderSub: { fontSize: 12, color: "#94A3B8" },
+
+  // Provider picker
+  providerSelected: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#F0FDF4",
+    borderWidth: 1.5,
+    borderColor: "#86EFAC",
+    borderRadius: 12,
+    padding: 12,
+  },
+  providerSelectedIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#DCFCE7",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  providerSelectedName: { flex: 1, fontSize: 14, fontWeight: "600", color: "#0F172A" },
+  changeProviderBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#EFF6FF",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  changeProviderText: { fontSize: 12, fontWeight: "600", color: "#2563EB" },
+  providerPickerBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: Platform.OS === "ios" ? 12 : 10,
+  },
+  providerPickerBtnOpen: { borderColor: "#25D366", borderBottomLeftRadius: 0, borderBottomRightRadius: 0 },
+  providerPickerBtnText: { flex: 1, fontSize: 14, color: "#94A3B8" },
+  providerList: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
+    borderColor: "#25D366",
+    borderTopWidth: 0,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
     overflow: "hidden",
   },
-  pickerLoadingRow: {
+  providerSearchBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    margin: 10,
+    backgroundColor: "#F8FAFC",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  providerSearchInput: { flex: 1, fontSize: 13, color: "#0F172A", padding: 0 },
+  providerLoadingRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
     padding: 16,
+    justifyContent: "center",
   },
-  providerPlaceholder: { flexDirection: "row", alignItems: "center", gap: 8 },
-  providerPlaceholderText: { fontSize: 14, color: "#9CA3AF" },
-  clearProvider: {
-    flexDirection: "row", alignItems: "center", gap: 4,
-    marginTop: 6, paddingLeft: 2,
+  providerLoadingText: { fontSize: 13, color: "#64748B" },
+  providerEmptyRow: { padding: 16, alignItems: "center" },
+  providerEmptyText: { fontSize: 13, color: "#94A3B8", textAlign: "center" },
+  providerItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9",
   },
-  clearProviderText: { fontSize: 12, color: "#9CA3AF" },
+  providerAvatar: { width: 40, height: 40, borderRadius: 20 },
+  providerAvatarFallback: {
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  providerItemInfo: { flex: 1 },
+  providerItemNameRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  providerItemName: { fontSize: 14, fontWeight: "600", color: "#0F172A", flexShrink: 1 },
+  verifiedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    backgroundColor: "#25D366",
+    borderRadius: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+  },
+  verifiedBadgeText: { fontSize: 9, color: "#FFFFFF", fontWeight: "700" },
+  providerItemCategory: { fontSize: 12, color: "#64748B", marginTop: 1 },
 
-  toggleRow: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    marginTop: 16, paddingVertical: 8,
+  // Toggle card
+  toggleCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    gap: 12,
   },
-  toggleSubtitle: { fontSize: 12, color: "#9CA3AF", marginTop: 2 },
+  toggleCardLeft: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
+  toggleCardIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  toggleCardIconOn: { backgroundColor: "#DCFCE7" },
+  toggleCardText: { flex: 1 },
+  toggleCardTitle: { fontSize: 14, fontWeight: "600", color: "#0F172A" },
+  toggleCardSub: { fontSize: 12, color: "#64748B", marginTop: 2 },
 
+  // Modal actions
+  modalActions: { flexDirection: "row", gap: 10, marginTop: 24 },
+  cancelBtn: {
+    flex: 1,
+    backgroundColor: "#F1F5F9",
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  cancelBtnText: { fontSize: 15, fontWeight: "600", color: "#374151" },
   saveBtn: {
-    backgroundColor: "#25D366", borderRadius: 12,
-    paddingVertical: 15, alignItems: "center",
-    marginTop: 24,
+    flex: 2,
+    backgroundColor: "#25D366",
+    borderRadius: 14,
+    paddingVertical: 15,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    ...Platform.select({
+      ios: { shadowColor: "#25D366", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
+      android: { elevation: 4 },
+    }),
   },
-  saveBtnText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
-
-  // Provider picker modal
-  searchBar: {
-    flexDirection: "row", alignItems: "center", gap: 10,
-    marginHorizontal: 16, marginTop: 12, marginBottom: 4,
-    backgroundColor: "#F9FAFB",
-    borderWidth: 1, borderColor: "#E5E7EB",
-    borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10,
-  },
-  searchInput: {
-    flex: 1, fontSize: 14, color: "#111827",
-  },
-  pickerCountRow: {
-    paddingHorizontal: 16, paddingVertical: 8,
-    borderBottomWidth: 1, borderBottomColor: "#F3F4F6",
-  },
-  pickerCountText: { fontSize: 12, color: "#9CA3AF" },
-  pickerEmpty: {
-    alignItems: "center", paddingTop: 60, gap: 12,
-  },
-  pickerEmptyText: { fontSize: 14, color: "#9CA3AF", textAlign: "center" },
-  providerRow: {
-    flexDirection: "row", alignItems: "center", gap: 12,
-    backgroundColor: "#FFFFFF", borderRadius: 12, padding: 12,
-    borderWidth: 1, borderColor: "#E5E7EB",
-  },
-  providerRowSelected: {
-    borderColor: "#86EFAC", backgroundColor: "#F0FDF4",
-  },
-  providerAvatar: { width: 44, height: 44, borderRadius: 22 },
-  providerAvatarPlaceholder: {
-    backgroundColor: "#F3F4F6",
-    alignItems: "center", justifyContent: "center",
-  },
-  providerInfo: { flex: 1 },
-  providerNameRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  providerName: { fontSize: 14, fontWeight: "600", color: "#111827" },
-  realBadge: {
-    flexDirection: "row", alignItems: "center", gap: 2,
-    backgroundColor: "#25D366", borderRadius: 6,
-    paddingHorizontal: 5, paddingVertical: 2,
-  },
-  realBadgeText: { fontSize: 10, color: "#FFFFFF", fontWeight: "700" },
-  providerCategory: { fontSize: 12, color: "#6B7280", marginTop: 2 },
+  saveBtnText: { fontSize: 15, fontWeight: "700", color: "#FFFFFF" },
 });

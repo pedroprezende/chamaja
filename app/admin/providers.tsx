@@ -16,6 +16,7 @@ import {
   Modal,
   Switch,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -28,7 +29,6 @@ import {
   type CreateAdminProviderInput,
 } from "@/lib/admin-providers-db";
 import { adminDB, type Service as AdminService } from "@/lib/admin-database";
-import { subcategoriesByCategory } from "@/data/mock";
 
 // ─── Formulário vazio ─────────────────────────────────────────────────────────
 const EMPTY_FORM: CreateAdminProviderInput = {
@@ -47,6 +47,108 @@ const EMPTY_FORM: CreateAdminProviderInput = {
   isActive: true,
 };
 
+// ─── Card de Prestador ────────────────────────────────────────────────────────
+function ProviderCard({
+  item,
+  onEdit,
+  onDelete,
+  onToggle,
+}: {
+  item: AdminProvider;
+  onEdit: () => void;
+  onDelete: () => void;
+  onToggle: () => void;
+}) {
+  return (
+    <View style={[styles.card, !item.isActive && styles.cardInactive]}>
+      <View style={styles.cardMain}>
+        {/* Avatar */}
+        {item.avatarUri ? (
+          <Image source={{ uri: item.avatarUri }} style={styles.cardAvatar} />
+        ) : (
+          <View style={[styles.cardAvatar, styles.cardAvatarFallback]}>
+            <MaterialIcons name="person" size={26} color="#94A3B8" />
+          </View>
+        )}
+
+        {/* Informações */}
+        <View style={styles.cardInfo}>
+          <View style={styles.cardNameRow}>
+            <Text style={styles.cardName} numberOfLines={1} ellipsizeMode="tail">
+              {item.name}
+            </Text>
+            {!item.isActive && (
+              <View style={styles.inactivePill}>
+                <Text style={styles.inactivePillText}>Inativo</Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.servicePill}>
+            <MaterialIcons name="build" size={11} color="#2563EB" />
+            <Text style={styles.servicePillText} numberOfLines={1} ellipsizeMode="tail">
+              {item.serviceName}
+            </Text>
+          </View>
+
+          <View style={styles.cardMetaRow}>
+            {!!item.whatsapp && (
+              <View style={styles.cardMetaItem}>
+                <MaterialIcons name="phone" size={12} color="#25D366" />
+                <Text style={styles.cardMetaText}>{item.whatsapp}</Text>
+              </View>
+            )}
+            {!!item.address && (
+              <View style={styles.cardMetaItem}>
+                <MaterialIcons name="place" size={12} color="#64748B" />
+                <Text style={styles.cardMetaText} numberOfLines={1} ellipsizeMode="tail">
+                  {item.address}
+                </Text>
+              </View>
+            )}
+            {!!item.rating && (
+              <View style={styles.cardMetaItem}>
+                <MaterialIcons name="star" size={12} color="#F59E0B" />
+                <Text style={styles.cardMetaText}>{item.rating.toFixed(1)}</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </View>
+
+      {/* Ações */}
+      <View style={styles.cardActions}>
+        <Pressable
+          style={({ pressed }) => [styles.actionBtn, styles.actionToggle, pressed && { opacity: 0.7 }]}
+          onPress={onToggle}
+        >
+          <MaterialIcons
+            name={item.isActive ? "visibility-off" : "visibility"}
+            size={13}
+            color="#64748B"
+          />
+          <Text style={styles.actionBtnText}>{item.isActive ? "Desativar" : "Ativar"}</Text>
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.actionBtn, styles.actionEdit, pressed && { opacity: 0.7 }]}
+          onPress={onEdit}
+        >
+          <MaterialIcons name="edit" size={13} color="#2563EB" />
+          <Text style={[styles.actionBtnText, { color: "#2563EB" }]}>Editar</Text>
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.actionBtn, styles.actionDelete, pressed && { opacity: 0.7 }]}
+          onPress={onDelete}
+        >
+          <MaterialIcons name="delete-outline" size={13} color="#DC2626" />
+          <Text style={[styles.actionBtnText, { color: "#DC2626" }]}>Excluir</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+// ─── Tela Principal ───────────────────────────────────────────────────────────
 export default function AdminProvidersScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -64,7 +166,6 @@ export default function AdminProvidersScreen() {
   const [showServicePicker, setShowServicePicker] = useState(false);
   const [serviceSearchQuery, setServiceSearchQuery] = useState("");
 
-  // Filtra serviços pelo campo de busca dentro do picker
   const filteredServices = useMemo(() => {
     if (!serviceSearchQuery.trim()) return services;
     const q = serviceSearchQuery.toLowerCase();
@@ -76,7 +177,6 @@ export default function AdminProvidersScreen() {
     );
   }, [services, serviceSearchQuery]);
 
-  // ── Carregar dados ──────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
     setLoading(true);
     adminProvidersDB.resetCache();
@@ -91,7 +191,6 @@ export default function AdminProvidersScreen() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // ── Filtro de busca ─────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
     if (!searchText.trim()) return providers;
     const q = searchText.toLowerCase();
@@ -103,11 +202,11 @@ export default function AdminProvidersScreen() {
     );
   }, [providers, searchText]);
 
-  // ── Ações ───────────────────────────────────────────────────────────────────
   const openCreate = () => {
     setEditingProvider(null);
     setForm({ ...EMPTY_FORM });
     setShowServicePicker(false);
+    setServiceSearchQuery("");
     setModalVisible(true);
   };
 
@@ -129,16 +228,17 @@ export default function AdminProvidersScreen() {
       isActive: p.isActive,
     });
     setShowServicePicker(false);
+    setServiceSearchQuery("");
     setModalVisible(true);
   };
 
   const handleSave = async () => {
     if (!form.name.trim()) {
-      Alert.alert("Erro", "Digite o nome do prestador.");
+      Alert.alert("Campo obrigatório", "Digite o nome do prestador.");
       return;
     }
     if (!form.serviceId) {
-      Alert.alert("Erro", "Selecione o serviço vinculado.");
+      Alert.alert("Campo obrigatório", "Selecione o serviço vinculado.");
       return;
     }
     setSaving(true);
@@ -160,7 +260,7 @@ export default function AdminProvidersScreen() {
   const handleDelete = (p: AdminProvider) => {
     Alert.alert(
       "Excluir prestador",
-      `Tem certeza que deseja excluir "${p.name}"?`,
+      `Deseja excluir "${p.name}"?`,
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -213,148 +313,100 @@ export default function AdminProvidersScreen() {
     }));
   };
 
-  // ── Render item ─────────────────────────────────────────────────────────────
-  const renderItem = ({ item }: { item: AdminProvider }) => (
-    <View style={[styles.card, !item.isActive && styles.cardInactive]}>
-      <View style={styles.cardTop}>
-        {item.avatarUri ? (
-          <Image source={{ uri: item.avatarUri }} style={styles.avatar} />
-        ) : (
-          <View style={[styles.avatar, styles.avatarPlaceholder]}>
-            <MaterialIcons name="person" size={28} color="#9CA3AF" />
-          </View>
-        )}
-        <View style={styles.cardInfo}>
-          <Text style={styles.cardName} numberOfLines={1}>{item.name}</Text>
-          <View style={styles.badgeRow}>
-            <View style={styles.serviceBadge}>
-              <Text style={styles.serviceBadgeText}>{item.serviceName}</Text>
-            </View>
-            {!item.isActive && (
-              <View style={styles.inactiveBadge}>
-                <Text style={styles.inactiveBadgeText}>Inativo</Text>
-              </View>
-            )}
-          </View>
-          {item.address ? (
-            <Text style={styles.cardAddress} numberOfLines={1}>
-              <MaterialIcons name="place" size={11} color="#9CA3AF" /> {item.address}
-            </Text>
-          ) : null}
-          {item.whatsapp ? (
-            <Text style={styles.cardWhatsapp} numberOfLines={1}>
-              <MaterialIcons name="phone" size={11} color="#25D366" /> {item.whatsapp}
-            </Text>
-          ) : null}
-        </View>
-      </View>
-      <View style={styles.cardActions}>
-        <Pressable
-          style={({ pressed }) => [styles.actionBtn, styles.actionToggle, pressed && { opacity: 0.7 }]}
-          onPress={() => handleToggle(item)}
-        >
-          <MaterialIcons
-            name={item.isActive ? "visibility-off" : "visibility"}
-            size={14}
-            color="#6B7280"
-          />
-          <Text style={styles.actionBtnText}>{item.isActive ? "Desativar" : "Ativar"}</Text>
-        </Pressable>
-        <Pressable
-          style={({ pressed }) => [styles.actionBtn, styles.actionEdit, pressed && { opacity: 0.7 }]}
-          onPress={() => openEdit(item)}
-        >
-          <MaterialIcons name="edit" size={14} color="#3B82F6" />
-          <Text style={[styles.actionBtnText, { color: "#3B82F6" }]}>Editar</Text>
-        </Pressable>
-        <Pressable
-          style={({ pressed }) => [styles.actionBtn, styles.actionDelete, pressed && { opacity: 0.7 }]}
-          onPress={() => handleDelete(item)}
-        >
-          <MaterialIcons name="delete" size={14} color="#EF4444" />
-          <Text style={[styles.actionBtnText, { color: "#EF4444" }]}>Excluir</Text>
-        </Pressable>
-      </View>
-    </View>
-  );
+  const activeCount = providers.filter((p) => p.isActive).length;
 
-  // ── JSX ─────────────────────────────────────────────────────────────────────
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header */}
+    <View style={[styles.root, { paddingTop: insets.top }]}>
+
+      {/* ── Header ── */}
       <View style={styles.header}>
         <Pressable
-          style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
+          style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.6 }]}
           onPress={() => router.back()}
+          hitSlop={8}
         >
-          <MaterialIcons name="arrow-back" size={24} color="#111827" />
+          <MaterialIcons name="arrow-back" size={22} color="#374151" />
         </Pressable>
-        <Text style={styles.headerTitle}>Prestadores</Text>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Prestadores</Text>
+          <Text style={styles.headerSub}>{providers.length} total · {activeCount} ativos</Text>
+        </View>
         <Pressable
-          style={({ pressed }) => [styles.addBtn, pressed && { opacity: 0.8 }]}
+          style={({ pressed }) => [styles.addBtn, pressed && { opacity: 0.8, transform: [{ scale: 0.96 }] }]}
           onPress={openCreate}
         >
-          <MaterialIcons name="add" size={24} color="#FFFFFF" />
+          <MaterialIcons name="add" size={20} color="#FFFFFF" />
+          <Text style={styles.addBtnText}>Novo</Text>
         </Pressable>
       </View>
 
-      {/* Busca */}
-      <View style={styles.searchBar}>
-        <MaterialIcons name="search" size={18} color="#9CA3AF" />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Buscar prestador ou serviço..."
-          placeholderTextColor="#9CA3AF"
-          value={searchText}
-          onChangeText={setSearchText}
-          returnKeyType="search"
-        />
-        {searchText.length > 0 && (
-          <Pressable onPress={() => setSearchText("")}>
-            <MaterialIcons name="close" size={16} color="#9CA3AF" />
-          </Pressable>
-        )}
+      {/* ── Barra de busca ── */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchBar}>
+          <MaterialIcons name="search" size={18} color="#94A3B8" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Buscar prestador ou serviço..."
+            placeholderTextColor="#94A3B8"
+            value={searchText}
+            onChangeText={setSearchText}
+            returnKeyType="search"
+          />
+          {searchText.length > 0 && (
+            <Pressable onPress={() => setSearchText("")} hitSlop={8}>
+              <MaterialIcons name="close" size={16} color="#94A3B8" />
+            </Pressable>
+          )}
+        </View>
       </View>
 
-      {/* Contador */}
-      <View style={styles.countRow}>
-        <Text style={styles.countText}>
-          {filtered.length} prestador{filtered.length !== 1 ? "es" : ""}
-          {providers.filter((p) => p.isActive).length !== providers.length &&
-            ` · ${providers.filter((p) => p.isActive).length} ativo${providers.filter((p) => p.isActive).length !== 1 ? "s" : ""}`}
-        </Text>
-      </View>
-
-      {/* Lista */}
+      {/* ── Lista ── */}
       {loading ? (
-        <View style={styles.loadingCenter}>
+        <View style={styles.loadingBox}>
           <ActivityIndicator size="large" color="#25D366" />
-          <Text style={styles.loadingText}>Carregando...</Text>
+          <Text style={styles.loadingText}>Carregando prestadores...</Text>
         </View>
       ) : (
         <FlatList
           data={filtered}
           keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 40 }}
+          renderItem={({ item }) => (
+            <ProviderCard
+              item={item}
+              onEdit={() => openEdit(item)}
+              onDelete={() => handleDelete(item)}
+              onToggle={() => handleToggle(item)}
+            />
+          )}
+          contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            filtered.length > 0 ? (
+              <Text style={styles.listCount}>
+                {filtered.length} prestador{filtered.length !== 1 ? "es" : ""}
+                {searchText ? ` para "${searchText}"` : ""}
+              </Text>
+            ) : null
+          }
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <MaterialIcons name="person-add" size={48} color="#D1D5DB" />
+              <View style={styles.emptyIconBox}>
+                <MaterialIcons name="person-add" size={40} color="#CBD5E1" />
+              </View>
               <Text style={styles.emptyTitle}>
                 {searchText ? "Nenhum resultado" : "Nenhum prestador cadastrado"}
               </Text>
               <Text style={styles.emptySubtitle}>
                 {searchText
                   ? `Sem resultados para "${searchText}"`
-                  : "Toque em + para adicionar o primeiro prestador"}
+                  : 'Toque em "+ Novo" para adicionar o primeiro prestador.'}
               </Text>
             </View>
           }
         />
       )}
 
-      {/* ── Modal de criação/edição ── */}
+      {/* ── Modal criar/editar ── */}
       <Modal
         visible={modalVisible}
         animationType="slide"
@@ -363,252 +415,320 @@ export default function AdminProvidersScreen() {
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modal}>
+          <View style={styles.modalSheet}>
+            {/* Handle */}
+            <View style={styles.modalHandle} />
+
+            {/* Cabeçalho */}
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {editingProvider ? "Editar prestador" : "Novo prestador"}
-              </Text>
+              <View>
+                <Text style={styles.modalTitle}>
+                  {editingProvider ? "Editar Prestador" : "Novo Prestador"}
+                </Text>
+                <Text style={styles.modalSubtitle}>
+                  {editingProvider ? "Atualize as informações abaixo" : "Preencha os dados do prestador"}
+                </Text>
+              </View>
               <Pressable
-                style={({ pressed }) => [styles.modalClose, pressed && { opacity: 0.6 }]}
+                style={({ pressed }) => [styles.modalCloseBtn, pressed && { opacity: 0.6 }]}
                 onPress={() => setModalVisible(false)}
+                hitSlop={8}
               >
-                <MaterialIcons name="close" size={24} color="#6B7280" />
+                <MaterialIcons name="close" size={20} color="#6B7280" />
               </Pressable>
             </View>
 
-            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-
-              {/* Avatar */}
-              <Text style={styles.fieldLabel}>Foto do prestador</Text>
-              <Pressable
-                style={({ pressed }) => [styles.avatarPicker, pressed && { opacity: 0.8 }]}
-                onPress={handlePickAvatar}
-              >
-                {form.avatarUri ? (
-                  <>
-                    <Image source={{ uri: form.avatarUri }} style={styles.avatarPreview} />
-                    <View style={styles.avatarOverlay}>
-                      <MaterialIcons name="photo-camera" size={20} color="#FFFFFF" />
-                      <Text style={styles.avatarOverlayText}>Trocar foto</Text>
-                    </View>
-                  </>
-                ) : (
-                  <View style={styles.avatarPlaceholderPicker}>
-                    <MaterialIcons name="add-a-photo" size={32} color="#9CA3AF" />
-                    <Text style={styles.avatarPlaceholderText}>Adicionar foto</Text>
-                  </View>
-                )}
-              </Pressable>
-
-              {/* Nome */}
-              <Text style={styles.fieldLabel}>Nome *</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Ex: Studio Ink Tattoo"
-                placeholderTextColor="#9CA3AF"
-                value={form.name}
-                onChangeText={(v) => setForm((f) => ({ ...f, name: v }))}
-                maxLength={80}
-                returnKeyType="next"
-              />
-
-              {/* Serviço vinculado */}
-              <Text style={styles.fieldLabel}>Serviço vinculado *</Text>
-              {form.serviceId ? (
-                <View style={styles.selectedServiceCard}>
-                  <MaterialIcons name="check-circle" size={16} color="#25D366" />
-                  <Text style={styles.selectedServiceText}>{form.serviceName}</Text>
-                  <Pressable
-                    style={({ pressed }) => [styles.changeServiceBtn, pressed && { opacity: 0.7 }]}
-                    onPress={() => {
-                      setForm((f) => ({ ...f, serviceId: "", serviceName: "", subcategoryId: "", subcategoryName: "" }));
-                      setShowServicePicker(true);
-                    }}
-                  >
-                    <MaterialIcons name="swap-horiz" size={14} color="#6B7280" />
-                    <Text style={styles.changeServiceText}>Trocar</Text>
-                  </Pressable>
-                </View>
-              ) : (
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.modalScrollContent}
+            >
+              {/* ── Seção: Foto ── */}
+              <View style={styles.formSection}>
+                <Text style={styles.sectionTitle}>Foto do Prestador</Text>
                 <Pressable
-                  style={({ pressed }) => [styles.servicePickerBtn, pressed && { opacity: 0.8 }]}
-                  onPress={() => setShowServicePicker((v) => !v)}
+                  style={({ pressed }) => [styles.avatarPickerBtn, pressed && { opacity: 0.8 }]}
+                  onPress={handlePickAvatar}
                 >
-                  <View style={styles.servicePickerPlaceholder}>
-                    <MaterialIcons name="category" size={16} color="#9CA3AF" />
-                    <Text style={styles.servicePickerPlaceholderText}>Selecionar serviço</Text>
-                  </View>
-                  <MaterialIcons
-                    name={showServicePicker ? "expand-less" : "expand-more"}
-                    size={20}
-                    color="#9CA3AF"
-                  />
-                </Pressable>
-              )}
-
-              {/* Lista inline de serviços */}
-              {showServicePicker && !form.serviceId && (
-                <View style={styles.inlineServiceList}>
-                  {/* Campo de busca dentro do picker */}
-                  <View style={styles.serviceSearchRow}>
-                    <MaterialIcons name="search" size={16} color="#9CA3AF" />
-                    <TextInput
-                      style={styles.serviceSearchInput}
-                      placeholder="Buscar serviço..."
-                      placeholderTextColor="#9CA3AF"
-                      value={serviceSearchQuery}
-                      onChangeText={setServiceSearchQuery}
-                      autoCorrect={false}
-                    />
-                    {serviceSearchQuery.length > 0 && (
-                      <Pressable onPress={() => setServiceSearchQuery("")}>
-                        <MaterialIcons name="close" size={14} color="#9CA3AF" />
-                      </Pressable>
-                    )}
-                  </View>
-                  {filteredServices.length === 0 ? (
-                    <View style={styles.noServicesMsg}>
-                      <MaterialIcons name="info-outline" size={20} color="#9CA3AF" />
-                      <Text style={styles.noServicesMsgText}>
-                        {services.length === 0
-                          ? "Nenhum serviço cadastrado. Crie um serviço primeiro."
-                          : "Nenhum serviço encontrado."}
-                      </Text>
+                  {form.avatarUri ? (
+                    <View style={styles.avatarPreviewWrap}>
+                      <Image source={{ uri: form.avatarUri }} style={styles.avatarPreview} />
+                      <View style={styles.avatarOverlay}>
+                        <MaterialIcons name="photo-camera" size={16} color="#FFFFFF" />
+                        <Text style={styles.avatarOverlayText}>Trocar</Text>
+                      </View>
                     </View>
                   ) : (
-                    filteredServices.map((svc) => (
-                      <Pressable
-                        key={svc.id}
-                        style={({ pressed }) => [styles.serviceRow, pressed && { opacity: 0.7 }]}
-                        onPress={() => {
-                          setForm((f) => ({
-                            ...f,
-                            serviceId: svc.id,
-                            serviceName: svc.name,
-                            subcategoryId: svc.subcategoryId ?? "",
-                            subcategoryName: svc.subcategoryName ?? svc.name,
-                          }));
-                          setShowServicePicker(false);
-                          setServiceSearchQuery("");
-                        }}
-                      >
-                        {svc.imageUri ? (
-                          <Image source={{ uri: svc.imageUri }} style={styles.serviceRowImg} />
-                        ) : (
-                          <View style={[styles.serviceRowImg, styles.serviceRowImgPlaceholder]}>
-                            <MaterialIcons name="build" size={16} color="#9CA3AF" />
-                          </View>
-                        )}
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.serviceRowName}>{svc.name}</Text>
-                          <Text style={styles.serviceRowCat}>{svc.subcategoryName || svc.category}</Text>
-                        </View>
-                        <MaterialIcons name="chevron-right" size={16} color="#D1D5DB" />
-                      </Pressable>
-                    ))
+                    <View style={styles.avatarPlaceholder}>
+                      <MaterialIcons name="add-a-photo" size={30} color="#94A3B8" />
+                      <Text style={styles.avatarPlaceholderText}>Adicionar foto</Text>
+                    </View>
                   )}
-                </View>
-              )}
-
-              {/* WhatsApp */}
-              <Text style={styles.fieldLabel}>WhatsApp</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Ex: 11999998888"
-                placeholderTextColor="#9CA3AF"
-                value={form.whatsapp}
-                onChangeText={(v) => setForm((f) => ({ ...f, whatsapp: v.replace(/\D/g, "") }))}
-                keyboardType="phone-pad"
-                maxLength={15}
-                returnKeyType="next"
-              />
-
-              {/* Descrição */}
-              <Text style={styles.fieldLabel}>Descrição / Especialidades</Text>
-              <TextInput
-                style={[styles.input, styles.inputMultiline]}
-                placeholder="Ex: Especialista em tatuagens realistas e blackwork. 10 anos de experiência."
-                placeholderTextColor="#9CA3AF"
-                value={form.description}
-                onChangeText={(v) => setForm((f) => ({ ...f, description: v }))}
-                multiline
-                numberOfLines={4}
-                maxLength={500}
-              />
-
-              {/* Endereço */}
-              <Text style={styles.fieldLabel}>Endereço (bairro/cidade)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Ex: Centro, São Paulo - SP"
-                placeholderTextColor="#9CA3AF"
-                value={form.address}
-                onChangeText={(v) => setForm((f) => ({ ...f, address: v }))}
-                maxLength={120}
-                returnKeyType="next"
-              />
-
-              {/* Galeria */}
-              <Text style={styles.fieldLabel}>
-                Fotos do local ({(form.gallery ?? []).length}/8)
-              </Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.galleryScroll}>
-                {(form.gallery ?? []).map((uri, idx) => (
-                  <View key={idx} style={styles.galleryThumb}>
-                    <Image source={{ uri }} style={styles.galleryThumbImg} />
-                    <Pressable
-                      style={styles.galleryRemoveBtn}
-                      onPress={() => removeGalleryImage(idx)}
-                    >
-                      <MaterialIcons name="close" size={12} color="#FFFFFF" />
-                    </Pressable>
-                  </View>
-                ))}
-                {(form.gallery ?? []).length < 8 && (
-                  <Pressable
-                    style={({ pressed }) => [styles.galleryAddBtn, pressed && { opacity: 0.7 }]}
-                    onPress={handlePickGallery}
-                  >
-                    <MaterialIcons name="add-photo-alternate" size={28} color="#9CA3AF" />
-                    <Text style={styles.galleryAddText}>Adicionar</Text>
-                  </Pressable>
-                )}
-              </ScrollView>
-
-              {/* Ativo */}
-              <View style={styles.toggleRow}>
-                <View>
-                  <Text style={styles.fieldLabel}>Prestador ativo</Text>
-                  <Text style={styles.toggleSubtitle}>Exibir na listagem</Text>
-                </View>
-                <Switch
-                  value={form.isActive}
-                  onValueChange={(v) => setForm((f) => ({ ...f, isActive: v }))}
-                  trackColor={{ false: "#E5E7EB", true: "#86EFAC" }}
-                  thumbColor={form.isActive ? "#25D366" : "#9CA3AF"}
-                />
+                </Pressable>
               </View>
 
-              {/* Salvar */}
-              <Pressable
-                style={({ pressed }) => [
-                  styles.saveBtn,
-                  pressed && { opacity: 0.85 },
-                  saving && { opacity: 0.6 },
-                ]}
-                onPress={handleSave}
-                disabled={saving}
-              >
-                {saving ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
-                ) : (
-                  <Text style={styles.saveBtnText}>
-                    {editingProvider ? "Salvar alterações" : "Cadastrar prestador"}
-                  </Text>
-                )}
-              </Pressable>
+              {/* ── Seção: Dados do Prestador ── */}
+              <View style={styles.formSection}>
+                <Text style={styles.sectionTitle}>Dados do Prestador</Text>
 
-              <View style={{ height: 40 }} />
+                <Text style={styles.fieldLabel}>Nome *</Text>
+                <View style={styles.inputWrap}>
+                  <MaterialIcons name="person" size={17} color="#94A3B8" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Ex: Studio Ink Tattoo"
+                    placeholderTextColor="#94A3B8"
+                    value={form.name}
+                    onChangeText={(v) => setForm((f) => ({ ...f, name: v }))}
+                    maxLength={80}
+                    returnKeyType="next"
+                  />
+                </View>
+
+                <Text style={styles.fieldLabel}>WhatsApp</Text>
+                <View style={styles.inputWrap}>
+                  <MaterialIcons name="phone" size={17} color="#94A3B8" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Ex: 11999998888"
+                    placeholderTextColor="#94A3B8"
+                    value={form.whatsapp}
+                    onChangeText={(v) => setForm((f) => ({ ...f, whatsapp: v.replace(/\D/g, "") }))}
+                    keyboardType="phone-pad"
+                    maxLength={15}
+                    returnKeyType="next"
+                  />
+                </View>
+
+                <Text style={styles.fieldLabel}>Endereço (bairro/cidade)</Text>
+                <View style={styles.inputWrap}>
+                  <MaterialIcons name="place" size={17} color="#94A3B8" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Ex: Centro, São Paulo - SP"
+                    placeholderTextColor="#94A3B8"
+                    value={form.address}
+                    onChangeText={(v) => setForm((f) => ({ ...f, address: v }))}
+                    maxLength={120}
+                    returnKeyType="next"
+                  />
+                </View>
+
+                <Text style={styles.fieldLabel}>Descrição / Especialidades</Text>
+                <View style={[styles.inputWrap, styles.textareaWrap]}>
+                  <TextInput
+                    style={[styles.input, styles.textarea]}
+                    placeholder="Ex: Especialista em tatuagens realistas. 10 anos de experiência."
+                    placeholderTextColor="#94A3B8"
+                    value={form.description}
+                    onChangeText={(v) => setForm((f) => ({ ...f, description: v }))}
+                    multiline
+                    numberOfLines={4}
+                    maxLength={500}
+                    textAlignVertical="top"
+                  />
+                </View>
+              </View>
+
+              {/* ── Seção: Serviço Vinculado ── */}
+              <View style={styles.formSection}>
+                <Text style={styles.sectionTitle}>Serviço Vinculado</Text>
+
+                {form.serviceId ? (
+                  <View style={styles.serviceSelected}>
+                    <View style={styles.serviceSelectedIcon}>
+                      <MaterialIcons name="check-circle" size={22} color="#16A34A" />
+                    </View>
+                    <Text style={styles.serviceSelectedName} numberOfLines={1} ellipsizeMode="tail">
+                      {form.serviceName}
+                    </Text>
+                    <Pressable
+                      style={({ pressed }) => [styles.changeServiceBtn, pressed && { opacity: 0.7 }]}
+                      onPress={() => {
+                        setForm((f) => ({ ...f, serviceId: "", serviceName: "", subcategoryId: "", subcategoryName: "" }));
+                        setServiceSearchQuery("");
+                        setShowServicePicker(true);
+                      }}
+                    >
+                      <MaterialIcons name="swap-horiz" size={15} color="#2563EB" />
+                      <Text style={styles.changeServiceText}>Trocar</Text>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.servicePickerBtn,
+                      showServicePicker && styles.servicePickerBtnOpen,
+                      pressed && { opacity: 0.85 },
+                    ]}
+                    onPress={() => setShowServicePicker((v) => !v)}
+                  >
+                    <MaterialIcons name="category" size={17} color="#94A3B8" />
+                    <Text style={styles.servicePickerBtnText}>Selecionar serviço...</Text>
+                    <MaterialIcons
+                      name={showServicePicker ? "expand-less" : "expand-more"}
+                      size={20}
+                      color="#94A3B8"
+                    />
+                  </Pressable>
+                )}
+
+                {/* Lista inline de serviços */}
+                {showServicePicker && !form.serviceId && (
+                  <View style={styles.serviceList}>
+                    <View style={styles.serviceSearchBox}>
+                      <MaterialIcons name="search" size={16} color="#94A3B8" />
+                      <TextInput
+                        style={styles.serviceSearchInput}
+                        placeholder="Buscar serviço..."
+                        placeholderTextColor="#94A3B8"
+                        value={serviceSearchQuery}
+                        onChangeText={setServiceSearchQuery}
+                        autoCorrect={false}
+                      />
+                      {serviceSearchQuery.length > 0 && (
+                        <Pressable onPress={() => setServiceSearchQuery("")} hitSlop={8}>
+                          <MaterialIcons name="close" size={14} color="#94A3B8" />
+                        </Pressable>
+                      )}
+                    </View>
+
+                    {filteredServices.length === 0 ? (
+                      <View style={styles.serviceEmptyRow}>
+                        <MaterialIcons name="info-outline" size={18} color="#94A3B8" />
+                        <Text style={styles.serviceEmptyText}>
+                          {services.length === 0
+                            ? "Nenhum serviço cadastrado. Crie um serviço primeiro."
+                            : "Nenhum serviço encontrado."}
+                        </Text>
+                      </View>
+                    ) : (
+                      filteredServices.map((svc) => (
+                        <Pressable
+                          key={svc.id}
+                          style={({ pressed }) => [styles.serviceItem, pressed && { backgroundColor: "#F0FDF4" }]}
+                          onPress={() => {
+                            setForm((f) => ({
+                              ...f,
+                              serviceId: svc.id,
+                              serviceName: svc.name,
+                              subcategoryId: svc.subcategoryId ?? "",
+                              subcategoryName: svc.subcategoryName ?? svc.name,
+                            }));
+                            setShowServicePicker(false);
+                            setServiceSearchQuery("");
+                          }}
+                        >
+                          {svc.imageUri ? (
+                            <Image source={{ uri: svc.imageUri }} style={styles.serviceItemImg} />
+                          ) : (
+                            <View style={[styles.serviceItemImg, styles.serviceItemImgFallback]}>
+                              <MaterialIcons name="build" size={16} color="#94A3B8" />
+                            </View>
+                          )}
+                          <View style={styles.serviceItemInfo}>
+                            <Text style={styles.serviceItemName} numberOfLines={1} ellipsizeMode="tail">
+                              {svc.name}
+                            </Text>
+                            <Text style={styles.serviceItemCat} numberOfLines={1}>
+                              {svc.subcategoryName || svc.category}
+                            </Text>
+                          </View>
+                          <MaterialIcons name="chevron-right" size={18} color="#CBD5E1" />
+                        </Pressable>
+                      ))
+                    )}
+                  </View>
+                )}
+              </View>
+
+              {/* ── Seção: Galeria de Fotos ── */}
+              <View style={styles.formSection}>
+                <Text style={styles.sectionTitle}>
+                  Galeria de Fotos ({(form.gallery ?? []).length}/8)
+                </Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.galleryRow}
+                >
+                  {(form.gallery ?? []).map((uri, idx) => (
+                    <View key={idx} style={styles.galleryThumb}>
+                      <Image source={{ uri }} style={styles.galleryThumbImg} />
+                      <Pressable
+                        style={styles.galleryRemoveBtn}
+                        onPress={() => removeGalleryImage(idx)}
+                        hitSlop={4}
+                      >
+                        <MaterialIcons name="close" size={12} color="#FFFFFF" />
+                      </Pressable>
+                    </View>
+                  ))}
+                  {(form.gallery ?? []).length < 8 && (
+                    <Pressable
+                      style={({ pressed }) => [styles.galleryAddBtn, pressed && { opacity: 0.7 }]}
+                      onPress={handlePickGallery}
+                    >
+                      <MaterialIcons name="add-photo-alternate" size={26} color="#94A3B8" />
+                      <Text style={styles.galleryAddText}>Adicionar</Text>
+                    </Pressable>
+                  )}
+                </ScrollView>
+              </View>
+
+              {/* ── Seção: Configurações ── */}
+              <View style={styles.formSection}>
+                <Text style={styles.sectionTitle}>Configurações</Text>
+                <View style={styles.toggleCard}>
+                  <View style={styles.toggleCardLeft}>
+                    <View style={[styles.toggleCardIcon, form.isActive && styles.toggleCardIconOn]}>
+                      <MaterialIcons name="person" size={18} color={form.isActive ? "#15803D" : "#94A3B8"} />
+                    </View>
+                    <View style={styles.toggleCardText}>
+                      <Text style={styles.toggleCardTitle}>Prestador ativo</Text>
+                      <Text style={styles.toggleCardSub}>
+                        {form.isActive ? "Visível na listagem" : "Oculto da listagem"}
+                      </Text>
+                    </View>
+                  </View>
+                  <Switch
+                    value={form.isActive}
+                    onValueChange={(v) => setForm((f) => ({ ...f, isActive: v }))}
+                    trackColor={{ false: "#E2E8F0", true: "#BBF7D0" }}
+                    thumbColor={form.isActive ? "#25D366" : "#CBD5E1"}
+                  />
+                </View>
+              </View>
+
+              {/* ── Botões de ação ── */}
+              <View style={styles.modalActions}>
+                <Pressable
+                  style={({ pressed }) => [styles.cancelBtn, pressed && { opacity: 0.7 }]}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Text style={styles.cancelBtnText}>Cancelar</Text>
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.saveBtn,
+                    pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
+                    saving && { opacity: 0.6 },
+                  ]}
+                  onPress={handleSave}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <>
+                      <MaterialIcons name={editingProvider ? "check" : "add"} size={18} color="#FFFFFF" />
+                      <Text style={styles.saveBtnText}>
+                        {editingProvider ? "Salvar Alterações" : "Cadastrar Prestador"}
+                      </Text>
+                    </>
+                  )}
+                </Pressable>
+              </View>
             </ScrollView>
           </View>
         </View>
@@ -619,7 +739,9 @@ export default function AdminProvidersScreen() {
 
 // ─── Estilos ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F9FAFB" },
+  root: { flex: 1, backgroundColor: "#F8FAFC" },
+
+  // Header
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -627,69 +749,114 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: "#F1F5F9",
+    gap: 12,
+    ...Platform.select({
+      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3 },
+      android: { elevation: 2 },
+    }),
   },
-  backBtn: { padding: 4, marginRight: 8 },
-  headerTitle: { flex: 1, fontSize: 18, fontWeight: "700", color: "#111827" },
+  iconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerCenter: { flex: 1 },
+  headerTitle: { fontSize: 18, fontWeight: "700", color: "#0F172A", letterSpacing: -0.3 },
+  headerSub: { fontSize: 12, color: "#64748B", marginTop: 1 },
   addBtn: {
-    width: 40, height: 40, borderRadius: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
     backgroundColor: "#25D366",
-    alignItems: "center", justifyContent: "center",
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
   },
+  addBtnText: { fontSize: 14, fontWeight: "700", color: "#FFFFFF" },
+
+  // Search
+  searchContainer: { paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#FFFFFF", borderBottomWidth: 1, borderBottomColor: "#F1F5F9" },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    marginHorizontal: 16,
-    marginTop: 12,
+    backgroundColor: "#F8FAFC",
     borderRadius: 12,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
+    paddingVertical: Platform.OS === "ios" ? 10 : 8,
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
     gap: 8,
   },
-  searchInput: { flex: 1, fontSize: 14, color: "#111827" },
-  countRow: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 4 },
-  countText: { fontSize: 12, color: "#6B7280" },
-  loadingCenter: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
-  loadingText: { fontSize: 14, color: "#6B7280" },
-  emptyState: { alignItems: "center", paddingTop: 60, gap: 12 },
+  searchInput: { flex: 1, fontSize: 14, color: "#0F172A", padding: 0 },
+
+  // Loading / Empty
+  loadingBox: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
+  loadingText: { fontSize: 14, color: "#64748B" },
+  listContent: { padding: 16, gap: 12, paddingBottom: 40 },
+  listCount: { fontSize: 12, color: "#64748B", marginBottom: 4 },
+  emptyState: { alignItems: "center", paddingVertical: 64, paddingHorizontal: 32, gap: 10 },
+  emptyIconBox: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
   emptyTitle: { fontSize: 16, fontWeight: "600", color: "#374151" },
-  emptySubtitle: { fontSize: 13, color: "#9CA3AF", textAlign: "center", paddingHorizontal: 32 },
+  emptySubtitle: { fontSize: 13, color: "#94A3B8", textAlign: "center", lineHeight: 20 },
+
   // Card
   card: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#F1F5F9",
     gap: 12,
+    ...Platform.select({
+      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6 },
+      android: { elevation: 2 },
+    }),
   },
-  cardInactive: { opacity: 0.6 },
-  cardTop: { flexDirection: "row", gap: 12, alignItems: "flex-start" },
-  avatar: { width: 56, height: 56, borderRadius: 28 },
-  avatarPlaceholder: { backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
-  cardInfo: { flex: 1, gap: 4 },
-  cardName: { fontSize: 15, fontWeight: "700", color: "#111827" },
-  badgeRow: { flexDirection: "row", gap: 6, flexWrap: "wrap" },
-  serviceBadge: {
+  cardInactive: { opacity: 0.55 },
+  cardMain: { flexDirection: "row", gap: 12, alignItems: "flex-start" },
+  cardAvatar: { width: 54, height: 54, borderRadius: 27 },
+  cardAvatarFallback: {
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cardInfo: { flex: 1, gap: 5 },
+  cardNameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  cardName: { fontSize: 15, fontWeight: "700", color: "#0F172A", flex: 1 },
+  inactivePill: {
+    backgroundColor: "#FEF2F2",
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  inactivePillText: { fontSize: 10, fontWeight: "700", color: "#DC2626" },
+  servicePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     backgroundColor: "#EFF6FF",
     borderRadius: 6,
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 3,
+    alignSelf: "flex-start",
   },
-  serviceBadgeText: { fontSize: 11, color: "#3B82F6", fontWeight: "600" },
-  inactiveBadge: {
-    backgroundColor: "#FEF2F2",
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  inactiveBadgeText: { fontSize: 11, color: "#EF4444", fontWeight: "600" },
-  cardAddress: { fontSize: 12, color: "#9CA3AF" },
-  cardWhatsapp: { fontSize: 12, color: "#25D366" },
-  cardActions: { flexDirection: "row", gap: 8 },
+  servicePillText: { fontSize: 11, fontWeight: "600", color: "#2563EB", maxWidth: 200 },
+  cardMetaRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  cardMetaItem: { flexDirection: "row", alignItems: "center", gap: 4 },
+  cardMetaText: { fontSize: 12, color: "#64748B", maxWidth: 140 },
+  cardActions: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
   actionBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -699,57 +866,107 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
   },
-  actionToggle: { borderColor: "#E5E7EB", backgroundColor: "#F9FAFB" },
+  actionToggle: { borderColor: "#E2E8F0", backgroundColor: "#F8FAFC" },
   actionEdit: { borderColor: "#BFDBFE", backgroundColor: "#EFF6FF" },
   actionDelete: { borderColor: "#FECACA", backgroundColor: "#FEF2F2" },
-  actionBtnText: { fontSize: 12, color: "#6B7280", fontWeight: "500" },
+  actionBtnText: { fontSize: 12, color: "#64748B", fontWeight: "600" },
+
   // Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end",
-  },
-  modal: {
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
+  modalSheet: {
     backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: "92%",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    maxHeight: "93%",
+    paddingBottom: 24,
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#E2E8F0",
+    alignSelf: "center",
+    marginTop: 14,
+    marginBottom: 4,
   },
   modalHeader: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
+    borderBottomColor: "#F1F5F9",
   },
-  modalTitle: { flex: 1, fontSize: 17, fontWeight: "700", color: "#111827" },
-  modalClose: { padding: 4 },
-  modalBody: { paddingHorizontal: 20, paddingTop: 16 },
-  fieldLabel: { fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6, marginTop: 14 },
-  input: {
-    backgroundColor: "#F9FAFB",
+  modalTitle: { fontSize: 18, fontWeight: "700", color: "#0F172A" },
+  modalSubtitle: { fontSize: 13, color: "#64748B", marginTop: 2 },
+  modalCloseBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalScrollContent: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 16 },
+
+  // Form sections
+  formSection: {
+    marginTop: 20,
+    backgroundColor: "#F8FAFC",
+    borderRadius: 16,
+    padding: 16,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 14,
-    color: "#111827",
+    borderColor: "#E2E8F0",
   },
-  inputMultiline: { minHeight: 90, textAlignVertical: "top" },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#64748B",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 12,
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#374151",
+    marginBottom: 6,
+    marginTop: 12,
+  },
+
+  // Inputs
+  inputWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: Platform.OS === "ios" ? 12 : 10,
+    gap: 8,
+  },
+  inputIcon: {},
+  input: { flex: 1, fontSize: 14, color: "#0F172A", padding: 0 },
+  textareaWrap: { alignItems: "flex-start", paddingTop: 12 },
+  textarea: { minHeight: 90, textAlignVertical: "top" },
+
   // Avatar picker
-  avatarPicker: {
+  avatarPickerBtn: {
+    alignSelf: "center",
     width: 90,
     height: 90,
     borderRadius: 45,
     overflow: "hidden",
-    backgroundColor: "#F3F4F6",
-    alignSelf: "center",
+    backgroundColor: "#F1F5F9",
+    borderWidth: 2,
+    borderColor: "#E2E8F0",
+    borderStyle: "dashed",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 4,
   },
+  avatarPreviewWrap: { width: 90, height: 90, position: "relative" },
   avatarPreview: { width: 90, height: 90 },
   avatarOverlay: {
     position: "absolute",
@@ -758,135 +975,183 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: "rgba(0,0,0,0.45)",
     alignItems: "center",
-    paddingVertical: 6,
-    gap: 2,
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 4,
+    paddingVertical: 5,
   },
   avatarOverlayText: { fontSize: 10, color: "#FFFFFF", fontWeight: "600" },
-  avatarPlaceholderPicker: { alignItems: "center", gap: 6 },
-  avatarPlaceholderText: { fontSize: 11, color: "#9CA3AF" },
+  avatarPlaceholder: { alignItems: "center", gap: 4 },
+  avatarPlaceholderText: { fontSize: 11, color: "#94A3B8" },
+
   // Service picker
-  selectedServiceCard: {
+  serviceSelected: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 10,
     backgroundColor: "#F0FDF4",
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: "#86EFAC",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderRadius: 12,
+    padding: 12,
   },
-  selectedServiceText: { flex: 1, fontSize: 14, color: "#111827", fontWeight: "500" },
+  serviceSelectedIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#DCFCE7",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  serviceSelectedName: { flex: 1, fontSize: 14, fontWeight: "600", color: "#0F172A" },
   changeServiceBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#EFF6FF",
     borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
-  changeServiceText: { fontSize: 12, color: "#6B7280" },
+  changeServiceText: { fontSize: 12, fontWeight: "600", color: "#2563EB" },
   servicePickerBtn: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#F9FAFB",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  servicePickerPlaceholder: { flexDirection: "row", alignItems: "center", gap: 8 },
-  servicePickerPlaceholderText: { fontSize: 14, color: "#9CA3AF" },
-  inlineServiceList: {
+    gap: 8,
     backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
     borderRadius: 12,
-    marginTop: 4,
+    paddingHorizontal: 12,
+    paddingVertical: Platform.OS === "ios" ? 12 : 10,
+  },
+  servicePickerBtnOpen: { borderColor: "#25D366", borderBottomLeftRadius: 0, borderBottomRightRadius: 0 },
+  servicePickerBtnText: { flex: 1, fontSize: 14, color: "#94A3B8" },
+  serviceList: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
+    borderColor: "#25D366",
+    borderTopWidth: 0,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
     overflow: "hidden",
   },
-  serviceRow: {
+  serviceSearchBox: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
-  },
-  serviceRowImg: { width: 36, height: 36, borderRadius: 8 },
-  serviceRowImgPlaceholder: { backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
-  serviceRowName: { fontSize: 14, fontWeight: "600", color: "#111827" },
-  serviceRowCat: { fontSize: 12, color: "#6B7280" },
-  serviceSearchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F9FAFB",
+    gap: 8,
+    margin: 10,
+    backgroundColor: "#F8FAFC",
     borderRadius: 8,
     paddingHorizontal: 10,
-    paddingVertical: 6,
-    marginBottom: 8,
-    gap: 6,
+    paddingVertical: 8,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#E2E8F0",
   },
-  serviceSearchInput: {
-    flex: 1,
-    fontSize: 13,
-    color: "#111827",
-    paddingVertical: 0,
-  },
-  noServicesMsg: {
+  serviceSearchInput: { flex: 1, fontSize: 13, color: "#0F172A", padding: 0 },
+  serviceEmptyRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
     padding: 16,
   },
-  noServicesMsgText: { fontSize: 13, color: "#9CA3AF", flex: 1 },
+  serviceEmptyText: { fontSize: 13, color: "#94A3B8", flex: 1 },
+  serviceItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9",
+  },
+  serviceItemImg: { width: 38, height: 38, borderRadius: 8 },
+  serviceItemImgFallback: {
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  serviceItemInfo: { flex: 1 },
+  serviceItemName: { fontSize: 14, fontWeight: "600", color: "#0F172A" },
+  serviceItemCat: { fontSize: 12, color: "#64748B", marginTop: 1 },
+
   // Gallery
-  galleryScroll: { marginBottom: 4 },
-  galleryThumb: { width: 72, height: 72, borderRadius: 10, marginRight: 8, overflow: "hidden" },
-  galleryThumbImg: { width: 72, height: 72 },
+  galleryRow: { flexDirection: "row", gap: 8 },
+  galleryThumb: { width: 76, height: 76, borderRadius: 10, overflow: "hidden", position: "relative" },
+  galleryThumbImg: { width: 76, height: 76 },
   galleryRemoveBtn: {
     position: "absolute",
     top: 4,
     right: 4,
     backgroundColor: "rgba(0,0,0,0.55)",
     borderRadius: 8,
-    padding: 2,
+    padding: 3,
   },
   galleryAddBtn: {
-    width: 72,
-    height: 72,
+    width: 76,
+    height: 76,
     borderRadius: 10,
     borderWidth: 1.5,
-    borderColor: "#E5E7EB",
+    borderColor: "#E2E8F0",
     borderStyle: "dashed",
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "#FFFFFF",
   },
-  galleryAddText: { fontSize: 10, color: "#9CA3AF" },
-  // Toggle
-  toggleRow: {
+  galleryAddText: { fontSize: 10, color: "#94A3B8" },
+
+  // Toggle card
+  toggleCard: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginTop: 14,
-    paddingVertical: 8,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    gap: 12,
   },
-  toggleSubtitle: { fontSize: 12, color: "#9CA3AF", marginTop: 2 },
-  // Save
-  saveBtn: {
-    backgroundColor: "#25D366",
+  toggleCardLeft: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
+  toggleCardIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  toggleCardIconOn: { backgroundColor: "#DCFCE7" },
+  toggleCardText: { flex: 1 },
+  toggleCardTitle: { fontSize: 14, fontWeight: "600", color: "#0F172A" },
+  toggleCardSub: { fontSize: 12, color: "#64748B", marginTop: 2 },
+
+  // Modal actions
+  modalActions: { flexDirection: "row", gap: 10, marginTop: 24 },
+  cancelBtn: {
+    flex: 1,
+    backgroundColor: "#F1F5F9",
     borderRadius: 14,
     paddingVertical: 15,
     alignItems: "center",
-    marginTop: 20,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
   },
-  saveBtnText: { fontSize: 16, fontWeight: "700", color: "#FFFFFF" },
+  cancelBtnText: { fontSize: 15, fontWeight: "600", color: "#374151" },
+  saveBtn: {
+    flex: 2,
+    backgroundColor: "#25D366",
+    borderRadius: 14,
+    paddingVertical: 15,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    ...Platform.select({
+      ios: { shadowColor: "#25D366", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
+      android: { elevation: 4 },
+    }),
+  },
+  saveBtnText: { fontSize: 15, fontWeight: "700", color: "#FFFFFF" },
 });
