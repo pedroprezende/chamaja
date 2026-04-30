@@ -23,6 +23,7 @@ import { adsDB, type Ad, type CreateAdInput } from "@/lib/ads-database";
 import { professionals } from "@/data/mock";
 import { providersDB, type StoredProvider } from "@/lib/providers-database";
 import { adminDB, type Service as AdminService } from "@/lib/admin-database";
+import { adminProvidersDB, type AdminProvider } from "@/lib/admin-providers-db";
 
 // ─── Tipo unificado para o picker ─────────────────────────────────────────────
 type PickerProvider = {
@@ -150,18 +151,22 @@ export default function AdminAdsScreen() {
   const [pickerSearch, setPickerSearch] = useState("");
   const [realProviders, setRealProviders] = useState<StoredProvider[]>([]);
   const [adminServices, setAdminServices] = useState<AdminService[]>([]);
+  const [adminProviders, setAdminProviders] = useState<AdminProvider[]>([]);
   const [loadingProviders, setLoadingProviders] = useState(false);
 
   const loadRealProviders = useCallback(async () => {
     try {
       setLoadingProviders(true);
       providersDB.resetCache();
-      const [allProvs, allSvcs] = await Promise.all([
+      adminProvidersDB.resetCache();
+      const [allProvs, allSvcs, allAdminProvs] = await Promise.all([
         providersDB.getAllActive(),
         adminDB.getAllServices(),
+        adminProvidersDB.getAll(),
       ]);
       setRealProviders(allProvs);
       setAdminServices(allSvcs.filter((s) => s.isActive));
+      setAdminProviders(allAdminProvs.filter((p) => p.isActive));
     } catch (e) {
       console.error("Erro ao carregar prestadores:", e);
     } finally {
@@ -172,25 +177,46 @@ export default function AdminAdsScreen() {
   const allProviders = useMemo<PickerProvider[]>(() => {
     const realNames = new Set(realProviders.map((p) => p.name.toLowerCase()));
     const adminNames = new Set(adminServices.map((s) => s.name.toLowerCase()));
-    const fromAdmin: PickerProvider[] = adminServices.map((s) => ({
-      id: `admin-svc-${s.id}`,
-      name: s.name,
-      category: s.subcategoryName || s.category,
-      avatar: s.imageUri,
-      isReal: true,
-    }));
-    const fromReal: PickerProvider[] = realProviders.map((p) => ({
-      id: p.userId,
+    const adminProvNames = new Set(adminProviders.map((p) => p.name.toLowerCase()));
+
+    // 1. Prestadores cadastrados na tela "Prestadores" do admin (prioridade máxima)
+    const fromAdminProviders: PickerProvider[] = adminProviders.map((p) => ({
+      id: `admin-prov-${p.id}`,
       name: p.name,
-      category: p.category,
-      avatar: p.avatar,
+      category: p.subcategoryName || p.serviceName,
+      avatar: p.avatarUri,
       isReal: true,
     }));
+
+    // 2. Serviços criados pelo admin (tela "Serviços")
+    const fromAdmin: PickerProvider[] = adminServices
+      .filter((s) => !adminProvNames.has(s.name.toLowerCase()))
+      .map((s) => ({
+        id: `admin-svc-${s.id}`,
+        name: s.name,
+        category: s.subcategoryName || s.category,
+        avatar: s.imageUri,
+        isReal: true,
+      }));
+
+    // 3. Prestadores reais cadastrados via app
+    const fromReal: PickerProvider[] = realProviders
+      .filter((p) => !adminProvNames.has(p.name.toLowerCase()))
+      .map((p) => ({
+        id: p.userId,
+        name: p.name,
+        category: p.category,
+        avatar: p.avatar,
+        isReal: true,
+      }));
+
+    // 4. Mock (apenas se não existir nas outras fontes)
     const fromMock: PickerProvider[] = professionals
       .filter(
         (p) =>
           !realNames.has(p.name.toLowerCase()) &&
-          !adminNames.has(p.name.toLowerCase())
+          !adminNames.has(p.name.toLowerCase()) &&
+          !adminProvNames.has(p.name.toLowerCase())
       )
       .map((p) => ({
         id: p.id,
@@ -199,8 +225,9 @@ export default function AdminAdsScreen() {
         avatar: p.avatar,
         isReal: false,
       }));
-    return [...fromAdmin, ...fromReal, ...fromMock];
-  }, [realProviders, adminServices]);
+
+    return [...fromAdminProviders, ...fromAdmin, ...fromReal, ...fromMock];
+  }, [realProviders, adminServices, adminProviders]);
 
   const filteredProviders = useMemo<PickerProvider[]>(() => {
     if (!pickerSearch.trim()) return allProviders;
