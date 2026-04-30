@@ -375,3 +375,26 @@
 ## Correções e Melhorias (30/04/2026)
 - [x] Corrigir travamento no painel de anúncios (ads.tsx)
 - [x] Adicionar opção de galeria do celular nas imagens de subcategorias
+
+## Sistema de Prestadores Admin (30/04)
+- [ ] Criar banco de dados de prestadores admin (providers-admin-db.ts)
+- [ ] Criar tela admin/providers.tsx com CRUD completo
+- [ ] Adicionar link no dashboard-admin para tela de prestadores
+- [ ] Atualizar tela de subcategoria para exibir prestadores admin vinculados
+- [ ] Atualizar picker de anúncios para incluir prestadores admin
+
+## Sistema de Prestadores Admin (30/04/2026)
+- [x] Criar banco de dados admin-providers-db.ts com interface AdminProvider completa
+- [x] Criar tela admin/providers.tsx com CRUD completo (adicionar, editar, excluir)
+- [x] Adicionar botão "Prestadores" no dashboard-admin
+- [x] Atualizar tela de subcategoria para incluir prestadores admin
+- [x] Criar tela de detalhe do prestador admin (admin-provider/[providerId].tsx)
+- [x] Prestadores admin aparecem na tela de subcategoria com badge verificado
+
+## Sistema de Prestadores Admin (30/04/2026)
+- [x] Criar banco de dados admin-providers-db.ts com interface AdminProvider completa
+- [x] Criar tela admin/providers.tsx com CRUD completo (adicionar, editar, excluir)
+- [x] Adicionar botão "Prestadores" no dashboard-admin
+- [x] Atualizar tela de subcategoria para incluir prestadores admin
+- [x] Criar tela de detalhe do prestador admin (admin-provider/[providerId].tsx)
+- [x] Prestadores admin aparecem na tela de subcategoria com badge verificado

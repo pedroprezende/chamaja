@@ -328,6 +328,13 @@ export default function AdminDashboard() {
           <MaterialIcons name="image" size={15} color="#8B5CF6" />
           <Text style={[styles.adsNavText, { color: "#8B5CF6" }]}>Imagens</Text>
         </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.adsNavBtn, pressed && { opacity: 0.75 }]}
+          onPress={() => router.push("/admin/providers" as any)}
+        >
+          <MaterialIcons name="people" size={15} color="#F59E0B" />
+          <Text style={[styles.adsNavText, { color: "#F59E0B" }]}>Prestadores</Text>
+        </Pressable>
       </View>
 
       {/* List */}

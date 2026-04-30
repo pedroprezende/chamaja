@@ -25,6 +25,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getSubcategoryById } from "@/data/mock";
 import { adminDB, type Service as AdminService } from "@/lib/admin-database";
 import { providersDB, type StoredProvider } from "@/lib/providers-database";
+import { adminProvidersDB, type AdminProvider } from "@/lib/admin-providers-db";
 
 // ─── Tipo unificado ───────────────────────────────────────────────────────────
 type DisplayItem = {
@@ -34,8 +35,10 @@ type DisplayItem = {
   whatsapp?: string;
   address?: string;
   description?: string;
+  gallery?: string[];
   isAdmin: boolean;
   isProvider: boolean;
+  isAdminProvider: boolean;
 };
 
 function adminToDisplay(s: AdminService): DisplayItem {
@@ -46,8 +49,25 @@ function adminToDisplay(s: AdminService): DisplayItem {
     whatsapp: s.whatsapp,
     address: s.address,
     description: s.description,
+    gallery: s.gallery,
     isAdmin: true,
     isProvider: false,
+    isAdminProvider: false,
+  };
+}
+
+function adminProviderToDisplay(p: AdminProvider): DisplayItem {
+  return {
+    id: p.id,
+    name: p.name,
+    image: p.avatarUri,
+    whatsapp: p.whatsapp,
+    address: p.address,
+    description: p.description,
+    gallery: p.gallery,
+    isAdmin: false,
+    isProvider: false,
+    isAdminProvider: true,
   };
 }
 
@@ -61,6 +81,7 @@ function providerToDisplay(p: StoredProvider): DisplayItem {
     description: p.description,
     isAdmin: false,
     isProvider: true,
+    isAdminProvider: false,
   };
 }
 
@@ -97,6 +118,7 @@ export default function SubcategoryScreen() {
     try {
       setLoading(true);
       adminDB.resetCache();
+      adminProvidersDB.resetCache();
 
       // 1. Serviços admin com subcategoryId correspondente
       const allAdmin = await adminDB.getAllServices();
@@ -104,7 +126,11 @@ export default function SubcategoryScreen() {
         .filter((s) => s.isActive && s.subcategoryId === subcategoryId)
         .map(adminToDisplay);
 
-      // 2. Prestadores reais com categoryId correspondente (subcategoryId ou categoryId)
+      // 2. Prestadores admin vinculados a esta subcategoria
+      const adminProviders = await adminProvidersDB.getBySubcategoryId(subcategoryId);
+      const adminProviderItems = adminProviders.map(adminProviderToDisplay);
+
+      // 3. Prestadores reais (usuários do app) com categoryId correspondente
       let providerItems: DisplayItem[] = [];
       try {
         const providers = await providersDB.getByCategory(subcategoryId);
@@ -113,12 +139,15 @@ export default function SubcategoryScreen() {
         // providersDB pode estar vazio
       }
 
-      // Combinar: admin primeiro, depois prestadores (sem duplicatas por ID)
-      const adminIds = new Set(adminItems.map((i) => i.id));
-      const merged = [
-        ...adminItems,
-        ...providerItems.filter((p) => !adminIds.has(p.id)),
-      ];
+      // Combinar: admin primeiro, prestadores admin, depois prestadores reais (sem duplicatas por ID)
+      const seenIds = new Set<string>();
+      const merged: DisplayItem[] = [];
+      for (const item of [...adminItems, ...adminProviderItems, ...providerItems]) {
+        if (!seenIds.has(item.id)) {
+          seenIds.add(item.id);
+          merged.push(item);
+        }
+      }
 
       setItems(merged);
     } catch (e) {
@@ -137,7 +166,7 @@ export default function SubcategoryScreen() {
     <Pressable
       style={({ pressed }) => [
         styles.card,
-        item.isAdmin && styles.cardAdmin,
+        (item.isAdmin || item.isAdminProvider) && styles.cardAdmin,
         pressed && { opacity: 0.85 },
       ]}
       onPress={() => {
@@ -145,6 +174,11 @@ export default function SubcategoryScreen() {
           router.push({
             pathname: "/admin-services/[serviceId]" as any,
             params: { serviceId: item.id, title: item.name },
+          });
+        } else if (item.isAdminProvider) {
+          router.push({
+            pathname: "/admin-provider/[providerId]" as any,
+            params: { providerId: item.id, title: item.name },
           });
         } else {
           router.push(`/professional/${item.id}` as any);
@@ -174,7 +208,7 @@ export default function SubcategoryScreen() {
       )}
 
       {/* Badge admin */}
-      {item.isAdmin && (
+      {(item.isAdmin || item.isAdminProvider) && (
         <View style={styles.adminBadge}>
           <MaterialIcons name="verified" size={10} color="#FFFFFF" />
         </View>
