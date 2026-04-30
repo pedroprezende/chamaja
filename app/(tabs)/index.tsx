@@ -32,7 +32,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { AdsCarousel } from "@/components/ads-carousel";
-import { categories, sections, getSectionServices } from "@/data/mock";
+import { categories, sections, getSectionServices, subcategoriesByCategory, getSubcategoryById } from "@/data/mock";
 import { adminDB, type Service } from "@/lib/admin-database";
 import { useAds } from "@/hooks/use-ads";
 import { useAuth } from "@/lib/auth-context";
@@ -90,10 +90,11 @@ function openWhatsApp(phone: string, serviceName: string) {
   );
 }
 
-// ─── Formulário vazio ─────────────────────────────────────────────────────────
+// ─── Formulário vazio ─────────────────────────────────────────────────────
 const EMPTY_FORM = {
   name: "",
   categoryId: "",
+  subcategoryId: "",
   imageUri: "",
   whatsapp: "",
   description: "",
@@ -148,6 +149,7 @@ export default function HomeScreen() {
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [catDropOpen, setCatDropOpen] = useState(false);
+  const [subCatDropOpen, setSubCatDropOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const openCreate = useCallback(() => {
@@ -162,6 +164,7 @@ export default function HomeScreen() {
     setForm({
       name: svc.name,
       categoryId: svc.categoryId,
+      subcategoryId: svc.subcategoryId || "",
       imageUri: svc.imageUri || "",
       whatsapp: svc.whatsapp || "",
       description: svc.description || "",
@@ -211,11 +214,18 @@ export default function HomeScreen() {
       const address = form.address.trim() || undefined;
       const gallery = form.gallery.length > 0 ? form.gallery : undefined;
 
+      // Subcategoria
+      const subcatName = form.subcategoryId
+        ? getSubcategoryById(form.subcategoryId)?.name
+        : undefined;
+
       if (editingService) {
         await adminDB.updateService(editingService.id, {
           name: form.name.trim(),
           category: catName,
           categoryId: form.categoryId,
+          subcategoryId: form.subcategoryId || undefined,
+          subcategoryName: subcatName,
           imageUri: form.imageUri || undefined,
           whatsapp,
           description: description || "",
@@ -235,7 +245,9 @@ export default function HomeScreen() {
           form.showOnHome,
           whatsapp,
           address,
-          gallery
+          gallery,
+          form.subcategoryId || undefined,
+          subcatName
         );
       }
       setModalVisible(false);
@@ -668,7 +680,7 @@ export default function HomeScreen() {
                             pressed && { backgroundColor: "#F0FDF4" },
                           ]}
                           onPress={() => {
-                            setForm((f) => ({ ...f, categoryId: cat.id }));
+                            setForm((f) => ({ ...f, categoryId: cat.id, subcategoryId: "" }));
                             setCatDropOpen(false);
                           }}
                         >
@@ -690,6 +702,74 @@ export default function HomeScreen() {
                       ))}
                     </ScrollView>
                   </View>
+                )}
+
+                {/* Subcategoria (depende da categoria selecionada) */}
+                {form.categoryId && (subcategoriesByCategory[form.categoryId]?.length ?? 0) > 0 && (
+                  <>
+                    <Text style={styles.fieldLabel}>Subcategoria</Text>
+                    <Pressable
+                      style={styles.dropdownTrigger}
+                      onPress={() => setSubCatDropOpen((v) => !v)}
+                    >
+                      <Text style={[styles.dropdownTriggerText, !form.subcategoryId && { color: "#9CA3AF" }]}>
+                        {form.subcategoryId
+                          ? getSubcategoryById(form.subcategoryId)?.name || form.subcategoryId
+                          : "Selecionar subcategoria (opcional)"}
+                      </Text>
+                      <MaterialIcons
+                        name={subCatDropOpen ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+                        size={20}
+                        color="#6B7280"
+                      />
+                    </Pressable>
+                    {subCatDropOpen && (
+                      <View style={styles.dropdownList}>
+                        <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={false} style={{ maxHeight: 220 }}>
+                          {/* Opção para limpar */}
+                          <Pressable
+                            style={({ pressed }) => [
+                              styles.dropdownItem,
+                              !form.subcategoryId && styles.dropdownItemSelected,
+                              pressed && { backgroundColor: "#F0FDF4" },
+                            ]}
+                            onPress={() => { setForm((f) => ({ ...f, subcategoryId: "" })); setSubCatDropOpen(false); }}
+                          >
+                            <MaterialIcons name="clear" size={16} color={!form.subcategoryId ? "#25D366" : "#9CA3AF"} />
+                            <Text style={[styles.dropdownItemText, !form.subcategoryId && styles.dropdownItemTextSelected]}>
+                              Nenhuma subcategoria
+                            </Text>
+                          </Pressable>
+                          {(subcategoriesByCategory[form.categoryId] || []).map((sub) => (
+                            <Pressable
+                              key={sub.id}
+                              style={({ pressed }) => [
+                                styles.dropdownItem,
+                                form.subcategoryId === sub.id && styles.dropdownItemSelected,
+                                pressed && { backgroundColor: "#F0FDF4" },
+                              ]}
+                              onPress={() => { setForm((f) => ({ ...f, subcategoryId: sub.id })); setSubCatDropOpen(false); }}
+                            >
+                              <MaterialIcons
+                                name={(sub.icon || "label") as any}
+                                size={16}
+                                color={form.subcategoryId === sub.id ? "#25D366" : "#6B7280"}
+                              />
+                              <Text style={[
+                                styles.dropdownItemText,
+                                form.subcategoryId === sub.id && styles.dropdownItemTextSelected,
+                              ]}>
+                                {sub.name}
+                              </Text>
+                              {form.subcategoryId === sub.id && (
+                                <MaterialIcons name="check" size={16} color="#25D366" />
+                              )}
+                            </Pressable>
+                          ))}
+                        </ScrollView>
+                      </View>
+                    )}
+                  </>
                 )}
 
                 {/* Imagem */}

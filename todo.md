@@ -337,3 +337,13 @@
 - [x] Proteger painel admin: redirecionar usuários sem role admin
 - [x] Criar hook useIsAdmin para centralizar verificação de permissão
 - [x] Verificação backend via adminProcedure no tRPC
+
+## Estrutura 3 Níveis: Categoria → Subcategoria → Serviço (29/04)
+- [x] Adicionar tipo Subcategory e mapa subcategoriesByCategory no mock.ts
+- [x] Adicionar campo subcategoryId na interface Service do admin-database
+- [x] Atualizar createService e upsertServiceWithId para aceitar subcategoryId
+- [x] Atualizar formulário admin na Home com dropdown de subcategoria dependente
+- [ ] Atualizar formulário admin no dashboard-admin com dropdown de subcategoria
+- [x] Atualizar tela de categoria para exibir subcategorias (não serviços diretamente)
+- [x] Criar tela de subcategoria para listar serviços dentro da subcategoria
+- [x] Corrigir "Em breve" para aparecer apenas quando não há serviços na subcategoria

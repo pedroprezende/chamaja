@@ -1,68 +1,32 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+/**
+ * Tela de Categoria — exibe as SUBCATEGORIAS de uma categoria.
+ * Nível 2 da hierarquia: Categoria → Subcategoria → Serviços
+ *
+ * Ao tocar numa subcategoria, navega para /subcategory/[subcategoryId]
+ * que lista os serviços daquela subcategoria.
+ */
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
   FlatList,
-  Image,
   StyleSheet,
   Pressable,
   ActivityIndicator,
-  Linking,
-  Alert,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { getServicesByCategory, services as mockServices, categories } from "@/data/mock";
-import type { Service as MockService } from "@/data/mock";
-import { adminDB, type Service as AdminService } from "@/lib/admin-database";
-
-// ─── Tipo unificado para exibição ────────────────────────────────────────────
-type DisplayItem = {
-  id: string;
-  name: string;
-  image?: string;
-  categoryId: string;
-  whatsapp?: string;
-  isAdmin: boolean;
-};
-
-function mockToDisplay(s: MockService): DisplayItem {
-  return {
-    id: s.id,
-    name: s.name,
-    image: s.image,
-    categoryId: s.categoryId,
-    whatsapp: undefined,
-    isAdmin: false,
-  };
-}
-
-function adminToDisplay(s: AdminService): DisplayItem {
-  return {
-    id: s.id,
-    name: s.name,
-    image: s.imageUri,
-    categoryId: s.categoryId,
-    whatsapp: s.whatsapp,
-    isAdmin: true,
-  };
-}
-
-function openWhatsApp(phone: string, serviceName: string) {
-  let number = phone.replace(/\D/g, "");
-  if (!number.startsWith("55")) number = "55" + number;
-  const msg = encodeURIComponent(
-    `Olá! Vi o serviço "${serviceName}" no ChamaJá e gostaria de mais informações. 😊`
-  );
-  Linking.openURL(`https://wa.me/${number}?text=${msg}`).catch(() =>
-    Alert.alert("WhatsApp não encontrado", "Verifique se o WhatsApp está instalado.")
-  );
-}
+import {
+  categories,
+  getSubcategories,
+  type Subcategory,
+} from "@/data/mock";
+import { adminDB } from "@/lib/admin-database";
 
 // ─── Componente principal ─────────────────────────────────────────────────────
-export default function CategoriesScreen() {
+export default function CategoryScreen() {
   const { section, title } = useLocalSearchParams<{
     section: string;
     title: string;
@@ -70,127 +34,82 @@ export default function CategoriesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  // Título da categoria (parâmetro ou nome do categories array)
+  // Título da categoria
   const categoryTitle =
     title ||
     categories.find((c) => c.id === section)?.name.replace("\n", " ") ||
     "Categoria";
 
-  // ── Serviços mock (síncronos) ──
-  const mockData: DisplayItem[] = section
-    ? getServicesByCategory(section).map(mockToDisplay)
-    : mockServices.map(mockToDisplay);
+  // Subcategorias do mock
+  const subcategories: Subcategory[] = section ? getSubcategories(section) : [];
 
-  // ── Serviços admin (assíncronos) ──
-  const [adminItems, setAdminItems] = useState<DisplayItem[]>([]);
+  // Contar serviços admin por subcategoria (para mostrar badge de quantidade)
+  const [adminCountBySubcat, setAdminCountBySubcat] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
-  const firstLoad = useRef(true);
 
-  const loadAdminServices = useCallback(async () => {
+  const loadAdminCounts = useCallback(async () => {
     try {
       setLoading(true);
-      if (firstLoad.current) {
-        adminDB.resetCache();
-        firstLoad.current = false;
-      }
+      adminDB.resetCache();
       const all = await adminDB.getAllServices();
       const active = all.filter((s) => s.isActive);
 
-      // Filtrar pela categoria atual
-      // Comparação robusta: por categoryId OU pelo nome da categoria (fallback)
-      const filtered = section
-        ? active.filter((s) => {
-            const idMatch = s.categoryId === section;
-            // Fallback: comparar nome normalizado da categoria
-            const catNameNorm = s.category
-              .toLowerCase()
-              .normalize("NFD")
-              .replace(/[\u0300-\u036f]/g, "");
-            const sectionCat = categories.find((c) => c.id === section);
-            const sectionNameNorm = sectionCat
-              ? sectionCat.name
-                  .toLowerCase()
-                  .normalize("NFD")
-                  .replace(/[\u0300-\u036f]/g, "")
-                  .replace(/\n/g, " ")
-              : "";
-            const nameMatch =
-              sectionNameNorm.length > 0 &&
-              (catNameNorm.includes(sectionNameNorm) ||
-                sectionNameNorm.includes(catNameNorm));
-            return idMatch || nameMatch;
-          })
-        : active;
-
-      setAdminItems(filtered.map(adminToDisplay));
+      // Contar por subcategoryId
+      const counts: Record<string, number> = {};
+      for (const svc of active) {
+        if (svc.subcategoryId) {
+          counts[svc.subcategoryId] = (counts[svc.subcategoryId] || 0) + 1;
+        }
+        // Fallback: se categoryId corresponde à seção e não tem subcategoria, conta em "_root"
+        if (!svc.subcategoryId && svc.categoryId === section) {
+          counts["_root"] = (counts["_root"] || 0) + 1;
+        }
+      }
+      setAdminCountBySubcat(counts);
     } catch (e) {
-      console.error("Erro ao carregar serviços admin na categoria:", e);
+      console.error("Erro ao carregar contagens admin:", e);
     } finally {
       setLoading(false);
     }
   }, [section]);
 
   useEffect(() => {
-    loadAdminServices();
-  }, [loadAdminServices]);
+    loadAdminCounts();
+  }, [loadAdminCounts]);
 
-  // ── Combinar: admin primeiro (mais recentes/relevantes), depois mock ──
-  // Remover duplicatas: se um serviço admin tem o mesmo ID que um mock (override), o admin prevalece
-  const adminIds = new Set(adminItems.map((i) => i.id));
-  const filteredMock = mockData.filter((m) => !adminIds.has(m.id));
-  const combined: DisplayItem[] = [...adminItems, ...filteredMock];
+  const totalAdminServices = Object.values(adminCountBySubcat).reduce((a, b) => a + b, 0);
 
-  // ── Render item ──
-  const renderItem = ({ item }: { item: DisplayItem }) => (
-    <Pressable
-      style={({ pressed }) => [
-        styles.card,
-        item.isAdmin && styles.cardAdmin,
-        pressed && { opacity: 0.85 },
-      ]}
-      onPress={() => {
-        if (item.isAdmin) {
+  // ── Render subcategoria ──
+  const renderSubcategory = ({ item }: { item: Subcategory }) => {
+    const count = adminCountBySubcat[item.id] || 0;
+    return (
+      <Pressable
+        style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
+        onPress={() =>
           router.push({
-            pathname: "/admin-services/[serviceId]",
-            params: { serviceId: item.id, title: item.name },
-          } as any);
-        } else {
-          router.push(`/professionals/${item.id}` as any);
+            pathname: "/subcategory/[subcategoryId]" as any,
+            params: { subcategoryId: item.id, title: item.name, categoryId: section },
+          })
         }
-      }}
-    >
-      {item.image ? (
-        <Image source={{ uri: item.image }} style={styles.cardImage} resizeMode="cover" />
-      ) : (
-        <View style={[styles.cardImage, styles.cardImagePlaceholder]}>
-          <MaterialIcons name="build" size={28} color="#9CA3AF" />
+      >
+        <View style={styles.cardIconBg}>
+          <MaterialIcons
+            name={(item.icon || "label") as any}
+            size={28}
+            color="#25D366"
+          />
         </View>
-      )}
-      <Text style={styles.cardName} numberOfLines={2}>
-        {item.name}
-      </Text>
-
-      {/* Badge "Admin" para serviços do painel */}
-      {item.isAdmin && (
-        <View style={styles.adminBadge}>
-          <MaterialIcons name="verified" size={10} color="#FFFFFF" />
-        </View>
-      )}
-
-      {/* Botão WhatsApp */}
-      {!!item.whatsapp && (
-        <Pressable
-          style={({ pressed }) => [styles.whatsappBtn, pressed && { opacity: 0.7 }]}
-          onPress={(e) => {
-            e.stopPropagation?.();
-            openWhatsApp(item.whatsapp!, item.name);
-          }}
-        >
-          <MaterialIcons name="chat" size={12} color="#FFFFFF" />
-        </Pressable>
-      )}
-    </Pressable>
-  );
+        <Text style={styles.cardName} numberOfLines={2}>
+          {item.name}
+        </Text>
+        {count > 0 && (
+          <View style={styles.countBadge}>
+            <Text style={styles.countBadgeText}>{count}</Text>
+          </View>
+        )}
+      </Pressable>
+    );
+  };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -208,45 +127,36 @@ export default function CategoriesScreen() {
         <View style={styles.backBtn} />
       </View>
 
-      {/* Contador */}
+      {/* Subtítulo */}
       {!loading && (
-        <View style={styles.countRow}>
-          <Text style={styles.countText}>
-            {combined.length} serviço{combined.length !== 1 ? "s" : ""} encontrado{combined.length !== 1 ? "s" : ""}
+        <View style={styles.subtitleRow}>
+          <Text style={styles.subtitleText}>
+            {subcategories.length} subcategoria{subcategories.length !== 1 ? "s" : ""}
+            {totalAdminServices > 0 ? ` · ${totalAdminServices} serviço${totalAdminServices !== 1 ? "s" : ""} disponível${totalAdminServices !== 1 ? "s" : ""}` : ""}
           </Text>
-          {adminItems.length > 0 && (
-            <View style={styles.adminCountBadge}>
-              <MaterialIcons name="verified" size={12} color="#15803D" />
-              <Text style={styles.adminCountText}>{adminItems.length} do admin</Text>
-            </View>
-          )}
         </View>
       )}
 
-      {/* Lista */}
+      {/* Lista de subcategorias */}
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#25D366" />
-          <Text style={styles.loadingText}>Carregando serviços...</Text>
+          <Text style={styles.loadingText}>Carregando...</Text>
+        </View>
+      ) : subcategories.length === 0 ? (
+        <View style={styles.empty}>
+          <MaterialIcons name="category" size={48} color="#D1D5DB" />
+          <Text style={styles.emptyText}>Nenhuma subcategoria encontrada</Text>
         </View>
       ) : (
         <FlatList
-          data={combined}
+          data={subcategories}
           keyExtractor={(item) => item.id}
           numColumns={3}
           contentContainerStyle={styles.gridContent}
           showsVerticalScrollIndicator={false}
           columnWrapperStyle={styles.row}
-          renderItem={renderItem}
-          ListEmptyComponent={
-            <View style={styles.empty}>
-              <MaterialIcons name="category" size={48} color="#D1D5DB" />
-              <Text style={styles.emptyText}>Nenhum serviço encontrado</Text>
-              <Text style={styles.emptySubText}>
-                Nenhum serviço cadastrado para esta categoria ainda.
-              </Text>
-            </View>
-          }
+          renderItem={renderSubcategory}
         />
       )}
     </View>
@@ -280,36 +190,16 @@ const styles = StyleSheet.create({
     color: "#111827",
     textAlign: "center",
   },
-  countRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+  subtitleRow: {
     paddingHorizontal: 16,
     paddingVertical: 10,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#F3F4F6",
   },
-  countText: {
+  subtitleText: {
     fontSize: 13,
     color: "#6B7280",
-    flex: 1,
-  },
-  adminCountBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "#F0FDF4",
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderWidth: 1,
-    borderColor: "#BBF7D0",
-  },
-  adminCountText: {
-    fontSize: 11,
-    color: "#15803D",
-    fontWeight: "600",
   },
   loadingContainer: {
     flex: 1,
@@ -332,63 +222,51 @@ const styles = StyleSheet.create({
   card: {
     flex: 1,
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
+    borderRadius: 14,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "#E5E7EB",
+    alignItems: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
     shadowRadius: 4,
     elevation: 2,
   },
-  cardAdmin: {
-    borderColor: "#BBF7D0",
-    borderWidth: 1.5,
-  },
-  cardImage: {
-    width: "100%",
-    aspectRatio: 1,
-    backgroundColor: "#F3F4F6",
-  },
-  cardImagePlaceholder: {
+  cardIconBg: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#F0FDF4",
     alignItems: "center",
     justifyContent: "center",
+    marginBottom: 8,
   },
   cardName: {
     fontSize: 12,
-    fontWeight: "500",
+    fontWeight: "600",
     color: "#111827",
-    padding: 8,
-    paddingTop: 6,
-    lineHeight: 16,
     textAlign: "center",
+    lineHeight: 16,
   },
-  adminBadge: {
-    position: "absolute",
-    top: 6,
-    right: 6,
-    backgroundColor: "#25D366",
-    borderRadius: 8,
-    width: 16,
-    height: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  whatsappBtn: {
-    position: "absolute",
-    bottom: 30,
-    right: 6,
+  countBadge: {
+    marginTop: 6,
     backgroundColor: "#25D366",
     borderRadius: 10,
-    width: 20,
-    height: 20,
-    alignItems: "center",
-    justifyContent: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  countBadgeText: {
+    fontSize: 11,
+    color: "#FFFFFF",
+    fontWeight: "700",
   },
   empty: {
+    flex: 1,
     alignItems: "center",
-    paddingTop: 60,
+    justifyContent: "center",
     gap: 12,
     paddingHorizontal: 24,
   },
@@ -396,11 +274,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#9CA3AF",
     fontWeight: "600",
-  },
-  emptySubText: {
-    fontSize: 13,
-    color: "#D1D5DB",
     textAlign: "center",
-    lineHeight: 18,
   },
 });

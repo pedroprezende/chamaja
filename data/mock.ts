@@ -4,6 +4,13 @@ export type Category = {
   icon: string;
 };
 
+export type Subcategory = {
+  id: string;
+  name: string;
+  categoryId: string;
+  icon?: string;
+};
+
 export type Service = {
   id: string;
   name: string;
@@ -61,6 +68,122 @@ export type ProfessionalRegistration = {
   avatar: string;
   description: string;
 };
+
+// ─── SUBCATEGORIAS por categoria ────────────────────────────────────────────
+export const subcategoriesByCategory: Record<string, Subcategory[]> = {
+  "reformas-reparos": [
+    { id: "eletricista",       name: "Eletricista",         categoryId: "reformas-reparos",      icon: "electrical-services" },
+    { id: "encanador",         name: "Encanador",           categoryId: "reformas-reparos",      icon: "plumbing" },
+    { id: "pedreiro",          name: "Pedreiro",            categoryId: "reformas-reparos",      icon: "construction" },
+    { id: "pintor",            name: "Pintor",              categoryId: "reformas-reparos",      icon: "format-paint" },
+    { id: "gesseiro",          name: "Gesseiro",            categoryId: "reformas-reparos",      icon: "build" },
+    { id: "vidraceiro",        name: "Vidraceiro",          categoryId: "reformas-reparos",      icon: "window" },
+    { id: "serralheiro",       name: "Serralheiro",         categoryId: "reformas-reparos",      icon: "hardware" },
+    { id: "marido-aluguel",    name: "Marido de Aluguel",   categoryId: "reformas-reparos",      icon: "handyman" },
+    { id: "instalador-tv",     name: "Instalador de TV",    categoryId: "reformas-reparos",      icon: "tv" },
+    { id: "montador-moveis",   name: "Montador de Móveis",  categoryId: "reformas-reparos",      icon: "chair" },
+  ],
+  "assistencia-tecnica": [
+    { id: "conserto-celular",  name: "Conserto de Celular", categoryId: "assistencia-tecnica",   icon: "phone-android" },
+    { id: "tecnico-notebook",  name: "Técnico de Notebook", categoryId: "assistencia-tecnica",   icon: "laptop" },
+    { id: "tecnico-geladeira", name: "Técnico de Geladeira",categoryId: "assistencia-tecnica",   icon: "kitchen" },
+    { id: "ar-condicionado",   name: "Ar-condicionado",     categoryId: "assistencia-tecnica",   icon: "ac-unit" },
+    { id: "maquina-lavar",     name: "Máquina de Lavar",    categoryId: "assistencia-tecnica",   icon: "local-laundry-service" },
+    { id: "tecnico-tv",        name: "Técnico de TV",       categoryId: "assistencia-tecnica",   icon: "tv" },
+    { id: "micro-ondas",       name: "Micro-ondas",         categoryId: "assistencia-tecnica",   icon: "microwave" },
+  ],
+  "servicos-domesticos": [
+    { id: "diarista",          name: "Diarista",            categoryId: "servicos-domesticos",   icon: "cleaning-services" },
+    { id: "faxineira",         name: "Faxineira",           categoryId: "servicos-domesticos",   icon: "cleaning-services" },
+    { id: "baba",              name: "Babá",                categoryId: "servicos-domesticos",   icon: "child-care" },
+    { id: "cuidador-idosos",   name: "Cuidador de Idosos",  categoryId: "servicos-domesticos",   icon: "elderly" },
+    { id: "cozinheira",        name: "Cozinheira",          categoryId: "servicos-domesticos",   icon: "restaurant" },
+    { id: "passadeira",        name: "Passadeira",          categoryId: "servicos-domesticos",   icon: "iron" },
+  ],
+  "servicos-externos": [
+    { id: "jardineiro",        name: "Jardineiro",          categoryId: "servicos-externos",     icon: "yard" },
+    { id: "piscineiro",        name: "Piscineiro",          categoryId: "servicos-externos",     icon: "pool" },
+    { id: "limpeza-caixa-agua",name: "Limpeza de Caixa d'Água",categoryId: "servicos-externos", icon: "water" },
+    { id: "dedetizacao",       name: "Dedetização",         categoryId: "servicos-externos",     icon: "pest-control" },
+  ],
+  "automotivo": [
+    { id: "mecanico",          name: "Mecânico",            categoryId: "automotivo",            icon: "build" },
+    { id: "guincho",           name: "Guincho",             categoryId: "automotivo",            icon: "local-shipping" },
+    { id: "lava-rapido",       name: "Lava Rápido",         categoryId: "automotivo",            icon: "local-car-wash" },
+    { id: "auto-eletrica",     name: "Auto Elétrica",       categoryId: "automotivo",            icon: "electrical-services" },
+    { id: "funileiro",         name: "Funileiro",           categoryId: "automotivo",            icon: "car-repair" },
+  ],
+  "beleza-estetica": [
+    { id: "barbeiro",          name: "Barbeiro",            categoryId: "beleza-estetica",       icon: "content-cut" },
+    { id: "cabeleireiro",      name: "Cabeleireiro",        categoryId: "beleza-estetica",       icon: "content-cut" },
+    { id: "manicure",          name: "Manicure",            categoryId: "beleza-estetica",       icon: "spa" },
+    { id: "designer-sobrancelha",name:"Designer de Sobrancelha",categoryId: "beleza-estetica",  icon: "face" },
+    { id: "maquiador",         name: "Maquiador",           categoryId: "beleza-estetica",       icon: "brush" },
+    { id: "tatuador",          name: "Tatuador",            categoryId: "beleza-estetica",       icon: "draw" },
+    { id: "esteticista",       name: "Esteticista",         categoryId: "beleza-estetica",       icon: "self-improvement" },
+    { id: "depilacao",         name: "Depilação",           categoryId: "beleza-estetica",       icon: "spa" },
+  ],
+  "servicos-profissionais": [
+    { id: "advogado",          name: "Advogado",            categoryId: "servicos-profissionais",icon: "gavel" },
+    { id: "contador",          name: "Contador",            categoryId: "servicos-profissionais",icon: "calculate" },
+    { id: "despachante",       name: "Despachante",         categoryId: "servicos-profissionais",icon: "assignment" },
+    { id: "consultor-financeiro",name:"Consultor Financeiro",categoryId: "servicos-profissionais",icon: "trending-up" },
+  ],
+  "saude": [
+    { id: "dentista",          name: "Dentista",            categoryId: "saude",                 icon: "local-hospital" },
+    { id: "fisioterapeuta",    name: "Fisioterapeuta",      categoryId: "saude",                 icon: "accessibility" },
+    { id: "psicologo",         name: "Psicólogo",           categoryId: "saude",                 icon: "psychology" },
+    { id: "nutricionista",     name: "Nutricionista",       categoryId: "saude",                 icon: "restaurant" },
+  ],
+  "eventos": [
+    { id: "dj",                name: "DJ",                  categoryId: "eventos",               icon: "music-note" },
+    { id: "fotografo",         name: "Fotógrafo",           categoryId: "eventos",               icon: "photo-camera" },
+    { id: "garcom",            name: "Garçom",              categoryId: "eventos",               icon: "room-service" },
+    { id: "buffet",            name: "Buffet",              categoryId: "eventos",               icon: "restaurant" },
+    { id: "decorador",         name: "Decorador",           categoryId: "eventos",               icon: "celebration" },
+  ],
+  "logistica": [
+    { id: "mudancas",          name: "Mudanças",            categoryId: "logistica",             icon: "local-shipping" },
+    { id: "carretos",          name: "Carretos",            categoryId: "logistica",             icon: "local-shipping" },
+    { id: "frete",             name: "Frete",               categoryId: "logistica",             icon: "local-shipping" },
+  ],
+  "educacao": [
+    { id: "professor-particular",name:"Professor Particular",categoryId: "educacao",            icon: "school" },
+    { id: "aulas-ingles",      name: "Aulas de Inglês",     categoryId: "educacao",              icon: "language" },
+    { id: "reforco-escolar",   name: "Reforço Escolar",     categoryId: "educacao",              icon: "menu-book" },
+    { id: "personal-trainer",  name: "Personal Trainer",    categoryId: "educacao",              icon: "fitness-center" },
+  ],
+  "comercios": [
+    { id: "loja-eletronicos",  name: "Loja de Eletrônicos", categoryId: "comercios",             icon: "devices" },
+    { id: "loja-roupas",       name: "Loja de Roupas",      categoryId: "comercios",             icon: "checkroom" },
+    { id: "mercado",           name: "Mercado",             categoryId: "comercios",             icon: "local-grocery-store" },
+    { id: "farmacia",          name: "Farmácia",            categoryId: "comercios",             icon: "local-pharmacy" },
+    { id: "material-construcao",name:"Material de Construção",categoryId: "comercios",           icon: "hardware" },
+    { id: "pet-shop",          name: "Pet Shop",            categoryId: "comercios",             icon: "pets" },
+    { id: "oficina",           name: "Oficina",             categoryId: "comercios",             icon: "build" },
+    { id: "loja-moveis",       name: "Loja de Móveis",      categoryId: "comercios",             icon: "chair" },
+    { id: "loja-celular",      name: "Loja de Celular",     categoryId: "comercios",             icon: "phone-android" },
+  ],
+  "mobilidade": [
+    { id: "motorista-particular",name:"Motorista Particular",categoryId: "mobilidade",           icon: "directions-car" },
+    { id: "transporte-escolar",name: "Transporte Escolar",  categoryId: "mobilidade",            icon: "directions-bus" },
+    { id: "uber-particular",   name: "Uber Particular",     categoryId: "mobilidade",            icon: "local-taxi" },
+  ],
+};
+
+/** Retorna as subcategorias de uma categoria */
+export function getSubcategories(categoryId: string): Subcategory[] {
+  return subcategoriesByCategory[categoryId] ?? [];
+}
+
+/** Retorna uma subcategoria pelo ID */
+export function getSubcategoryById(subcategoryId: string): Subcategory | undefined {
+  for (const subs of Object.values(subcategoriesByCategory)) {
+    const found = subs.find((s) => s.id === subcategoryId);
+    if (found) return found;
+  }
+  return undefined;
+}
 
 // ─── CATEGORIAS (13) ────────────────────────────────────────────────────────
 export const categories: Category[] = [

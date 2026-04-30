@@ -25,6 +25,10 @@ export interface Service {
   name: string;
   category: string;
   categoryId: string;
+  /** ID da subcategoria (ex: "tatuador", "barbeiro") */
+  subcategoryId?: string;
+  /** Nome legível da subcategoria */
+  subcategoryName?: string;
   description: string;
   icon?: string;
   imageUri?: string;
@@ -194,7 +198,9 @@ export const adminDB = {
     showOnHome?: boolean,
     whatsapp?: string,
     address?: string,
-    gallery?: string[]
+    gallery?: string[],
+    subcategoryId?: string,
+    subcategoryName?: string
   ): Promise<Service> => {
     await ensureServicesLoaded();
     const maxOrder = _services.length > 0 ? Math.max(..._services.map((s) => s.displayOrder ?? 0)) : -1;
@@ -204,6 +210,8 @@ export const adminDB = {
       name,
       category,
       categoryId: categoryId || "",
+      subcategoryId,
+      subcategoryName,
       description,
       icon,
       imageUri,
