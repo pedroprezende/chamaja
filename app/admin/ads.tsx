@@ -335,9 +335,11 @@ export default function AdminAdsScreen() {
       <Modal
         visible={modalVisible}
         animationType="slide"
-        presentationStyle="pageSheet"
+        transparent
+        statusBarTranslucent
         onRequestClose={() => setModalVisible(false)}
       >
+        <View style={styles.modalOverlay}>
         <View style={styles.modal}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>
@@ -477,15 +479,18 @@ export default function AdminAdsScreen() {
             <View style={{ height: 40 }} />
           </ScrollView>
         </View>
+        </View>
       </Modal>
 
       {/* ── Modal picker de prestadores ── */}
       <Modal
         visible={showProviderPicker}
         animationType="slide"
-        presentationStyle="pageSheet"
+        transparent
+        statusBarTranslucent
         onRequestClose={() => setShowProviderPicker(false)}
       >
+        <View style={styles.modalOverlay}>
         <View style={styles.modal}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Selecionar prestador</Text>
@@ -579,6 +584,7 @@ export default function AdminAdsScreen() {
             />
           )}
         </View>
+        </View>
       </Modal>
     </View>
   );
@@ -657,7 +663,18 @@ const styles = StyleSheet.create({
   actionBtnText: { fontSize: 12, fontWeight: "600", color: "#6B7280" },
 
   // Modal
-  modal: { flex: 1, backgroundColor: "#FFFFFF" },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  modal: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: "92%",
+    paddingBottom: 20,
+  },
   modalHeader: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16,

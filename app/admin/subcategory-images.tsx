@@ -20,6 +20,7 @@ import {
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as ImagePicker from "expo-image-picker";
 
 import { categories, getSubcategories, type Subcategory } from "@/data/mock";
 import { subcategoryImagesDB } from "@/lib/subcategory-images-db";
@@ -70,11 +71,28 @@ export default function SubcategoryImagesScreen() {
     setEditModal(true);
   };
 
+  const handlePickFromGallery = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Permissão necessária", "Permita o acesso à galeria nas configurações do dispositivo.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.85,
+    });
+    if (!result.canceled) {
+      setUrlInput(result.assets[0].uri);
+    }
+  };
+
   const handleSave = async () => {
     if (!editingSubcat) return;
     const url = urlInput.trim();
     if (!url) {
-      Alert.alert("Erro", "Insira uma URL de imagem válida.");
+      Alert.alert("Erro", "Selecione uma imagem ou insira uma URL válida.");
       return;
     }
     await subcategoryImagesDB.setImage(editingSubcat.id, url);
@@ -252,6 +270,21 @@ export default function SubcategoryImagesScreen() {
                 </View>
               )}
 
+              {/* Botão galeria do celular */}
+              <Pressable
+                style={({ pressed }) => [styles.galleryBtn, pressed && { opacity: 0.8 }]}
+                onPress={handlePickFromGallery}
+              >
+                <MaterialIcons name="photo-library" size={20} color="#FFFFFF" />
+                <Text style={styles.galleryBtnText}>Escolher da galeria do celular</Text>
+              </Pressable>
+
+              <View style={styles.dividerRow}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>ou insira uma URL</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
               <Text style={styles.fieldLabel}>URL da imagem</Text>
               <View style={styles.fieldBox}>
                 <MaterialIcons name="link" size={18} color="#9CA3AF" />
@@ -264,6 +297,11 @@ export default function SubcategoryImagesScreen() {
                   autoCapitalize="none"
                   keyboardType="url"
                 />
+                {urlInput.length > 0 && (
+                  <Pressable onPress={() => setUrlInput("")}>
+                    <MaterialIcons name="close" size={16} color="#9CA3AF" />
+                  </Pressable>
+                )}
               </View>
 
               <Text style={styles.tipText}>
@@ -457,4 +495,23 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   saveBtnText: { fontSize: 14, fontWeight: "700", color: "#FFFFFF" },
+  galleryBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#25D366",
+    borderRadius: 12,
+    paddingVertical: 13,
+    marginBottom: 16,
+  },
+  galleryBtnText: { fontSize: 14, fontWeight: "700", color: "#FFFFFF" },
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 16,
+  },
+  dividerLine: { flex: 1, height: 1, backgroundColor: "#E5E7EB" },
+  dividerText: { fontSize: 12, color: "#9CA3AF", fontWeight: "500" },
 });

@@ -371,3 +371,7 @@
 - [x] Sincronizar addService e updateService com providersDB
 - [x] Criar tela admin/subcategory-images.tsx para gerenciar imagens
 - [x] Adicionar botão "Imagens" no dashboard-admin para acessar a tela
+
+## Correções e Melhorias (30/04/2026)
+- [x] Corrigir travamento no painel de anúncios (ads.tsx)
+- [x] Adicionar opção de galeria do celular nas imagens de subcategorias
