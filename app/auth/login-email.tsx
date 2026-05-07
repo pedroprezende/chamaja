@@ -6,7 +6,6 @@ import {
   ScrollView,
   TextInput,
   ActivityIndicator,
-  Alert,
 } from "react-native";
 import { useState } from "react";
 import { useRouter } from "expo-router";
@@ -22,11 +21,13 @@ export default function LoginEmailScreen() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const handleLogin = async () => {
+    setErrorMsg("");
     try {
       if (!email || !password) {
-        Alert.alert("Erro", "Email e senha são obrigatórios");
+        setErrorMsg("Email e senha são obrigatórios");
         return;
       }
 
@@ -34,7 +35,7 @@ export default function LoginEmailScreen() {
       await auth.signInWithEmail(email, password);
       router.replace("/(tabs)");
     } catch (error: any) {
-      Alert.alert("Erro", error.message || "Não foi possível fazer login");
+      setErrorMsg(error.message || "Não foi possível fazer login");
     } finally {
       setIsLoading(false);
     }
@@ -105,6 +106,14 @@ export default function LoginEmailScreen() {
               </Pressable>
             </View>
           </View>
+
+          {/* Error Message */}
+          {errorMsg ? (
+            <View style={styles.errorBox}>
+              <MaterialIcons name="error-outline" size={16} color="#EF4444" />
+              <Text style={styles.errorText}>{errorMsg}</Text>
+            </View>
+          ) : null}
 
           {/* Login Button */}
           <Pressable
@@ -204,6 +213,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#FFFFFF",
     padding: 0,
+  },
+  errorBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#FEF2F2",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: "#FECACA",
+  },
+  errorText: {
+    fontSize: 13,
+    color: "#EF4444",
+    flex: 1,
   },
   loginButton: {
     backgroundColor: "#25D366",

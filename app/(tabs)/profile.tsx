@@ -6,6 +6,7 @@ import {
   ScrollView,
   Image,
   Alert,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -23,18 +24,25 @@ export default function ProfileScreen() {
   const { favorites, orders } = useFavorites();
   const { unreadCount } = useNotifications();
 
-  const handleLogout = () => {
-    Alert.alert("Sair", "Tem certeza que deseja sair?", [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Sair",
-        style: "destructive",
-        onPress: async () => {
-          try { await signOut(); } catch {}
-          router.replace("/auth/login" as any);
+  const handleLogout = async () => {
+    if (Platform.OS === "web") {
+      const confirmed = window.confirm("Tem certeza que deseja sair da conta?");
+      if (!confirmed) return;
+      try { await signOut(); } catch {}
+      router.replace("/auth/login" as any);
+    } else {
+      Alert.alert("Sair", "Tem certeza que deseja sair?", [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Sair",
+          style: "destructive",
+          onPress: async () => {
+            try { await signOut(); } catch {}
+            router.replace("/auth/login" as any);
+          },
         },
-      },
-    ]);
+      ]);
+    }
   };
 
   const MENU_ITEMS = [
