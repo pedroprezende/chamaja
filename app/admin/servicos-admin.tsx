@@ -4,33 +4,31 @@ import {
   ScrollView,
   StyleSheet,
   Pressable,
+  TextInput,
+  Modal,
+  ActivityIndicator,
+  Platform,
+  Alert,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "expo-router";
 import { AdminTabBar } from "@/components/admin/AdminTabBar";
+import {
+  categoriesDB,
+  subServicesDB,
+  type DbCategory,
+  type DbSubService,
+} from "@/lib/db";
 
-interface ServiceCategory {
-  id: string;
-  name: string;
-  icon: string;
-  count: number;
-}
-
-const CATEGORIES: ServiceCategory[] = [
-  { id: "reformas-reparos", name: "Reformas e Reparos", icon: "build", count: 8 },
-  { id: "assistencia-tecnica", name: "Assistência Técnica", icon: "settings", count: 6 },
-  { id: "servicos-domesticos", name: "Serviços Domésticos", icon: "home", count: 7 },
-  { id: "beleza-estetica", name: "Beleza e Estética", icon: "content-cut", count: 6 },
-  { id: "automotivo", name: "Automotivo", icon: "directions-car", count: 5 },
-  { id: "educacao", name: "Aulas e Cursos", icon: "school", count: 4 },
-  { id: "eventos", name: "Eventos", icon: "celebration", count: 4 },
-  { id: "servicos-profissionais", name: "Serviços Profissionais", icon: "business-center", count: 5 },
-  { id: "saude", name: "Saúde", icon: "local-hospital", count: 4 },
-  { id: "logistica", name: "Logística", icon: "local-shipping", count: 3 },
-  { id: "comercios", name: "Comércios", icon: "storefront", count: 3 },
-  { id: "mobilidade", name: "Mobilidade", icon: "commute", count: 2 },
+// ── Ícones disponíveis para categorias ───────────────────────────────────────
+const ICONS = [
+  "build", "settings", "home", "content-cut", "directions-car",
+  "school", "celebration", "business-center", "local-hospital",
+  "local-shipping", "storefront", "commute", "yard", "plumbing",
+  "cleaning-services", "electrical-services", "restaurant", "fitness-center",
+  "pets", "security", "eco", "computer",
 ];
 
 type Tab = "categorias" | "ordem";
@@ -39,53 +37,156 @@ export default function ServicosAdmin() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("categorias");
-  const [homeOrder, setHomeOrder] = useState<string[]>([
-    "reformas-reparos",
-    "assistencia-tecnica",
-    "servicos-domesticos",
-    "automotivo",
-    "beleza-estetica",
-  ]);
 
-  const moveUp = (id: string) => {
-    setHomeOrder((prev) => {
-      const idx = prev.indexOf(id);
-      if (idx <= 0) return prev;
-      const next = [...prev];
-      [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
-      return next;
-    });
+  // ── Estado principal ──────────────────────────────────────────────────────
+  const [categories, setCategories] = useState<DbCategory[]>([]);
+  const [subCounts, setSubCounts] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
+
+  // ── Modal: nova categoria ─────────────────────────────────────────────────
+  const [showAddCat, setShowAddCat] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+  const [newCatIcon, setNewCatIcon] = useState("build");
+  const [saving, setSaving] = useState(false);
+
+  // ── Modal: sub-serviços da categoria ─────────────────────────────────────
+  const [selectedCat, setSelectedCat] = useState<DbCategory | null>(null);
+  const [subServices, setSubServices] = useState<DbSubService[]>([]);
+  const [loadingSubs, setLoadingSubs] = useState(false);
+  const [showAddSub, setShowAddSub] = useState(false);
+  const [newSubName, setNewSubName] = useState("");
+  const [newSubIcon, setNewSubIcon] = useState("build");
+
+  // ── Carrega dados ─────────────────────────────────────────────────────────
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    const [catsResult, countsResult] = await Promise.all([
+      categoriesDB.list(),
+      subServicesDB.countByCategory(),
+    ]);
+    setCategories(catsResult.data);
+    setSubCounts(countsResult);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  // ── Abre sub-serviços de uma categoria ───────────────────────────────────
+  const openSubs = async (cat: DbCategory) => {
+    setSelectedCat(cat);
+    setLoadingSubs(true);
+    const result = await subServicesDB.listByCategory(cat.id);
+    setSubServices(result.data);
+    setLoadingSubs(false);
   };
 
-  const moveDown = (id: string) => {
-    setHomeOrder((prev) => {
-      const idx = prev.indexOf(id);
-      if (idx < 0 || idx >= prev.length - 1) return prev;
-      const next = [...prev];
-      [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
-      return next;
+  // ── Adicionar categoria ───────────────────────────────────────────────────
+  const handleAddCategory = async () => {
+    if (!newCatName.trim()) return;
+    setSaving(true);
+    const result = await categoriesDB.insert({ name: newCatName, icon: newCatIcon });
+    setSaving(false);
+    if (result.error) {
+      alert(result.error);
+      return;
+    }
+    setNewCatName("");
+    setNewCatIcon("build");
+    setShowAddCat(false);
+    loadData();
+  };
+
+  // ── Excluir categoria ─────────────────────────────────────────────────────
+  const handleDeleteCategory = (cat: DbCategory) => {
+    const doDelete = async () => {
+      const result = await categoriesDB.delete(cat.id);
+      if (result.error) { alert(result.error); return; }
+      loadData();
+    };
+    if (Platform.OS === "web") {
+      if (window.confirm(`Remover "${cat.name}" e todos os seus serviços?`)) doDelete();
+    } else {
+      Alert.alert("Remover categoria", `Remover "${cat.name}" e todos os seus serviços?`, [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Remover", style: "destructive", onPress: doDelete },
+      ]);
+    }
+  };
+
+  // ── Toggle ativo/inativo ──────────────────────────────────────────────────
+  const handleToggleActive = async (cat: DbCategory) => {
+    await categoriesDB.update(cat.id, { is_active: !cat.is_active });
+    loadData();
+  };
+
+  // ── Reordenar (mover para cima/baixo) ────────────────────────────────────
+  const moveCategory = async (id: string, dir: "up" | "down") => {
+    const idx = categories.findIndex((c) => c.id === id);
+    if (dir === "up" && idx <= 0) return;
+    if (dir === "down" && idx >= categories.length - 1) return;
+    const next = [...categories];
+    const swap = dir === "up" ? idx - 1 : idx + 1;
+    [next[idx], next[swap]] = [next[swap], next[idx]];
+    setCategories(next);
+    await categoriesDB.reorder(next.map((c) => c.id));
+  };
+
+  // ── Adicionar sub-serviço ─────────────────────────────────────────────────
+  const handleAddSub = async () => {
+    if (!newSubName.trim() || !selectedCat) return;
+    setSaving(true);
+    const result = await subServicesDB.insert({
+      category_id: selectedCat.id,
+      name: newSubName,
+      icon: newSubIcon,
     });
+    setSaving(false);
+    if (result.error) { alert(result.error); return; }
+    setNewSubName("");
+    setNewSubIcon("build");
+    setShowAddSub(false);
+    // Refresh subs
+    const updated = await subServicesDB.listByCategory(selectedCat.id);
+    setSubServices(updated.data);
+    // Update count
+    setSubCounts((prev) => ({ ...prev, [selectedCat.id]: (prev[selectedCat.id] || 0) + 1 }));
+  };
+
+  // ── Excluir sub-serviço ───────────────────────────────────────────────────
+  const handleDeleteSub = (sub: DbSubService) => {
+    const doDelete = async () => {
+      await subServicesDB.delete(sub.id);
+      const updated = await subServicesDB.listByCategory(selectedCat!.id);
+      setSubServices(updated.data);
+      setSubCounts((prev) => ({ ...prev, [selectedCat!.id]: Math.max(0, (prev[selectedCat!.id] || 1) - 1) }));
+    };
+    if (Platform.OS === "web") {
+      if (window.confirm(`Remover "${sub.name}"?`)) doDelete();
+    } else {
+      Alert.alert("Remover serviço", `Remover "${sub.name}"?`, [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Remover", style: "destructive", onPress: doDelete },
+      ]);
+    }
   };
 
   return (
     <View style={styles.screen}>
+      {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <Pressable style={styles.backBtn} onPress={() => router.push("/admin/dashboard-admin" as any)}>
           <MaterialIcons name="arrow-back" size={22} color="#111827" />
         </Pressable>
         <Text style={styles.headerTitle}>Serviços</Text>
-        <Pressable style={styles.addBtn}>
+        <Pressable style={styles.addBtn} onPress={() => setShowAddCat(true)}>
           <MaterialIcons name="add" size={22} color="#FFF" />
         </Pressable>
       </View>
 
+      {/* Tabs */}
       <View style={styles.tabs}>
         {(["categorias", "ordem"] as Tab[]).map((tab) => (
-          <Pressable
-            key={tab}
-            style={[styles.tab, activeTab === tab && styles.tabActive]}
-            onPress={() => setActiveTab(tab)}
-          >
+          <Pressable key={tab} style={[styles.tab, activeTab === tab && styles.tabActive]} onPress={() => setActiveTab(tab)}>
             <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
               {tab === "categorias" ? "Categorias" : "Ordem da Home"}
             </Text>
@@ -93,66 +194,239 @@ export default function ServicosAdmin() {
         ))}
       </View>
 
-      {activeTab === "categorias" ? (
+      {loading ? (
+        <View style={styles.loadingBox}>
+          <ActivityIndicator color="#25D366" size="large" />
+          <Text style={styles.loadingText}>Carregando...</Text>
+        </View>
+      ) : activeTab === "categorias" ? (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.list}>
           <Text style={styles.listHint}>
-            Gerencie as categorias e os serviços exibidos no aplicativo desta região.
+            {categories.length} categorias • Toque para ver e editar os serviços dentro de cada uma.
           </Text>
-          {CATEGORIES.map((cat, i) => (
-            <View key={cat.id} style={[styles.catCard, i < CATEGORIES.length - 1 && styles.catBorder]}>
-              <View style={styles.catIconBox}>
-                <MaterialIcons name={cat.icon as any} size={22} color="#25D366" />
+          <View style={styles.catList}>
+            {categories.map((cat, i) => (
+              <View key={cat.id} style={[styles.catCard, i < categories.length - 1 && styles.catBorder]}>
+                <Pressable
+                  style={styles.catMain}
+                  onPress={() => openSubs(cat)}
+                >
+                  <View style={[styles.catIconBox, !cat.is_active && { backgroundColor: "#F3F4F6" }]}>
+                    <MaterialIcons
+                      name={cat.icon as any}
+                      size={22}
+                      color={cat.is_active ? "#25D366" : "#9CA3AF"}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.catName, !cat.is_active && { color: "#9CA3AF" }]}>{cat.name}</Text>
+                    <Text style={styles.catCount}>{subCounts[cat.id] ?? 0} serviços</Text>
+                  </View>
+                  <View style={styles.catActions}>
+                    <Pressable
+                      style={({ pressed }) => [styles.editBtn, pressed && { opacity: 0.7 }]}
+                      onPress={() => openSubs(cat)}
+                    >
+                      <Text style={styles.editBtnText}>Editar</Text>
+                    </Pressable>
+                    <Pressable
+                      style={({ pressed }) => [styles.deleteBtn, pressed && { opacity: 0.7 }]}
+                      onPress={() => handleDeleteCategory(cat)}
+                    >
+                      <MaterialIcons name="delete-outline" size={18} color="#EF4444" />
+                    </Pressable>
+                  </View>
+                </Pressable>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.catName}>{cat.name}</Text>
-                <Text style={styles.catCount}>{cat.count} serviços cadastrados</Text>
-              </View>
-              <Pressable
-                style={({ pressed }) => [styles.editBtn, pressed && { opacity: 0.7 }]}
-                onPress={() => router.push(`/admin/services` as any)}
-              >
-                <Text style={styles.editBtnText}>Editar</Text>
-              </Pressable>
-              <Pressable style={styles.dragHandle}>
-                <MaterialIcons name="drag-handle" size={20} color="#D1D5DB" />
-              </Pressable>
+            ))}
+          </View>
+          {categories.length === 0 && (
+            <View style={styles.emptyState}>
+              <MaterialIcons name="category" size={48} color="#D1D5DB" />
+              <Text style={styles.emptyText}>Nenhuma categoria ainda</Text>
+              <Text style={styles.emptyHint}>Toque em "+" para adicionar</Text>
             </View>
-          ))}
+          )}
           <View style={{ height: 20 }} />
         </ScrollView>
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.list}>
           <Text style={styles.listHint}>
-            Defina a ordem em que as categorias aparecem na tela inicial do app.
+            Defina a ordem das categorias na tela inicial do app.
           </Text>
-          {homeOrder.map((id, idx) => {
-            const cat = CATEGORIES.find((c) => c.id === id);
-            if (!cat) return null;
-            return (
-              <View key={id} style={[styles.catCard, idx < homeOrder.length - 1 && styles.catBorder]}>
-                <Text style={styles.orderNum}>{idx + 1}</Text>
-                <View style={styles.catIconBox}>
-                  <MaterialIcons name={cat.icon as any} size={22} color="#25D366" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.catName}>{cat.name}</Text>
-                </View>
-                <View style={styles.orderBtns}>
-                  <Pressable onPress={() => moveUp(id)} style={({ pressed }) => [styles.orderBtn, pressed && { opacity: 0.6 }]}>
-                    <MaterialIcons name="keyboard-arrow-up" size={20} color={idx === 0 ? "#D1D5DB" : "#374151"} />
-                  </Pressable>
-                  <Pressable onPress={() => moveDown(id)} style={({ pressed }) => [styles.orderBtn, pressed && { opacity: 0.6 }]}>
-                    <MaterialIcons name="keyboard-arrow-down" size={20} color={idx === homeOrder.length - 1 ? "#D1D5DB" : "#374151"} />
-                  </Pressable>
+          <View style={styles.catList}>
+            {categories.map((cat, idx) => (
+              <View key={cat.id} style={[styles.catCard, idx < categories.length - 1 && styles.catBorder]}>
+                <View style={styles.catMain}>
+                  <Text style={styles.orderNum}>{idx + 1}</Text>
+                  <View style={styles.catIconBox}>
+                    <MaterialIcons name={cat.icon as any} size={22} color="#25D366" />
+                  </View>
+                  <Text style={[styles.catName, { flex: 1 }]}>{cat.name}</Text>
+                  <View style={styles.orderBtns}>
+                    <Pressable
+                      style={({ pressed }) => [styles.orderBtn, pressed && { opacity: 0.6 }]}
+                      onPress={() => moveCategory(cat.id, "up")}
+                    >
+                      <MaterialIcons name="keyboard-arrow-up" size={22} color={idx === 0 ? "#D1D5DB" : "#374151"} />
+                    </Pressable>
+                    <Pressable
+                      style={({ pressed }) => [styles.orderBtn, pressed && { opacity: 0.6 }]}
+                      onPress={() => moveCategory(cat.id, "down")}
+                    >
+                      <MaterialIcons name="keyboard-arrow-down" size={22} color={idx === categories.length - 1 ? "#D1D5DB" : "#374151"} />
+                    </Pressable>
+                  </View>
                 </View>
               </View>
-            );
-          })}
+            ))}
+          </View>
           <View style={{ height: 20 }} />
         </ScrollView>
       )}
 
       <AdminTabBar />
+
+      {/* ── Modal: Nova Categoria ─────────────────────────────────────────── */}
+      <Modal visible={showAddCat} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Nova Categoria</Text>
+              <Pressable onPress={() => { setShowAddCat(false); setNewCatName(""); }}>
+                <MaterialIcons name="close" size={22} color="#6B7280" />
+              </Pressable>
+            </View>
+
+            <Text style={styles.fieldLabel}>Nome</Text>
+            <TextInput
+              style={styles.fieldInput}
+              placeholder="Ex: Jardinagem"
+              placeholderTextColor="#9CA3AF"
+              value={newCatName}
+              onChangeText={setNewCatName}
+              autoFocus
+            />
+
+            <Text style={[styles.fieldLabel, { marginTop: 14 }]}>Ícone</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.iconScroll}>
+              {ICONS.map((ico) => (
+                <Pressable
+                  key={ico}
+                  style={[styles.iconOption, newCatIcon === ico && styles.iconOptionActive]}
+                  onPress={() => setNewCatIcon(ico)}
+                >
+                  <MaterialIcons name={ico as any} size={24} color={newCatIcon === ico ? "#25D366" : "#6B7280"} />
+                </Pressable>
+              ))}
+            </ScrollView>
+
+            <View style={styles.modalBtns}>
+              <Pressable
+                style={[styles.modalBtn, styles.modalBtnCancel]}
+                onPress={() => { setShowAddCat(false); setNewCatName(""); setNewCatIcon("build"); }}
+              >
+                <Text style={styles.modalBtnCancelText}>Cancelar</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.modalBtn, styles.modalBtnConfirm, (!newCatName.trim() || saving) && { opacity: 0.5 }]}
+                onPress={handleAddCategory}
+                disabled={!newCatName.trim() || saving}
+              >
+                {saving
+                  ? <ActivityIndicator color="#FFF" size="small" />
+                  : <Text style={styles.modalBtnConfirmText}>Adicionar</Text>
+                }
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Modal: Sub-serviços da Categoria ─────────────────────────────── */}
+      <Modal visible={!!selectedCat} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { maxHeight: "85%" }]}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalHeaderLeft}>
+                <MaterialIcons name={(selectedCat?.icon ?? "build") as any} size={20} color="#25D366" />
+                <Text style={styles.modalTitle}>{selectedCat?.name}</Text>
+              </View>
+              <Pressable onPress={() => { setSelectedCat(null); setShowAddSub(false); }}>
+                <MaterialIcons name="close" size={22} color="#6B7280" />
+              </Pressable>
+            </View>
+
+            {loadingSubs ? (
+              <ActivityIndicator color="#25D366" style={{ marginVertical: 24 }} />
+            ) : (
+              <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 320 }}>
+                {subServices.length === 0 && (
+                  <View style={styles.emptyState}>
+                    <Text style={styles.emptyText}>Nenhum serviço ainda</Text>
+                  </View>
+                )}
+                {subServices.map((sub, i) => (
+                  <View key={sub.id} style={[styles.subRow, i < subServices.length - 1 && { borderBottomWidth: 1, borderBottomColor: "#F3F4F6" }]}>
+                    <View style={styles.subIconBox}>
+                      <MaterialIcons name={(sub.icon ?? "build") as any} size={18} color="#25D366" />
+                    </View>
+                    <Text style={styles.subName}>{sub.name}</Text>
+                    <Pressable
+                      style={({ pressed }) => [styles.subDeleteBtn, pressed && { opacity: 0.7 }]}
+                      onPress={() => handleDeleteSub(sub)}
+                    >
+                      <MaterialIcons name="delete-outline" size={18} color="#EF4444" />
+                    </Pressable>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+
+            {/* Adicionar sub-serviço inline */}
+            {showAddSub ? (
+              <View style={styles.addSubBox}>
+                <TextInput
+                  style={styles.addSubInput}
+                  placeholder="Nome do serviço"
+                  placeholderTextColor="#9CA3AF"
+                  value={newSubName}
+                  onChangeText={setNewSubName}
+                  autoFocus
+                />
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[styles.iconScroll, { marginTop: 10 }]}>
+                  {ICONS.map((ico) => (
+                    <Pressable
+                      key={ico}
+                      style={[styles.iconOption, newSubIcon === ico && styles.iconOptionActive]}
+                      onPress={() => setNewSubIcon(ico)}
+                    >
+                      <MaterialIcons name={ico as any} size={20} color={newSubIcon === ico ? "#25D366" : "#6B7280"} />
+                    </Pressable>
+                  ))}
+                </ScrollView>
+                <View style={styles.addSubBtns}>
+                  <Pressable style={[styles.modalBtn, styles.modalBtnCancel, { flex: 1 }]} onPress={() => { setShowAddSub(false); setNewSubName(""); }}>
+                    <Text style={styles.modalBtnCancelText}>Cancelar</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.modalBtn, styles.modalBtnConfirm, { flex: 1 }, (!newSubName.trim() || saving) && { opacity: 0.5 }]}
+                    onPress={handleAddSub}
+                    disabled={!newSubName.trim() || saving}
+                  >
+                    {saving ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.modalBtnConfirmText}>Salvar</Text>}
+                  </Pressable>
+                </View>
+              </View>
+            ) : (
+              <Pressable style={styles.addSubBtn} onPress={() => setShowAddSub(true)}>
+                <MaterialIcons name="add" size={18} color="#25D366" />
+                <Text style={styles.addSubBtnText}>Adicionar serviço</Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -165,38 +439,69 @@ const styles = StyleSheet.create({
   },
   backBtn: { padding: 4, marginRight: 8 },
   headerTitle: { flex: 1, fontSize: 18, fontWeight: "800", color: "#111827" },
-  addBtn: {
-    width: 36, height: 36, borderRadius: 18, backgroundColor: "#25D366",
-    alignItems: "center", justifyContent: "center",
-  },
-  tabs: {
-    flexDirection: "row", backgroundColor: "#FFFFFF",
-    borderBottomWidth: 1, borderBottomColor: "#F3F4F6",
-  },
+  addBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#25D366", alignItems: "center", justifyContent: "center" },
+  tabs: { flexDirection: "row", backgroundColor: "#FFFFFF", borderBottomWidth: 1, borderBottomColor: "#F3F4F6" },
   tab: { flex: 1, paddingVertical: 12, alignItems: "center", borderBottomWidth: 2, borderBottomColor: "transparent" },
   tabActive: { borderBottomColor: "#25D366" },
   tabText: { fontSize: 14, fontWeight: "600", color: "#9CA3AF" },
   tabTextActive: { color: "#25D366" },
+  loadingBox: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
+  loadingText: { color: "#6B7280", fontSize: 14 },
   list: { padding: 16 },
   listHint: { fontSize: 13, color: "#6B7280", marginBottom: 12, lineHeight: 18 },
-  catCard: {
-    flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF",
-    paddingHorizontal: 14, paddingVertical: 14, gap: 12,
-  },
+  catList: { backgroundColor: "#FFFFFF", borderRadius: 14, borderWidth: 1, borderColor: "#F3F4F6", overflow: "hidden" },
+  catCard: {},
   catBorder: { borderBottomWidth: 1, borderBottomColor: "#F3F4F6" },
-  catIconBox: {
-    width: 42, height: 42, borderRadius: 10, backgroundColor: "#F0FDF4",
-    alignItems: "center", justifyContent: "center",
-  },
+  catMain: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 13, gap: 12 },
+  catIconBox: { width: 42, height: 42, borderRadius: 10, backgroundColor: "#F0FDF4", alignItems: "center", justifyContent: "center" },
   catName: { fontSize: 14, fontWeight: "700", color: "#111827" },
   catCount: { fontSize: 12, color: "#6B7280", marginTop: 1 },
-  editBtn: {
-    backgroundColor: "#F0FDF4", borderRadius: 8, paddingHorizontal: 12,
-    paddingVertical: 6, borderWidth: 1, borderColor: "#BBF7D0",
-  },
+  catActions: { flexDirection: "row", alignItems: "center", gap: 8 },
+  editBtn: { backgroundColor: "#F0FDF4", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: "#BBF7D0" },
   editBtnText: { fontSize: 13, fontWeight: "700", color: "#15803D" },
-  dragHandle: { padding: 4 },
+  deleteBtn: { width: 34, height: 34, borderRadius: 8, backgroundColor: "#FEF2F2", alignItems: "center", justifyContent: "center" },
   orderNum: { fontSize: 16, fontWeight: "800", color: "#25D366", width: 24, textAlign: "center" },
   orderBtns: { flexDirection: "row" },
   orderBtn: { padding: 4 },
+  emptyState: { alignItems: "center", paddingVertical: 32, gap: 6 },
+  emptyText: { fontSize: 15, fontWeight: "700", color: "#9CA3AF" },
+  emptyHint: { fontSize: 13, color: "#D1D5DB" },
+  // Modals
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
+  modalContent: { backgroundColor: "#FFF", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, gap: 10 },
+  modalHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 },
+  modalHeaderLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
+  modalTitle: { fontSize: 17, fontWeight: "800", color: "#111827" },
+  fieldLabel: { fontSize: 13, fontWeight: "600", color: "#374151" },
+  fieldInput: {
+    borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: "#111827",
+    backgroundColor: "#F9FAFB", outlineStyle: "none",
+  } as any,
+  iconScroll: { marginTop: 2 },
+  iconOption: {
+    width: 44, height: 44, borderRadius: 10, alignItems: "center", justifyContent: "center",
+    backgroundColor: "#F9FAFB", marginRight: 8, borderWidth: 1.5, borderColor: "transparent",
+  },
+  iconOptionActive: { borderColor: "#25D366", backgroundColor: "#F0FDF4" },
+  modalBtns: { flexDirection: "row", gap: 10, marginTop: 10 },
+  modalBtn: { flex: 1, borderRadius: 12, paddingVertical: 13, alignItems: "center", justifyContent: "center" },
+  modalBtnCancel: { backgroundColor: "#F3F4F6" },
+  modalBtnCancelText: { fontSize: 14, fontWeight: "700", color: "#374151" },
+  modalBtnConfirm: { backgroundColor: "#25D366" },
+  modalBtnConfirmText: { fontSize: 14, fontWeight: "700", color: "#FFF" },
+  // Sub-services
+  subRow: { flexDirection: "row", alignItems: "center", paddingVertical: 11, paddingHorizontal: 4, gap: 10 },
+  subIconBox: { width: 34, height: 34, borderRadius: 8, backgroundColor: "#F0FDF4", alignItems: "center", justifyContent: "center" },
+  subName: { flex: 1, fontSize: 14, color: "#111827", fontWeight: "600" },
+  subDeleteBtn: { width: 32, height: 32, borderRadius: 8, backgroundColor: "#FEF2F2", alignItems: "center", justifyContent: "center" },
+  addSubBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 13, borderWidth: 1.5, borderColor: "#BBF7D0", borderRadius: 12, marginTop: 8, backgroundColor: "#F0FDF4" },
+  addSubBtnText: { fontSize: 14, fontWeight: "700", color: "#25D366" },
+  addSubBox: { marginTop: 10, gap: 0 },
+  addSubInput: {
+    borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: "#111827",
+    backgroundColor: "#F9FAFB", outlineStyle: "none",
+  } as any,
+  addSubBtns: { flexDirection: "row", gap: 10, marginTop: 10 },
 });

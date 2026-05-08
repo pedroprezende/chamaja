@@ -6,32 +6,14 @@ import {
   Pressable,
   Image,
   Switch,
+  ActivityIndicator,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "expo-router";
 import { AdminTabBar } from "@/components/admin/AdminTabBar";
-
-interface FeaturedAd {
-  id: string;
-  name: string;
-  category: string;
-  views: number;
-  image: string;
-  isFeatured: boolean;
-}
-
-const ALL_ADS: FeaturedAd[] = [
-  { id: "1", name: "Elétrica do Zé", category: "Eletricista", views: 1256, image: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=80&q=70", isFeatured: true },
-  { id: "2", name: "Marmitaria Fit", category: "Alimentação", views: 965, image: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=80&q=70", isFeatured: true },
-  { id: "3", name: "Top Barber", category: "Barbearia", views: 789, image: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=80&q=70", isFeatured: true },
-  { id: "4", name: "Bragança Limpeza", category: "Limpeza", views: 650, image: "https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=80&q=70", isFeatured: true },
-  { id: "5", name: "Studio Ink Tattoo", category: "Tatuador", views: 542, image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=80&q=70", isFeatured: true },
-  { id: "6", name: "Encanador Rápido", category: "Encanador", views: 430, image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=80&q=70", isFeatured: false },
-  { id: "7", name: "Mestre da Elétrica", category: "Eletricista", views: 380, image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=80&q=70", isFeatured: false },
-  { id: "8", name: "Vila Pinturas", category: "Pintor", views: 290, image: "https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=80&q=70", isFeatured: false },
-];
+import { featuredAdsDB, type DbFeaturedAd } from "@/lib/db";
 
 type TabType = "em-destaque" | "todos";
 
@@ -39,13 +21,33 @@ export default function DestaquesAdmin() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>("em-destaque");
-  const [ads, setAds] = useState<FeaturedAd[]>(ALL_ADS);
+  const [ads, setAds] = useState<DbFeaturedAd[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [toggling, setToggling] = useState<string | null>(null);
 
-  const toggleFeatured = (id: string) => {
-    setAds((prev) => prev.map((a) => (a.id === id ? { ...a, isFeatured: !a.isFeatured } : a)));
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    const result = await featuredAdsDB.list();
+    setAds(result.data);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  const handleToggle = async (ad: DbFeaturedAd) => {
+    setToggling(ad.id);
+    const result = await featuredAdsDB.toggleFeatured(ad.id);
+    if (result.data) {
+      setAds((prev) => prev.map((a) => a.id === ad.id ? { ...a, is_featured: result.data!.is_featured } : a));
+    }
+    setToggling(null);
   };
 
-  const displayAds = activeTab === "em-destaque" ? ads.filter((a) => a.isFeatured) : ads;
+  const displayAds = activeTab === "em-destaque"
+    ? ads.filter((a) => a.is_featured)
+    : ads;
+
+  const featuredCount = ads.filter((a) => a.is_featured).length;
 
   return (
     <View style={styles.screen}>
@@ -54,9 +56,9 @@ export default function DestaquesAdmin() {
           <MaterialIcons name="arrow-back" size={22} color="#111827" />
         </Pressable>
         <Text style={styles.headerTitle}>Destaques</Text>
-        <Pressable style={styles.addBtn}>
-          <MaterialIcons name="add" size={22} color="#FFF" />
-        </Pressable>
+        <View style={styles.countBadge}>
+          <Text style={styles.countBadgeText}>{featuredCount}</Text>
+        </View>
       </View>
 
       <View style={styles.tabs}>
@@ -71,54 +73,78 @@ export default function DestaquesAdmin() {
         ))}
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.list}>
-        <Text style={styles.listHint}>
-          {activeTab === "em-destaque"
-            ? "Gerencie os anúncios que aparecem em destaque no topo do aplicativo."
-            : "Todos os anúncios cadastrados. Ative o destaque para exibir no topo."}
-        </Text>
+      {loading ? (
+        <View style={styles.loadingBox}>
+          <ActivityIndicator color="#25D366" size="large" />
+          <Text style={styles.loadingText}>Carregando...</Text>
+        </View>
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.list}>
+          <Text style={styles.listHint}>
+            {activeTab === "em-destaque"
+              ? `${featuredCount} anúncio${featuredCount !== 1 ? "s" : ""} em destaque no topo do app.`
+              : "Ative o destaque para exibir no topo do aplicativo."}
+          </Text>
 
-        {displayAds.map((ad, idx) => (
-          <View key={ad.id} style={[styles.adCard, idx < displayAds.length - 1 && styles.adBorder]}>
-            {activeTab === "em-destaque" && (
-              <View style={styles.posNum}>
-                <Text style={styles.posNumText}>{idx + 1}</Text>
+          <View style={styles.adList}>
+            {displayAds.map((ad, idx) => (
+              <View key={ad.id} style={[styles.adCard, idx < displayAds.length - 1 && styles.adBorder]}>
+                {activeTab === "em-destaque" && (
+                  <View style={styles.posNum}>
+                    <Text style={styles.posNumText}>{idx + 1}</Text>
+                  </View>
+                )}
+                {ad.provider_avatar ? (
+                  <Image source={{ uri: ad.provider_avatar }} style={styles.adImage} />
+                ) : (
+                  <View style={[styles.adImage, styles.adImagePlaceholder]}>
+                    <MaterialIcons name="person" size={22} color="#D1D5DB" />
+                  </View>
+                )}
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.adName} numberOfLines={1}>{ad.provider_name}</Text>
+                  <Text style={styles.adCategory}>{ad.category_name}</Text>
+                  <View style={styles.viewsRow}>
+                    <MaterialIcons name="visibility" size={12} color="#9CA3AF" />
+                    <Text style={styles.viewsText}>{ad.views.toLocaleString("pt-BR")} visualizações</Text>
+                  </View>
+                </View>
+                <View style={styles.adRight}>
+                  {toggling === ad.id ? (
+                    <ActivityIndicator size="small" color="#25D366" />
+                  ) : (
+                    <Switch
+                      value={ad.is_featured}
+                      onValueChange={() => handleToggle(ad)}
+                      trackColor={{ false: "#E5E7EB", true: "#BBF7D0" }}
+                      thumbColor={ad.is_featured ? "#25D366" : "#D1D5DB"}
+                      style={{ transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }] }}
+                    />
+                  )}
+                  <Pressable style={styles.dragHandle}>
+                    <MaterialIcons name="drag-handle" size={20} color="#D1D5DB" />
+                  </Pressable>
+                </View>
               </View>
-            )}
-            <Image source={{ uri: ad.image }} style={styles.adImage} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.adName} numberOfLines={1}>{ad.name}</Text>
-              <Text style={styles.adCategory}>{ad.category}</Text>
-              <View style={styles.viewsRow}>
-                <MaterialIcons name="visibility" size={13} color="#9CA3AF" />
-                <Text style={styles.viewsText}>{ad.views.toLocaleString("pt-BR")} visualizações</Text>
-              </View>
-            </View>
-            <View style={styles.adRight}>
-              <Switch
-                value={ad.isFeatured}
-                onValueChange={() => toggleFeatured(ad.id)}
-                trackColor={{ false: "#E5E7EB", true: "#BBF7D0" }}
-                thumbColor={ad.isFeatured ? "#25D366" : "#D1D5DB"}
-                style={{ transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }] }}
-              />
-              <Pressable style={styles.dragHandle}>
-                <MaterialIcons name="drag-handle" size={20} color="#D1D5DB" />
-              </Pressable>
-            </View>
+            ))}
           </View>
-        ))}
 
-        {displayAds.length === 0 && (
-          <View style={styles.emptyState}>
-            <MaterialIcons name="star-border" size={48} color="#D1D5DB" />
-            <Text style={styles.emptyText}>Nenhum destaque ativo</Text>
-            <Text style={styles.emptyHint}>Vá para "Todos os anúncios" e ative o destaque</Text>
-          </View>
-        )}
-
-        <View style={{ height: 20 }} />
-      </ScrollView>
+          {displayAds.length === 0 && (
+            <View style={styles.emptyState}>
+              <MaterialIcons name="star-border" size={48} color="#D1D5DB" />
+              <Text style={styles.emptyText}>
+                {activeTab === "em-destaque" ? "Nenhum destaque ativo" : "Nenhum anúncio"}
+              </Text>
+              {activeTab === "em-destaque" && (
+                <Pressable onPress={() => setActiveTab("todos")}>
+                  <Text style={styles.emptyAction}>Ver todos os anúncios →</Text>
+                </Pressable>
+              )}
+            </View>
+          )}
+          <View style={{ height: 20 }} />
+        </ScrollView>
+      )}
 
       <AdminTabBar />
     </View>
@@ -133,38 +159,31 @@ const styles = StyleSheet.create({
   },
   backBtn: { padding: 4, marginRight: 8 },
   headerTitle: { flex: 1, fontSize: 18, fontWeight: "800", color: "#111827" },
-  addBtn: {
-    width: 36, height: 36, borderRadius: 18, backgroundColor: "#25D366",
-    alignItems: "center", justifyContent: "center",
-  },
-  tabs: {
-    flexDirection: "row", backgroundColor: "#FFFFFF",
-    borderBottomWidth: 1, borderBottomColor: "#F3F4F6",
-  },
+  countBadge: { backgroundColor: "#DCFCE7", borderRadius: 12, paddingHorizontal: 10, paddingVertical: 3 },
+  countBadgeText: { fontSize: 13, fontWeight: "800", color: "#15803D" },
+  tabs: { flexDirection: "row", backgroundColor: "#FFFFFF", borderBottomWidth: 1, borderBottomColor: "#F3F4F6" },
   tab: { flex: 1, paddingVertical: 12, alignItems: "center", borderBottomWidth: 2, borderBottomColor: "transparent" },
   tabActive: { borderBottomColor: "#25D366" },
   tabText: { fontSize: 13, fontWeight: "600", color: "#9CA3AF" },
   tabTextActive: { color: "#25D366" },
+  loadingBox: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
+  loadingText: { color: "#6B7280", fontSize: 14 },
   list: { padding: 16 },
   listHint: { fontSize: 13, color: "#6B7280", marginBottom: 12, lineHeight: 18 },
-  adCard: {
-    flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF",
-    paddingHorizontal: 14, paddingVertical: 13, gap: 10,
-  },
+  adList: { backgroundColor: "#FFFFFF", borderRadius: 14, borderWidth: 1, borderColor: "#F3F4F6", overflow: "hidden" },
+  adCard: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 13, gap: 10 },
   adBorder: { borderBottomWidth: 1, borderBottomColor: "#F3F4F6" },
-  posNum: {
-    width: 22, height: 22, borderRadius: 11, backgroundColor: "#25D366",
-    alignItems: "center", justifyContent: "center",
-  },
+  posNum: { width: 24, height: 24, borderRadius: 12, backgroundColor: "#25D366", alignItems: "center", justifyContent: "center" },
   posNumText: { fontSize: 12, fontWeight: "800", color: "#FFF" },
-  adImage: { width: 46, height: 46, borderRadius: 10, backgroundColor: "#F3F4F6" },
+  adImage: { width: 46, height: 46, borderRadius: 10 },
+  adImagePlaceholder: { backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   adName: { fontSize: 14, fontWeight: "700", color: "#111827" },
   adCategory: { fontSize: 12, color: "#6B7280", marginTop: 1 },
   viewsRow: { flexDirection: "row", alignItems: "center", gap: 3, marginTop: 3 },
   viewsText: { fontSize: 11, color: "#9CA3AF" },
   adRight: { flexDirection: "row", alignItems: "center" },
   dragHandle: { padding: 4 },
-  emptyState: { alignItems: "center", paddingVertical: 48, gap: 8 },
+  emptyState: { alignItems: "center", paddingVertical: 48, gap: 10 },
   emptyText: { fontSize: 16, fontWeight: "700", color: "#9CA3AF" },
-  emptyHint: { fontSize: 13, color: "#D1D5DB", textAlign: "center" },
+  emptyAction: { fontSize: 14, fontWeight: "600", color: "#25D366" },
 });

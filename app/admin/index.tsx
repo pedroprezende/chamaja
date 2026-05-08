@@ -2,30 +2,32 @@ import React, { useEffect } from "react";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth-context";
 import { ActivityIndicator, View, Text } from "react-native";
+import { initDatabase } from "@/lib/db";
 
 export default function AdminIndexScreen() {
   const router = useRouter();
   const { user, isLoading, isAdmin } = useAuth();
 
   useEffect(() => {
+    initDatabase();
+  }, []);
+
+  useEffect(() => {
     if (!isLoading) {
       if (!user) {
-        // Não está logado — redireciona para o login principal do app
         router.replace("/auth/login");
       } else if (isAdmin) {
-        // É admin — abre o dashboard diretamente
         router.replace("/admin/dashboard-admin");
       } else {
-        // Está logado mas não é admin
         router.replace("/(tabs)");
       }
     }
   }, [user, isLoading, isAdmin, router]);
 
   return (
-    <View className="flex-1 justify-center items-center bg-white">
+    <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#FFF" }}>
       <ActivityIndicator size="large" color="#25D366" />
-      <Text className="mt-4 text-gray-500 text-sm">Verificando acesso...</Text>
+      <Text style={{ marginTop: 16, color: "#6B7280", fontSize: 14 }}>Verificando acesso...</Text>
     </View>
   );
 }
