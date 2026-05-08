@@ -55,8 +55,6 @@ function RootLayoutNav() {
       <Stack.Screen name="categories/[section]" />
       <Stack.Screen name="professional/[id]" />
       <Stack.Screen name="admin" />
-      <Stack.Screen name="admin/dashboard-funcional" />
-      <Stack.Screen name="admin/locations" />
       <Stack.Screen name="become-provider" />
       <Stack.Screen name="provider-dashboard" />
       <Stack.Screen name="favorites" />

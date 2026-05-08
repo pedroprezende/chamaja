@@ -22,6 +22,11 @@ export default function AdminLayout() {
       <Stack.Screen name="services" />
       <Stack.Screen name="providers" />
       <Stack.Screen name="subcategory-images" />
+      <Stack.Screen name="regioes" />
+      <Stack.Screen name="servicos-admin" />
+      <Stack.Screen name="prestadores-admin" />
+      <Stack.Screen name="destaques-admin" />
+      <Stack.Screen name="editar-prestador" />
     </Stack>
   );
 }
