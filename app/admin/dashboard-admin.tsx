@@ -59,12 +59,12 @@ export default function DashboardAdmin() {
           </View>
         </View>
         <View style={styles.headerRight}>
-          <Pressable style={styles.iconBtn}>
-            <MaterialIcons name="notifications-none" size={22} color="#374151" />
-            <View style={styles.notifDot} />
-          </Pressable>
-          <Pressable style={styles.iconBtn} onPress={handleSignOut}>
-            <MaterialIcons name="logout" size={20} color="#EF4444" />
+          <Pressable
+            style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.7 }]}
+            onPress={() => router.replace("/" as any)}
+          >
+            <MaterialIcons name="arrow-back" size={16} color="#25D366" />
+            <Text style={styles.backBtnText}>Voltar ao App</Text>
           </Pressable>
         </View>
       </View>
@@ -186,6 +186,13 @@ const styles = StyleSheet.create({
   adminBadge: { backgroundColor: "#DCFCE7", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 },
   adminBadgeText: { fontSize: 11, fontWeight: "700", color: "#15803D" },
   headerRight: { flexDirection: "row", gap: 8, alignItems: "center" },
+  backBtn: {
+    flexDirection: "row", alignItems: "center", gap: 4,
+    backgroundColor: "#F0FDF4", borderRadius: 20,
+    paddingHorizontal: 12, paddingVertical: 6,
+    borderWidth: 1, borderColor: "#BBF7D0",
+  },
+  backBtnText: { fontSize: 13, fontWeight: "600", color: "#25D366" },
   iconBtn: {
     width: 36, height: 36, borderRadius: 18, backgroundColor: "#F9FAFB",
     alignItems: "center", justifyContent: "center",
