@@ -4,6 +4,7 @@ import { useRouter, usePathname } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const TABS = [
+  { key: "inicio", label: "Início", icon: "home", route: "/" },
   { key: "dashboard", label: "Dashboard", icon: "dashboard", route: "/admin/dashboard-admin" },
   { key: "regioes", label: "Regiões", icon: "location-on", route: "/admin/regioes" },
   { key: "servicos", label: "Serviços", icon: "build", route: "/admin/servicos-admin" },
@@ -17,6 +18,7 @@ export function AdminTabBar() {
   const insets = useSafeAreaInsets();
 
   const getActive = () => {
+    if (pathname === "/" || pathname === "") return "inicio";
     if (pathname.includes("dashboard")) return "dashboard";
     if (pathname.includes("regioes")) return "regioes";
     if (pathname.includes("servicos-admin")) return "servicos";
@@ -35,7 +37,13 @@ export function AdminTabBar() {
           <Pressable
             key={tab.key}
             style={({ pressed }) => [styles.tab, pressed && { opacity: 0.7 }]}
-            onPress={() => router.push(tab.route as any)}
+            onPress={() => {
+              if (tab.key === "inicio") {
+                router.replace(tab.route as any);
+              } else {
+                router.push(tab.route as any);
+              }
+            }}
           >
             <MaterialIcons
               name={tab.icon as any}
