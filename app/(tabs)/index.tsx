@@ -32,8 +32,9 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { AdsCarousel } from "@/components/ads-carousel";
-import { categories, sections, getSectionServices, subcategoriesByCategory, getSubcategoryById } from "@/data/mock";
+import { sections, getSectionServices, subcategoriesByCategory, getSubcategoryById } from "@/data/mock";
 import { adminDB, type Service } from "@/lib/admin-database";
+import { trpc } from "@/lib/trpc";
 import { useAds } from "@/hooks/use-ads";
 import { useAuth } from "@/lib/auth-context";
 import { useNotifications } from "@/lib/notifications-context";
@@ -113,28 +114,42 @@ export default function HomeScreen() {
   const isAdmin = user?.role === "admin";
   const firstName = user?.name?.split(" ")[0] || "você";
 
-  // ── Estado dos serviços ──
-  const [services, setServices] = useState<Service[]>([]);
-  const [loadingServices, setLoadingServices] = useState(true);
-  const firstLoad = useRef(true);
+  // ── Serviços via tRPC (banco real) ──
+  const { data: dbServices = [], isLoading: loadingServices, refetch: refetchServices } = trpc.services.list.useQuery(undefined, { refetchOnMount: true });
 
-  const loadServices = useCallback(async () => {
-    try {
-      setLoadingServices(true);
-      if (firstLoad.current) {
-        adminDB.resetCache();
-        firstLoad.current = false;
-      }
-      const all = await adminDB.getAllServices();
-      setServices(all.filter((s) => s.isActive && s.showOnHome));
-    } catch (e) {
-      console.error("Erro ao carregar serviços:", e);
-    } finally {
-      setLoadingServices(false);
-    }
-  }, []);
+  const services = React.useMemo<Service[]>(() =>
+    dbServices.map((s: any) => ({
+      id: s.id,
+      adminId: s.adminId,
+      name: s.name,
+      category: s.category,
+      categoryId: s.categoryId ?? undefined,
+      subcategoryId: s.subcategoryId ?? undefined,
+      subcategoryName: s.subcategoryName ?? undefined,
+      description: s.description ?? "",
+      icon: s.icon ?? undefined,
+      imageUri: s.imageUri ?? undefined,
+      whatsapp: s.whatsapp ?? undefined,
+      address: s.address ?? undefined,
+      gallery: s.gallery ?? undefined,
+      showOnHome: s.showOnHome,
+      displayOrder: s.displayOrder,
+      createdAt: s.createdAt instanceof Date ? s.createdAt.toISOString() : String(s.createdAt),
+      updatedAt: s.updatedAt instanceof Date ? s.updatedAt.toISOString() : String(s.updatedAt),
+      isActive: s.isActive,
+    }))
+  , [dbServices]);
 
-  useEffect(() => { loadServices(); }, [loadServices]);
+  const loadServices = useCallback(() => { refetchServices(); }, [refetchServices]);
+
+  const createServiceMutation = trpc.services.create.useMutation({ onSuccess: () => refetchServices() });
+  const updateServiceMutation = trpc.services.update.useMutation({ onSuccess: () => refetchServices() });
+  const deleteServiceMutation = trpc.services.delete.useMutation({ onSuccess: () => refetchServices() });
+  const reorderServicesMutation = trpc.services.reorder.useMutation();
+
+  // ── Categorias via tRPC ──
+  const { data: dbCategories = [] } = trpc.categories.list.useQuery();
+  const categories = dbCategories.length > 0 ? dbCategories : [];
 
   // ── Modo Edição ──
   const [editMode, setEditMode] = useState(false);
@@ -194,70 +209,54 @@ export default function HomeScreen() {
   }, []);
 
   const handleSave = useCallback(async () => {
-    if (!form.name.trim()) {
-      Alert.alert("Atenção", "Informe o nome do serviço.");
-      return;
-    }
-    if (!form.categoryId) {
-      Alert.alert("Atenção", "Selecione uma categoria.");
-      return;
-    }
+    if (!form.name.trim()) { Alert.alert("Atenção", "Informe o nome do serviço."); return; }
+    if (!form.categoryId) { Alert.alert("Atenção", "Selecione uma categoria."); return; }
     setSaving(true);
     try {
-      const catName =
-        categories.find((c) => c.id === form.categoryId)?.name.replace("\n", " ") ||
-        form.categoryId;
-      const adminId = user?.id || "admin-pedro";
+      const catName = categories.find((c: any) => c.id === form.categoryId)?.name?.replace("\n", " ") || form.categoryId;
       const whatsapp = form.whatsapp.trim() || undefined;
-
       const description = form.description.trim() || undefined;
       const address = form.address.trim() || undefined;
       const gallery = form.gallery.length > 0 ? form.gallery : undefined;
-
-      // Subcategoria
-      const subcatName = form.subcategoryId
-        ? getSubcategoryById(form.subcategoryId)?.name
-        : undefined;
+      const subcatName = form.subcategoryId ? getSubcategoryById(form.subcategoryId)?.name : undefined;
 
       if (editingService) {
-        await adminDB.updateService(editingService.id, {
+        await updateServiceMutation.mutateAsync({
+          id: editingService.id,
           name: form.name.trim(),
           category: catName,
-          categoryId: form.categoryId,
+          categoryId: form.categoryId || undefined,
           subcategoryId: form.subcategoryId || undefined,
           subcategoryName: subcatName,
           imageUri: form.imageUri || undefined,
           whatsapp,
-          description: description || "",
+          description,
           address,
           gallery,
           showOnHome: form.showOnHome,
         });
       } else {
-        await adminDB.createService(
-          adminId,
-          form.name.trim(),
-          catName,
-          description || "",
-          undefined,
-          form.imageUri || undefined,
-          form.categoryId,
-          form.showOnHome,
+        await createServiceMutation.mutateAsync({
+          name: form.name.trim(),
+          category: catName,
+          categoryId: form.categoryId || undefined,
+          subcategoryId: form.subcategoryId || undefined,
+          subcategoryName: subcatName,
+          description,
+          imageUri: form.imageUri || undefined,
           whatsapp,
           address,
           gallery,
-          form.subcategoryId || undefined,
-          subcatName
-        );
+          showOnHome: form.showOnHome,
+        });
       }
       setModalVisible(false);
-      await loadServices();
     } catch (e: any) {
       Alert.alert("Erro", e.message || "Não foi possível salvar.");
     } finally {
       setSaving(false);
     }
-  }, [form, editingService, user, loadServices]);
+  }, [form, editingService, categories, createServiceMutation, updateServiceMutation]);
 
   const handleDelete = useCallback((svc: Service) => {
     Alert.alert(
@@ -269,19 +268,18 @@ export default function HomeScreen() {
           text: "Excluir",
           style: "destructive",
           onPress: async () => {
-            await adminDB.deleteService(svc.id);
-            await loadServices();
+            await deleteServiceMutation.mutateAsync({ id: svc.id });
           },
         },
       ]
     );
-  }, [loadServices]);
+  }, [deleteServiceMutation]);
 
   // ── Drag-and-drop ──
   const handleDragEnd = useCallback(async ({ data }: { data: Service[] }) => {
     setServices(data);
-    await adminDB.reorderServices(data.map((s) => s.id));
-  }, []);
+    reorderServicesMutation.mutate({ ids: data.map((s) => s.id) });
+  }, [reorderServicesMutation]);
 
   // ── Render card (modo edição: draggable) ──
   const renderDraggableCard = useCallback(
