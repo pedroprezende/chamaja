@@ -2,36 +2,14 @@
 import "./scripts/load-env.js";
 import type { ExpoConfig } from "expo/config";
 
-// Bundle ID format: space.manus.<project_name_dots>.<timestamp>
-// e.g., "my-app" created at 2024-01-15 10:30:45 -> "space.manus.my.app.t20240115103045"
-// Bundle ID can only contain letters, numbers, and dots
-// Android requires each dot-separated segment to start with a letter
-const rawBundleId = "space.manus.chamaja.t20260424162954";
-const bundleId =
-  rawBundleId
-    .replace(/[-_]/g, ".") // Replace hyphens/underscores with dots
-    .replace(/[^a-zA-Z0-9.]/g, "") // Remove invalid chars
-    .replace(/\.+/g, ".") // Collapse consecutive dots
-    .replace(/^\.+|\.+$/g, "") // Trim leading/trailing dots
-    .toLowerCase()
-    .split(".")
-    .map((segment) => {
-      // Android requires each segment to start with a letter
-      // Prefix with 'x' if segment starts with a digit
-      return /^[a-zA-Z]/.test(segment) ? segment : "x" + segment;
-    })
-    .join(".") || "space.manus.app";
-// Extract timestamp from bundle ID and prefix with "manus" for deep link scheme
-// e.g., "space.manus.my.app.t20240115103045" -> "manus20240115103045"
-const timestamp = bundleId.split(".").pop()?.replace(/^t/, "") ?? "";
-const schemeFromBundleId = `manus${timestamp}`;
+// Bundle ID para produção nas lojas
+const rawBundleId = "br.com.chamaja.app";
+const bundleId = rawBundleId;
+const schemeFromBundleId = "chamaja";
 
 const env = {
-  // App branding - update these values directly (do not use env vars)
   appName: "ChamaJá",
   appSlug: "chamaja",
-  // S3 URL of the app logo - set this to the URL returned by generate_image when creating custom logo
-  // Leave empty to use the default icon from assets/images/icon.png
   logoUrl: "https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/ewPQX5Hdn85qUpsT3fJo4T/chamaja-icon-3vFAMQS6WicwcQNCYQranh.png",
   scheme: schemeFromBundleId,
   iosBundleId: bundleId,
@@ -50,9 +28,12 @@ const config: ExpoConfig = {
   ios: {
     supportsTablet: true,
     bundleIdentifier: env.iosBundleId,
-    "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
-      }
+    infoPlist: {
+      ITSAppUsesNonExemptEncryption: false,
+      NSPhotoLibraryUsageDescription: "O ChamaJá precisa acessar sua galeria para você poder enviar fotos para o perfil do seu serviço.",
+      NSCameraUsageDescription: "O ChamaJá precisa acessar sua câmera para que você possa tirar fotos dos serviços que realiza.",
+      NSLocationWhenInUseUsageDescription: "O ChamaJá usa sua localização para encontrar profissionais e serviços próximos a você.",
+    }
   },
   android: {
     adaptiveIcon: {
@@ -64,7 +45,14 @@ const config: ExpoConfig = {
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
     package: env.androidPackage,
-    permissions: ["POST_NOTIFICATIONS"],
+    permissions: [
+      "POST_NOTIFICATIONS",
+      "ACCESS_COARSE_LOCATION",
+      "ACCESS_FINE_LOCATION",
+      "CAMERA",
+      "READ_EXTERNAL_STORAGE",
+      "WRITE_EXTERNAL_STORAGE"
+    ],
     intentFilters: [
       {
         action: "VIEW",
@@ -83,13 +71,28 @@ const config: ExpoConfig = {
     bundler: "metro",
     output: "static",
     favicon: "./assets/images/favicon.png",
+    name: "ChamaJá",
+    shortName: "ChamaJá",
+    themeColor: "#25D366",
+    backgroundColor: "#F8F9FA",
+    display: "standalone",
+    startUrl: "/",
+    dir: "ltr",
+    lang: "pt-BR"
   },
   plugins: [
     "expo-router",
     [
+      "expo-image-picker",
+      {
+        photosPermission: "O ChamaJá precisa acessar suas fotos para você escolher a foto do perfil e dos serviços.",
+        cameraPermission: "O ChamaJá precisa acessar sua câmera para tirar fotos dos serviços."
+      }
+    ],
+    [
       "expo-audio",
       {
-        microphonePermission: "Allow $(PRODUCT_NAME) to access your microphone.",
+        microphonePermission: "O ChamaJá precisa de acesso ao microfone para mensagens de áudio.",
       },
     ],
     [

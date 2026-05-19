@@ -1,38 +1,47 @@
-import { useState, useEffect, useCallback } from "react";
-import { adsDB, type Ad } from "@/lib/ads-database";
+import { trpc } from "@/lib/trpc";
+import { useMemo } from "react";
+
+export interface Ad {
+  id: string;
+  title: string;
+  description?: string | null;
+  imageUrl?: string | null;
+  providerId?: string | null;
+  providerName?: string | null;
+  viewCount?: number | null;
+  isFeatured: boolean;
+  displayOrder: number;
+}
 
 type UseAdsResult = {
   ads: Ad[];
   allAds: Ad[];
   isLoading: boolean;
-  refresh: () => Promise<void>;
+  refresh: () => void;
 };
 
 export function useAds(onlyActive = true): UseAdsResult {
-  const [ads, setAds] = useState<Ad[]>([]);
-  const [allAds, setAllAds] = useState<Ad[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data = [], isLoading, refetch } = trpc.featuredAds.list.useQuery();
 
-  const refresh = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const [active, all] = await Promise.all([
-        adsDB.getActive(),
-        adsDB.getAll(),
-      ]);
-      setAds(active);
-      setAllAds(all);
-    } catch {
-      setAds([]);
-      setAllAds([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const allAds = useMemo(() => {
+    return data.map(ad => ({
+      ...ad,
+      id: ad.id,
+      title: ad.title,
+      providerId: ad.providerId,
+      isFeatured: ad.isFeatured,
+      displayOrder: ad.displayOrder,
+    }));
+  }, [data]);
 
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
+  const ads = useMemo(() => {
+    return allAds.filter(a => a.isFeatured);
+  }, [allAds]);
 
-  return { ads: onlyActive ? ads : allAds, allAds, isLoading, refresh };
+  return { 
+    ads: onlyActive ? ads : allAds, 
+    allAds, 
+    isLoading, 
+    refresh: refetch 
+  };
 }

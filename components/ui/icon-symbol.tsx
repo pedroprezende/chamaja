@@ -37,6 +37,8 @@ const MAPPING = {
   "xmark": "close",
   "checkmark": "check",
   "square.and.arrow.up": "share",
+  "heart": "favorite-border",
+  "heart.fill": "favorite",
 } as IconMapping;
 
 /**

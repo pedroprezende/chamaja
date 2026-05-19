@@ -23,20 +23,24 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 
-import {
-  adminProvidersDB,
-  type AdminProvider,
-  type CreateAdminProviderInput,
-} from "@/lib/admin-providers-db";
-import { adminDB, type Service as AdminService } from "@/lib/admin-database";
+import { trpc } from "@/lib/trpc";
+import { type AdminProvider, type CreateAdminProviderInput } from "@/lib/admin-providers-db";
+import { storage } from "@/lib/storage";
 
 // ─── Formulário vazio ─────────────────────────────────────────────────────────
-const EMPTY_FORM: CreateAdminProviderInput = {
+interface ProviderForm extends CreateAdminProviderInput {
+  serviceIds: string[];
+  serviceNames: string[];
+}
+
+const EMPTY_FORM: ProviderForm = {
   name: "",
   serviceId: "",
   serviceName: "",
   subcategoryId: "",
   subcategoryName: "",
+  serviceIds: [],
+  serviceNames: [],
   whatsapp: "",
   description: "",
   address: "",
@@ -153,41 +157,29 @@ export default function AdminProvidersScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const [providers, setProviders] = useState<AdminProvider[]>([]);
-  const [services, setServices] = useState<AdminService[]>([]);
-  const [loading, setLoading] = useState(true);
+  const utils = trpc.useUtils();
+  const { data: dbProvidersData, isLoading: providersLoading } = trpc.providers.list.useQuery();
+  const { data: dbServices } = trpc.services.all.useQuery();
+
+  const createMutation = trpc.providers.create.useMutation();
+  const updateMutation = trpc.providers.update.useMutation();
+  const deleteMutation = trpc.providers.delete.useMutation();
+
+  const providers = useMemo(() => dbProvidersData || [], [dbProvidersData]);
+  const services = useMemo(() => dbServices || [], [dbServices]);
+  
+  const loading = providersLoading;
   const [saving, setSaving] = useState(false);
-
-  const [modalVisible, setModalVisible] = useState(false);
-  const [editingProvider, setEditingProvider] = useState<AdminProvider | null>(null);
-  const [form, setForm] = useState<CreateAdminProviderInput>({ ...EMPTY_FORM });
-
   const [searchText, setSearchText] = useState("");
+  const [modalVisible, setModalVisible] = useState(false);
+  const [form, setForm] = useState<ProviderForm>(EMPTY_FORM);
+  const [editingProvider, setEditingProvider] = useState<any>(null);
   const [showServicePicker, setShowServicePicker] = useState(false);
   const [serviceSearchQuery, setServiceSearchQuery] = useState("");
 
-  const filteredServices = useMemo(() => {
-    if (!serviceSearchQuery.trim()) return services;
-    const q = serviceSearchQuery.toLowerCase();
-    return services.filter(
-      (s) =>
-        s.name.toLowerCase().includes(q) ||
-        s.category.toLowerCase().includes(q) ||
-        (s.subcategoryName ?? "").toLowerCase().includes(q)
-    );
-  }, [services, serviceSearchQuery]);
-
   const loadData = useCallback(async () => {
-    setLoading(true);
-    adminProvidersDB.resetCache();
-    const [allProviders, allServices] = await Promise.all([
-      adminProvidersDB.getAll(),
-      adminDB.getAllServices(),
-    ]);
-    setProviders(allProviders);
-    setServices(allServices.filter((s) => s.isActive));
-    setLoading(false);
-  }, []);
+    await utils.providers.list.invalidate();
+  }, [utils]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -197,32 +189,59 @@ export default function AdminProvidersScreen() {
     return providers.filter(
       (p) =>
         p.name.toLowerCase().includes(q) ||
-        p.serviceName.toLowerCase().includes(q) ||
+        (p.serviceName || "").toLowerCase().includes(q) ||
         (p.address ?? "").toLowerCase().includes(q)
     );
   }, [providers, searchText]);
 
+  const filteredServices = useMemo(() => {
+    if (!serviceSearchQuery.trim()) return services;
+    const q = serviceSearchQuery.toLowerCase();
+    return services.filter((s) => s.name.toLowerCase().includes(q));
+  }, [services, serviceSearchQuery]);
+
   const openCreate = () => {
     setEditingProvider(null);
+    setSelectedServicesMap({});
     setForm({ ...EMPTY_FORM });
     setShowServicePicker(false);
     setServiceSearchQuery("");
     setModalVisible(true);
   };
 
-  const openEdit = (p: AdminProvider) => {
+  const openEdit = (p: any) => {
     setEditingProvider(p);
+    
+    // Tentar recuperar múltiplos serviços
+    let sIds: string[] = [];
+    let sNames: string[] = [];
+    
+    if (p.serviceId && p.serviceId.includes(",")) {
+      sIds = p.serviceId.split(",").map((s: string) => s.trim()).filter(Boolean);
+      sNames = (p.serviceName || "").split(",").map((s: string) => s.trim()).filter(Boolean);
+    } else if (p.serviceId) {
+      sIds = [p.serviceId];
+      sNames = [p.serviceName || ""];
+    }
+
+    // Sincronizar o mapa de seleções
+    const initialMap: Record<string, boolean> = {};
+    sIds.forEach(id => { initialMap[id] = true; });
+    setSelectedServicesMap(initialMap);
+
     setForm({
       name: p.name,
-      serviceId: p.serviceId,
-      serviceName: p.serviceName,
-      subcategoryId: p.subcategoryId ?? "",
-      subcategoryName: p.subcategoryName ?? "",
-      whatsapp: p.whatsapp ?? "",
-      description: p.description ?? "",
-      address: p.address ?? "",
-      avatarUri: p.avatarUri ?? "",
-      gallery: p.gallery ?? [],
+      serviceId: p.serviceId || "",
+      serviceName: p.serviceName || "",
+      subcategoryId: p.subcategoryId || "",
+      subcategoryName: p.subcategoryName || "",
+      serviceIds: sIds,
+      serviceNames: sNames,
+      whatsapp: p.whatsapp || p.phone || "",
+      description: p.description || "",
+      address: p.address || "",
+      avatarUri: p.avatarUri || "",
+      gallery: p.gallery || [],
       rating: p.rating,
       ratingCount: p.ratingCount,
       isActive: p.isActive,
@@ -237,27 +256,80 @@ export default function AdminProvidersScreen() {
       Alert.alert("Campo obrigatório", "Digite o nome do prestador.");
       return;
     }
-    if (!form.serviceId) {
-      Alert.alert("Campo obrigatório", "Selecione o serviço vinculado.");
+    const currentSelectedIds = Object.keys(selectedServicesMap).filter(id => selectedServicesMap[id]);
+    const currentSelectedNames = services.filter(s => currentSelectedIds.includes(s.id)).map(s => s.name);
+
+    if (currentSelectedIds.length === 0) {
+      Alert.alert("Campo obrigatório", "Selecione pelo menos um serviço.");
       return;
     }
     setSaving(true);
     try {
-      if (editingProvider) {
-        await adminProvidersDB.update(editingProvider.id, form);
-      } else {
-        await adminProvidersDB.create(form);
+      // 1. Upload Avatar
+      let finalAvatar = form.avatarUri;
+      if (finalAvatar && !finalAvatar.startsWith("http")) {
+        const uploadedUrl = await storage.uploadImage(finalAvatar);
+        if (uploadedUrl) {
+          finalAvatar = uploadedUrl;
+        } else {
+          throw new Error("Erro no upload do avatar");
+        }
       }
+
+      // 2. Upload Galeria
+      const finalGallery = [];
+      for (const img of form.gallery || []) {
+        if (img.startsWith("http")) {
+          finalGallery.push(img);
+        } else {
+          const uploadedUrl = await storage.uploadImage(img);
+          if (uploadedUrl) {
+            finalGallery.push(uploadedUrl);
+          }
+        }
+      }
+
+      // 3. Preparar dados para o banco
+      const providerData = {
+        name: form.name,
+        serviceId: currentSelectedIds.join(", "),
+        serviceName: currentSelectedNames.join(", "),
+        subcategoryId: currentSelectedIds[0] || null,
+        subcategoryName: currentSelectedNames[0] || null,
+        whatsapp: form.whatsapp,
+        phone: form.whatsapp,
+        description: form.description,
+        address: form.address,
+        avatarUri: finalAvatar,
+        gallery: finalGallery,
+        isActive: form.isActive,
+        rating: form.rating ? String(form.rating) : "0",
+        ratingCount: form.ratingCount || 0,
+        plan: "premium",
+        services: JSON.stringify(currentSelectedNames),
+      };
+
+      if (editingProvider) {
+        await updateMutation.mutateAsync({
+          id: editingProvider.id,
+          updates: providerData as any
+        });
+      } else {
+        await createMutation.mutateAsync(providerData as any);
+      }
+
       await loadData();
       setModalVisible(false);
-    } catch {
-      Alert.alert("Erro", "Não foi possível salvar o prestador.");
+      Alert.alert("Sucesso", "Prestador salvo com sucesso!");
+    } catch (err: any) {
+      console.error(err);
+      Alert.alert("Erro", "Não foi possível salvar os dados.");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = (p: AdminProvider) => {
+  const handleDelete = (p: any) => {
     Alert.alert(
       "Excluir prestador",
       `Deseja excluir "${p.name}"?`,
@@ -267,7 +339,7 @@ export default function AdminProvidersScreen() {
           text: "Excluir",
           style: "destructive",
           onPress: async () => {
-            await adminProvidersDB.delete(p.id);
+            await deleteMutation.mutateAsync({ id: p.id });
             await loadData();
           },
         },
@@ -275,9 +347,34 @@ export default function AdminProvidersScreen() {
     );
   };
 
-  const handleToggle = async (p: AdminProvider) => {
-    await adminProvidersDB.toggleActive(p.id);
+  const handleToggle = async (p: any) => {
+    await updateMutation.mutateAsync({
+      id: p.id,
+      updates: { isActive: !p.isActive } as any
+    });
     await loadData();
+  };
+
+  // Usaremos um objeto para rastrear seleções múltiplas de forma estável
+  const [selectedServicesMap, setSelectedServicesMap] = useState<Record<string, boolean>>({});
+
+  const toggleServiceSelection = (svc: any) => {
+    setSelectedServicesMap(prev => ({
+      ...prev,
+      [svc.id]: !prev[svc.id]
+    }));
+    
+    // Atualizar também nomes para exibição imediata no botão
+    setForm(prev => {
+      const isSelected = !!selectedServicesMap[svc.id];
+      let newNames = [];
+      if (isSelected) {
+        newNames = prev.serviceNames.filter(n => n !== svc.name);
+      } else {
+        newNames = [...prev.serviceNames, svc.name];
+      }
+      return { ...prev, serviceNames: newNames };
+    });
   };
 
   const handlePickAvatar = async () => {
@@ -286,9 +383,12 @@ export default function AdminProvidersScreen() {
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.85,
+      base64: true,
     });
     if (!result.canceled) {
-      setForm((f) => ({ ...f, avatarUri: result.assets[0].uri }));
+      const asset = result.assets[0];
+      const uri = (Platform.OS === "web" && asset.base64) ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+      setForm((f) => ({ ...f, avatarUri: uri }));
     }
   };
 
@@ -297,11 +397,15 @@ export default function AdminProvidersScreen() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: false,
       quality: 0.8,
+      base64: true,
     });
     if (!result.canceled) {
+      const uri = (Platform.OS === "web" && result.assets[0].base64) 
+        ? `data:image/jpeg;base64,${result.assets[0].base64}` 
+        : result.assets[0].uri;
       setForm((f) => ({
         ...f,
-        gallery: [...(f.gallery ?? []), result.assets[0].uri].slice(0, 8),
+        gallery: [...(f.gallery ?? []), uri].slice(0, 8),
       }));
     }
   };
@@ -317,7 +421,6 @@ export default function AdminProvidersScreen() {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-
       {/* ── Header ── */}
       <View style={styles.header}>
         <Pressable
@@ -416,10 +519,8 @@ export default function AdminProvidersScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
-            {/* Handle */}
             <View style={styles.modalHandle} />
 
-            {/* Cabeçalho */}
             <View style={styles.modalHeader}>
               <View>
                 <Text style={styles.modalTitle}>
@@ -443,7 +544,7 @@ export default function AdminProvidersScreen() {
               keyboardShouldPersistTaps="handled"
               contentContainerStyle={styles.modalScrollContent}
             >
-              {/* ── Seção: Foto ── */}
+              {/* Foto */}
               <View style={styles.formSection}>
                 <Text style={styles.sectionTitle}>Foto do Prestador</Text>
                 <Pressable
@@ -467,21 +568,17 @@ export default function AdminProvidersScreen() {
                 </Pressable>
               </View>
 
-              {/* ── Seção: Dados do Prestador ── */}
+              {/* Dados */}
               <View style={styles.formSection}>
                 <Text style={styles.sectionTitle}>Dados do Prestador</Text>
-
                 <Text style={styles.fieldLabel}>Nome *</Text>
                 <View style={styles.inputWrap}>
                   <MaterialIcons name="person" size={17} color="#94A3B8" style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
-                    placeholder="Ex: Studio Ink Tattoo"
-                    placeholderTextColor="#94A3B8"
+                    placeholder="Ex: Pedro Silva"
                     value={form.name}
                     onChangeText={(v) => setForm((f) => ({ ...f, name: v }))}
-                    maxLength={80}
-                    returnKeyType="next"
                   />
                 </View>
 
@@ -491,12 +588,9 @@ export default function AdminProvidersScreen() {
                   <TextInput
                     style={styles.input}
                     placeholder="Ex: 11999998888"
-                    placeholderTextColor="#94A3B8"
                     value={form.whatsapp}
                     onChangeText={(v) => setForm((f) => ({ ...f, whatsapp: v.replace(/\D/g, "") }))}
                     keyboardType="phone-pad"
-                    maxLength={15}
-                    returnKeyType="next"
                   />
                 </View>
 
@@ -506,11 +600,8 @@ export default function AdminProvidersScreen() {
                   <TextInput
                     style={styles.input}
                     placeholder="Ex: Centro, São Paulo - SP"
-                    placeholderTextColor="#94A3B8"
                     value={form.address}
                     onChangeText={(v) => setForm((f) => ({ ...f, address: v }))}
-                    maxLength={120}
-                    returnKeyType="next"
                   />
                 </View>
 
@@ -518,178 +609,115 @@ export default function AdminProvidersScreen() {
                 <View style={[styles.inputWrap, styles.textareaWrap]}>
                   <TextInput
                     style={[styles.input, styles.textarea]}
-                    placeholder="Ex: Especialista em tatuagens realistas. 10 anos de experiência."
-                    placeholderTextColor="#94A3B8"
+                    placeholder="Descrição detalhada..."
                     value={form.description}
                     onChangeText={(v) => setForm((f) => ({ ...f, description: v }))}
                     multiline
                     numberOfLines={4}
-                    maxLength={500}
-                    textAlignVertical="top"
                   />
                 </View>
               </View>
 
-              {/* ── Seção: Serviço Vinculado ── */}
+              {/* Especialidades */}
               <View style={styles.formSection}>
-                <Text style={styles.sectionTitle}>Serviço Vinculado</Text>
+                <Text style={styles.sectionTitle}>Serviços / Especialidades</Text>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.servicePickerBtn,
+                    showServicePicker && styles.servicePickerBtnOpen,
+                    pressed && { opacity: 0.85 },
+                  ]}
+                  onPress={() => setShowServicePicker((v) => !v)}
+                >
+                  <MaterialIcons name="category" size={17} color="#94A3B8" />
+                  <Text style={styles.servicePickerBtnText} numberOfLines={1}>
+                    {Object.values(selectedServicesMap).filter(Boolean).length > 0 
+                      ? `${Object.values(selectedServicesMap).filter(Boolean).length} selecionados`
+                      : "Selecionar especialidades..."}
+                  </Text>
+                  <MaterialIcons
+                    name={showServicePicker ? "expand-less" : "expand-more"}
+                    size={20}
+                    color="#94A3B8"
+                  />
+                </Pressable>
 
-                {form.serviceId ? (
-                  <View style={styles.serviceSelected}>
-                    <View style={styles.serviceSelectedIcon}>
-                      <MaterialIcons name="check-circle" size={22} color="#16A34A" />
-                    </View>
-                    <Text style={styles.serviceSelectedName} numberOfLines={1} ellipsizeMode="tail">
-                      {form.serviceName}
-                    </Text>
-                    <Pressable
-                      style={({ pressed }) => [styles.changeServiceBtn, pressed && { opacity: 0.7 }]}
-                      onPress={() => {
-                        setForm((f) => ({ ...f, serviceId: "", serviceName: "", subcategoryId: "", subcategoryName: "" }));
-                        setServiceSearchQuery("");
-                        setShowServicePicker(true);
-                      }}
-                    >
-                      <MaterialIcons name="swap-horiz" size={15} color="#2563EB" />
-                      <Text style={styles.changeServiceText}>Trocar</Text>
-                    </Pressable>
-                  </View>
-                ) : (
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.servicePickerBtn,
-                      showServicePicker && styles.servicePickerBtnOpen,
-                      pressed && { opacity: 0.85 },
-                    ]}
-                    onPress={() => setShowServicePicker((v) => !v)}
-                  >
-                    <MaterialIcons name="category" size={17} color="#94A3B8" />
-                    <Text style={styles.servicePickerBtnText}>Selecionar serviço...</Text>
-                    <MaterialIcons
-                      name={showServicePicker ? "expand-less" : "expand-more"}
-                      size={20}
-                      color="#94A3B8"
-                    />
-                  </Pressable>
-                )}
-
-                {/* Lista inline de serviços */}
-                {showServicePicker && !form.serviceId && (
+                {showServicePicker && (
                   <View style={styles.serviceList}>
                     <View style={styles.serviceSearchBox}>
                       <MaterialIcons name="search" size={16} color="#94A3B8" />
                       <TextInput
                         style={styles.serviceSearchInput}
-                        placeholder="Buscar serviço..."
-                        placeholderTextColor="#94A3B8"
+                        placeholder="Buscar especialidade..."
                         value={serviceSearchQuery}
                         onChangeText={setServiceSearchQuery}
-                        autoCorrect={false}
                       />
-                      {serviceSearchQuery.length > 0 && (
-                        <Pressable onPress={() => setServiceSearchQuery("")} hitSlop={8}>
-                          <MaterialIcons name="close" size={14} color="#94A3B8" />
-                        </Pressable>
-                      )}
                     </View>
 
-                    {filteredServices.length === 0 ? (
-                      <View style={styles.serviceEmptyRow}>
-                        <MaterialIcons name="info-outline" size={18} color="#94A3B8" />
-                        <Text style={styles.serviceEmptyText}>
-                          {services.length === 0
-                            ? "Nenhum serviço cadastrado. Crie um serviço primeiro."
-                            : "Nenhum serviço encontrado."}
-                        </Text>
-                      </View>
-                    ) : (
-                      filteredServices.map((svc) => (
+                    {filteredServices.map((svc) => {
+                      const isSelected = !!selectedServicesMap[svc.id];
+                      return (
                         <Pressable
                           key={svc.id}
-                          style={({ pressed }) => [styles.serviceItem, pressed && { backgroundColor: "#F0FDF4" }]}
-                          onPress={() => {
-                            setForm((f) => ({
-                              ...f,
-                              serviceId: svc.id,
-                              serviceName: svc.name,
-                              subcategoryId: svc.subcategoryId ?? "",
-                              subcategoryName: svc.subcategoryName ?? svc.name,
-                            }));
-                            setShowServicePicker(false);
-                            setServiceSearchQuery("");
-                          }}
+                          style={({ pressed }) => [
+                            styles.serviceItem, 
+                            pressed && { backgroundColor: "#F0FDF4" },
+                            isSelected && { 
+                              backgroundColor: "#DCFCE7",
+                              borderLeftWidth: 4,
+                              borderLeftColor: "#25D366"
+                            }
+                          ]}
+                          onPress={() => toggleServiceSelection(svc)}
+                          hitSlop={8}
                         >
-                          {svc.imageUri ? (
-                            <Image source={{ uri: svc.imageUri }} style={styles.serviceItemImg} />
-                          ) : (
-                            <View style={[styles.serviceItemImg, styles.serviceItemImgFallback]}>
-                              <MaterialIcons name="build" size={16} color="#94A3B8" />
-                            </View>
-                          )}
                           <View style={styles.serviceItemInfo}>
-                            <Text style={styles.serviceItemName} numberOfLines={1} ellipsizeMode="tail">
+                            <Text style={[
+                              styles.serviceItemName, 
+                              isSelected && { color: "#15803D", fontWeight: "700" }
+                            ]}>
                               {svc.name}
                             </Text>
-                            <Text style={styles.serviceItemCat} numberOfLines={1}>
-                              {svc.subcategoryName || svc.category}
-                            </Text>
+                            <Text style={styles.serviceItemCat}>{svc.subcategoryName || svc.category}</Text>
                           </View>
-                          <MaterialIcons name="chevron-right" size={18} color="#CBD5E1" />
+                          <MaterialIcons 
+                            name={isSelected ? "check-circle" : "add-circle-outline"} 
+                            size={20} 
+                            color={isSelected ? "#25D366" : "#CBD5E1"} 
+                          />
                         </Pressable>
-                      ))
-                    )}
+                      );
+                    })}
                   </View>
                 )}
               </View>
 
-              {/* ── Seção: Galeria de Fotos ── */}
+              {/* Galeria */}
               <View style={styles.formSection}>
-                <Text style={styles.sectionTitle}>
-                  Galeria de Fotos ({(form.gallery ?? []).length}/8)
-                </Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.galleryRow}
-                >
+                <Text style={styles.sectionTitle}>Galeria ({(form.gallery ?? []).length}/8)</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.galleryRow}>
                   {(form.gallery ?? []).map((uri, idx) => (
                     <View key={idx} style={styles.galleryThumb}>
                       <Image source={{ uri }} style={styles.galleryThumbImg} />
-                      <Pressable
-                        style={styles.galleryRemoveBtn}
-                        onPress={() => removeGalleryImage(idx)}
-                        hitSlop={4}
-                      >
+                      <Pressable style={styles.galleryRemoveBtn} onPress={() => removeGalleryImage(idx)}>
                         <MaterialIcons name="close" size={12} color="#FFFFFF" />
                       </Pressable>
                     </View>
                   ))}
                   {(form.gallery ?? []).length < 8 && (
-                    <Pressable
-                      style={({ pressed }) => [styles.galleryAddBtn, pressed && { opacity: 0.7 }]}
-                      onPress={handlePickGallery}
-                    >
+                    <Pressable style={styles.galleryAddBtn} onPress={handlePickGallery}>
                       <MaterialIcons name="add-photo-alternate" size={26} color="#94A3B8" />
-                      <Text style={styles.galleryAddText}>Adicionar</Text>
                     </Pressable>
                   )}
                 </ScrollView>
               </View>
 
-              {/* ── Seção: Configurações ── */}
+              {/* Configurações */}
               <View style={styles.formSection}>
                 <Text style={styles.sectionTitle}>Configurações</Text>
                 <View style={styles.toggleCard}>
-                  <View style={styles.toggleCardLeft}>
-                    <View style={[styles.toggleCardIcon, form.isActive && styles.toggleCardIconOn]}>
-                      <MaterialIcons name="person" size={18} color={form.isActive ? "#15803D" : "#94A3B8"} />
-                    </View>
-                    <View style={styles.toggleCardText}>
-                      <Text style={styles.toggleCardTitle}>Prestador ativo</Text>
-                      <Text style={styles.toggleCardSub}>
-                        {form.isActive ? "Visível na listagem" : "Oculto da listagem"}
-                      </Text>
-                    </View>
+                  <View style={styles.toggleCardText}>
+                    <Text style={styles.toggleCardTitle}>Prestador ativo</Text>
                   </View>
                   <Switch
                     value={form.isActive}
@@ -700,32 +728,22 @@ export default function AdminProvidersScreen() {
                 </View>
               </View>
 
-              {/* ── Botões de ação ── */}
+              {/* Botões */}
               <View style={styles.modalActions}>
-                <Pressable
-                  style={({ pressed }) => [styles.cancelBtn, pressed && { opacity: 0.7 }]}
-                  onPress={() => setModalVisible(false)}
-                >
+                <Pressable style={styles.cancelBtn} onPress={() => setModalVisible(false)}>
                   <Text style={styles.cancelBtnText}>Cancelar</Text>
                 </Pressable>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.saveBtn,
-                    pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
-                    saving && { opacity: 0.6 },
-                  ]}
-                  onPress={handleSave}
+                <Pressable 
+                  style={[styles.saveBtn, saving && { opacity: 0.6 }]} 
+                  onPress={handleSave} 
                   disabled={saving}
                 >
                   {saving ? (
                     <ActivityIndicator color="#FFFFFF" size="small" />
                   ) : (
-                    <>
-                      <MaterialIcons name={editingProvider ? "check" : "add"} size={18} color="#FFFFFF" />
-                      <Text style={styles.saveBtnText}>
-                        {editingProvider ? "Salvar Alterações" : "Cadastrar Prestador"}
-                      </Text>
-                    </>
+                    <Text style={styles.saveBtnText}>
+                      {editingProvider ? "Salvar" : "Cadastrar"}
+                    </Text>
                   )}
                 </Pressable>
               </View>
@@ -737,11 +755,8 @@ export default function AdminProvidersScreen() {
   );
 }
 
-// ─── Estilos ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#F8FAFC" },
-
-  // Header
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -751,407 +766,82 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#F1F5F9",
     gap: 12,
-    ...Platform.select({
-      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3 },
-      android: { elevation: 2 },
-    }),
   },
-  iconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    backgroundColor: "#F1F5F9",
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  iconBtn: { width: 38, height: 38, borderRadius: 10, backgroundColor: "#F1F5F9", alignItems: "center", justifyContent: "center" },
   headerCenter: { flex: 1 },
-  headerTitle: { fontSize: 18, fontWeight: "700", color: "#0F172A", letterSpacing: -0.3 },
-  headerSub: { fontSize: 12, color: "#64748B", marginTop: 1 },
-  addBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    backgroundColor: "#25D366",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-  },
+  headerTitle: { fontSize: 18, fontWeight: "700", color: "#0F172A" },
+  headerSub: { fontSize: 12, color: "#64748B" },
+  addBtn: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#25D366", borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9 },
   addBtnText: { fontSize: 14, fontWeight: "700", color: "#FFFFFF" },
-
-  // Search
-  searchContainer: { paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#FFFFFF", borderBottomWidth: 1, borderBottomColor: "#F1F5F9" },
-  searchBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F8FAFC",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: Platform.OS === "ios" ? 10 : 8,
-    borderWidth: 1.5,
-    borderColor: "#E2E8F0",
-    gap: 8,
-  },
-  searchInput: { flex: 1, fontSize: 14, color: "#0F172A", padding: 0 },
-
-  // Loading / Empty
-  loadingBox: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
-  loadingText: { fontSize: 14, color: "#64748B" },
-  listContent: { padding: 16, gap: 12, paddingBottom: 40 },
-  listCount: { fontSize: 12, color: "#64748B", marginBottom: 4 },
-  emptyState: { alignItems: "center", paddingVertical: 64, paddingHorizontal: 32, gap: 10 },
-  emptyIconBox: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "#F1F5F9",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 4,
-  },
-  emptyTitle: { fontSize: 16, fontWeight: "600", color: "#374151" },
-  emptySubtitle: { fontSize: 13, color: "#94A3B8", textAlign: "center", lineHeight: 20 },
-
-  // Card
-  card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: "#F1F5F9",
-    gap: 12,
-    ...Platform.select({
-      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6 },
-      android: { elevation: 2 },
-    }),
-  },
+  searchContainer: { paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#FFFFFF" },
+  searchBar: { flexDirection: "row", alignItems: "center", backgroundColor: "#F8FAFC", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1.5, borderColor: "#E2E8F0", gap: 8 },
+  searchInput: { flex: 1, fontSize: 14, color: "#0F172A" },
+  loadingBox: { flex: 1, alignItems: "center", justifyContent: "center" },
+  listContent: { padding: 16, gap: 12 },
+  card: { backgroundColor: "#FFFFFF", borderRadius: 16, padding: 14, borderWidth: 1, borderColor: "#F1F5F9", gap: 12 },
   cardInactive: { opacity: 0.55 },
-  cardMain: { flexDirection: "row", gap: 12, alignItems: "flex-start" },
+  cardMain: { flexDirection: "row", gap: 12 },
   cardAvatar: { width: 54, height: 54, borderRadius: 27 },
-  cardAvatarFallback: {
-    backgroundColor: "#F1F5F9",
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  cardAvatarFallback: { backgroundColor: "#F1F5F9", alignItems: "center", justifyContent: "center" },
   cardInfo: { flex: 1, gap: 5 },
   cardNameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  cardName: { fontSize: 15, fontWeight: "700", color: "#0F172A", flex: 1 },
-  inactivePill: {
-    backgroundColor: "#FEF2F2",
-    borderRadius: 6,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-  },
+  cardName: { fontSize: 15, fontWeight: "700", color: "#0F172A" },
+  inactivePill: { backgroundColor: "#FEF2F2", borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
   inactivePillText: { fontSize: 10, fontWeight: "700", color: "#DC2626" },
-  servicePill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "#EFF6FF",
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    alignSelf: "flex-start",
-  },
-  servicePillText: { fontSize: 11, fontWeight: "600", color: "#2563EB", maxWidth: 200 },
+  servicePill: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#EFF6FF", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, alignSelf: "flex-start" },
+  servicePillText: { fontSize: 11, fontWeight: "600", color: "#2563EB" },
   cardMetaRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   cardMetaItem: { flexDirection: "row", alignItems: "center", gap: 4 },
-  cardMetaText: { fontSize: 12, color: "#64748B", maxWidth: 140 },
-  cardActions: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
-  actionBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  actionToggle: { borderColor: "#E2E8F0", backgroundColor: "#F8FAFC" },
-  actionEdit: { borderColor: "#BFDBFE", backgroundColor: "#EFF6FF" },
-  actionDelete: { borderColor: "#FECACA", backgroundColor: "#FEF2F2" },
+  cardMetaText: { fontSize: 12, color: "#64748B" },
+  cardActions: { flexDirection: "row", gap: 8 },
+  actionBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1 },
+  actionToggle: { borderColor: "#E2E8F0" },
+  actionEdit: { borderColor: "#BFDBFE" },
+  actionDelete: { borderColor: "#FECACA" },
   actionBtnText: { fontSize: 12, color: "#64748B", fontWeight: "600" },
-
-  // Modal
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
-  modalSheet: {
-    backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    maxHeight: "93%",
-    paddingBottom: 24,
-  },
-  modalHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "#E2E8F0",
-    alignSelf: "center",
-    marginTop: 14,
-    marginBottom: 4,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
-  },
+  modalSheet: { backgroundColor: "#FFFFFF", borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: "93%" },
+  modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: "#E2E8F0", alignSelf: "center", marginTop: 14, marginBottom: 4 },
+  modalHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: "#F1F5F9" },
   modalTitle: { fontSize: 18, fontWeight: "700", color: "#0F172A" },
-  modalSubtitle: { fontSize: 13, color: "#64748B", marginTop: 2 },
-  modalCloseBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: "#F1F5F9",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  modalScrollContent: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 16 },
-
-  // Form sections
-  formSection: {
-    marginTop: 20,
-    backgroundColor: "#F8FAFC",
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#64748B",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 12,
-  },
-  fieldLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#374151",
-    marginBottom: 6,
-    marginTop: 12,
-  },
-
-  // Inputs
-  inputWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1.5,
-    borderColor: "#E2E8F0",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: Platform.OS === "ios" ? 12 : 10,
-    gap: 8,
-  },
-  inputIcon: {},
-  input: { flex: 1, fontSize: 14, color: "#0F172A", padding: 0 },
-  textareaWrap: { alignItems: "flex-start", paddingTop: 12 },
-  textarea: { minHeight: 90, textAlignVertical: "top" },
-
-  // Avatar picker
-  avatarPickerBtn: {
-    alignSelf: "center",
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    overflow: "hidden",
-    backgroundColor: "#F1F5F9",
-    borderWidth: 2,
-    borderColor: "#E2E8F0",
-    borderStyle: "dashed",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarPreviewWrap: { width: 90, height: 90, position: "relative" },
+  modalSubtitle: { fontSize: 13, color: "#64748B" },
+  modalCloseBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: "#F1F5F9", alignItems: "center", justifyContent: "center" },
+  modalScrollContent: { paddingHorizontal: 20, paddingVertical: 16 },
+  formSection: { marginTop: 20, backgroundColor: "#F8FAFC", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#E2E8F0" },
+  sectionTitle: { fontSize: 12, fontWeight: "700", color: "#64748B", textTransform: "uppercase", marginBottom: 12 },
+  fieldLabel: { fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6, marginTop: 12 },
+  inputWrap: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", borderWidth: 1.5, borderColor: "#E2E8F0", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
+  input: { flex: 1, fontSize: 14, color: "#0F172A" },
+  textareaWrap: { alignItems: "flex-start" },
+  textarea: { minHeight: 80 },
+  avatarPickerBtn: { alignSelf: "center", width: 90, height: 90, borderRadius: 45, overflow: "hidden", backgroundColor: "#F1F5F9", borderWidth: 2, borderColor: "#E2E8F0", borderStyle: "dashed", alignItems: "center", justifyContent: "center" },
+  avatarPreviewWrap: { width: 90, height: 90 },
   avatarPreview: { width: 90, height: 90 },
-  avatarOverlay: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    gap: 4,
-    paddingVertical: 5,
-  },
-  avatarOverlayText: { fontSize: 10, color: "#FFFFFF", fontWeight: "600" },
-  avatarPlaceholder: { alignItems: "center", gap: 4 },
+  avatarOverlay: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center", paddingVertical: 5 },
+  avatarOverlayText: { fontSize: 10, color: "#FFFFFF" },
+  avatarPlaceholder: { alignItems: "center" },
   avatarPlaceholderText: { fontSize: 11, color: "#94A3B8" },
-
-  // Service picker
-  serviceSelected: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    backgroundColor: "#F0FDF4",
-    borderWidth: 1.5,
-    borderColor: "#86EFAC",
-    borderRadius: 12,
-    padding: 12,
-  },
-  serviceSelectedIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#DCFCE7",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  serviceSelectedName: { flex: 1, fontSize: 14, fontWeight: "600", color: "#0F172A" },
-  changeServiceBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "#EFF6FF",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  changeServiceText: { fontSize: 12, fontWeight: "600", color: "#2563EB" },
-  servicePickerBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1.5,
-    borderColor: "#E2E8F0",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: Platform.OS === "ios" ? 12 : 10,
-  },
-  servicePickerBtnOpen: { borderColor: "#25D366", borderBottomLeftRadius: 0, borderBottomRightRadius: 0 },
+  servicePickerBtn: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#FFFFFF", borderWidth: 1.5, borderColor: "#E2E8F0", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
+  servicePickerBtnOpen: { borderColor: "#25D366" },
   servicePickerBtnText: { flex: 1, fontSize: 14, color: "#94A3B8" },
-  serviceList: {
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1.5,
-    borderColor: "#25D366",
-    borderTopWidth: 0,
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
-    overflow: "hidden",
-  },
-  serviceSearchBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    margin: 10,
-    backgroundColor: "#F8FAFC",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  serviceSearchInput: { flex: 1, fontSize: 13, color: "#0F172A", padding: 0 },
-  serviceEmptyRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    padding: 16,
-  },
-  serviceEmptyText: { fontSize: 13, color: "#94A3B8", flex: 1 },
-  serviceItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: "#F1F5F9",
-  },
-  serviceItemImg: { width: 38, height: 38, borderRadius: 8 },
-  serviceItemImgFallback: {
-    backgroundColor: "#F1F5F9",
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  serviceList: { backgroundColor: "#FFFFFF", borderWidth: 1.5, borderColor: "#25D366", borderTopWidth: 0, borderRadius: 12, marginTop: -5, overflow: "hidden" },
+  serviceSearchBox: { flexDirection: "row", alignItems: "center", gap: 8, margin: 10, backgroundColor: "#F8FAFC", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, borderWidth: 1, borderColor: "#E2E8F0" },
+  serviceSearchInput: { flex: 1, fontSize: 13, color: "#0F172A" },
+  serviceItem: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: "#F1F5F9" },
   serviceItemInfo: { flex: 1 },
   serviceItemName: { fontSize: 14, fontWeight: "600", color: "#0F172A" },
-  serviceItemCat: { fontSize: 12, color: "#64748B", marginTop: 1 },
-
-  // Gallery
-  galleryRow: { flexDirection: "row", gap: 8 },
-  galleryThumb: { width: 76, height: 76, borderRadius: 10, overflow: "hidden", position: "relative" },
-  galleryThumbImg: { width: 76, height: 76 },
-  galleryRemoveBtn: {
-    position: "absolute",
-    top: 4,
-    right: 4,
-    backgroundColor: "rgba(0,0,0,0.55)",
-    borderRadius: 8,
-    padding: 3,
-  },
-  galleryAddBtn: {
-    width: 76,
-    height: 76,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: "#E2E8F0",
-    borderStyle: "dashed",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
-    backgroundColor: "#FFFFFF",
-  },
-  galleryAddText: { fontSize: 10, color: "#94A3B8" },
-
-  // Toggle card
-  toggleCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    gap: 12,
-  },
-  toggleCardLeft: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
-  toggleCardIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: "#F1F5F9",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  toggleCardIconOn: { backgroundColor: "#DCFCE7" },
+  serviceItemCat: { fontSize: 12, color: "#64748B" },
+  galleryRow: { flexDirection: "row", gap: 10 },
+  galleryThumb: { width: 60, height: 60, borderRadius: 8, overflow: "hidden", position: "relative" },
+  galleryThumbImg: { width: 60, height: 60 },
+  galleryRemoveBtn: { position: "absolute", top: 2, right: 2, backgroundColor: "rgba(0,0,0,0.5)", borderRadius: 10, width: 18, height: 18, alignItems: "center", justifyContent: "center" },
+  galleryAddBtn: { width: 60, height: 60, borderRadius: 8, backgroundColor: "#F1F5F9", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#E2E8F0", borderStyle: "dashed" },
+  toggleCard: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   toggleCardText: { flex: 1 },
-  toggleCardTitle: { fontSize: 14, fontWeight: "600", color: "#0F172A" },
-  toggleCardSub: { fontSize: 12, color: "#64748B", marginTop: 2 },
-
-  // Modal actions
-  modalActions: { flexDirection: "row", gap: 10, marginTop: 24 },
-  cancelBtn: {
-    flex: 1,
-    backgroundColor: "#F1F5F9",
-    borderRadius: 14,
-    paddingVertical: 15,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  cancelBtnText: { fontSize: 15, fontWeight: "600", color: "#374151" },
-  saveBtn: {
-    flex: 2,
-    backgroundColor: "#25D366",
-    borderRadius: 14,
-    paddingVertical: 15,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    ...Platform.select({
-      ios: { shadowColor: "#25D366", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
-      android: { elevation: 4 },
-    }),
-  },
-  saveBtnText: { fontSize: 15, fontWeight: "700", color: "#FFFFFF" },
+  toggleCardTitle: { fontSize: 14, fontWeight: "600", color: "#374151" },
+  modalActions: { flexDirection: "row", gap: 12, marginTop: 24 },
+  cancelBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: "#F1F5F9", alignItems: "center" },
+  cancelBtnText: { fontSize: 14, fontWeight: "600", color: "#64748B" },
+  saveBtn: { flex: 2, paddingVertical: 12, borderRadius: 12, backgroundColor: "#25D366", alignItems: "center" },
+  saveBtnText: { fontSize: 14, fontWeight: "700", color: "#FFFFFF" },
 });

@@ -63,4 +63,9 @@ Thumbs.db
 
 # Webdev artifacts (checkpoint zips, migrations, etc.)
 .webdev/
+# Local/secrets configurations
 .env
+.local/
+cloudflared.exe
+lt-url.txt
+package-lock.json

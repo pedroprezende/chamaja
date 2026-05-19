@@ -14,13 +14,13 @@ import {
   Alert,
   Dimensions,
   FlatList,
+  Platform,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { adminProvidersDB, type AdminProvider } from "@/lib/admin-providers-db";
-
-const { width } = Dimensions.get("window");
+import { useWindowDimensions } from "react-native";
 
 function openWhatsApp(phone: string, name: string) {
   let number = phone.replace(/\D/g, "");
@@ -34,6 +34,9 @@ function openWhatsApp(phone: string, name: string) {
 }
 
 export default function AdminProviderDetailScreen() {
+  const { width: WINDOW_WIDTH } = useWindowDimensions();
+  const width = Platform.OS === "web" ? Math.min(WINDOW_WIDTH, 500) : WINDOW_WIDTH;
+
   const { providerId, title } = useLocalSearchParams<{ providerId: string; title: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -198,7 +201,7 @@ export default function AdminProviderDetailScreen() {
             {/* Foto expandida */}
             <Image
               source={{ uri: gallery[galleryIndex] }}
-              style={styles.galleryMain}
+              style={[styles.galleryMain, { height: width * 0.6 }]}
               resizeMode="cover"
             />
           </View>
@@ -319,7 +322,6 @@ const styles = StyleSheet.create({
   galleryThumbActive: { borderWidth: 2, borderColor: "#25D366" },
   galleryMain: {
     width: "100%",
-    height: width * 0.6,
     borderRadius: 14,
     marginTop: 12,
   },

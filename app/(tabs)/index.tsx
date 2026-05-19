@@ -4,13 +4,11 @@ import React, {
   useRef,
   useEffect,
 } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
-  ScrollView,
-  Text,
   View,
+  Text,
   TextInput,
-  FlatList,
-  Image,
   StyleSheet,
   Pressable,
   ActivityIndicator,
@@ -20,6 +18,13 @@ import {
   Platform,
   Linking,
 } from "react-native";
+import { Image } from "expo-image";
+import { Skeleton } from "@/components/ui/skeleton";
+import { 
+  ScrollView, 
+  FlatList,
+  GestureHandlerRootView 
+} from "react-native-gesture-handler";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
@@ -28,17 +33,23 @@ import DraggableFlatList, {
   RenderItemParams,
   ScaleDecorator,
 } from "react-native-draggable-flatlist";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { AdsCarousel } from "@/components/ads-carousel";
-import { sections, getSectionServices, subcategoriesByCategory, getSubcategoryById } from "@/data/mock";
 import { adminDB, type Service } from "@/lib/admin-database";
 import { trpc } from "@/lib/trpc";
+import { storage } from "@/lib/storage";
 import { useAds } from "@/hooks/use-ads";
 import { useAuth } from "@/lib/auth-context";
 import { useNotifications } from "@/lib/notifications-context";
+import { MigrationManager } from "@/components/MigrationManager";
+import { getSubcategories } from "@/data/mock";
 import { StatusBar } from "expo-status-bar";
+import { LinearGradient } from "expo-linear-gradient";
+import { useColors } from "@/hooks/use-colors";
+import { useDebounce } from "@/hooks/use-debounce";
+import { AnimatedCard } from "@/components/ui/animated-card";
+import Animated, { FadeInDown, FadeInRight } from "react-native-reanimated";
 
 // ─── Constantes ──────────────────────────────────────────────────────────────
 
@@ -106,6 +117,7 @@ const EMPTY_FORM = {
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function HomeScreen() {
+  const colors = useColors();
   const router = useRouter();
   const { user } = useAuth();
   const { unreadCount } = useNotifications();
@@ -116,27 +128,28 @@ export default function HomeScreen() {
 
   // ── Serviços via tRPC (banco real) ──
   const { data: dbServices = [], isLoading: loadingServices, refetch: refetchServices } = trpc.services.list.useQuery(undefined, { refetchOnMount: true });
+  const { data: dbProviders = [], isLoading: loadingProviders } = trpc.providers.list.useQuery(undefined, { refetchOnMount: true });
 
   const services = React.useMemo<Service[]>(() =>
     dbServices.map((s: any) => ({
-      id: s.id,
-      adminId: s.adminId,
-      name: s.name,
-      category: s.category,
+      id: s.id || String(Math.random()),
+      adminId: s.adminId || "admin",
+      name: s.name || s.title || "Sem nome",
+      category: s.category || "Geral",
       categoryId: s.categoryId ?? undefined,
       subcategoryId: s.subcategoryId ?? undefined,
       subcategoryName: s.subcategoryName ?? undefined,
       description: s.description ?? "",
-      icon: s.icon ?? undefined,
-      imageUri: s.imageUri ?? undefined,
+      icon: s.icon ?? "build",
+      imageUri: s.imageUri || s.avatarUri || s.avatar_uri || undefined,
       whatsapp: s.whatsapp ?? undefined,
       address: s.address ?? undefined,
       gallery: s.gallery ?? undefined,
-      showOnHome: s.showOnHome,
-      displayOrder: s.displayOrder,
-      createdAt: s.createdAt instanceof Date ? s.createdAt.toISOString() : String(s.createdAt),
-      updatedAt: s.updatedAt instanceof Date ? s.updatedAt.toISOString() : String(s.updatedAt),
-      isActive: s.isActive,
+      showOnHome: true,
+      displayOrder: s.displayOrder || 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      isActive: true,
     }))
   , [dbServices]);
 
@@ -146,13 +159,69 @@ export default function HomeScreen() {
   const updateServiceMutation = trpc.services.update.useMutation({ onSuccess: () => refetchServices() });
   const deleteServiceMutation = trpc.services.delete.useMutation({ onSuccess: () => refetchServices() });
   const reorderServicesMutation = trpc.services.reorder.useMutation();
+  const reorderCategoriesMutation = trpc.categories.reorder.useMutation({
+    onSuccess: () => {
+      trpc.useContext().categories.list.invalidate();
+    }
+  });
 
   // ── Categorias via tRPC ──
-  const { data: dbCategories = [] } = trpc.categories.list.useQuery();
-  const categories = dbCategories.length > 0 ? dbCategories : [];
+  const { data: dbCategories = [], isLoading: loadingCats } = trpc.categories.list.useQuery();
+  const { data: dbSubcategories = [] } = trpc.categories.subServices.listAll.useQuery();
+  
+  // Debug Logs
+  useEffect(() => {
+    console.log("[Supabase Debug] Categorias:", dbCategories.length);
+    console.log("[Supabase Debug] Subcategorias:", dbSubcategories.length);
+    console.log("[Supabase Debug] Serviços (Home):", dbServices.length);
+  }, [dbCategories, dbSubcategories, dbServices]);
 
-  // ── Modo Edição ──
+  // Categorias para a barra horizontal (Todas)
+  const allCategories = dbCategories;
+
+  // Categorias para os blocos verticais (Apenas as 3 principais ou as primeiras 3)
+  const displayCategories = React.useMemo(() => {
+    return allCategories.slice(0, 5);
+  }, [allCategories]);
+
   const [editMode, setEditMode] = useState(false);
+  const [homeSearchQuery, setHomeSearchQuery] = useState("");
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<'rating' | 'name' | 'none'>('none');
+  const [suggestionInput, setSuggestionInput] = useState("");
+  const [suggestionOffset, setSuggestionOffset] = useState(0);
+  const [localRecentSearches, setLocalRecentSearches] = useState<string[]>([]);
+
+  // Carregar buscas recentes locais ao inicializar a tela
+  useEffect(() => {
+    const loadRecentSearches = async () => {
+      try {
+        const stored = await AsyncStorage.getItem("@chamaja_recent_searches");
+        if (stored) {
+          setLocalRecentSearches(JSON.parse(stored));
+        }
+      } catch (e) {
+        console.error("Erro ao carregar buscas locais:", e);
+      }
+    };
+    loadRecentSearches();
+  }, []);
+
+  const saveSearchLocally = async (query: string) => {
+    try {
+      const clean = query.trim().toLowerCase();
+      if (clean.length < 2 || clean === "de" || clean === "o" || clean === "a") return;
+      
+      setLocalRecentSearches((prev) => {
+        const filtered = prev.filter((q) => q !== clean);
+        const updated = [clean, ...filtered].slice(0, 5);
+        AsyncStorage.setItem("@chamaja_recent_searches", JSON.stringify(updated)).catch(console.error);
+        return updated;
+      });
+    } catch (e) {
+      console.error("Erro ao salvar busca local:", e);
+    }
+  };
 
   const toggleEditMode = useCallback(() => {
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -202,9 +271,12 @@ export default function HomeScreen() {
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.8,
+      base64: true,
     });
     if (!result.canceled && result.assets[0]) {
-      setForm((f) => ({ ...f, imageUri: result.assets[0].uri }));
+      const asset = result.assets[0];
+      const uri = (Platform.OS === "web" && asset.base64) ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+      setForm((f) => ({ ...f, imageUri: uri }));
     }
   }, []);
 
@@ -213,12 +285,35 @@ export default function HomeScreen() {
     if (!form.categoryId) { Alert.alert("Atenção", "Selecione uma categoria."); return; }
     setSaving(true);
     try {
-      const catName = categories.find((c: any) => c.id === form.categoryId)?.name?.replace("\n", " ") || form.categoryId;
+      // Upload da imagem para o Supabase Storage se for local
+      let finalImageUri = form.imageUri;
+      if (form.imageUri && !form.imageUri.startsWith("http")) {
+        const uploadedUrl = await storage.uploadImage(form.imageUri);
+        if (uploadedUrl) finalImageUri = uploadedUrl;
+      }
+
+      const catName = dbCategories.find((c: any) => c.id === form.categoryId)?.name?.replace("\n", " ") || form.categoryId;
       const whatsapp = form.whatsapp.trim() || undefined;
       const description = form.description.trim() || undefined;
       const address = form.address.trim() || undefined;
-      const gallery = form.gallery.length > 0 ? form.gallery : undefined;
-      const subcatName = form.subcategoryId ? getSubcategoryById(form.subcategoryId)?.name : undefined;
+      
+      // Upload da galeria
+      let finalGallery: string[] | undefined = undefined;
+      if (form.gallery.length > 0) {
+        finalGallery = [];
+        for (const uri of form.gallery) {
+          if (uri.startsWith("http")) {
+            finalGallery.push(uri);
+          } else {
+            const uploadedUrl = await storage.uploadImage(uri);
+            if (uploadedUrl) finalGallery.push(uploadedUrl);
+          }
+        }
+      }
+      
+      // Buscar o nome real da subcategoria para salvar no DB
+      const subcatObj = dbSubcategories.find(s => s.id === form.subcategoryId);
+      const subcatName = subcatObj ? subcatObj.name : (form.subcategoryId || undefined);
 
       if (editingService) {
         await updateServiceMutation.mutateAsync({
@@ -228,11 +323,11 @@ export default function HomeScreen() {
           categoryId: form.categoryId || undefined,
           subcategoryId: form.subcategoryId || undefined,
           subcategoryName: subcatName,
-          imageUri: form.imageUri || undefined,
+          imageUri: finalImageUri || undefined,
           whatsapp,
           description,
           address,
-          gallery,
+          gallery: finalGallery,
           showOnHome: form.showOnHome,
         });
       } else {
@@ -243,10 +338,10 @@ export default function HomeScreen() {
           subcategoryId: form.subcategoryId || undefined,
           subcategoryName: subcatName,
           description,
-          imageUri: form.imageUri || undefined,
+          imageUri: finalImageUri || undefined,
           whatsapp,
           address,
-          gallery,
+          gallery: finalGallery,
           showOnHome: form.showOnHome,
         });
       }
@@ -256,7 +351,7 @@ export default function HomeScreen() {
     } finally {
       setSaving(false);
     }
-  }, [form, editingService, categories, createServiceMutation, updateServiceMutation]);
+  }, [form, editingService, dbCategories, dbSubcategories, createServiceMutation, updateServiceMutation]);
 
   const handleDelete = useCallback((svc: Service) => {
     Alert.alert(
@@ -277,14 +372,304 @@ export default function HomeScreen() {
 
   // ── Drag-and-drop ──
   const handleDragEnd = useCallback(async ({ data }: { data: Service[] }) => {
-    setServices(data);
     reorderServicesMutation.mutate({ ids: data.map((s) => s.id) });
   }, [reorderServicesMutation]);
 
+  const debouncedSearch = useDebounce(homeSearchQuery, 500);
+
+  // Busca global via tRPC (Real-time DB)
+  const { data: searchResults = [], isLoading: searching } = trpc.providers.search.useQuery(
+    debouncedSearch,
+    { enabled: debouncedSearch.length > 1 }
+  );
+
+  const trackSearchMutation = trpc.analytics.trackSearch.useMutation();
+
+  useEffect(() => {
+    if (debouncedSearch.length > 1) {
+      trackSearchMutation.mutate({ query: debouncedSearch, userId: user?.id || undefined });
+      saveSearchLocally(debouncedSearch);
+    }
+  }, [debouncedSearch]);
+
+  // ── Sugestões para Você (Dinâmico e Conectado ao Banco com Recomendações) ──
+  const suggestions = React.useMemo(() => {
+    // 1. Filtrar as subcategorias que batem com as pesquisas locais recentes do usuário
+    const matchingSubs: typeof dbSubcategories = [];
+    if (localRecentSearches.length > 0) {
+      dbSubcategories.forEach((sub) => {
+        const name = sub.name.toLowerCase();
+        const matches = localRecentSearches.some((q) => {
+          return name.includes(q) || q.includes(name);
+        });
+        if (matches) {
+          matchingSubs.push(sub);
+        }
+      });
+    }
+
+    // 2. Filtrar as subcategorias que possuem pelo menos 1 prestador ativo no banco (evitando duplicadas)
+    const availableSubs = dbSubcategories.filter((sub) => {
+      if (matchingSubs.some((m) => m.id === sub.id)) return false;
+
+      return dbProviders.some((prov) => {
+        if (!prov.subcategoryId) return false;
+        const ids = prov.subcategoryId.split(",").map(id => id.trim()).filter(Boolean);
+        return ids.includes(sub.id);
+      });
+    });
+
+    // 3. Fallbacks populares se não houver disponíveis suficientes (evitando duplicadas)
+    const fallbackSubs = dbSubcategories.filter(sub => {
+      if (matchingSubs.some((m) => m.id === sub.id) || availableSubs.some((a) => a.id === sub.id)) return false;
+
+      return sub.name.includes("Manicure") || 
+        sub.name.includes("Pintor") || 
+        sub.name.includes("Eletricista") || 
+        sub.name.includes("Encanador") ||
+        sub.name.includes("Mecânico") ||
+        sub.name.includes("Diarista");
+    });
+
+    // Unir as listas priorizando as recomendações personalizadas no topo!
+    const merged = [...matchingSubs, ...availableSubs, ...fallbackSubs];
+
+    // Rotacionar sugestões com base no offset selecionado pelo usuário
+    const sliced = [];
+    for (let i = 0; i < 3; i++) {
+      const idx = (suggestionOffset + i) % (merged.length || 1);
+      if (merged[idx]) sliced.push(merged[idx]);
+    }
+
+    return sliced.map((sub, idx) => {
+      // Notas e avaliações realistas
+      const subProviders = dbProviders.filter(prov => {
+        if (!prov.subcategoryId) return false;
+        const ids = prov.subcategoryId.split(",").map(id => id.trim()).filter(Boolean);
+        return ids.includes(sub.id);
+      });
+
+      // 1. Encontrar prestador real com foto nesta subcategoria
+      const providerWithAvatar = subProviders.find(p => p.avatarUri && p.avatarUri.startsWith("http"));
+      
+      // 2. Definir imagem:
+      //   - Prioridade 1: avatar do prestador real
+      //   - Prioridade 2: imagem oficial da subcategoria/serviço
+      //   - Prioridade 3: Imagem linda e contextualizada de fallback
+      let finalImageUrl = providerWithAvatar?.avatarUri || sub.imageUrl || sub.imageUri || "";
+
+      if (!finalImageUrl) {
+        const name = sub.name.toLowerCase();
+        if (name.includes("mecanico") || name.includes("carro") || name.includes("auto")) {
+          finalImageUrl = "https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=200&q=80";
+        } else if (name.includes("jardim") || name.includes("jardineiro") || name.includes("poda")) {
+          finalImageUrl = "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=200&q=80";
+        } else if (name.includes("piscina") || name.includes("piscineiro") || name.includes("limpar piscina")) {
+          finalImageUrl = "https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?w=200&q=80";
+        } else if (name.includes("manicure") || name.includes("pedicure") || name.includes("unha")) {
+          finalImageUrl = "https://images.unsplash.com/photo-1604654894610-df63bc536371?w=200&q=80";
+        } else if (name.includes("sobrancelha") || name.includes("estetica") || name.includes("cilios")) {
+          finalImageUrl = "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=200&q=80";
+        } else if (name.includes("eletricista") || name.includes("energia") || name.includes("luz")) {
+          finalImageUrl = "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=200&q=80";
+        } else if (name.includes("encanador") || name.includes("agua") || name.includes("tubo")) {
+          finalImageUrl = "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=200&q=80";
+        } else if (name.includes("pintor") || name.includes("tinta")) {
+          finalImageUrl = "https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=200&q=80";
+        } else if (name.includes("faxina") || name.includes("diarista") || name.includes("limpeza")) {
+          finalImageUrl = "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=200&q=80";
+        } else {
+          finalImageUrl = "https://images.unsplash.com/photo-1521791136366-3e553771295d?w=200&q=80";
+        }
+      }
+
+      const avgRating = subProviders.length > 0 
+        ? parseFloat((subProviders.reduce((acc, p) => acc + (p.rating || 0), 0) / subProviders.length).toFixed(1))
+        : parseFloat((4.7 + (idx * 0.1)).toFixed(1));
+
+      const reviewsCount = subProviders.length > 0
+        ? subProviders.length * 15 + Math.floor(Math.random() * 5)
+        : 85 + (idx * 23);
+
+      return {
+        ...sub,
+        imageUri: finalImageUrl,
+        rating: avgRating,
+        reviewsCount,
+      };
+    });
+  }, [dbSubcategories, dbProviders, suggestionOffset, localRecentSearches]);
+
+  const suggestionsSubtitle = React.useMemo(() => {
+    return localRecentSearches.length > 0
+      ? "Recomendado com base nas suas pesquisas recentes"
+      : "Baseado no que é mais buscado na sua região";
+  }, [localRecentSearches]);
+
+  const handleNextSuggestions = () => {
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    setSuggestionOffset(prev => prev + 3);
+  };
+
+  const handleSubmitSuggestion = () => {
+    if (!suggestionInput.trim()) return;
+    
+    // Rastrear sugestão como pesquisa
+    trackSearchMutation.mutate({
+      query: `[SUGESTÃO]: ${suggestionInput.trim()}`,
+      userId: user?.id || undefined
+    });
+
+    const userCity = user?.city || "sua cidade";
+    if (Platform.OS === "web") {
+      window.alert(`Sugestão enviada! Obrigado por ajudar o ChamaJá a crescer em ${userCity}! 💚`);
+    } else {
+      Alert.alert("Sugestão enviada", `Obrigado por ajudar o ChamaJá a crescer em ${userCity}! 💚`);
+    }
+    setSuggestionInput("");
+  };
+
+  // Filtrar serviços administrativos também para busca global
+  const filteredServices = React.useMemo(() => {
+    if (!homeSearchQuery.trim()) return services;
+    const q = homeSearchQuery.toLowerCase();
+    return services.filter(s => 
+      s.name.toLowerCase().includes(q) || 
+      s.category.toLowerCase().includes(q) ||
+      s.description?.toLowerCase().includes(q)
+    );
+  }, [services, homeSearchQuery]);
+
+  // Combinar resultados: Prestadores do banco + Serviços administrativos
+  const globalResults = React.useMemo(() => {
+    if (!homeSearchQuery.trim()) return [];
+    
+    // Mapear prestadores para o formato de exibição
+    const providers = searchResults.map(p => {
+      const specialty = dbSubcategories.find(s => s.id === p.subcategoryId);
+      return {
+        id: p.id,
+        name: p.name,
+        category: p.category || "Profissional",
+        description: p.description || "",
+        imageUri: p.avatarUri || specialty?.imageUrl || undefined,
+        type: "PROVIDER" as const,
+        rating: p.rating || 0,
+      };
+    });
+
+    // Mapear serviços
+    const svcs = filteredServices.map(s => ({
+      id: s.id,
+      name: s.name,
+      category: s.category,
+      description: s.description || "",
+      imageUri: s.imageUri || undefined,
+      type: "SERVICE" as const,
+      rating: 5, // Serviços do admin são considerados "premium/nota máxima"
+    }));
+
+    let results = [...svcs, ...providers];
+
+    // Aplicar Filtros
+    if (activeFilter === 'rating') {
+      results.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    } else if (activeFilter === 'name') {
+      results.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    return results;
+  }, [searchResults, filteredServices, homeSearchQuery, dbSubcategories, activeFilter]);
+
+  // ── Drag-and-drop Categorias ──
+  const handleCategoryDragEnd = useCallback(async ({ data }: { data: any[] }) => {
+    reorderCategoriesMutation.mutate({ ids: data.map((c) => c.id) });
+  }, [reorderCategoriesMutation]);
+
+  // ── Render Bloco de Categoria (Draggable) ──
+  const renderCategoryBlock = useCallback(({ item: cat, drag, isActive, index }: any) => {
+    const subCats = dbSubcategories.filter((sub: any) => sub.categoryId === cat.id);
+    const catServiceCount = services.filter(s => s.categoryId === cat.id && s.isActive).length;
+    
+    const content = (
+      <Pressable
+        onLongPress={editMode ? drag : undefined}
+        style={[
+          styles.categoryBlock,
+          { backgroundColor: "transparent" },
+          isActive && { backgroundColor: colors.background, borderRadius: 16, paddingVertical: 10 }
+        ]}
+      >
+        <View style={styles.categoryHeaderVertical}>
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              {editMode && <MaterialIcons name="drag-indicator" size={18} color={colors.muted} />}
+              <Text style={[styles.categoryTitleVertical, { color: colors.foreground }]}>{cat.name.replace("\n", " ")}</Text>
+            </View>
+          </View>
+          <Pressable onPress={() => !editMode && router.push(`/categories/${cat.id}` as any)}>
+            <Text style={[styles.seeAllText, { color: colors.primary }]}>Ver tudo</Text>
+          </Pressable>
+        </View>
+        {subCats.length > 0 ? (
+          <FlatList
+            data={subCats}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.subCatList}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item, index: subIndex }) => (
+              <AnimatedCard
+                style={[styles.subCatCard, { backgroundColor: colors.background, borderColor: colors.border, borderWidth: 1 }]}
+                onPress={() => {
+                  if (!editMode) {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push(`/categories/${cat.id}` as any);
+                  }
+                }}
+                delay={subIndex * 50}
+              >
+                <View style={styles.subCatImageWrapper}>
+                  {item.imageUrl ? (
+                    <Image 
+                      source={{ uri: item.imageUrl }} 
+                      style={styles.subCatImage} 
+                      contentFit="cover"
+                      transition={200}
+                    />
+                  ) : (
+                    <View style={[styles.subCatPlaceholder, { backgroundColor: colors.surface }]}>
+                      <MaterialIcons name={(item.icon || "build") as any} size={32} color={colors.primary} />
+                    </View>
+                  )}
+                </View>
+                <View style={styles.subCatInfo}>
+                  <Text style={[styles.subCatName, { color: colors.foreground }]} numberOfLines={2}>{item.name}</Text>
+                </View>
+              </AnimatedCard>
+            )}
+          />
+        ) : (
+          <View style={[styles.emptySubCat, { backgroundColor: colors.background, borderRadius: 12 }]}>
+            <Text style={[styles.emptySubCatText, { color: colors.muted }]}>Nenhum serviço cadastrado.</Text>
+          </View>
+        )}
+      </Pressable>
+    );
+
+    return (
+      <Animated.View entering={FadeInDown.delay(index * 100).duration(600)}>
+        {drag ? <ScaleDecorator>{content}</ScaleDecorator> : content}
+      </Animated.View>
+    );
+  }, [dbSubcategories, services, editMode, router, colors]);
+
   // ── Render card (modo edição: draggable) ──
   const renderDraggableCard = useCallback(
-    ({ item, drag, isActive }: RenderItemParams<Service>) => (
-      <ScaleDecorator>
+    ({ item, drag, isActive }: RenderItemParams<Service>) => {
+      const content = (
         <View
           style={[
             styles.adminServiceCard,
@@ -308,7 +693,8 @@ export default function HomeScreen() {
               <Image
                 source={{ uri: item.imageUri }}
                 style={styles.adminServiceImage}
-                resizeMode="cover"
+                contentFit="cover"
+                transition={200}
               />
             ) : (
               <View style={styles.adminServiceIconBg}>
@@ -363,8 +749,10 @@ export default function HomeScreen() {
             </View>
           )}
         </View>
-      </ScaleDecorator>
-    ),
+      );
+
+      return drag ? <ScaleDecorator>{content}</ScaleDecorator> : content;
+    },
     [editMode, openEdit, handleDelete, router]
   );
 
@@ -385,7 +773,8 @@ export default function HomeScreen() {
           <Image
             source={{ uri: item.imageUri }}
             style={styles.adminServiceImage}
-            resizeMode="cover"
+            contentFit="cover"
+            transition={200}
           />
         ) : (
           <View style={styles.adminServiceIconBg}>
@@ -417,209 +806,324 @@ export default function HomeScreen() {
     [router]
   );
 
+  // ── Render Item para a lista principal (Categorias) ──
+  const renderHomeItem = useCallback(({ item, index }: any) => {
+    return renderCategoryBlock({ item, index, drag: undefined, isActive: false });
+  }, [renderCategoryBlock]);
+
+  // ── Skeleton Loader para melhor UX ──
+  const HomeSkeleton = () => (
+    <View style={{ padding: 16, gap: 20 }}>
+      <Skeleton style={{ height: 180, borderRadius: 20 }} />
+      <View style={{ flexDirection: "row", gap: 12 }}>
+        {[1, 2, 3, 4].map(i => (
+          <Skeleton key={i} style={{ width: 70, height: 90, borderRadius: 16 }} />
+        ))}
+      </View>
+      <Skeleton style={{ height: 200, borderRadius: 24 }} />
+    </View>
+  );
+
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <ScreenContainer containerClassName="bg-[#F5F5F5]" className="">
-        <StatusBar style="dark" backgroundColor="#FFFFFF" />
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 24 }}
-          scrollEnabled={!editMode}
-        >
-          {/* ── Header ── */}
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.greeting}>Olá, {firstName}</Text>
-            </View>
-            <View style={styles.headerRight}>
-              {/* Botão Modo Edição (apenas admin) */}
-              {isAdmin && (
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.editModeBtn,
-                    editMode && styles.editModeBtnActive,
-                    pressed && { opacity: 0.7 },
-                  ]}
-                  onPress={toggleEditMode}
-                >
-                  <MaterialIcons
-                    name={editMode ? "edit-off" : "edit"}
-                    size={18}
-                    color={editMode ? "#FFFFFF" : "#6B7280"}
-                  />
-                  {editMode && (
-                    <Text style={styles.editModeBtnLabel}>Edição</Text>
-                  )}
-                </Pressable>
-              )}
-              {/* Notificações */}
-              <Pressable
-                style={({ pressed }) => [styles.bellBtn, pressed && { opacity: 0.7 }]}
-                onPress={() => router.push("/notifications" as any)}
-              >
-                <View style={styles.bellWrapper}>
-                  <MaterialIcons name="notifications-none" size={26} color="#111827" />
-                  {unreadCount > 0 && (
-                    <View style={styles.badge}>
-                      <Text style={styles.badgeText}>{unreadCount > 9 ? "9+" : unreadCount}</Text>
-                    </View>
-                  )}
-                </View>
-              </Pressable>
-            </View>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
+      <ScreenContainer style={{ backgroundColor: colors.background }} edges={["top", "left", "right"]}>
+        <StatusBar style="dark" />
+        {/* MigrationManager temporarily removed to debug UI hang */}
+      {/* <MigrationManager /> */}
+        
+        {/* Header Fixo */}
+        <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border, borderBottomWidth: 1 }]}>
+          <View>
+            <Text style={[styles.greeting, { color: colors.foreground }]}>Olá, {firstName}</Text>
+            <Text style={{ fontSize: 13, color: colors.muted, fontWeight: "500" }}>Encontre o profissional ideal</Text>
           </View>
-
-          {/* ── Banner Modo Edição ── */}
-          {editMode && (
-            <View style={styles.editBanner}>
-              <MaterialIcons name="admin-panel-settings" size={16} color="#FFFFFF" />
-              <Text style={styles.editBannerText}>
-                Modo Edição ativo — arraste para reordenar, toque nos ícones para editar/excluir
-              </Text>
-            </View>
-          )}
-
-          {/* ── Search Bar ── */}
-          <Pressable
-            style={styles.searchContainer}
-            onPress={() => router.push("/search" as any)}
-          >
-            <MaterialIcons name="search" size={20} color="#9CA3AF" />
-            <Text style={styles.searchPlaceholder}>O que você precisa?</Text>
-          </Pressable>
-
-          {/* ── Categorias ── */}
-          <FlatList
-            data={categories}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.categoriesContainer}
-            renderItem={({ item }) => (
-              <Pressable
-                style={({ pressed }) => [styles.categoryItem, pressed && { opacity: 0.7 }]}
-                onPress={() => router.push(`/categories/${item.id}` as any)}
-              >
-                <View style={styles.categoryIconBox}>
-                  <MaterialIcons
-                    name={CATEGORY_ICONS[item.id] as any}
-                    size={26}
-                    color="#374151"
-                  />
-                </View>
-                <Text style={styles.categoryLabel}>{item.name}</Text>
-              </Pressable>
-            )}
-          />
-
-          {/* ── Serviços do Admin ── */}
-          {(loadingServices || services.length > 0 || editMode) && (
-            <View style={styles.sectionWrapper}>
-              <View style={styles.sectionHeader}>
-                <View style={styles.sectionTitleRow}>
-                  <MaterialIcons name="admin-panel-settings" size={18} color="#25D366" />
-                  <Text style={styles.sectionTitle}>Serviços Disponíveis</Text>
-                </View>
-                {/* Botão "+ Adicionar" no modo edição */}
-                {editMode && (
-                  <Pressable
-                    style={({ pressed }) => [styles.addBtn, pressed && { opacity: 0.8 }]}
-                    onPress={openCreate}
-                  >
-                    <MaterialIcons name="add" size={16} color="#FFFFFF" />
-                    <Text style={styles.addBtnText}>Adicionar</Text>
-                  </Pressable>
+          <View style={styles.headerRight}>
+            <Pressable
+              style={styles.bellBtn}
+              onPress={() => router.push("/notifications" as any)}
+            >
+              <View style={styles.bellWrapper}>
+                <MaterialIcons name="notifications-none" size={26} color={colors.foreground} />
+                {unreadCount > 0 && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{unreadCount}</Text>
+                  </View>
                 )}
               </View>
+            </Pressable>
+          </View>
+        </View>
 
-              {loadingServices ? (
-                <View style={styles.loadingRow}>
-                  <ActivityIndicator size="small" color="#25D366" />
-                </View>
-              ) : editMode ? (
-                /* Drag-and-drop no modo edição */
-                <DraggableFlatList
-                  data={services}
-                  horizontal
-                  keyExtractor={(item) => item.id}
-                  onDragEnd={handleDragEnd}
-                  renderItem={renderDraggableCard}
-                  contentContainerStyle={styles.adminServicesRow}
-                  activationDistance={10}
-                />
-              ) : (
-                /* FlatList normal */
-                <FlatList
-                  data={services}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  keyExtractor={(item) => item.id}
-                  contentContainerStyle={styles.adminServicesRow}
-                  renderItem={({ item }) => renderNormalCard(item)}
-                />
-              )}
+        {/* Banner de Edição */}
+        {isAdmin && editMode && (
+          <View style={styles.editBanner}>
+            <MaterialIcons name="info-outline" size={16} color="#FFFFFF" />
+            <Text style={styles.editBannerText}>
+              Modo de edição: Arraste para reordenar ou use os botões nos cards.
+            </Text>
+          </View>
+        )}
 
-              {/* Mensagem quando não há serviços no modo edição */}
-              {editMode && services.length === 0 && !loadingServices && (
+        {/* Busca e Filtros */}
+        <View style={[styles.searchRow, { backgroundColor: colors.surface, paddingBottom: 12 }]}>
+          <View style={[styles.searchContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
+            <MaterialIcons name="search" size={20} color={colors.muted} />
+            <TextInput
+              style={[styles.searchTextInput, { color: colors.foreground }]}
+              placeholder="Buscar serviços ou profissionais..."
+              placeholderTextColor={colors.muted + "80"}
+              value={homeSearchQuery}
+              onChangeText={setHomeSearchQuery}
+            />
+            {homeSearchQuery.length > 0 && (
+              <Pressable onPress={() => setHomeSearchQuery("")}>
+                <MaterialIcons name="close" size={18} color={colors.muted} />
+              </Pressable>
+            )}
+            {searching && <ActivityIndicator size="small" color={colors.primary} />}
+          </View>
+          <Pressable
+            style={[styles.filterBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
+            onPress={() => setFilterModalVisible(true)}
+          >
+            <MaterialIcons name="tune" size={20} color={colors.primary} />
+            <Text style={[styles.filterBtnText, { color: colors.primary }]}>Filtros</Text>
+            {activeFilter !== "none" && <View style={styles.filterActiveDot} />}
+          </Pressable>
+        </View>
+
+        {/* Conteúdo Principal Virtualizado */}
+        {homeSearchQuery.length > 0 ? (
+          /* Lista de Resultados da Busca */
+          <FlatList
+            data={globalResults}
+            keyExtractor={(item) => `${item.type}-${item.id}`}
+            contentContainerStyle={{ padding: 16, gap: 12 }}
+            renderItem={({ item, index }) => (
+              <Animated.View entering={FadeInDown.delay(index * 50).duration(400)}>
                 <Pressable
-                  style={({ pressed }) => [styles.emptyAddCard, pressed && { opacity: 0.8 }]}
-                  onPress={openCreate}
-                >
-                  <MaterialIcons name="add-circle-outline" size={32} color="#25D366" />
-                  <Text style={styles.emptyAddText}>Toque para adicionar o primeiro serviço</Text>
-                </Pressable>
-              )}
-            </View>
-          )}
-
-          {/* ── Anúncios Patrocinados ── */}
-          {!adsLoading && ads.length > 0 && (
-            <View style={styles.sectionWrapper}>
-              <View style={styles.sectionHeader}>
-                <View style={styles.premiumHeaderRow}>
-                  <MaterialIcons name="campaign" size={20} color="#25D366" />
-                  <Text style={styles.sectionTitle}>Destaques</Text>
-                </View>
-              </View>
-              <AdsCarousel ads={ads} />
-            </View>
-          )}
-
-          {/* ── Sections (mock) ── */}
-          {sections.map((section) => {
-            const sectionServices = getSectionServices(section.id);
-            return (
-              <View key={section.id} style={styles.sectionWrapper}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>{section.title}</Text>
-                  <Pressable onPress={() => router.push(`/categories/${section.id}` as any)}>
-                    <Text style={styles.seeAll}>Ver tudo</Text>
-                  </Pressable>
-                </View>
-                <View style={styles.cardsRow}>
-                  {sectionServices.map((service) => (
-                    <Pressable
-                      key={service.id}
-                      style={({ pressed }) => [styles.serviceCard, pressed && { opacity: 0.85 }]}
-                      onPress={() => router.push(`/professionals/${service.id}` as any)}
-                    >
-                      <Image
-                        source={{ uri: service.image }}
-                        style={styles.serviceImage}
-                        resizeMode="cover"
+                style={({ pressed }) => [
+                  styles.verticalServiceCard,
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                  pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }
+                ]}
+                onPress={() => {
+                  if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  if (item.type === "SERVICE") {
+                    router.push({
+                      pathname: "/admin-services/[serviceId]",
+                      params: { serviceId: item.id, title: item.name }
+                    } as any);
+                  } else {
+                    router.push({
+                      pathname: "/professional/[id]",
+                      params: { id: item.id }
+                    } as any);
+                  }
+                }}
+              >
+                <View style={styles.verticalCardContent}>
+                  {item.imageUri ? (
+                    <Image source={{ uri: item.imageUri }} style={styles.verticalCardImage} />
+                  ) : (
+                    <View style={[styles.verticalCardIconBg, { backgroundColor: colors.background }]}>
+                      <MaterialIcons 
+                        name={item.type === "SERVICE" ? getAdminIcon(item.category) : "person"} 
+                        size={24} 
+                        color={colors.primary} 
                       />
-                      <Text style={styles.serviceName} numberOfLines={2}>
-                        {service.name}
+                    </View>
+                  )}
+                  <View style={styles.verticalCardInfo}>
+                    <Text style={[styles.verticalCardName, { color: colors.foreground }]}>{item.name}</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                      <Text style={[styles.verticalCardCategory, { color: colors.primary }]}>{item.category}</Text>
+                      <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.border }} />
+                      <Text style={{ fontSize: 11, color: colors.muted }}>
+                        {item.type === "SERVICE" ? "Serviço" : "Profissional"}
                       </Text>
+                    </View>
+                    {item.description && (
+                      <Text style={[styles.verticalCardDesc, { color: colors.muted }]} numberOfLines={1}>
+                        {item.description}
+                      </Text>
+                    )}
+                  </View>
+                  <MaterialIcons name="chevron-right" size={20} color={colors.muted} />
+                </View>
+              </Pressable>
+            </Animated.View>
+          )}
+            ListEmptyComponent={
+              searching ? (
+                <View style={{ padding: 20 }}>{[1, 2, 3].map(i => <Skeleton key={i} style={{ height: 80, marginBottom: 12, borderRadius: 16 }} />)}</View>
+              ) : (
+                <View style={styles.emptySearchLarge}>
+                  <MaterialIcons name="search-off" size={48} color={colors.muted} />
+                  <Text style={[styles.emptySearchTitle, { color: colors.foreground }]}>Nenhum resultado</Text>
+                  <Text style={[styles.emptySearchSub, { color: colors.muted }]}>Não encontramos nada para "{homeSearchQuery}"</Text>
+                </View>
+              )
+            }
+          />
+        ) : (
+          /* Lista Principal (Home) */
+          <FlatList
+            data={displayCategories}
+            keyExtractor={(item) => item.id}
+            renderItem={renderHomeItem}
+            contentContainerStyle={{ paddingBottom: 32 }}
+            removeClippedSubviews={Platform.OS === 'android'}
+            initialNumToRender={3}
+            maxToRenderPerBatch={5}
+            windowSize={10}
+            refreshing={loadingServices || loadingCats}
+            onRefresh={loadServices}
+            ListHeaderComponent={
+              <View style={{ gap: 8 }}>
+                {/* Categorias Rápidas */}
+                <View style={{ marginTop: 16 }}>
+                  <View style={styles.sectionWrapper}>
+                    <View style={styles.sectionHeader}>
+                      <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Categorias</Text>
+                    </View>
+                  </View>
+                  <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={false} 
+                    contentContainerStyle={styles.horizontalCatsContent}
+                  >
+                    {allCategories?.map((cat) => (
+                      <Pressable
+                        key={cat.id}
+                        style={styles.quickCatBtn}
+                        onPress={() => {
+                          if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          router.push({
+                            pathname: "/categories/[section]",
+                            params: { section: cat.id, title: cat.name.replace("\n", " ") }
+                          } as any);
+                        }}
+                      >
+                        <View style={[styles.quickCatIconBg, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                          <MaterialIcons name={CATEGORY_ICONS[cat.id] as any || "build"} size={28} color={colors.foreground} />
+                        </View>
+                        <Text style={[styles.quickCatLabel, { color: colors.foreground }]} numberOfLines={2}>
+                          {cat.name.replace("\n", " ")}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                </View>
+
+                {/* Destaques e Anúncios */}
+                <View style={styles.sectionWrapper}>
+                  <View style={[styles.sectionHeader, { marginBottom: 8 }]}>
+                    <View style={styles.sectionTitleRow}>
+                      <MaterialIcons name="star" size={20} color="#FFB800" />
+                      <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Serviços em Destaque</Text>
+                    </View>
+
+                  </View>
+
+                  {/* Anúncios Patrocinados (Aparecem logo abaixo do título) */}
+                  <View style={{ marginBottom: 4 }}>
+                    <AdsCarousel ads={ads} isLoading={adsLoading} />
+                  </View>
+                  
+
+                </View>
+
+              </View>
+            }
+            ListEmptyComponent={loadingServices ? <HomeSkeleton /> : null}
+            ListFooterComponent={
+              <View style={styles.suggestionsContainer}>
+                {/* Header */}
+                <View style={styles.suggestionsHeader}>
+                  <MaterialIcons name="auto-awesome" size={20} color="#059669" />
+                  <Text style={styles.suggestionsTitle}>Sugestões para você</Text>
+                  <MaterialIcons name="auto-awesome" size={20} color="#059669" />
+                </View>
+                <Text style={styles.suggestionsSubtitle}>{suggestionsSubtitle}</Text>
+
+                {/* Items */}
+                {suggestions.map((item) => (
+                  <Pressable
+                    key={item.id}
+                    style={styles.suggestionCard}
+                    onPress={() => {
+                      if (Platform.OS !== "web") {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      }
+                      setHomeSearchQuery(item.name);
+                    }}
+                  >
+                    <Image
+                      source={{ uri: item.imageUri }}
+                      style={styles.suggestionImage}
+                    />
+                    <View style={styles.suggestionInfo}>
+                      <Text style={styles.suggestionName}>{item.name}</Text>
+                      <View style={styles.suggestionMetaRow}>
+                        <MaterialIcons name="star" size={14} color="#FBBF24" />
+                        <Text style={styles.suggestionMetaText}>
+                          {item.rating.toFixed(1)} • {item.reviewsCount} {item.reviewsCount === 1 ? "avaliação" : "avaliações"}
+                        </Text>
+                      </View>
+                    </View>
+                    <MaterialIcons name="chevron-right" size={24} color="#9CA3AF" />
+                  </Pressable>
+                ))}
+
+                {/* Ver mais sugestões button */}
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.moreSuggestionsBtn,
+                    pressed && { opacity: 0.8 }
+                  ]}
+                  onPress={handleNextSuggestions}
+                >
+                  <Text style={styles.moreSuggestionsText}>Ver mais sugestões</Text>
+                </Pressable>
+
+                {/* Dotted suggestion box */}
+                <View style={styles.feedbackContainer}>
+                  <View style={styles.feedbackHeader}>
+                    <View style={styles.feedbackIconBg}>
+                      <MaterialIcons name="rate-review" size={18} color="#FFFFFF" />
+                    </View>
+                    <View style={styles.feedbackHeaderText}>
+                      <Text style={styles.feedbackTitle}>Não encontrou o que precisa?</Text>
+                      <Text style={styles.feedbackSubtitle}>Sugira um serviço para a sua cidade</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.feedbackForm}>
+                    <TextInput
+                      style={styles.feedbackInput}
+                      placeholder="Ex: Fotógrafo, DJ, Pintor..."
+                      placeholderTextColor="#9CA3AF"
+                      value={suggestionInput}
+                      onChangeText={setSuggestionInput}
+                    />
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.feedbackSubmitBtn,
+                        pressed && { opacity: 0.9 }
+                      ]}
+                      onPress={handleSubmitSuggestion}
+                    >
+                      <Text style={styles.feedbackSubmitText}>Enviar</Text>
                     </Pressable>
-                  ))}
+                  </View>
                 </View>
               </View>
-            );
-          })}
-        </ScrollView>
+            }
+          />
+        )}
 
-        {/* ── Modal de Criação/Edição ── */}
+        {/* Modais */}
         <Modal
           visible={modalVisible}
           transparent
@@ -631,51 +1135,52 @@ export default function HomeScreen() {
             style={styles.modalOverlay}
           >
             <Pressable style={styles.modalBackdrop} onPress={() => setModalVisible(false)} />
-            <View style={styles.modalSheet}>
-              <View style={styles.modalHandle} />
+            <View style={[styles.modalSheet, { backgroundColor: colors.surface }]}>
+              <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
               <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-                <Text style={styles.modalTitle}>
+                <Text style={[styles.modalTitle, { color: colors.foreground }]}>
                   {editingService ? "Editar Serviço" : "Novo Serviço"}
                 </Text>
 
                 {/* Nome */}
-                <Text style={styles.fieldLabel}>Nome do serviço *</Text>
+                <Text style={[styles.fieldLabel, { color: colors.foreground }]}>Nome do serviço *</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border }]}
                   value={form.name}
                   onChangeText={(v) => setForm((f) => ({ ...f, name: v }))}
                   placeholder="Ex: Eletricista residencial"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.muted}
                   returnKeyType="done"
                 />
 
                 {/* Categoria */}
-                <Text style={styles.fieldLabel}>Categoria *</Text>
+                <Text style={[styles.fieldLabel, { color: colors.foreground }]}>Categoria *</Text>
                 <Pressable
-                  style={styles.dropdownTrigger}
+                  style={[styles.dropdownTrigger, { backgroundColor: colors.background, borderColor: colors.border }]}
                   onPress={() => setCatDropOpen((v) => !v)}
                 >
-                  <Text style={[styles.dropdownTriggerText, !form.categoryId && { color: "#9CA3AF" }]}>
+                  <Text style={[styles.dropdownTriggerText, { color: colors.foreground }, !form.categoryId && { color: colors.muted }]}>
                     {form.categoryId
-                      ? categories.find((c) => c.id === form.categoryId)?.name.replace("\n", " ") || form.categoryId
-                      : "Selecionar categoria"}
+                      ? dbCategories.find((c) => c.id === form.categoryId)?.name.replace("\n", " ") || form.categoryId
+                      : "Selecionar Categoria"}
                   </Text>
                   <MaterialIcons
                     name={catDropOpen ? "keyboard-arrow-up" : "keyboard-arrow-down"}
                     size={20}
-                    color="#6B7280"
+                    color={colors.muted}
                   />
                 </Pressable>
                 {catDropOpen && (
-                  <View style={styles.dropdownList}>
+                  <View style={[styles.dropdownList, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                     <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={false} style={{ maxHeight: 220 }}>
-                      {categories.map((cat) => (
+                      {dbCategories.map((cat) => (
                         <Pressable
                           key={cat.id}
                           style={({ pressed }) => [
                             styles.dropdownItem,
                             form.categoryId === cat.id && styles.dropdownItemSelected,
-                            pressed && { backgroundColor: "#F0FDF4" },
+                            { backgroundColor: form.categoryId === cat.id ? colors.background : colors.surface },
+                            pressed && { backgroundColor: colors.background },
                           ]}
                           onPress={() => {
                             setForm((f) => ({ ...f, categoryId: cat.id, subcategoryId: "" }));
@@ -685,16 +1190,17 @@ export default function HomeScreen() {
                           <MaterialIcons
                             name={CATEGORY_ICONS[cat.id] as any}
                             size={16}
-                            color={form.categoryId === cat.id ? "#25D366" : "#6B7280"}
+                            color={form.categoryId === cat.id ? colors.primary : colors.muted}
                           />
                           <Text style={[
                             styles.dropdownItemText,
-                            form.categoryId === cat.id && styles.dropdownItemTextSelected,
+                            { color: colors.foreground },
+                            form.categoryId === cat.id && { color: colors.primary, fontWeight: "700" },
                           ]}>
                             {cat.name.replace("\n", " ")}
                           </Text>
                           {form.categoryId === cat.id && (
-                            <MaterialIcons name="check" size={16} color="#25D366" />
+                            <MaterialIcons name="check" size={16} color={colors.primary} />
                           )}
                         </Pressable>
                       ))}
@@ -702,68 +1208,79 @@ export default function HomeScreen() {
                   </View>
                 )}
 
-                {/* Subcategoria (depende da categoria selecionada) */}
-                {form.categoryId && (subcategoriesByCategory[form.categoryId]?.length ?? 0) > 0 && (
+                {/* Especialidade (Opcional) */}
+                {form.categoryId && (
                   <>
-                    <Text style={styles.fieldLabel}>Subcategoria</Text>
+                    <Text style={[styles.fieldLabel, { color: colors.foreground }]}>Especialidade (Opcional)</Text>
                     <Pressable
-                      style={styles.dropdownTrigger}
+                      style={[styles.dropdownTrigger, { backgroundColor: colors.background, borderColor: colors.border }]}
                       onPress={() => setSubCatDropOpen((v) => !v)}
                     >
-                      <Text style={[styles.dropdownTriggerText, !form.subcategoryId && { color: "#9CA3AF" }]}>
+                      <Text style={[styles.dropdownTriggerText, { color: colors.foreground }, !form.subcategoryId && { color: colors.muted }]}>
                         {form.subcategoryId
-                          ? getSubcategoryById(form.subcategoryId)?.name || form.subcategoryId
-                          : "Selecionar subcategoria (opcional)"}
+                          ? dbSubcategories.find((s) => s.id === form.subcategoryId)?.name || form.subcategoryId
+                          : "Selecionar especialidade"}
                       </Text>
                       <MaterialIcons
                         name={subCatDropOpen ? "keyboard-arrow-up" : "keyboard-arrow-down"}
                         size={20}
-                        color="#6B7280"
+                        color={colors.muted}
                       />
                     </Pressable>
                     {subCatDropOpen && (
-                      <View style={styles.dropdownList}>
+                      <View style={[styles.dropdownList, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                         <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={false} style={{ maxHeight: 220 }}>
-                          {/* Opção para limpar */}
                           <Pressable
                             style={({ pressed }) => [
                               styles.dropdownItem,
                               !form.subcategoryId && styles.dropdownItemSelected,
-                              pressed && { backgroundColor: "#F0FDF4" },
+                              { backgroundColor: !form.subcategoryId ? colors.background : colors.surface },
+                              pressed && { backgroundColor: colors.background },
                             ]}
-                            onPress={() => { setForm((f) => ({ ...f, subcategoryId: "" })); setSubCatDropOpen(false); }}
+                            onPress={() => {
+                              setForm((f) => ({ ...f, subcategoryId: "" }));
+                              setSubCatDropOpen(false);
+                            }}
                           >
-                            <MaterialIcons name="clear" size={16} color={!form.subcategoryId ? "#25D366" : "#9CA3AF"} />
-                            <Text style={[styles.dropdownItemText, !form.subcategoryId && styles.dropdownItemTextSelected]}>
-                              Nenhuma subcategoria
+                            <Text style={[styles.dropdownItemText, { color: colors.foreground }, !form.subcategoryId && { color: colors.primary, fontWeight: "700" }]}>
+                              Nenhuma
                             </Text>
+                            {!form.subcategoryId && <MaterialIcons name="check" size={16} color={colors.primary} />}
                           </Pressable>
-                          {(subcategoriesByCategory[form.categoryId] || []).map((sub) => (
-                            <Pressable
-                              key={sub.id}
-                              style={({ pressed }) => [
-                                styles.dropdownItem,
-                                form.subcategoryId === sub.id && styles.dropdownItemSelected,
-                                pressed && { backgroundColor: "#F0FDF4" },
-                              ]}
-                              onPress={() => { setForm((f) => ({ ...f, subcategoryId: sub.id })); setSubCatDropOpen(false); }}
-                            >
-                              <MaterialIcons
-                                name={(sub.icon || "label") as any}
-                                size={16}
-                                color={form.subcategoryId === sub.id ? "#25D366" : "#6B7280"}
-                              />
-                              <Text style={[
-                                styles.dropdownItemText,
-                                form.subcategoryId === sub.id && styles.dropdownItemTextSelected,
-                              ]}>
-                                {sub.name}
-                              </Text>
-                              {form.subcategoryId === sub.id && (
-                                <MaterialIcons name="check" size={16} color="#25D366" />
-                              )}
-                            </Pressable>
-                          ))}
+                          {(() => {
+                            const subs: any[] = [];
+                            dbSubcategories.filter(s => s.categoryId === form.categoryId).forEach((s: any) => {
+                              if (!subs.find(item => item.name.toLowerCase() === s.name.toLowerCase())) {
+                                subs.push(s);
+                              }
+                            });
+                            return subs.map((sub: any) => (
+                              <Pressable
+                                key={sub.id}
+                                style={({ pressed }) => [
+                                  styles.dropdownItem,
+                                  form.subcategoryId === sub.id && styles.dropdownItemSelected,
+                                  { backgroundColor: form.subcategoryId === sub.id ? colors.background : colors.surface },
+                                  pressed && { backgroundColor: colors.background },
+                                ]}
+                                onPress={() => {
+                                  setForm((f) => ({ ...f, subcategoryId: sub.id }));
+                                  setSubCatDropOpen(false);
+                                }}
+                              >
+                                <Text style={[
+                                  styles.dropdownItemText,
+                                  { color: colors.foreground },
+                                  form.subcategoryId === sub.id && { color: colors.primary, fontWeight: "700" },
+                                ]}>
+                                  {sub.name}
+                                </Text>
+                                {form.subcategoryId === sub.id && (
+                                  <MaterialIcons name="check" size={16} color={colors.primary} />
+                                )}
+                              </Pressable>
+                            ));
+                          })()}
                         </ScrollView>
                       </View>
                     )}
@@ -771,9 +1288,9 @@ export default function HomeScreen() {
                 )}
 
                 {/* Imagem */}
-                <Text style={styles.fieldLabel}>Imagem de capa</Text>
+                <Text style={[styles.fieldLabel, { color: colors.foreground }]}>Imagem de capa</Text>
                 <Pressable
-                  style={({ pressed }) => [styles.imagePicker, pressed && { opacity: 0.8 }]}
+                  style={({ pressed }) => [styles.imagePicker, { backgroundColor: colors.background, borderColor: colors.border }, pressed && { opacity: 0.8 }]}
                   onPress={pickImage}
                 >
                   {form.imageUri ? (
@@ -786,48 +1303,48 @@ export default function HomeScreen() {
                     </>
                   ) : (
                     <View style={styles.imagePlaceholder}>
-                      <MaterialIcons name="add-photo-alternate" size={32} color="#9CA3AF" />
-                      <Text style={styles.imagePlaceholderText}>Toque para adicionar imagem</Text>
+                      <MaterialIcons name="add-photo-alternate" size={32} color={colors.muted} />
+                      <Text style={[styles.imagePlaceholderText, { color: colors.muted }]}>Toque para adicionar imagem</Text>
                     </View>
                   )}
                 </Pressable>
 
                 {/* WhatsApp */}
-                <Text style={styles.fieldLabel}>WhatsApp do prestador</Text>
+                <Text style={[styles.fieldLabel, { color: colors.foreground }]}>WhatsApp do prestador</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border }]}
                   value={form.whatsapp}
                   onChangeText={(v) => setForm((f) => ({ ...f, whatsapp: v }))}
                   placeholder="Ex: (11) 99999-9999"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.muted}
                   keyboardType="phone-pad"
                   returnKeyType="done"
                 />
-                <Text style={styles.fieldHint}>
+                <Text style={[styles.fieldHint, { color: colors.muted }]}>
                   Ao tocar no serviço, o usuário será direcionado para este WhatsApp.
                 </Text>
 
                 {/* Descrição */}
-                <Text style={styles.fieldLabel}>Descrição</Text>
+                <Text style={[styles.fieldLabel, { color: colors.foreground }]}>Descrição</Text>
                 <TextInput
-                  style={[styles.textInput, { height: 90, textAlignVertical: "top" }]}
+                  style={[styles.textInput, { height: 90, textAlignVertical: "top", backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border }]}
                   value={form.description}
                   onChangeText={(v) => setForm((f) => ({ ...f, description: v }))}
                   placeholder="Ex: Especialidades, experiência, diferenciais..."
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.muted}
                   multiline
                   numberOfLines={4}
                   returnKeyType="default"
                 />
 
                 {/* Endereço */}
-                <Text style={styles.fieldLabel}>Endereço (bairro/cidade)</Text>
+                <Text style={[styles.fieldLabel, { color: colors.foreground }]}>Endereço (bairro/cidade)</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border }]}
                   value={form.address}
                   onChangeText={(v) => setForm((f) => ({ ...f, address: v }))}
                   placeholder="Ex: Centro, São Paulo - SP"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.muted}
                   returnKeyType="done"
                 />
 
@@ -837,10 +1354,10 @@ export default function HomeScreen() {
                   onPress={() => setForm((f) => ({ ...f, showOnHome: !f.showOnHome }))}
                 >
                   <View>
-                    <Text style={styles.toggleLabel}>Exibir na Home</Text>
-                    <Text style={styles.toggleSub}>Aparece na seção "Serviços Disponíveis"</Text>
+                    <Text style={[styles.toggleLabel, { color: colors.foreground }]}>Exibir na Home</Text>
+                    <Text style={[styles.toggleSub, { color: colors.muted }]}>Aparece na seção "Serviços Disponíveis"</Text>
                   </View>
-                  <View style={[styles.toggleSwitch, form.showOnHome && styles.toggleSwitchOn]}>
+                  <View style={[styles.toggleSwitch, { backgroundColor: colors.border }, form.showOnHome && { backgroundColor: colors.primary }]}>
                     <View style={[styles.toggleThumb, form.showOnHome && styles.toggleThumbOn]} />
                   </View>
                 </Pressable>
@@ -848,13 +1365,13 @@ export default function HomeScreen() {
                 {/* Botões */}
                 <View style={styles.modalActions}>
                   <Pressable
-                    style={({ pressed }) => [styles.cancelBtn, pressed && { opacity: 0.7 }]}
+                    style={({ pressed }) => [styles.cancelBtn, { borderColor: colors.border }, pressed && { opacity: 0.7 }]}
                     onPress={() => setModalVisible(false)}
                   >
-                    <Text style={styles.cancelBtnText}>Cancelar</Text>
+                    <Text style={[styles.cancelBtnText, { color: colors.muted }]}>Cancelar</Text>
                   </Pressable>
                   <Pressable
-                    style={({ pressed }) => [styles.saveBtn, pressed && { opacity: 0.85 }]}
+                    style={({ pressed }) => [styles.saveBtn, { backgroundColor: colors.primary }, pressed && { opacity: 0.85 }]}
                     onPress={handleSave}
                     disabled={saving}
                   >
@@ -871,10 +1388,61 @@ export default function HomeScreen() {
             </View>
           </KeyboardAvoidingView>
         </Modal>
+
+        {/* Modal de Filtros */}
+        <Modal
+          visible={filterModalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setFilterModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <Pressable style={styles.modalBackdrop} onPress={() => setFilterModalVisible(false)} />
+            <View style={[styles.filterSheet, { backgroundColor: colors.surface }]}>
+              <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
+              <Text style={[styles.modalTitle, { color: colors.foreground }]}>Filtrar e Ordenar</Text>
+              <Text style={[styles.fieldHint, { color: colors.muted }]}>Escolha como deseja visualizar os resultados</Text>
+
+              <View style={styles.filterOptions}>
+                <Pressable 
+                  style={[styles.filterOption, { backgroundColor: colors.background, borderColor: colors.border }, activeFilter === 'rating' && { borderColor: colors.primary, backgroundColor: colors.background }]}
+                  onPress={() => { setActiveFilter('rating'); setFilterModalVisible(false); }}
+                >
+                  <MaterialIcons name="star" size={20} color={activeFilter === 'rating' ? colors.primary : colors.muted} />
+                  <Text style={[styles.filterOptionText, { color: colors.foreground }, activeFilter === 'rating' && { color: colors.primary, fontWeight: "700" }]}>Melhor Avaliação</Text>
+                  {activeFilter === 'rating' && <MaterialIcons name="check" size={20} color={colors.primary} />}
+                </Pressable>
+
+                <Pressable 
+                  style={[styles.filterOption, { backgroundColor: colors.background, borderColor: colors.border }, activeFilter === 'name' && { borderColor: colors.primary, backgroundColor: colors.background }]}
+                  onPress={() => { setActiveFilter('name'); setFilterModalVisible(false); }}
+                >
+                  <MaterialIcons name="sort-by-alpha" size={20} color={activeFilter === 'name' ? colors.primary : colors.muted} />
+                  <Text style={[styles.filterOptionText, { color: colors.foreground }, activeFilter === 'name' && { color: colors.primary, fontWeight: "700" }]}>Ordem Alfabética (A-Z)</Text>
+                  {activeFilter === 'name' && <MaterialIcons name="check" size={20} color={colors.primary} />}
+                </Pressable>
+
+                <Pressable 
+                  style={[styles.filterOption, { backgroundColor: colors.background, borderColor: colors.border }, activeFilter === 'none' && { borderColor: colors.primary, backgroundColor: colors.background }]}
+                  onPress={() => { setActiveFilter('none'); setFilterModalVisible(false); }}
+                >
+                  <MaterialIcons name="refresh" size={20} color={activeFilter === 'none' ? colors.primary : colors.muted} />
+                  <Text style={[styles.filterOptionText, { color: colors.foreground }, activeFilter === 'none' && { color: colors.primary, fontWeight: "700" }]}>Padrão (Relevância)</Text>
+                  {activeFilter === 'none' && <MaterialIcons name="check" size={20} color={colors.primary} />}
+                </Pressable>
+              </View>
+
+              <Pressable style={[styles.applyFilterBtn, { backgroundColor: colors.primary }]} onPress={() => setFilterModalVisible(false)}>
+                <Text style={styles.applyFilterBtnText}>Fechar</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
       </ScreenContainer>
     </GestureHandlerRootView>
   );
 }
+
 
 // ─── Estilos ─────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
@@ -929,21 +1497,108 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   editBannerText: { flex: 1, fontSize: 12, color: "#FFFFFF", fontWeight: "500" },
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 16,
+    gap: 12,
+    marginTop: 8,
+    marginBottom: 4,
+  },
   searchContainer: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FFFFFF",
-    marginHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 4,
     borderRadius: 12,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: Platform.OS === "ios" ? 12 : 8,
     gap: 8,
     borderWidth: 1,
     borderColor: "#E5E7EB",
   },
-  searchPlaceholder: { fontSize: 14, color: "#9CA3AF", flex: 1 },
+  filterBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: Platform.OS === "ios" ? 48 : 42,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    position: "relative",
+  },
+  filterBtnText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#25D366",
+  },
+  filterActiveDot: {
+    position: "absolute",
+    top: -2,
+    right: -2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#25D366",
+    borderWidth: 1,
+    borderColor: "#FFFFFF",
+  },
+  filterSheet: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    paddingBottom: 40,
+  },
+  filterOptions: {
+    marginTop: 20,
+    gap: 10,
+  },
+  filterOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: "#F9FAFB",
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
+  },
+  filterOptionSelected: {
+    backgroundColor: "#F0FDF4",
+    borderColor: "#25D366",
+  },
+  filterOptionText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "500",
+    color: "#4B5563",
+  },
+  filterOptionTextSelected: {
+    color: "#15803D",
+    fontWeight: "700",
+  },
+  applyFilterBtn: {
+    marginTop: 24,
+    backgroundColor: "#25D366",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  applyFilterBtnText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  searchTextInput: {
+    flex: 1,
+    fontSize: 14,
+    color: "#111827",
+    padding: 0,
+  },
+  searchPlaceholder: { fontSize: 14, color: "#9CA3AF" },
   categoriesContainer: { paddingHorizontal: 16, paddingVertical: 16, gap: 12 },
   categoryItem: { alignItems: "center", width: 76, gap: 6 },
   categoryIconBox: {
@@ -979,6 +1634,102 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 17, fontWeight: "700", color: "#111827" },
   seeAll: { fontSize: 13, color: "#1A73E8", fontWeight: "500" },
   loadingRow: { height: 120, alignItems: "center", justifyContent: "center" },
+  emptySearch: {
+    height: 100,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderStyle: "dashed",
+  },
+  emptySearchText: {
+    fontSize: 14,
+    color: "#9CA3AF",
+  },
+  // Search Results
+  searchResultContainer: {
+    marginTop: 12,
+    paddingHorizontal: 20,
+  },
+  searchResultHeader: {
+    marginBottom: 16,
+  },
+  searchResultTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#6B7280",
+  },
+  verticalResultsList: {
+    gap: 12,
+  },
+  verticalServiceCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  verticalCardContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  verticalCardImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 12,
+    backgroundColor: "#F3F4F6",
+  },
+  verticalCardIconBg: {
+    width: 60,
+    height: 60,
+    borderRadius: 12,
+    backgroundColor: "#F0FDF4",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  verticalCardInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  verticalCardName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  verticalCardCategory: {
+    fontSize: 13,
+    color: "#25D366",
+    fontWeight: "600",
+  },
+  verticalCardDesc: {
+    fontSize: 13,
+    color: "#6B7280",
+  },
+  emptySearchLarge: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 60,
+    gap: 12,
+  },
+  emptySearchTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#374151",
+    marginTop: 8,
+  },
+  emptySearchSub: {
+    fontSize: 14,
+    color: "#9CA3AF",
+    textAlign: "center",
+  },
   addBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -1239,4 +1990,259 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   saveBtnText: { fontSize: 15, fontWeight: "700", color: "#FFFFFF" },
+  categoryBlock: { marginBottom: 24 },
+  categoryHeaderVertical: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, marginBottom: 12 },
+  categoryTitleVertical: { fontSize: 16, fontWeight: "700", color: "#111827" },
+  categorySubtitleVertical: { fontSize: 12, color: "#6B7280", marginTop: 2 },
+  seeAllText: { fontSize: 13, fontWeight: "600", color: "#25D366" },
+  subCatList: { paddingHorizontal: 16, gap: 12 },
+  subCatCard: { 
+    width: 140, 
+    marginRight: 12,
+    borderWidth: 1, 
+    borderColor: "#F3F4F6", 
+    overflow: "hidden" 
+  },
+  subCatImageWrapper: { width: "100%", height: 90, backgroundColor: "#F3F4F6", justifyContent: "center", alignItems: "center" },
+  subCatImage: { width: "100%", height: "100%" },
+  subCatPlaceholder: { width: "100%", height: "100%", justifyContent: "center", alignItems: "center" },
+  subCatInfo: { padding: 10, height: 50, justifyContent: 'center' },
+  subCatName: { fontSize: 13, fontWeight: "600", color: "#111827", lineHeight: 18 },
+  emptySubCat: { paddingHorizontal: 16, paddingBottom: 8 },
+  emptySubCatText: { fontSize: 13, color: "#9CA3AF" },
+  horizontalCatsWrapper: {
+    marginBottom: 20,
+  },
+  horizontalCatsContent: {
+    paddingHorizontal: 16,
+    gap: 16,
+  },
+  quickCatBtn: {
+    alignItems: "center",
+    width: 80,
+  },
+  quickCatIconBg: {
+    width: 64,
+    height: 64,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  quickCatLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#4B5563",
+    textAlign: "center",
+    lineHeight: 14,
+  },
+  horizontalProvidersContent: { paddingHorizontal: 16, gap: 12, paddingBottom: 8 },
+  horizontalProfCard: { 
+    width: 130, 
+    backgroundColor: "#FFFFFF", 
+    borderRadius: 20, 
+    padding: 12, 
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  profCardAvatarWrap: { 
+    width: 80, 
+    height: 80, 
+    borderRadius: 40, 
+    marginBottom: 10,
+    position: "relative",
+  },
+  profCardAvatar: { width: "100%", height: "100%", borderRadius: 40 },
+  profCardAvatarFallback: { 
+    width: "100%", 
+    height: "100%", 
+    borderRadius: 40, 
+    backgroundColor: "#F0FDF4", 
+    alignItems: "center", 
+    justifyContent: "center" 
+  },
+  profCardRatingBadge: {
+    position: "absolute",
+    bottom: -2,
+    right: -2,
+    backgroundColor: "#25D366",
+    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+  },
+  profCardRatingText: { fontSize: 10, fontWeight: "800", color: "#FFFFFF" },
+  profCardName: { fontSize: 13, fontWeight: "700", color: "#111827", marginBottom: 2, textAlign: "center" },
+  profCardCategory: { fontSize: 11, color: "#9CA3AF", textAlign: "center" },
+  suggestionsContainer: {
+    backgroundColor: "#F0FDF4",
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 8,
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "#DCFCE7",
+  },
+  suggestionsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginBottom: 4,
+  },
+  suggestionsTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#065F46",
+  },
+  suggestionsSubtitle: {
+    fontSize: 12,
+    color: "#4B5563",
+    marginBottom: 16,
+    fontWeight: "500",
+    textAlign: "center",
+  },
+  suggestionCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.02,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  suggestionImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    marginRight: 12,
+    backgroundColor: "#E5E7EB",
+  },
+  suggestionInfo: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  suggestionName: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1F2937",
+    marginBottom: 4,
+  },
+  suggestionMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  suggestionMetaText: {
+    fontSize: 11,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+  moreSuggestionsBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#22C55E",
+    borderRadius: 12,
+    paddingVertical: 12,
+    marginBottom: 20,
+    gap: 6,
+  },
+  moreSuggestionsText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#22C55E",
+  },
+  feedbackContainer: {
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "#BBF7D0",
+    borderRadius: 18,
+    padding: 16,
+    backgroundColor: "transparent",
+  },
+  feedbackHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 12,
+  },
+  feedbackIconBg: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: "#1F2937",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  feedbackHeaderText: {
+    flex: 1,
+  },
+  feedbackTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1F2937",
+    marginBottom: 2,
+  },
+  feedbackSubtitle: {
+    fontSize: 11,
+    color: "#4B5563",
+  },
+  feedbackForm: {
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "center",
+  },
+  feedbackInput: {
+    flex: 1,
+    height: 40,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    fontSize: 13,
+    color: "#1F2937",
+    outlineStyle: "none",
+  } as any,
+  feedbackSubmitBtn: {
+    backgroundColor: "#059669",
+    height: 40,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  feedbackSubmitText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
 });

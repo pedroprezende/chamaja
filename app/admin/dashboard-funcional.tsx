@@ -45,13 +45,17 @@ export default function AdminDashboardFuncionalScreen() {
     }
   };
 
+  const handleSignOut = async () => {
+    try { await logout(); } catch (e) { console.error(e); }
+  };
+
   const handleLogout = async () => {
     Alert.alert("Logout", "Você será desconectado", [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Sair",
         onPress: async () => {
-          await logout();
+          await handleSignOut();
           router.replace("/admin/auth");
         },
       },

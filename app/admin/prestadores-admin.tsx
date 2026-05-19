@@ -12,30 +12,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { AdminTabBar } from "@/components/admin/AdminTabBar";
-
-interface Provider {
-  id: string;
-  name: string;
-  category: string;
-  rating: number;
-  reviews: number;
-  city: string;
-  neighborhood: string;
-  distance: string;
-  phone: string;
-  avatar: string;
-  isActive: boolean;
-}
-
-const PROVIDERS: Provider[] = [
-  { id: "1", name: "Elétrica do Zé", category: "Eletricista", rating: 4.8, reviews: 128, city: "Bragança Paulista", neighborhood: "Centro", distance: "1,2 km", phone: "11999991111", avatar: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=80&q=70", isActive: true },
-  { id: "2", name: "Eletricista Rápido", category: "Eletricista", rating: 4.8, reviews: 93, city: "Bragança Paulista", neighborhood: "Eletricista", distance: "2,1 km", phone: "11999992222", avatar: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=80&q=70", isActive: true },
-  { id: "3", name: "Mestre da Elétrica", category: "Eletricista", rating: 4.9, reviews: 156, city: "Bragança Paulista", neighborhood: "Vila Nova", distance: "2,3 km", phone: "11999993333", avatar: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=80&q=70", isActive: true },
-  { id: "4", name: "Luz Forte Serviços", category: "Eletricista", rating: 4.7, reviews: 64, city: "Bragança Paulista", neighborhood: "Jd. América", distance: "3,0 km", phone: "11999994444", avatar: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=80&q=70", isActive: true },
-  { id: "5", name: "Eletricista Confiável", category: "Eletricista", rating: 4.8, reviews: 112, city: "Bragança Paulista", neighborhood: "Centro", distance: "3,2 km", phone: "11999995555", avatar: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=80&q=70", isActive: true },
-  { id: "6", name: "Marmitaria Fit", category: "Alimentação", rating: 4.6, reviews: 87, city: "Bragança Paulista", neighborhood: "Jd. América", distance: "1,5 km", phone: "11999996666", avatar: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=80&q=70", isActive: false },
-  { id: "7", name: "Top Barber", category: "Barbearia", rating: 4.9, reviews: 210, city: "Bragança Paulista", neighborhood: "Centro", distance: "0,8 km", phone: "11999997777", avatar: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=80&q=70", isActive: true },
-];
+import { trpc } from "@/lib/trpc";
+import { ActivityIndicator } from "react-native";
 
 type FilterTab = "todos" | "ativos" | "inativos";
 
@@ -45,10 +23,12 @@ export default function PrestadoresAdmin() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterTab>("todos");
 
-  const filtered = PROVIDERS.filter((p) => {
+  const { data: dbProviders = [], isLoading } = trpc.providers.all.useQuery();
+
+  const filtered = dbProviders.filter((p) => {
     const matchSearch =
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.category.toLowerCase().includes(search.toLowerCase());
+      (p.name || "").toLowerCase().includes(search.toLowerCase()) ||
+      (p.category || "").toLowerCase().includes(search.toLowerCase());
     const matchFilter =
       filter === "todos" ||
       (filter === "ativos" && p.isActive) ||
@@ -63,7 +43,7 @@ export default function PrestadoresAdmin() {
           <MaterialIcons name="arrow-back" size={22} color="#111827" />
         </Pressable>
         <Text style={styles.headerTitle}>Prestadores</Text>
-        <Pressable style={styles.addBtn}>
+        <Pressable style={styles.addBtn} onPress={() => router.push("/admin/editar-prestador" as any)}>
           <MaterialIcons name="add" size={22} color="#FFF" />
         </Pressable>
       </View>
@@ -99,52 +79,62 @@ export default function PrestadoresAdmin() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.list}>
-        {filtered.map((prov) => (
-          <View key={prov.id} style={styles.provCard}>
-            <Pressable
-              style={styles.provMain}
-              onPress={() => router.push({ pathname: "/admin/editar-prestador", params: { id: prov.id } } as any)}
-            >
-              <Image source={{ uri: prov.avatar }} style={styles.avatar} />
-              <View style={{ flex: 1 }}>
-                <View style={styles.provNameRow}>
-                  <Text style={styles.provName} numberOfLines={1}>{prov.name}</Text>
-                  <View style={[styles.statusBadge, !prov.isActive && styles.statusInactive]}>
-                    <Text style={[styles.statusText, !prov.isActive && styles.statusTextInactive]}>
-                      {prov.isActive ? "Ativo" : "Inativo"}
+        {isLoading ? (
+          <ActivityIndicator size="large" color="#25D366" style={{ marginVertical: 20 }} />
+        ) : filtered.length === 0 ? (
+          <View style={{ alignItems: "center", paddingVertical: 40 }}>
+            <Text style={{ color: "#9CA3AF" }}>Nenhum prestador encontrado.</Text>
+          </View>
+        ) : (
+          filtered.map((prov) => (
+            <View key={prov.id} style={styles.provCard}>
+              <Pressable
+                style={styles.provMain}
+                onPress={() => router.push({ pathname: "/admin/editar-prestador", params: { id: prov.id } } as any)}
+              >
+                <Image source={{ uri: prov.imageUri || "https://ui-avatars.com/api/?name=" + encodeURIComponent(prov.name) }} style={styles.avatar} />
+                <View style={{ flex: 1 }}>
+                  <View style={styles.provNameRow}>
+                    <Text style={styles.provName} numberOfLines={1}>{prov.name}</Text>
+                    <View style={[styles.statusBadge, !prov.isActive && styles.statusInactive]}>
+                      <Text style={[styles.statusText, !prov.isActive && styles.statusTextInactive]}>
+                        {prov.isActive ? "Ativo" : "Inativo"}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.ratingRow}>
+                    <MaterialIcons name="star" size={13} color="#FBBF24" />
+                    <Text style={styles.rating}>{(prov as any).rating || 5.0}</Text>
+                    <Text style={styles.reviews}>({(prov as any).ratingCount || 0})</Text>
+                    <Text style={styles.category}>{prov.category || "Sem categoria"}</Text>
+                  </View>
+                  <View style={styles.locationRow}>
+                    <MaterialIcons name="location-on" size={12} color="#9CA3AF" />
+                    <Text style={styles.locationText}>
+                      {prov.address || "Endereço não informado"}
                     </Text>
                   </View>
                 </View>
-                <View style={styles.ratingRow}>
-                  <MaterialIcons name="star" size={13} color="#FBBF24" />
-                  <Text style={styles.rating}>{prov.rating.toFixed(1)}</Text>
-                  <Text style={styles.reviews}>({prov.reviews})</Text>
-                  <Text style={styles.category}>{prov.category}</Text>
+                <View style={styles.provActions}>
+                  {!!prov.whatsapp && (
+                    <Pressable
+                      style={styles.waBtn}
+                      onPress={(e) => { e.stopPropagation?.(); }}
+                    >
+                      <MaterialIcons name="chat" size={18} color="#25D366" />
+                    </Pressable>
+                  )}
+                  <Pressable
+                    style={styles.menuBtn}
+                    onPress={() => router.push({ pathname: "/admin/editar-prestador", params: { id: prov.id } } as any)}
+                  >
+                    <MaterialIcons name="more-vert" size={20} color="#9CA3AF" />
+                  </Pressable>
                 </View>
-                <View style={styles.locationRow}>
-                  <MaterialIcons name="location-on" size={12} color="#9CA3AF" />
-                  <Text style={styles.locationText}>
-                    {prov.neighborhood} • {prov.distance}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.provActions}>
-                <Pressable
-                  style={styles.waBtn}
-                  onPress={(e) => { e.stopPropagation?.(); }}
-                >
-                  <MaterialIcons name="chat" size={18} color="#25D366" />
-                </Pressable>
-                <Pressable
-                  style={styles.menuBtn}
-                  onPress={() => router.push({ pathname: "/admin/editar-prestador", params: { id: prov.id } } as any)}
-                >
-                  <MaterialIcons name="more-vert" size={20} color="#9CA3AF" />
-                </Pressable>
-              </View>
-            </Pressable>
-          </View>
-        ))}
+              </Pressable>
+            </View>
+          ))
+        )}
         <View style={{ height: 20 }} />
       </ScrollView>
 

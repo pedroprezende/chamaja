@@ -5,6 +5,10 @@ import { publicProcedure, router } from "./_core/trpc";
 import { servicesRouter } from "./routers/services";
 import { categoriesRouter, regionsRouter } from "./routers/categories";
 import { providersRouter } from "./routers/providers";
+import { featuredAdsRouter } from "./routers/featuredAds";
+import { dashboardRouter } from "./routers/dashboard";
+import { analyticsRouter } from "./routers/analytics";
+import { logsRouter } from "./routers/logs";
 
 export const appRouter = router({
   system: systemRouter,
@@ -20,6 +24,10 @@ export const appRouter = router({
   categories: categoriesRouter,
   regions: regionsRouter,
   providers: providersRouter,
+  featuredAds: featuredAdsRouter,
+  dashboard: dashboardRouter,
+  analytics: analyticsRouter,
+  logs: logsRouter,
 });
 
 export type AppRouter = typeof appRouter;

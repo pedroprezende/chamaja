@@ -1,22 +1,20 @@
-/**
- * Banco de dados global de prestadores de serviço
- * Persiste todos os prestadores cadastrados via AsyncStorage
- * Separado do ProviderContext (que gerencia apenas o prestador do usuário logado)
- */
-
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { trpcVanilla } from "./trpc-vanilla";
 
 export interface StoredProvider {
   userId: string;
   name: string;
   category: string;
   categoryId?: string;
+  subcategoryName?: string;
+  subcategoryId?: string;
   city: string;
   neighborhood: string;
   phone: string;
   avatar: string;
   description: string;
-  plan: "monthly" | "annual" | null;
+  address: string;
+  gallery: string[];
+  plan: "monthly" | "annual" | "free" | null;
   planExpiresAt: string | null;
   isActive: boolean;
   createdAt: string;
@@ -31,123 +29,107 @@ export interface StoredProvider {
   }>;
 }
 
-const STORAGE_KEY = "@chamaja_all_providers";
-
-let _initialized = false;
-let _providers: StoredProvider[] = [];
-
-async function ensureLoaded(): Promise<void> {
-  if (_initialized) return;
+// Helper to map DB provider to StoredProvider
+function mapToStoredProvider(dbProvider: any): StoredProvider {
+  let parsedServices = [];
   try {
-    const raw = await AsyncStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      _providers = JSON.parse(raw) as StoredProvider[];
-    } else {
-      _providers = [];
-    }
-  } catch {
-    _providers = [];
+    parsedServices = dbProvider.services ? JSON.parse(dbProvider.services) : [];
+  } catch (e) {
+    parsedServices = [];
   }
-  _initialized = true;
-}
 
-async function persist(): Promise<void> {
-  try {
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(_providers));
-  } catch {
-    // silently ignore
-  }
+  return {
+    userId: dbProvider.userId || dbProvider.id,
+    name: dbProvider.name || "",
+    category: dbProvider.category || "",
+    categoryId: dbProvider.categoryId || undefined,
+    subcategoryName: dbProvider.subcategoryName || undefined,
+    subcategoryId: dbProvider.subcategoryId || undefined,
+    city: dbProvider.city || "",
+    neighborhood: dbProvider.neighborhood || "",
+    phone: dbProvider.phone || dbProvider.whatsapp || "",
+    avatar: dbProvider.avatarUri || "",
+    description: dbProvider.description || "",
+    address: dbProvider.address || "",
+    gallery: dbProvider.gallery || [],
+    plan: dbProvider.plan as any || null,
+    planExpiresAt: dbProvider.planExpiresAt ? new Date(dbProvider.planExpiresAt).toISOString() : null,
+    isActive: dbProvider.isActive ?? true,
+    createdAt: dbProvider.createdAt ? new Date(dbProvider.createdAt).toISOString() : new Date().toISOString(),
+    rating: dbProvider.rating || 0,
+    reviewCount: dbProvider.ratingCount || 0,
+    services: parsedServices,
+  };
 }
 
 export const providersDB = {
-  /**
-   * Registra ou atualiza um prestador no banco global.
-   * Chamado quando o usuário se cadastra como prestador.
-   */
   upsertProvider: async (provider: StoredProvider): Promise<void> => {
-    await ensureLoaded();
-    const idx = _providers.findIndex((p) => p.userId === provider.userId);
-    if (idx !== -1) {
-      _providers[idx] = { ..._providers[idx], ...provider };
-    } else {
-      _providers.push(provider);
+    try {
+      await trpcVanilla.providers.upsert.mutate(provider);
+    } catch (err) {
+      console.error("[providersDB] Failed to upsert", err);
     }
-    await persist();
   },
 
-  /**
-   * Atualiza campos específicos de um prestador.
-   */
   updateProvider: async (userId: string, updates: Partial<StoredProvider>): Promise<void> => {
-    await ensureLoaded();
-    const idx = _providers.findIndex((p) => p.userId === userId);
-    if (idx !== -1) {
-      _providers[idx] = { ..._providers[idx], ...updates };
-      await persist();
+    try {
+      await trpcVanilla.providers.updateProvider.mutate({ userId, updates });
+    } catch (err) {
+      console.error("[providersDB] Failed to update", err);
     }
   },
 
-  /**
-   * Remove um prestador do banco global.
-   */
   removeProvider: async (userId: string): Promise<void> => {
-    await ensureLoaded();
-    _providers = _providers.filter((p) => p.userId !== userId);
-    await persist();
+    try {
+      await trpcVanilla.providers.removeProvider.mutate(userId);
+    } catch (err) {
+      console.error("[providersDB] Failed to remove", err);
+    }
   },
 
-  /**
-   * Retorna todos os prestadores ativos.
-   */
   getAllActive: async (): Promise<StoredProvider[]> => {
-    await ensureLoaded();
-    return _providers.filter((p) => p.isActive);
+    try {
+      const res = await trpcVanilla.providers.list.query();
+      return res.map(mapToStoredProvider);
+    } catch (err) {
+      console.error("[providersDB] Failed to get all", err);
+      return [];
+    }
   },
 
-  /**
-   * Retorna prestadores por categoria (nome ou ID).
-   */
   getByCategory: async (categoryOrId: string): Promise<StoredProvider[]> => {
-    await ensureLoaded();
-    const lower = categoryOrId.toLowerCase();
-    return _providers.filter(
-      (p) =>
-        p.isActive &&
-        (p.category.toLowerCase().includes(lower) ||
-          p.categoryId?.toLowerCase() === lower)
-    );
+    try {
+      const res = await trpcVanilla.providers.getByCategory.query(categoryOrId);
+      return res.map(mapToStoredProvider);
+    } catch (err) {
+      console.error("[providersDB] Failed to get by category", err);
+      return [];
+    }
   },
 
-  /**
-   * Busca prestadores por texto (nome, categoria, cidade, descrição).
-   */
   search: async (query: string): Promise<StoredProvider[]> => {
-    await ensureLoaded();
-    const q = query.toLowerCase().trim();
-    if (!q) return _providers.filter((p) => p.isActive);
-    return _providers.filter(
-      (p) =>
-        p.isActive &&
-        (p.name.toLowerCase().includes(q) ||
-          p.category.toLowerCase().includes(q) ||
-          p.city.toLowerCase().includes(q) ||
-          p.description.toLowerCase().includes(q))
-    );
+    if (!query) return providersDB.getAllActive();
+    try {
+      const res = await trpcVanilla.providers.search.query(query);
+      return res.map(mapToStoredProvider);
+    } catch (err) {
+      console.error("[providersDB] Failed to search", err);
+      return [];
+    }
   },
 
-  /**
-   * Retorna um prestador pelo userId.
-   */
   getById: async (userId: string): Promise<StoredProvider | null> => {
-    await ensureLoaded();
-    return _providers.find((p) => p.userId === userId) ?? null;
+    try {
+      const res = await trpcVanilla.providers.getById.query(userId);
+      return res ? mapToStoredProvider(res) : null;
+    } catch (err) {
+      console.error("[providersDB] Failed to get by id", err);
+      return null;
+    }
   },
 
-  /**
-   * Invalida o cache para forçar releitura do AsyncStorage.
-   */
   resetCache: (): void => {
-    _initialized = false;
-    _providers = [];
+    // No-op for cloud db
   },
 };
+

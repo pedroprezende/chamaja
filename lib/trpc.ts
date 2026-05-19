@@ -1,6 +1,5 @@
 import { createTRPCReact } from "@trpc/react-query";
 import { httpBatchLink } from "@trpc/client";
-import superjson from "superjson";
 import type { AppRouter } from "@/server/routers";
 import { getApiBaseUrl } from "@/constants/oauth";
 import * as Auth from "@/lib/_core/auth";
@@ -14,6 +13,28 @@ import * as Auth from "@/lib/_core/auth";
  */
 export const trpc = createTRPCReact<AppRouter>();
 
+import { createTRPCClient as createVanillaTRPCClient } from "@trpc/client";
+export const vanillaTrpc = createVanillaTRPCClient<AppRouter>({
+  links: [
+    httpBatchLink({
+      url: `${getApiBaseUrl()}/api/trpc`,
+      async headers() {
+        try {
+          const { supabase } = await import("./supabase");
+          const { data: { session } } = await supabase.auth.getSession();
+          const token = session?.access_token;
+          return token ? { Authorization: `Bearer ${token}` } : {};
+        } catch (e) {
+          return {};
+        }
+      },
+      fetch(url, options) {
+        return fetch(url, { ...options, credentials: "include" });
+      },
+    }),
+  ],
+});
+
 /**
  * Creates the tRPC client with proper configuration.
  * Call this once in your app's root layout.
@@ -23,11 +44,16 @@ export function createTRPCClient() {
     links: [
       httpBatchLink({
         url: `${getApiBaseUrl()}/api/trpc`,
-        // tRPC v11: transformer MUST be inside httpBatchLink, not at root
-        transformer: superjson,
+        // Transformer removed to fix "Unable to transform response" error
         async headers() {
-          const token = await Auth.getSessionToken();
-          return token ? { Authorization: `Bearer ${token}` } : {};
+          try {
+            const { supabase } = await import("./supabase");
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            return token ? { Authorization: `Bearer ${token}` } : {};
+          } catch (e) {
+            return {};
+          }
         },
         // Custom fetch to include credentials for cookie-based auth
         fetch(url, options) {

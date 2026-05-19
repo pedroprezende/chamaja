@@ -1,6 +1,26 @@
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
+import { useAuth } from "@/lib/auth-context";
+import { useEffect } from "react";
+import { View, ActivityIndicator } from "react-native";
 
 export default function AdminLayout() {
+  const { isAdmin, isLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && !isAdmin) {
+      router.replace("/");
+    }
+  }, [isAdmin, isLoading]);
+
+  if (isLoading || !isAdmin) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator size="large" color="#25D366" />
+      </View>
+    );
+  }
+
   return (
     <Stack
       screenOptions={{

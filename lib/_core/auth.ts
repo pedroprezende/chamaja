@@ -12,26 +12,28 @@ export type User = {
 };
 
 export async function getSessionToken(): Promise<string | null> {
+  console.log("[Auth Debug v2] Iniciando recuperação de token...");
   try {
-    // Web platform uses cookie-based auth, no manual token management needed
-    if (Platform.OS === "web") {
-      console.log("[Auth] Web platform uses cookie-based auth, skipping token retrieval");
-      return null;
+    // On Web and Native, try to get the session from Supabase first
+    const { supabase } = await import("../supabase");
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (session?.access_token) {
+      return session.access_token;
     }
 
-    // Use SecureStore for native
-    console.log("[Auth] Getting session token...");
-    const token = await SecureStore.getItemAsync(SESSION_TOKEN_KEY);
-    console.log(
-      "[Auth] Session token retrieved from SecureStore:",
-      token ? `present (${token.substring(0, 20)}...)` : "missing",
-    );
-    return token;
+    // Fallback for native if Supabase session is not available
+    if (Platform.OS !== "web") {
+      const token = await SecureStore.getItemAsync(SESSION_TOKEN_KEY);
+      return token;
+    }
+    return null;
   } catch (error) {
     console.error("[Auth] Failed to get session token:", error);
     return null;
   }
 }
+
 
 export async function setSessionToken(token: string): Promise<void> {
   try {

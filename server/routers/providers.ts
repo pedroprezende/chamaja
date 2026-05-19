@@ -1,6 +1,39 @@
 import { z } from "zod";
-import { publicProcedure, adminProcedure, router } from "../_core/trpc";
+import { publicProcedure, adminProcedure, protectedProcedure, router } from "../_core/trpc";
 import * as db from "../db";
+import { providers } from "../../drizzle/schema";
+import { eq, or, ilike } from "drizzle-orm";
+import { getReviewsByProfessional as getMockReviewsByProfessional } from "../../data/mock";
+
+const ProviderUpsertSchema = z.object({
+  name: z.string().min(1),
+  category: z.string().nullable().optional(),
+  categoryId: z.string().nullable().optional(),
+  subcategoryId: z.string().nullable().optional(),
+  subcategoryName: z.string().nullable().optional(),
+  serviceId: z.string().nullable().optional(),
+  serviceName: z.string().nullable().optional(),
+  city: z.string().nullable().optional(),
+  neighborhood: z.string().nullable().optional(),
+  phone: z.string().nullable().optional(),
+  plan: z.string().nullable().optional(),
+  planExpiresAt: z.string().nullable().optional(),
+  services: z.any().optional(), // Can be string or array
+  description: z.string().nullable().optional(),
+  avatar: z.string().nullable().optional(),
+  gallery: z.array(z.string()).nullable().optional(),
+  address: z.string().nullable().optional(),
+  rating: z.number().optional(),
+  reviewCount: z.number().optional(),
+});
+
+const ProviderUpdateSchema = z.object({
+  userId: z.string(),
+  updates: z.object({
+    name: z.string().optional(),
+    avatar: z.string().optional(),
+  }),
+});
 
 const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -15,52 +48,266 @@ export const providersRouter = router({
     return db.getProviders(false);
   }),
 
-  create: adminProcedure
+  upsert: protectedProcedure
+    .input(ProviderUpsertSchema)
+    .mutation(async ({ input, ctx }) => {
+      const dbInstance = await db.getDb();
+      if (!dbInstance) throw new Error("DB not found");
+      const userId = ctx.user.openId;
+
+      // Verify if user already has a provider profile
+      const existing = await dbInstance.select().from(providers).where(eq(providers.userId, userId)).limit(1);
+      
+      if (existing.length > 0) {
+        // Update
+        await dbInstance.update(providers).set({
+          name: input.name,
+          category: input.category,
+          categoryId: input.categoryId,
+          subcategoryId: input.subcategoryId,
+          subcategoryName: input.subcategoryName,
+          serviceId: input.serviceId,
+          serviceName: input.serviceName,
+          city: input.city,
+          neighborhood: input.neighborhood,
+          phone: input.phone,
+          plan: input.plan,
+          planExpiresAt: input.planExpiresAt ? new Date(input.planExpiresAt) : null,
+          services: JSON.stringify(input.services || []),
+          description: input.description,
+          avatarUri: input.avatar,
+          gallery: input.gallery || [],
+          address: input.address,
+          updatedAt: new Date(),
+        }).where(eq(providers.userId, userId));
+      } else {
+        // Insert
+        await dbInstance.insert(providers).values({
+          id: uid(),
+          userId,
+          name: input.name,
+          category: input.category,
+          categoryId: input.categoryId,
+          subcategoryId: input.subcategoryId,
+          subcategoryName: input.subcategoryName,
+          serviceId: input.serviceId,
+          serviceName: input.serviceName,
+          city: input.city,
+          neighborhood: input.neighborhood,
+          phone: input.phone,
+          plan: input.plan,
+          planExpiresAt: input.planExpiresAt ? new Date(input.planExpiresAt) : null,
+          services: JSON.stringify(input.services || []),
+          description: input.description,
+          avatarUri: input.avatar,
+          gallery: input.gallery || [],
+          address: input.address,
+          rating: input.rating || 0,
+          ratingCount: input.reviewCount || 0,
+          isActive: true,
+          displayOrder: 0,
+        });
+      }
+      return { success: true };
+    }),
+
+  updateProvider: protectedProcedure
+    .input(ProviderUpdateSchema)
+    .mutation(async ({ input, ctx }) => {
+      const dbInstance = await db.getDb();
+      if (!dbInstance) return;
+      
+      // Apenas o próprio usuário ou um admin pode atualizar
+      if (ctx.user.openId !== input.userId && ctx.user.role !== "admin") {
+        throw new Error("Forbidden: You can only update your own profile");
+      }
+      
+      
+      const mappedUpdates: any = {};
+      if (input.updates.name !== undefined) mappedUpdates.name = input.updates.name;
+      if (input.updates.avatar !== undefined) mappedUpdates.avatarUri = input.updates.avatar;
+      // Map other fields as needed
+      
+      await dbInstance.update(providers).set(mappedUpdates).where(eq(providers.userId, input.userId));
+      return { success: true };
+    }),
+
+  removeProvider: protectedProcedure
+    .input(z.string())
+    .mutation(async ({ input, ctx }) => {
+      const dbInstance = await db.getDb();
+      if (!dbInstance) return;
+      
+      // Apenas o próprio usuário ou um admin pode remover
+      if (ctx.user.openId !== input && ctx.user.role !== "admin") {
+        throw new Error("Forbidden: You can only delete your own profile");
+      }
+      
+      await dbInstance.delete(providers).where(eq(providers.userId, input));
+      return { success: true };
+    }),
+
+  getByCategory: publicProcedure
+    .input(z.string())
+    .query(async ({ input }) => {
+      const dbInstance = await db.getDb();
+      if (!dbInstance) return [];
+      return dbInstance.select().from(providers).where(
+        or(
+          eq(providers.category, input),
+          eq(providers.categoryId, input),
+          ilike(providers.subcategoryId, `%${input}%`),
+          ilike(providers.subcategoryName, `%${input}%`),
+          eq(providers.serviceId, input),
+          ilike(providers.serviceName, `%${input}%`)
+        )
+      );
+    }),
+
+  search: publicProcedure
+    .input(z.string())
+    .query(async ({ input }) => {
+      const dbInstance = await db.getDb();
+      if (!dbInstance) return [];
+      const lower = `%${input.toLowerCase()}%`;
+      return dbInstance.select().from(providers).where(
+        or(
+          ilike(providers.name, lower),
+          ilike(providers.category, lower),
+          ilike(providers.subcategoryName, lower),
+          ilike(providers.city, lower),
+          ilike(providers.neighborhood, lower),
+          ilike(providers.description, lower)
+        )
+      );
+    }),
+
+  getById: publicProcedure
+    .input(z.string())
+    .query(async ({ input }) => {
+      const dbInstance = await db.getDb();
+      if (!dbInstance) return null;
+      const res = await dbInstance.select().from(providers).where(
+        or(
+          eq(providers.id, input),
+          eq(providers.userId, input)
+        )
+      ).limit(1);
+      return res.length > 0 ? res[0] : null;
+    }),
+
+  getReviews: publicProcedure
+    .input(z.string())
+    .query(async ({ input }) => {
+      const dbReviews = await db.getReviewsByProfessional(input);
+      let mockReviews: any[] = [];
+      try {
+        mockReviews = getMockReviewsByProfessional(input);
+      } catch (err) {
+        console.warn("[tRPC] Failed to fetch mock reviews:", err);
+      }
+
+      const formattedDb = dbReviews.map((r) => ({
+        id: r.id,
+        professionalId: r.professionalId,
+        userName: r.userName,
+        userAvatar: r.userAvatar,
+        rating: r.rating,
+        comment: r.comment || "",
+        createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString().split("T")[0] : String(r.createdAt),
+      }));
+
+      return [...formattedDb, ...mockReviews];
+    }),
+
+  submitReview: publicProcedure
     .input(z.object({
-      name: z.string().min(1),
-      serviceId: z.string().optional(),
-      serviceName: z.string().optional(),
-      subcategoryId: z.string().optional(),
-      subcategoryName: z.string().optional(),
-      whatsapp: z.string().optional(),
-      description: z.string().optional(),
-      address: z.string().optional(),
-      avatarUri: z.string().optional(),
-      gallery: z.array(z.string()).optional(),
+      providerId: z.string(),
+      rating: z.number().min(1).max(5),
+      comment: z.string().optional(),
+      userName: z.string().optional(),
+      userAvatar: z.string().optional(),
     }))
+    .mutation(async ({ input, ctx }) => {
+      const dbInstance = await db.getDb();
+      if (!dbInstance) throw new Error("DB not found");
+
+      const res = await dbInstance.select().from(providers).where(
+        or(
+          eq(providers.id, input.providerId),
+          eq(providers.userId, input.providerId)
+        )
+      ).limit(1);
+
+      if (res.length === 0) {
+        throw new Error("Provider not found");
+      }
+      const provider = res[0];
+
+      const oldRating = Number(provider.rating) || 0;
+      const oldRatingCount = provider.ratingCount || 0;
+
+      const newRatingCount = oldRatingCount + 1;
+      const newRating = ((oldRating * oldRatingCount) + input.rating) / newRatingCount;
+
+      await dbInstance.update(providers).set({
+        rating: Number(newRating.toFixed(2)),
+        ratingCount: newRatingCount,
+        updatedAt: new Date(),
+      }).where(eq(providers.id, provider.id));
+
+      const reviewerName = input.userName || ctx.user?.name || "Cliente Anônimo";
+      const reviewerAvatar = input.userAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(reviewerName)}`;
+      const reviewId = `rev-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+      await db.createReview({
+        id: reviewId,
+        professionalId: provider.id,
+        userName: reviewerName,
+        userAvatar: reviewerAvatar,
+        rating: input.rating,
+        comment: input.comment || null,
+        createdAt: new Date(),
+      });
+
+      return { success: true, rating: newRating, ratingCount: newRatingCount };
+    }),
+
+  // Admin routes (preserved)
+  create: adminProcedure
+    .input(z.any())
     .mutation(async ({ input }) => {
+      // Used by admin dashboard
       const all = await db.getProviders(false);
       const maxOrder = all.length > 0 ? Math.max(...all.map((p) => p.displayOrder)) : -1;
       const id = uid();
       return db.createProvider({
         id,
         name: input.name,
-        serviceId: input.serviceId ?? null,
-        serviceName: input.serviceName ?? null,
-        subcategoryId: input.subcategoryId ?? null,
-        subcategoryName: input.subcategoryName ?? null,
-        whatsapp: input.whatsapp ?? null,
-        description: input.description ?? null,
-        address: input.address ?? null,
-        avatarUri: input.avatarUri ?? null,
-        gallery: input.gallery ?? null,
+        category: input.category || null,
+        categoryId: input.categoryId || null,
+        city: input.city || null,
+        neighborhood: input.neighborhood || null,
+        phone: input.phone || null,
+        plan: input.plan || "free",
+        serviceId: input.serviceId || null,
+        serviceName: input.serviceName || null,
+        subcategoryId: input.subcategoryId || null,
+        subcategoryName: input.subcategoryName || null,
+        whatsapp: input.whatsapp || null,
+        description: input.description || null,
+        address: input.address || null,
+        avatarUri: input.avatarUri || null,
+        gallery: input.gallery || null,
         rating: 0,
         ratingCount: 0,
-        isActive: true,
+        isActive: input.isActive ?? true,
         displayOrder: maxOrder + 1,
       });
     }),
 
   update: adminProcedure
-    .input(z.object({
-      id: z.string(),
-      name: z.string().optional(),
-      whatsapp: z.string().optional(),
-      description: z.string().optional(),
-      address: z.string().optional(),
-      avatarUri: z.string().optional(),
-      isActive: z.boolean().optional(),
-    }))
+    .input(z.any())
     .mutation(async ({ input }) => {
       const { id, ...data } = input;
       await db.updateProvider(id, data);

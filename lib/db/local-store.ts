@@ -79,13 +79,17 @@ const SEED_CATEGORIES: DbCategory[] = [
   { id: "reformas-reparos", name: "Reformas e Reparos", icon: "build", display_order: 1, is_active: true, created_at: now(), updated_at: now() },
   { id: "assistencia-tecnica", name: "Assistência Técnica", icon: "settings", display_order: 2, is_active: true, created_at: now(), updated_at: now() },
   { id: "servicos-domesticos", name: "Serviços Domésticos", icon: "home", display_order: 3, is_active: true, created_at: now(), updated_at: now() },
-  { id: "beleza-estetica", name: "Beleza e Estética", icon: "content-cut", display_order: 4, is_active: true, created_at: now(), updated_at: now() },
+  { id: "servicos-externos", name: "Serviços Externos", icon: "yard", display_order: 4, is_active: true, created_at: now(), updated_at: now() },
   { id: "automotivo", name: "Automotivo", icon: "directions-car", display_order: 5, is_active: true, created_at: now(), updated_at: now() },
-  { id: "educacao", name: "Aulas e Cursos", icon: "school", display_order: 6, is_active: true, created_at: now(), updated_at: now() },
-  { id: "eventos", name: "Eventos", icon: "celebration", display_order: 7, is_active: true, created_at: now(), updated_at: now() },
-  { id: "servicos-profissionais", name: "Serviços Profissionais", icon: "business-center", display_order: 8, is_active: true, created_at: now(), updated_at: now() },
-  { id: "saude", name: "Saúde", icon: "local-hospital", display_order: 9, is_active: true, created_at: now(), updated_at: now() },
+  { id: "beleza-estetica", name: "Beleza e Estética", icon: "content-cut", display_order: 6, is_active: true, created_at: now(), updated_at: now() },
+  { id: "servicos-profissionais", name: "Serviços Profissionais", icon: "business-center", display_order: 7, is_active: true, created_at: now(), updated_at: now() },
+  { id: "saude", name: "Saúde", icon: "local-hospital", display_order: 8, is_active: true, created_at: now(), updated_at: now() },
+  { id: "eventos", name: "Eventos", icon: "celebration", display_order: 9, is_active: true, created_at: now(), updated_at: now() },
   { id: "logistica", name: "Logística", icon: "local-shipping", display_order: 10, is_active: true, created_at: now(), updated_at: now() },
+  { id: "educacao", name: "Educação", icon: "school", display_order: 11, is_active: true, created_at: now(), updated_at: now() },
+  { id: "comercios", name: "Comércios", icon: "storefront", display_order: 12, is_active: true, created_at: now(), updated_at: now() },
+  { id: "mobilidade", name: "Mobilidade", icon: "commute", display_order: 13, is_active: true, created_at: now(), updated_at: now() },
+  { id: "limpeza-especializada", name: "Limpeza Especializada", icon: "cleaning-services", display_order: 14, is_active: true, created_at: now(), updated_at: now() },
 ];
 
 const SEED_SUB_SERVICES: DbSubService[] = [
@@ -93,16 +97,27 @@ const SEED_SUB_SERVICES: DbSubService[] = [
   { id: "encanador", category_id: "reformas-reparos", name: "Encanador", icon: "plumbing", image_url: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80", is_active: true, display_order: 2, created_at: now(), updated_at: now() },
   { id: "pedreiro", category_id: "reformas-reparos", name: "Pedreiro", icon: "construction", image_url: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=400&q=80", is_active: true, display_order: 3, created_at: now(), updated_at: now() },
   { id: "pintor", category_id: "reformas-reparos", name: "Pintor", icon: "format-paint", image_url: "https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=400&q=80", is_active: true, display_order: 4, created_at: now(), updated_at: now() },
-  { id: "marceneiro", category_id: "reformas-reparos", name: "Marceneiro", icon: "handyman", image_url: null, is_active: true, display_order: 5, created_at: now(), updated_at: now() },
-  { id: "conserto-celular", category_id: "assistencia-tecnica", name: "Conserto de Celular", icon: "phone-android", image_url: null, is_active: true, display_order: 1, created_at: now(), updated_at: now() },
-  { id: "tecnico-notebook", category_id: "assistencia-tecnica", name: "Técnico de Notebook", icon: "laptop", image_url: null, is_active: true, display_order: 2, created_at: now(), updated_at: now() },
-  { id: "ar-condicionado", category_id: "assistencia-tecnica", name: "Ar-condicionado", icon: "ac-unit", image_url: null, is_active: true, display_order: 3, created_at: now(), updated_at: now() },
-  { id: "diarista", category_id: "servicos-domesticos", name: "Diarista", icon: "cleaning-services", image_url: null, is_active: true, display_order: 1, created_at: now(), updated_at: now() },
-  { id: "baba", category_id: "servicos-domesticos", name: "Babá", icon: "child-care", image_url: null, is_active: true, display_order: 2, created_at: now(), updated_at: now() },
-  { id: "cabeleireiro", category_id: "beleza-estetica", name: "Cabeleireiro", icon: "content-cut", image_url: null, is_active: true, display_order: 1, created_at: now(), updated_at: now() },
-  { id: "barbeiro", category_id: "beleza-estetica", name: "Barbeiro", icon: "face", image_url: null, is_active: true, display_order: 2, created_at: now(), updated_at: now() },
-  { id: "mecanico", category_id: "automotivo", name: "Mecânico", icon: "car-repair", image_url: null, is_active: true, display_order: 1, created_at: now(), updated_at: now() },
-  { id: "borracheiro", category_id: "automotivo", name: "Borracheiro", icon: "tire-repair", image_url: null, is_active: true, display_order: 2, created_at: now(), updated_at: now() },
+  { id: "marceneiro", category_id: "reformas-reparos", name: "Marceneiro", icon: "handyman", image_url: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=400&q=80", is_active: true, display_order: 5, created_at: now(), updated_at: now() },
+  { id: "montagem-moveis", category_id: "reformas-reparos", name: "Montagem de Móveis", icon: "build", image_url: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&q=80", is_active: true, display_order: 6, created_at: now(), updated_at: now() },
+  { id: "desmontagem-moveis", category_id: "reformas-reparos", name: "Desmontagem de Móveis", icon: "build", image_url: "https://images.unsplash.com/photo-1595515106969-1ce29566ff1c?w=400&q=80", is_active: true, display_order: 7, created_at: now(), updated_at: now() },
+  { id: "conserto-celular", category_id: "assistencia-tecnica", name: "Conserto de Celular", icon: "phone-android", image_url: "https://images.unsplash.com/photo-1512428559083-a4014c209b35?w=400&q=80", is_active: true, display_order: 1, created_at: now(), updated_at: now() },
+  { id: "tecnico-notebook", category_id: "assistencia-tecnica", name: "Técnico de Notebook", icon: "laptop", image_url: "https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=400&q=80", is_active: true, display_order: 2, created_at: now(), updated_at: now() },
+  { id: "ar-condicionado", category_id: "assistencia-tecnica", name: "Ar-condicionado", icon: "ac-unit", image_url: "https://images.unsplash.com/photo-1563453392212-326f5e854473?w=400&q=80", is_active: true, display_order: 3, created_at: now(), updated_at: now() },
+  { id: "diarista", category_id: "servicos-domesticos", name: "Diarista", icon: "cleaning-services", image_url: "https://images.unsplash.com/photo-1581578731548-c64695ce6958?w=400&q=80", is_active: true, display_order: 1, created_at: now(), updated_at: now() },
+  { id: "baba", category_id: "servicos-domesticos", name: "Babá", icon: "child-care", image_url: "https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=400&q=80", is_active: true, display_order: 2, created_at: now(), updated_at: now() },
+  { id: "cabeleireiro", category_id: "beleza-estetica", name: "Cabeleireiro", icon: "content-cut", image_url: "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400&q=80", is_active: true, display_order: 1, created_at: now(), updated_at: now() },
+  { id: "barbeiro", category_id: "beleza-estetica", name: "Barbeiro", icon: "face", image_url: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400&q=80", is_active: true, display_order: 2, created_at: now(), updated_at: now() },
+  { id: "mecanico", category_id: "automotivo", name: "Mecânico", icon: "car-repair", image_url: "https://images.unsplash.com/photo-1517524008410-d4484e913a2d?w=400&q=80", is_active: true, display_order: 1, created_at: now(), updated_at: now() },
+  { id: "borracheiro", category_id: "automotivo", name: "Borracheiro", icon: "tire-repair", image_url: "https://images.unsplash.com/photo-1621905252507-b35242f8969d?w=400&q=80", is_active: true, display_order: 2, created_at: now(), updated_at: now() },
+  { id: "higienizacao-sofa", category_id: "limpeza-especializada", name: "Higienização de Sofá", icon: "cleaning-services", image_url: "https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=400&q=80", is_active: true, display_order: 1, created_at: now(), updated_at: now() },
+  { id: "higienizacao-colchao", category_id: "limpeza-especializada", name: "Higienização de Colchão", icon: "cleaning-services", image_url: "https://images.unsplash.com/photo-1632829871576-47b2c01950f3?w=500&q=80", is_active: true, display_order: 2, created_at: now(), updated_at: now() },
+  { id: "limpeza-pos-obra", category_id: "limpeza-especializada", name: "Limpeza Pós-Obra", icon: "cleaning-services", image_url: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=400&q=80", is_active: true, display_order: 3, created_at: now(), updated_at: now() },
+  { id: "limpeza-vidros", category_id: "limpeza-especializada", name: "Limpeza de Vidros", icon: "cleaning-services", image_url: "https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=400&q=80", is_active: true, display_order: 4, created_at: now(), updated_at: now() },
+  { id: "lavagem-tapetes", category_id: "limpeza-especializada", name: "Lavagem de Tapetes", icon: "cleaning-services", image_url: "https://images.unsplash.com/photo-1600121848594-d8644e57abab?w=400&q=80", is_active: true, display_order: 5, created_at: now(), updated_at: now() },
+  { id: "impermeabilizacao", category_id: "limpeza-especializada", name: "Impermeabilização", icon: "cleaning-services", image_url: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&q=80", is_active: true, display_order: 6, created_at: now(), updated_at: now() },
+  { id: "limpeza-comercial", category_id: "limpeza-especializada", name: "Limpeza Comercial", icon: "cleaning-services", image_url: "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?w=400&q=80", is_active: true, display_order: 7, created_at: now(), updated_at: now() },
+  { id: "limpeza-estofados", category_id: "limpeza-especializada", name: "Limpeza de Estofados", icon: "cleaning-services", image_url: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400&q=80", is_active: true, display_order: 8, created_at: now(), updated_at: now() },
+  { id: "sanitizacao", category_id: "limpeza-especializada", name: "Sanitização", icon: "cleaning-services", image_url: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=400&q=80", is_active: true, display_order: 9, created_at: now(), updated_at: now() },
 ];
 
 const SEED_REGIONS: DbRegion[] = [
@@ -397,6 +412,36 @@ export const featuredAdsDB = {
     try {
       const rows = await load<DbFeaturedAd>("featured_ads");
       const next = rows.map((r) => r.id === id ? { ...r, display_order, updated_at: now() } : r);
+      await save("featured_ads", next);
+      return { data: true, error: null };
+    } catch (e: any) {
+      return { data: null, error: e.message };
+    }
+  },
+
+  async insert(input: Omit<DbFeaturedAd, "id" | "views" | "display_order" | "created_at" | "updated_at">): Promise<DbResult<DbFeaturedAd>> {
+    try {
+      const rows = await load<DbFeaturedAd>("featured_ads");
+      const maxOrder = rows.reduce((m, r) => Math.max(m, r.display_order), 0);
+      const newRow: DbFeaturedAd = {
+        id: uid(),
+        ...input,
+        views: 0,
+        display_order: maxOrder + 1,
+        created_at: now(),
+        updated_at: now(),
+      };
+      await save("featured_ads", [...rows, newRow]);
+      return { data: newRow, error: null };
+    } catch (e: any) {
+      return { data: null, error: e.message };
+    }
+  },
+
+  async delete(id: string): Promise<DbResult<boolean>> {
+    try {
+      const rows = await load<DbFeaturedAd>("featured_ads");
+      const next = rows.filter((r) => r.id !== id);
       await save("featured_ads", next);
       return { data: true, error: null };
     } catch (e: any) {

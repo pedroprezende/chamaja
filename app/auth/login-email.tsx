@@ -13,15 +13,19 @@ import { MaterialIcons } from "@expo/vector-icons";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { useAuth } from "@/lib/auth-context";
+import { useRef } from "react";
+import { useColors } from "@/hooks/use-colors";
 
 export default function LoginEmailScreen() {
   const router = useRouter();
   const auth = useAuth();
+  const colors = useColors();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const passwordRef = useRef<TextInput>(null);
 
   const handleLogin = async () => {
     setErrorMsg("");
@@ -33,7 +37,6 @@ export default function LoginEmailScreen() {
 
       setIsLoading(true);
       await auth.signInWithEmail(email, password);
-      router.replace("/(tabs)");
     } catch (error: any) {
       setErrorMsg(error.message || "Não foi possível fazer login");
     } finally {
@@ -42,7 +45,7 @@ export default function LoginEmailScreen() {
   };
 
   return (
-    <ScreenContainer containerClassName="bg-[#1F2937]" className="">
+    <ScreenContainer className="">
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
@@ -53,27 +56,30 @@ export default function LoginEmailScreen() {
             style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
             onPress={() => router.back()}
           >
-            <MaterialIcons name="arrow-back" size={24} color="#FFFFFF" />
+            <MaterialIcons name="arrow-back" size={24} color={colors.foreground} />
           </Pressable>
-          <Text style={styles.title}>Fazer Login</Text>
+          <Text style={[styles.title, { color: colors.foreground }]}>Fazer Login</Text>
         </View>
 
         {/* Form */}
         <View style={styles.form}>
           {/* Email Input */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email</Text>
-            <View style={styles.inputWrapper}>
-              <MaterialIcons name="mail-outline" size={18} color="#9CA3AF" />
+            <Text style={[styles.label, { color: colors.foreground }]}>Email</Text>
+            <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <MaterialIcons name="mail-outline" size={18} color={colors.muted} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: colors.foreground }]}
                 placeholder="seu@email.com"
-                placeholderTextColor="#6B7280"
+                placeholderTextColor={colors.muted}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 editable={!isLoading}
+                returnKeyType="next"
+                onSubmitEditing={() => passwordRef.current?.focus()}
+                blurOnSubmit={false}
               />
             </View>
           </View>
@@ -81,27 +87,30 @@ export default function LoginEmailScreen() {
           {/* Password Input */}
           <View style={styles.inputGroup}>
             <View style={styles.passwordHeader}>
-              <Text style={styles.label}>Senha</Text>
+              <Text style={[styles.label, { color: colors.foreground }]}>Senha</Text>
               <Pressable onPress={() => router.push("/auth/forgot-password" as any)}>
-                <Text style={styles.forgotLink}>Esqueceu?</Text>
+                <Text style={[styles.forgotLink, { color: colors.primary }]}>Esqueceu?</Text>
               </Pressable>
             </View>
-            <View style={styles.inputWrapper}>
-              <MaterialIcons name="lock-outline" size={18} color="#9CA3AF" />
+            <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <MaterialIcons name="lock-outline" size={18} color={colors.muted} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: colors.foreground }]}
                 placeholder="Sua senha"
-                placeholderTextColor="#6B7280"
+                placeholderTextColor={colors.muted}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
                 editable={!isLoading}
+                ref={passwordRef}
+                returnKeyType="go"
+                onSubmitEditing={handleLogin}
               />
               <Pressable onPress={() => setShowPassword(!showPassword)}>
                 <MaterialIcons
                   name={showPassword ? "visibility" : "visibility-off"}
                   size={18}
-                  color="#9CA3AF"
+                  color={colors.muted}
                 />
               </Pressable>
             </View>
@@ -119,6 +128,7 @@ export default function LoginEmailScreen() {
           <Pressable
             style={({ pressed }) => [
               styles.loginButton,
+              { backgroundColor: colors.primary },
               pressed && { opacity: 0.85 },
               isLoading && { opacity: 0.6 },
             ]}
@@ -134,16 +144,16 @@ export default function LoginEmailScreen() {
 
           {/* Sign Up Link */}
           <View style={styles.signupContainer}>
-            <Text style={styles.signupText}>Não tem conta? </Text>
+            <Text style={[styles.signupText, { color: colors.muted }]}>Não tem conta? </Text>
             <Pressable onPress={() => router.push("/auth/signup" as any)} disabled={isLoading}>
-              <Text style={styles.signupLink}>Cadastre-se</Text>
+              <Text style={[styles.signupLink, { color: colors.primary }]}>Cadastre-se</Text>
             </Pressable>
           </View>
         </View>
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>
+          <Text style={[styles.footerText, { color: colors.muted }]}>
             Ao continuar, você concorda com nossos Termos de Serviço e Política de Privacidade
           </Text>
         </View>
@@ -173,7 +183,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "700",
-    color: "#FFFFFF",
   },
   form: {
     gap: 20,
@@ -190,28 +199,23 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#E5E7EB",
   },
   forgotLink: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#25D366",
   },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#374151",
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     gap: 10,
     borderWidth: 1,
-    borderColor: "#4B5563",
   },
   input: {
     flex: 1,
     fontSize: 14,
-    color: "#FFFFFF",
     padding: 0,
   },
   errorBox: {
@@ -231,7 +235,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   loginButton: {
-    backgroundColor: "#25D366",
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: "center",
@@ -251,12 +254,10 @@ const styles = StyleSheet.create({
   },
   signupText: {
     fontSize: 14,
-    color: "#9CA3AF",
   },
   signupLink: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#25D366",
   },
   footer: {
     marginTop: 24,
@@ -264,7 +265,6 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 11,
-    color: "#6B7280",
     textAlign: "center",
     lineHeight: 16,
   },

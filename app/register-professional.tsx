@@ -15,14 +15,16 @@ import { useState } from "react";
 import * as ImagePicker from "expo-image-picker";
 
 import { ScreenContainer } from "@/components/screen-container";
-import { createProfessional, categories } from "@/data/mock";
+import { createProfessional, subcategoriesByCategory } from "@/data/mock";
+
+const allSpecialties = Object.values(subcategoriesByCategory).flat();
 
 export default function RegisterProfessionalScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [selectedSpecialties, setSelectedSpecialties] = useState<Record<string, boolean>>({});
   const [formData, setFormData] = useState({
     name: "",
-    category: "",
     city: "",
     neighborhood: "",
     phone: "",
@@ -50,8 +52,8 @@ export default function RegisterProfessionalScreen() {
       Alert.alert("Erro", "Digite seu nome");
       return false;
     }
-    if (!formData.category) {
-      Alert.alert("Erro", "Selecione uma categoria");
+    if (selectedIds.length === 0) {
+      Alert.alert("Erro", "Selecione pelo menos uma especialidade");
       return false;
     }
     if (!formData.city.trim()) {
@@ -78,9 +80,15 @@ export default function RegisterProfessionalScreen() {
 
     setLoading(true);
     try {
+      // Concatenar categorias para o mock/legacy DB
+      const categoryNames = allSpecialties
+        .filter(c => selectedIds.includes(c.id))
+        .map(c => c.name.replace("\n", " "))
+        .join(", ");
+
       const newProfessional = createProfessional({
         name: formData.name,
-        category: formData.category,
+        category: categoryNames,
         city: formData.city,
         neighborhood: formData.neighborhood,
         phone: formData.phone,
@@ -111,11 +119,25 @@ export default function RegisterProfessionalScreen() {
     }
   };
 
-  const selectedCategory = categories.find((c) => c.id === formData.category);
+  const selectedCategoriesText = selectedIds.length > 0
+    ? allSpecialties
+        .filter((c) => selectedIds.includes(c.id))
+        .map((c) => c.name.replace("\n", " "))
+        .join(", ")
+    : "Selecione suas especialidades";
+
+  const toggleCategory = (id: string) => {
+    setSelectedSpecialties(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
+  const selectedIds = Object.keys(selectedSpecialties).filter(id => selectedSpecialties[id]);
 
   return (
     <ScreenContainer containerClassName="bg-[#F5F5F5]" className="">
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {/* Header */}
         <View style={styles.header}>
           <Pressable
@@ -160,7 +182,7 @@ export default function RegisterProfessionalScreen() {
 
             {/* Category */}
             <View style={styles.fieldGroup}>
-              <Text style={styles.label}>Categoria de serviço</Text>
+              <Text style={styles.label}>Especialidades (selecione várias se desejar)</Text>
               <Pressable
                 style={styles.selectButton}
                 onPress={() => setShowCategoryPicker(!showCategoryPicker)}
@@ -168,10 +190,11 @@ export default function RegisterProfessionalScreen() {
                 <Text
                   style={[
                     styles.selectButtonText,
-                    !formData.category && { color: "#9CA3AF" },
+                    formData.categories.length === 0 && { color: "#9CA3AF" },
                   ]}
+                  numberOfLines={1}
                 >
-                  {selectedCategory ? selectedCategory.name : "Selecione uma categoria"}
+                  {selectedCategoriesText}
                 </Text>
                 <MaterialIcons
                   name={showCategoryPicker ? "expand-less" : "expand-more"}
@@ -182,34 +205,42 @@ export default function RegisterProfessionalScreen() {
 
               {showCategoryPicker && (
                 <View style={styles.categoryList}>
-                  {categories.map((cat) => (
-                    <Pressable
-                      key={cat.id}
-                      style={({ pressed }) => [
-                        styles.categoryItem,
-                        pressed && { backgroundColor: "#F0F0F0" },
-                        formData.category === cat.id && {
-                          backgroundColor: "#E0F7F4",
-                        },
-                      ]}
-                      onPress={() => {
-                        setFormData({ ...formData, category: cat.id });
-                        setShowCategoryPicker(false);
-                      }}
-                    >
-                      <Text
-                        style={[
-                          styles.categoryItemText,
-                          formData.category === cat.id && {
-                            color: "#25D366",
-                            fontWeight: "700",
+                  {allSpecialties.map((cat) => {
+                    const isSelected = !!selectedSpecialties[cat.id];
+                    return (
+                      <Pressable
+                        key={cat.id}
+                        style={({ pressed }) => [
+                          styles.categoryItem,
+                          pressed && { backgroundColor: "#F0FDF4" },
+                          isSelected && { 
+                            backgroundColor: "#DCFCE7",
+                            borderLeftWidth: 4,
+                            borderLeftColor: "#25D366" 
                           },
                         ]}
+                        onPress={() => toggleCategory(cat.id)}
+                        hitSlop={8}
                       >
-                        {cat.name.replace("\n", " ")}
-                      </Text>
-                    </Pressable>
-                  ))}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <Text
+                            style={[
+                              styles.categoryItemText,
+                              isSelected && {
+                                color: "#15803D",
+                                fontWeight: "700",
+                              },
+                            ]}
+                          >
+                            {cat.name.replace("\n", " ")}
+                          </Text>
+                          {isSelected && (
+                            <MaterialIcons name="check-circle" size={20} color="#25D366" />
+                          )}
+                        </View>
+                      </Pressable>
+                    );
+                  })}
                 </View>
               )}
             </View>

@@ -26,6 +26,8 @@ import { getSubcategoryById } from "@/data/mock";
 import { adminDB, type Service as AdminService } from "@/lib/admin-database";
 import { providersDB, type StoredProvider } from "@/lib/providers-database";
 import { adminProvidersDB, type AdminProvider } from "@/lib/admin-providers-db";
+import { trpc } from "@/lib/trpc";
+import { useMemo } from "react";
 
 // ─── Tipo unificado ───────────────────────────────────────────────────────────
 type DisplayItem = {
@@ -111,55 +113,59 @@ export default function SubcategoryScreen() {
     getSubcategoryById(subcategoryId)?.name ||
     "Subcategoria";
 
-  const [items, setItems] = useState<DisplayItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: dbServices = [], isLoading: loadingServices } = trpc.services.getByCategory.useQuery(
+    { categoryId: subcategoryId || "" },
+    { enabled: !!subcategoryId }
+  );
 
-  const loadItems = useCallback(async () => {
-    try {
-      setLoading(true);
-      adminDB.resetCache();
-      adminProvidersDB.resetCache();
+  const { data: dbProviders = [], isLoading: loadingProviders } = trpc.providers.getByCategory.useQuery(
+    subcategoryId || "",
+    { enabled: !!subcategoryId }
+  );
 
-      // 1. Serviços admin com subcategoryId correspondente
-      const allAdmin = await adminDB.getAllServices();
-      const adminItems = allAdmin
-        .filter((s) => s.isActive && s.subcategoryId === subcategoryId)
-        .map(adminToDisplay);
+  const items = useMemo(() => {
+    if (loadingServices || loadingProviders) return [];
 
-      // 2. Prestadores admin vinculados a esta subcategoria
-      const adminProviders = await adminProvidersDB.getBySubcategoryId(subcategoryId);
-      const adminProviderItems = adminProviders.map(adminProviderToDisplay);
+    // 1. Serviços (Admins)
+    const adminItems = dbServices.filter(s => s.isActive).map(s => ({
+      id: s.id,
+      name: s.name,
+      image: s.imageUri,
+      whatsapp: s.whatsapp,
+      address: s.address,
+      description: s.description,
+      gallery: s.gallery,
+      isAdmin: true,
+      isProvider: false,
+      isAdminProvider: false,
+    }));
 
-      // 3. Prestadores reais (usuários do app) com categoryId correspondente
-      let providerItems: DisplayItem[] = [];
-      try {
-        const providers = await providersDB.getByCategory(subcategoryId);
-        providerItems = providers.map(providerToDisplay);
-      } catch {
-        // providersDB pode estar vazio
+    // 2. Prestadores
+    const providerItems = dbProviders.map(p => ({
+      id: p.id,
+      name: p.name,
+      image: p.avatarUri,
+      whatsapp: p.whatsapp || p.phone,
+      address: p.address || p.neighborhood,
+      description: p.description,
+      isAdmin: false,
+      isProvider: true,
+      isAdminProvider: false,
+    }));
+
+    // Combinar (sem duplicatas)
+    const seenIds = new Set<string>();
+    const merged: DisplayItem[] = [];
+    for (const item of [...adminItems, ...providerItems]) {
+      if (!seenIds.has(item.id)) {
+        seenIds.add(item.id);
+        merged.push(item);
       }
-
-      // Combinar: admin primeiro, prestadores admin, depois prestadores reais (sem duplicatas por ID)
-      const seenIds = new Set<string>();
-      const merged: DisplayItem[] = [];
-      for (const item of [...adminItems, ...adminProviderItems, ...providerItems]) {
-        if (!seenIds.has(item.id)) {
-          seenIds.add(item.id);
-          merged.push(item);
-        }
-      }
-
-      setItems(merged);
-    } catch (e) {
-      console.error("Erro ao carregar serviços da subcategoria:", e);
-    } finally {
-      setLoading(false);
     }
-  }, [subcategoryId]);
+    return merged;
+  }, [dbServices, dbProviders, loadingServices, loadingProviders]);
 
-  useEffect(() => {
-    loadItems();
-  }, [loadItems]);
+  const loading = loadingServices || loadingProviders;
 
   // ── Render item ──
   const renderItem = ({ item }: { item: DisplayItem }) => (

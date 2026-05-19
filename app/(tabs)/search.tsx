@@ -6,17 +6,19 @@ import {
   StyleSheet,
   Pressable,
   ScrollView,
-  Image,
+  ActivityIndicator,
 } from "react-native";
+import { Image } from "expo-image";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useDebounce } from "@/hooks/use-debounce";
 
 import { ScreenContainer } from "@/components/screen-container";
-import { services, categories, professionals, getProfessionalsByRanking } from "@/data/mock";
-import { adminDB } from "@/lib/admin-database";
-import { providersDB } from "@/lib/providers-database";
-import { adminProvidersDB } from "@/lib/admin-providers-db";
+import { trpc } from "@/lib/trpc";
+import { useColors } from "@/hooks/use-colors";
 
 const POPULAR = [
   { id: "eletricista",       name: "Eletricista",        icon: "bolt" },
@@ -44,85 +46,20 @@ type SearchResult = {
 };
 
 export default function SearchScreen() {
+  const colors = useColors();
   const [query, setQuery] = useState("");
-  const [adminServices, setAdminServices] = useState<SearchResult[]>([]);
-  const [realProviders, setRealProviders] = useState<SearchResult[]>([]);
   const router = useRouter();
+  
+  // Queries via tRPC
+  const { data: dbCategories = [] } = trpc.categories.list.useQuery();
+  const { data: dbSubcategories = [] } = trpc.categories.subServices.listAll.useQuery();
+  const { data: dbServices = [] } = trpc.services.list.useQuery({ homeOnly: false });
+  
+  const debouncedQuery = useDebounce(query, 500);
 
-  const [adminProviders, setAdminProviders] = useState<SearchResult[]>([]);
-
-  // Carregar serviços admin, prestadores admin e prestadores reais
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const aServices = await adminDB.getAllServices();
-        setAdminServices(
-          aServices
-            .filter((s) => s.isActive)
-            .map((s) => ({
-              id: s.id,
-              type: "admin-service" as const,
-              name: s.name,
-              subtitle: s.category,
-              avatar: s.imageUri,          // foto do serviço admin
-              categoryId: s.categoryId || s.category.toLowerCase().replace(/\s+/g, "-"),
-            }))
-        );
-      } catch {}
-
-      try {
-        const aProviders = await adminProvidersDB.getAll();
-        setAdminProviders(
-          aProviders.map((p) => ({
-            id: p.id,
-            type: "admin-provider" as const,
-            name: p.name,
-            subtitle: `${p.serviceName}${p.address ? ` \u2022 ${p.address}` : ""}`,
-            avatar: p.avatarUri,
-          }))
-        );
-      } catch {}
-
-      try {
-        const providers = await providersDB.getAllActive();
-        setRealProviders(
-          providers.map((p) => ({
-            id: p.userId,
-            type: "professional" as const,
-            name: p.name,
-            subtitle: `${p.category} \u2022 ${p.city}`,
-            avatar: p.avatar,
-          }))
-        );
-      } catch {}
-    };
-    load();
-  }, []);
-
-  // Todos os serviços mock
-  const mockServiceResults: SearchResult[] = useMemo(
-    () =>
-      services.map((s) => ({
-        id: s.id,
-        type: "service" as const,
-        name: s.name,
-        subtitle: s.categoryId,
-        categoryId: s.id,
-      })),
-    []
-  );
-
-  // Todos os profissionais mock
-  const mockProfessionalResults: SearchResult[] = useMemo(
-    () =>
-      professionals.map((p) => ({
-        id: p.id,
-        type: "professional" as const,
-        name: p.name,
-        subtitle: `${p.category} • ${p.neighborhood}`,
-        avatar: p.avatar,
-      })),
-    []
+  const { data: dbSearchResults = [], isLoading: searching } = trpc.providers.search.useQuery(
+    debouncedQuery, 
+    { enabled: debouncedQuery.length > 1 }
   );
 
   // Resultados filtrados
@@ -130,29 +67,59 @@ export default function SearchScreen() {
     if (!query.trim()) return [];
     const q = query.toLowerCase();
 
-    const allResults: SearchResult[] = [
-      ...adminServices,          // serviços admin primeiro (com foto)
-      ...adminProviders,         // prestadores admin segundo
-      ...realProviders,          // prestadores reais
-      ...mockServiceResults,     // mock por último
-      ...mockProfessionalResults,
-    ];
+    // 1. Mapear Serviços Administrativos do Banco
+    const svcs: SearchResult[] = dbServices
+      .filter(s => s.isActive && (s.name.toLowerCase().includes(q) || s.category.toLowerCase().includes(q)))
+      .map(s => ({
+        id: s.id,
+        type: "admin-service",
+        name: s.name,
+        subtitle: s.category,
+        avatar: s.imageUri || undefined,
+        categoryId: s.categoryId || undefined,
+      }));
 
-    // Deduplicar por ID
+    // 2. Mapear Prestadores da Busca
+    const providers: SearchResult[] = dbSearchResults.map(p => ({
+      id: p.id,
+      type: "professional",
+      name: p.name,
+      subtitle: `${p.category || "Profissional"} • ${p.city || ""}`,
+      avatar: p.avatarUri || undefined,
+    }));
+
+    // 3. Mapear Categorias que coincidem
+    const cats: SearchResult[] = dbCategories
+      .filter(c => c.name.toLowerCase().includes(q))
+      .map(c => ({
+        id: c.id,
+        type: "category",
+        name: c.name,
+        icon: c.icon,
+      }));
+
+    // 4. Mapear Subcategorias que coincidem
+    const subs: SearchResult[] = dbSubcategories
+      .filter(s => s.name.toLowerCase().includes(q))
+      .map(s => ({
+        id: s.id,
+        type: "category",
+        name: s.name,
+        categoryId: s.categoryId,
+        icon: "label",
+      }));
+
+    const allResults = [...svcs, ...providers, ...cats, ...subs];
+
+    // Deduplicar
     const seen = new Set<string>();
-    const unique = allResults.filter((r) => {
+    return allResults.filter((r) => {
       const key = `${r.type}-${r.id}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
     });
-
-    return unique.filter(
-      (r) =>
-        r.name.toLowerCase().includes(q) ||
-        r.subtitle?.toLowerCase().includes(q)
-    );
-  }, [query, mockServiceResults, adminServices, mockProfessionalResults, realProviders]);
+  }, [query, dbServices, dbSearchResults, dbCategories]);
 
   const handleResultPress = (item: SearchResult) => {
     if (item.type === "professional") {
@@ -167,30 +134,41 @@ export default function SearchScreen() {
         pathname: "/admin-provider/[providerId]",
         params: { providerId: item.id, title: item.name },
       } as any);
-    } else {
-      const catId = item.categoryId || item.id;
-      router.push({
-        pathname: "/professionals/[category]",
-        params: { category: catId, title: item.name },
-      } as any);
+    } else if (item.type === "category") {
+      // Se for uma subcategoria (tem categoryId preenchido no nosso mapeamento)
+      if (item.categoryId && item.categoryId !== item.id) {
+        router.push({
+          pathname: "/subcategory/[subcategoryId]",
+          params: { subcategoryId: item.id, title: item.name, categoryId: item.categoryId },
+        } as any);
+      } else {
+        // Categoria principal
+        router.push({
+          pathname: "/professionals/[category]",
+          params: { category: item.id, title: item.name },
+        } as any);
+      }
     }
   };
 
   return (
-    <ScreenContainer containerClassName="bg-[#F5F5F5]" className="">
+    <ScreenContainer edges={["left", "right"]} className="">
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Buscar</Text>
-      </View>
+      <LinearGradient
+        colors={colors.background === "#F8F9FA" ? ["#FFFFFF", "#F8F9FA"] : ["#1E293B", "#0F172A"]}
+        style={[styles.header, { borderBottomColor: colors.border }]}
+      >
+        <Text style={[styles.headerTitle, { color: colors.foreground }]}>Buscar</Text>
+      </LinearGradient>
 
       {/* Search Input */}
-      <View style={styles.searchWrapper}>
-        <View style={styles.searchBox}>
-          <MaterialIcons name="search" size={20} color="#9CA3AF" />
+      <View style={[styles.searchWrapper, { backgroundColor: colors.background }]}>
+        <View style={[styles.searchBox, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}>
+          <MaterialIcons name="search" size={20} color={colors.muted} />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: colors.foreground }]}
             placeholder="O que você precisa?"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={colors.muted}
             value={query}
             onChangeText={setQuery}
             autoCorrect={false}
@@ -198,9 +176,10 @@ export default function SearchScreen() {
           />
           {query.length > 0 && (
             <Pressable onPress={() => setQuery("")}>
-              <MaterialIcons name="close" size={18} color="#9CA3AF" />
+              <MaterialIcons name="close" size={18} color={colors.muted} />
             </Pressable>
           )}
+          {searching && <ActivityIndicator size="small" color={colors.primary} />}
         </View>
       </View>
 
@@ -211,15 +190,29 @@ export default function SearchScreen() {
           keyExtractor={(item) => `${item.type}-${item.id}`}
           contentContainerStyle={styles.resultsList}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          windowSize={10}
+          initialNumToRender={8}
+          maxToRenderPerBatch={4}
+          removeClippedSubviews={true}
           renderItem={({ item }) => (
             <Pressable
-              style={({ pressed }) => [styles.resultItem, pressed && { opacity: 0.7 }]}
+              style={({ pressed }) => [
+                styles.resultItem, 
+                { backgroundColor: colors.surface, borderColor: colors.border },
+                pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }
+              ]}
               onPress={() => handleResultPress(item)}
             >
               {item.avatar ? (
-                <Image source={{ uri: item.avatar }} style={styles.resultAvatar} />
+                <Image 
+                  source={{ uri: item.avatar }} 
+                  style={styles.resultAvatar} 
+                  contentFit="cover"
+                  transition={200}
+                />
               ) : (
-                <View style={styles.resultIcon}>
+                <View style={[styles.resultIcon, { backgroundColor: colors.background }]}>
                   <MaterialIcons
                     name={
                       item.type === "professional" || item.type === "admin-provider"
@@ -227,37 +220,39 @@ export default function SearchScreen() {
                         : "build"
                     }
                     size={20}
-                    color="#6B7280"
+                    color={colors.muted}
                   />
                 </View>
               )}
               <View style={styles.resultTextGroup}>
-                <Text style={styles.resultName}>{item.name}</Text>
+                <Text style={[styles.resultName, { color: colors.foreground }]}>{item.name}</Text>
                 {item.subtitle ? (
-                  <Text style={styles.resultSubtitle} numberOfLines={1}>
+                  <Text style={[styles.resultSubtitle, { color: colors.muted }]} numberOfLines={1}>
                     {item.subtitle}
                   </Text>
                 ) : null}
               </View>
               <View style={[
                 styles.resultTypeBadge,
-                (item.type === "admin-service" || item.type === "admin-provider") && styles.resultTypeBadgeAdmin,
+                { backgroundColor: colors.background, borderColor: colors.border },
+                (item.type === "admin-service" || item.type === "admin-provider") && { backgroundColor: colors.primary + "20", borderColor: colors.primary },
               ]}>
                 <Text style={[
                   styles.resultTypeText,
-                  (item.type === "admin-service" || item.type === "admin-provider") && styles.resultTypeTextAdmin,
+                  { color: colors.muted },
+                  (item.type === "admin-service" || item.type === "admin-provider") && { color: colors.primary },
                 ]}>
                   {item.type === "professional" ? "Profissional" : item.type === "admin-provider" ? "Prestador" : "Serviço"}
                 </Text>
               </View>
-              <MaterialIcons name="chevron-right" size={20} color="#D1D5DB" />
+              <MaterialIcons name="chevron-right" size={20} color={colors.muted} />
             </Pressable>
           )}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <MaterialIcons name="search-off" size={56} color="#D1D5DB" />
-              <Text style={styles.emptyTitle}>Nenhum resultado</Text>
-              <Text style={styles.emptySubtitle}>
+              <MaterialIcons name="search-off" size={64} color={colors.muted} />
+              <Text style={[styles.emptyTitle, { color: colors.foreground }]}>Nenhum resultado</Text>
+              <Text style={[styles.emptySubtitle, { color: colors.muted }]}>
                 Tente buscar por outro serviço ou profissional
               </Text>
             </View>
@@ -267,14 +262,15 @@ export default function SearchScreen() {
         <ScrollView showsVerticalScrollIndicator={false}>
           {/* Popular Services */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Serviços populares</Text>
+            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Serviços populares</Text>
             <View style={styles.popularGrid}>
               {POPULAR.map((item) => (
                 <Pressable
                   key={item.id}
                   style={({ pressed }) => [
                     styles.popularItem,
-                    pressed && { opacity: 0.75 },
+                    { backgroundColor: colors.surface, borderColor: colors.border },
+                    pressed && { opacity: 0.75, transform: [{ scale: 0.96 }] },
                   ]}
                   onPress={() =>
                     router.push({
@@ -283,37 +279,41 @@ export default function SearchScreen() {
                     } as any)
                   }
                 >
-                  <View style={styles.popularIcon}>
+                  <View style={[styles.popularIcon, { backgroundColor: colors.background }]}>
                     <MaterialIcons
                       name={item.icon as any}
                       size={24}
-                      color="#374151"
+                      color={colors.primary}
                     />
                   </View>
-                  <Text style={styles.popularName}>{item.name}</Text>
+                  <Text style={[styles.popularName, { color: colors.foreground }]}>{item.name}</Text>
                 </Pressable>
               ))}
             </View>
           </View>
 
-          {/* All Categories */}
+          {/* Todas as Categorias */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Todas as categorias</Text>
-            {categories.map((cat) => (
+            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Todas as categorias</Text>
+            {dbCategories.map((cat) => (
               <Pressable
                 key={cat.id}
                 style={({ pressed }) => [
                   styles.categoryRow,
-                  pressed && { opacity: 0.7 },
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                  pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] },
                 ]}
                 onPress={() =>
                   router.push(`/categories/${cat.id}` as any)
                 }
               >
-                <Text style={styles.categoryRowName}>
+                <View style={[styles.categoryIcon, { backgroundColor: colors.background }]}>
+                  <MaterialIcons name={cat.icon as any} size={20} color={colors.primary} />
+                </View>
+                <Text style={[styles.categoryRowName, { color: colors.foreground }]}>
                   {cat.name.replace("\n", " ")}
                 </Text>
-                <MaterialIcons name="chevron-right" size={20} color="#D1D5DB" />
+                <MaterialIcons name="chevron-right" size={20} color={colors.muted} />
               </Pressable>
             ))}
           </View>
@@ -325,65 +325,63 @@ export default function SearchScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    backgroundColor: "#FFFFFF",
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 12,
+    paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
   },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#111827",
-  },
+  headerTitle: { fontSize: 24, fontWeight: "800", letterSpacing: -0.5 },
   searchWrapper: {
-    backgroundColor: "#FFFFFF",
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 16,
     paddingTop: 8,
   },
   searchBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F3F4F6",
-    borderRadius: 12,
+    borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    gap: 8,
+    gap: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
   },
   searchInput: {
     flex: 1,
-    fontSize: 15,
-    color: "#111827",
+    fontSize: 16,
     padding: 0,
   },
   resultsList: {
     padding: 16,
-    paddingBottom: 24,
+    paddingBottom: 40,
   },
   resultItem: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 14,
-    marginBottom: 8,
+    marginBottom: 10,
     gap: 12,
     borderWidth: 1,
-    borderColor: "#F3F4F6",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
   },
   resultAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#E5E7EB",
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#F3F4F6",
   },
   resultIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#F3F4F6",
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -392,104 +390,103 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   resultName: {
-    fontSize: 15,
-    color: "#111827",
-    fontWeight: "600",
+    fontSize: 16,
+    fontWeight: "700",
   },
   resultSubtitle: {
-    fontSize: 12,
-    color: "#6B7280",
+    fontSize: 13,
   },
   resultTypeBadge: {
-    backgroundColor: "#F0FDF4",
-    borderRadius: 6,
+    borderRadius: 8,
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
     borderWidth: 1,
-    borderColor: "#BBF7D0",
   },
   resultTypeText: {
     fontSize: 11,
-    fontWeight: "600",
-    color: "#25D366",
-  },
-  resultTypeBadgeAdmin: {
-    backgroundColor: "#EFF6FF",
-    borderColor: "#BFDBFE",
-  },
-  resultTypeTextAdmin: {
-    color: "#2563EB",
+    fontWeight: "700",
   },
   empty: {
     alignItems: "center",
-    paddingTop: 60,
-    gap: 8,
+    paddingTop: 80,
+    gap: 12,
   },
   emptyTitle: {
-    fontSize: 17,
-    fontWeight: "600",
-    color: "#374151",
+    fontSize: 20,
+    fontWeight: "800",
   },
   emptySubtitle: {
-    fontSize: 14,
-    color: "#9CA3AF",
+    fontSize: 15,
     textAlign: "center",
+    paddingHorizontal: 40,
+    lineHeight: 22,
   },
   section: {
-    padding: 16,
-    paddingBottom: 8,
+    padding: 20,
+    paddingBottom: 10,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#111827",
-    marginBottom: 14,
+    fontSize: 18,
+    fontWeight: "800",
+    marginBottom: 16,
+    letterSpacing: -0.5,
   },
   popularGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
+    gap: 12,
   },
   popularItem: {
-    width: "47%",
+    width: "48%",
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 14,
     gap: 10,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
   },
   popularIcon: {
     width: 40,
     height: 40,
-    borderRadius: 10,
-    backgroundColor: "#F3F4F6",
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
   },
   popularName: {
     flex: 1,
     fontSize: 13,
-    fontWeight: "500",
-    color: "#374151",
+    fontWeight: "600",
   },
   categoryRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
+    borderRadius: 16,
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginBottom: 8,
+    paddingVertical: 16,
+    marginBottom: 10,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
   },
   categoryRowName: {
     flex: 1,
-    fontSize: 15,
-    color: "#111827",
-    fontWeight: "500",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  categoryIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
   },
 });

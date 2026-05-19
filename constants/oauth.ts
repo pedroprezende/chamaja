@@ -35,17 +35,23 @@ export function getApiBaseUrl(): string {
     return API_BASE_URL.replace(/\/$/, "");
   }
 
-  // On web, derive from current hostname by replacing port 5000 with 3000
+  // On web, derive from current hostname
   if (ReactNative.Platform.OS === "web" && typeof window !== "undefined" && window.location) {
-    const { protocol, hostname } = window.location;
-    // Pattern: 5000-sandboxid.region.domain -> 3000-sandboxid.region.domain
+    const { protocol, hostname, port } = window.location;
+    // Use the same hostname (localhost) to keep Chrome happy
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      return `http://localhost:3000`;
+    }
+    // Pattern for sandbox: 5000-sandboxid.region.domain -> 3000-sandboxid.region.domain
     const apiHostname = hostname.replace(/^5000-/, "3000-");
     if (apiHostname !== hostname) {
       return `${protocol}//${apiHostname}`;
     }
+    return `${protocol}//${hostname}${port ? ':' + port : ''}`;
   }
 
   // Fallback to empty (will use relative URL)
+  // IMPORTANT: For mobile devices, this should be set to your machine's IP or a tunnel URL
   return "";
 }
 

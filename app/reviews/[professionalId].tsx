@@ -6,24 +6,52 @@ import {
   ScrollView,
   Image,
   FlatList,
+  ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { ScreenContainer } from "@/components/screen-container";
-import { getReviewsByProfessional, getProfessionalById } from "@/data/mock";
+import { useColors } from "@/hooks/use-colors";
+import { trpc } from "@/lib/trpc";
 
 export default function ReviewsScreen() {
+  const colors = useColors();
   const router = useRouter();
   const { professionalId } = useLocalSearchParams<{ professionalId: string }>();
 
-  const professional = getProfessionalById(professionalId || "");
-  const allReviews = getReviewsByProfessional(professionalId || "");
+  // Busca o profissional no banco de dados real
+  const { data: professional, isLoading: loadingProfessional } = trpc.providers.getById.useQuery(professionalId || "");
+  
+  // Busca as avaliações no banco de dados (mescladas com mocks no backend)
+  const { data: dbReviews, isLoading: loadingReviews } = trpc.providers.getReviews.useQuery(professionalId || "", {
+    enabled: !!professionalId,
+  });
+
+  const isLoading = loadingProfessional || loadingReviews;
+  const allReviews = dbReviews || [];
+
+  if (isLoading) {
+    return (
+      <ScreenContainer edges={["left", "right"]} className="items-center justify-center">
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ color: colors.muted, marginTop: 12, fontWeight: "600" }}>Carregando avaliações...</Text>
+      </ScreenContainer>
+    );
+  }
 
   if (!professional) {
     return (
-      <ScreenContainer containerClassName="bg-[#F5F5F5]" className="items-center justify-center">
-        <Text style={styles.errorText}>Profissional não encontrado</Text>
+      <ScreenContainer edges={["left", "right"]} className="items-center justify-center">
+        <MaterialIcons name="person-off" size={64} color={colors.muted} />
+        <Text style={[styles.errorText, { marginTop: 16, color: colors.foreground, fontWeight: "700" }]}>Profissional não encontrado</Text>
+        <Pressable 
+          onPress={() => router.back()}
+          style={{ marginTop: 24, backgroundColor: colors.primary, paddingHorizontal: 32, paddingVertical: 14, borderRadius: 16 }}
+        >
+          <Text style={{ color: "#FFF", fontWeight: "700" }}>Voltar</Text>
+        </Pressable>
       </ScreenContainer>
     );
   }
@@ -35,8 +63,8 @@ export default function ReviewsScreen() {
           <MaterialIcons
             key={star}
             name={star <= rating ? "star" : "star-outline"}
-            size={16}
-            color={star <= rating ? "#FCD34D" : "#D1D5DB"}
+            size={18}
+            color={star <= rating ? colors.star : colors.muted + "40"}
           />
         ))}
       </View>
@@ -44,51 +72,86 @@ export default function ReviewsScreen() {
   };
 
   const renderReviewItem = ({ item }: any) => (
-    <View style={styles.reviewCard}>
+    <View style={[styles.reviewCard, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}>
       <View style={styles.reviewHeader}>
         <Image source={{ uri: item.userAvatar }} style={styles.userAvatar} />
         <View style={styles.reviewInfo}>
-          <Text style={styles.userName}>{item.userName}</Text>
-          <Text style={styles.reviewDate}>{item.createdAt}</Text>
+          <Text style={[styles.userName, { color: colors.foreground }]}>{item.userName}</Text>
+          <Text style={[styles.reviewDate, { color: colors.muted }]}>{item.createdAt}</Text>
         </View>
+        {renderStars(item.rating)}
       </View>
-      {renderStars(item.rating)}
-      <Text style={styles.reviewComment}>{item.comment}</Text>
+      {item.comment ? (
+        <Text style={[styles.reviewComment, { color: colors.muted }]}>{item.comment}</Text>
+      ) : null}
     </View>
   );
 
   return (
-    <ScreenContainer containerClassName="bg-[#F5F5F5]" className="">
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Pressable
-            style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
-            onPress={() => router.back()}
-          >
-            <MaterialIcons name="arrow-back" size={24} color="#11181C" />
-          </Pressable>
-          <Text style={styles.title}>Avaliações</Text>
-          <View style={{ width: 40 }} />
-        </View>
+    <ScreenContainer edges={["left", "right"]} className="">
+      {/* Header */}
+      <LinearGradient
+        colors={colors.background === "#F8F9FA" ? ["#FFFFFF", "#F8F9FA"] : ["#1E293B", "#0F172A"]}
+        style={[styles.header, { borderBottomColor: colors.border }]}
+      >
+        <Pressable
+          style={({ pressed }) => [styles.backBtn, { backgroundColor: colors.background }, pressed && { opacity: 0.6 }]}
+          onPress={() => router.back()}
+        >
+          <MaterialIcons name="arrow-back" size={24} color={colors.foreground} />
+        </Pressable>
+        <Text style={[styles.title, { color: colors.foreground }]}>Avaliações</Text>
+        <View style={{ width: 42 }} />
+      </LinearGradient>
 
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
         {/* Professional Info */}
-        <View style={styles.profCard}>
-          <Image source={{ uri: professional.avatar }} style={styles.profAvatar} />
+        <View style={[styles.profCard, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}>
+          <Image 
+            source={{ uri: professional.avatarUri || `https://ui-avatars.com/api/?name=${encodeURIComponent(professional.name)}` }} 
+            style={styles.profAvatar} 
+          />
           <View style={styles.profInfo}>
-            <Text style={styles.profName}>{professional.name}</Text>
+            <Text style={[styles.profName, { color: colors.foreground }]}>{professional.name}</Text>
             <View style={styles.ratingContainer}>
-              {renderStars(professional.rating)}
-              <Text style={styles.ratingText}>
-                {professional.rating} ({professional.reviewCount} avaliações)
+              {renderStars(Number(professional.rating) || 0)}
+              <Text style={[styles.ratingText, { color: colors.muted }]}>
+                {Number(professional.rating).toFixed(1)} ({professional.ratingCount || 0} avaliações)
               </Text>
             </View>
           </View>
         </View>
 
+        {/* Stats Section */}
+        <View style={[styles.statsSection, { backgroundColor: colors.surface, marginHorizontal: 16, padding: 20, borderRadius: 20, borderWidth: 1, borderColor: colors.border, marginBottom: 24 }]}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Distribuição de avaliações</Text>
+          {[5, 4, 3, 2, 1].map((stars) => {
+            const count = allReviews.filter((r) => r.rating === stars).length;
+            const percentage =
+              allReviews.length > 0 ? (count / allReviews.length) * 100 : 0;
+            return (
+              <View key={stars} style={styles.statRow}>
+                <View style={styles.starLabel}>
+                  <Text style={[styles.statText, { color: colors.foreground }]}>{stars}</Text>
+                  <MaterialIcons name="star" size={14} color={colors.star} />
+                </View>
+                <View style={[styles.barContainer, { backgroundColor: colors.background }]}>
+                  <View
+                    style={[
+                      styles.bar,
+                      { width: `${percentage}%`, backgroundColor: colors.star },
+                    ]}
+                  />
+                </View>
+                <Text style={[styles.countText, { color: colors.muted }]}>{count}</Text>
+              </View>
+            );
+          })}
+        </View>
+
         {/* Reviews List */}
         <View style={styles.reviewsSection}>
-          <Text style={styles.sectionTitle}>Comentários dos clientes</Text>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Comentários dos clientes</Text>
           {allReviews.length > 0 ? (
             <FlatList
               data={allReviews}
@@ -98,38 +161,12 @@ export default function ReviewsScreen() {
               ItemSeparatorComponent={() => <View style={styles.separator} />}
             />
           ) : (
-            <Text style={styles.noReviewsText}>Nenhuma avaliação ainda</Text>
+            <View style={[styles.emptyContainer, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}>
+              <MaterialIcons name="rate-review" size={48} color={colors.muted + "40"} />
+              <Text style={[styles.noReviewsText, { color: colors.muted }]}>Nenhuma avaliação detalhada ainda</Text>
+            </View>
           )}
         </View>
-
-        {/* Rating Distribution */}
-        <View style={styles.statsSection}>
-          <Text style={styles.sectionTitle}>Distribuição de avaliações</Text>
-          {[5, 4, 3, 2, 1].map((stars) => {
-            const count = allReviews.filter((r) => r.rating === stars).length;
-            const percentage =
-              allReviews.length > 0 ? (count / allReviews.length) * 100 : 0;
-            return (
-              <View key={stars} style={styles.statRow}>
-                <View style={styles.starLabel}>
-                  <MaterialIcons name="star" size={14} color="#FCD34D" />
-                  <Text style={styles.statText}>{stars}</Text>
-                </View>
-                <View style={styles.barContainer}>
-                  <View
-                    style={[
-                      styles.bar,
-                      { width: `${percentage}%` },
-                    ]}
-                  />
-                </View>
-                <Text style={styles.countText}>{count}</Text>
-              </View>
-            );
-          })}
-        </View>
-
-        <View style={{ height: 24 }} />
       </ScrollView>
     </ScreenContainer>
   );
@@ -139,52 +176,54 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
   },
   backBtn: {
-    width: 40,
-    height: 40,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05, shadowRadius: 5, elevation: 2,
   },
   title: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#11181C",
+    fontSize: 20,
+    fontWeight: "800",
     flex: 1,
     textAlign: "center",
+    letterSpacing: -0.5,
   },
   profCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
     marginHorizontal: 16,
-    marginBottom: 16,
-    padding: 12,
-    borderRadius: 12,
+    marginTop: 16,
+    marginBottom: 20,
+    padding: 16,
+    borderRadius: 20,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
   },
   profAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginRight: 12,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    marginRight: 16,
   },
   profInfo: {
     flex: 1,
   },
   profName: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#11181C",
-    marginBottom: 4,
+    fontSize: 18,
+    fontWeight: "800",
+    marginBottom: 6,
+    letterSpacing: -0.4,
   },
   ratingContainer: {
     flexDirection: "row",
@@ -196,110 +235,113 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   ratingText: {
-    fontSize: 12,
-    color: "#687076",
+    fontSize: 13,
+    fontWeight: "600",
   },
   reviewsSection: {
     paddingHorizontal: 16,
-    marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#11181C",
-    marginBottom: 12,
+    fontSize: 18,
+    fontWeight: "800",
+    marginBottom: 16,
+    letterSpacing: -0.5,
   },
   reviewCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 16,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 5,
     elevation: 2,
   },
   reviewHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 12,
   },
   userAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    marginRight: 12,
+    backgroundColor: "#E5E7EB",
   },
   reviewInfo: {
     flex: 1,
   },
   userName: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#11181C",
+    fontSize: 15,
+    fontWeight: "700",
   },
   reviewDate: {
     fontSize: 12,
-    color: "#9CA3AF",
     marginTop: 2,
+    fontWeight: "500",
   },
   reviewComment: {
-    fontSize: 13,
-    color: "#4B5563",
-    lineHeight: 18,
-    marginTop: 8,
+    fontSize: 14,
+    lineHeight: 22,
+    fontWeight: "400",
   },
   separator: {
     height: 0,
   },
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+    borderRadius: 20,
+    gap: 12,
+  },
   noReviewsText: {
     fontSize: 14,
-    color: "#9CA3AF",
+    fontWeight: "600",
     textAlign: "center",
-    paddingVertical: 24,
   },
   statsSection: {
-    paddingHorizontal: 16,
-    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 5,
+    elevation: 2,
   },
   statRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
-    gap: 8,
+    marginBottom: 14,
+    gap: 12,
   },
   starLabel: {
     flexDirection: "row",
     alignItems: "center",
-    width: 30,
+    width: 34,
     gap: 4,
+    justifyContent: "flex-end",
   },
   statText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#11181C",
+    fontSize: 13,
+    fontWeight: "700",
   },
   barContainer: {
     flex: 1,
-    height: 6,
-    backgroundColor: "#E5E7EB",
-    borderRadius: 3,
+    height: 8,
+    borderRadius: 4,
     overflow: "hidden",
   },
   bar: {
     height: "100%",
-    backgroundColor: "#FCD34D",
-    borderRadius: 3,
+    borderRadius: 4,
   },
   countText: {
-    fontSize: 12,
-    color: "#687076",
-    width: 20,
+    fontSize: 13,
+    fontWeight: "700",
+    width: 24,
     textAlign: "right",
   },
   errorText: {
-    fontSize: 16,
-    color: "#11181C",
+    fontSize: 18,
   },
 });

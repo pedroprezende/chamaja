@@ -52,14 +52,24 @@ async function startServer() {
     next();
   });
 
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  app.use(express.json({ limit: "100mb" }));
+  app.use(express.urlencoded({ limit: "100mb", extended: true }));
+
+  // Logger middleware
+  app.use((req, res, next) => {
+    console.log(`[Server] ${req.method} ${req.url}`);
+    next();
+  });
 
   registerStorageProxy(app);
-  registerOAuthRoutes(app);
+  // registerOAuthRoutes(app); // Legacy OAuth removed in favor of Supabase Auth
 
   app.get("/api/health", (_req, res) => {
     res.json({ ok: true, timestamp: Date.now() });
+  });
+
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", message: "Servidor ChamaJá está ONLINE!", database: !!process.env.DATABASE_URL });
   });
 
   app.use(
@@ -70,15 +80,16 @@ async function startServer() {
     }),
   );
 
-  const preferredPort = parseInt(process.env.PORT || "3000");
-  const port = await findAvailablePort(preferredPort);
+  const PORT = 3000;
+  const serverInstance = app.listen(PORT, "0.0.0.0", () => {
+    console.log(`[api] server listening on port ${PORT}`);
+  });
 
-  if (port !== preferredPort) {
-    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
-  }
-
-  server.listen(port, () => {
-    console.log(`[api] server listening on port ${port}`);
+  serverInstance.on("error", (err: any) => {
+    if (err.code === "EADDRINUSE") {
+      console.error(`[Error] Port ${PORT} is busy. Exiting to avoid mismatch.`);
+      process.exit(1);
+    }
   });
 }
 

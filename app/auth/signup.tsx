@@ -14,16 +14,22 @@ import { MaterialIcons } from "@expo/vector-icons";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { useAuth } from "@/lib/auth-context";
+import { useRef } from "react";
+import { useColors } from "@/hooks/use-colors";
 
 export default function SignupScreen() {
   const router = useRouter();
   const auth = useAuth();
+  const colors = useColors();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const emailRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
+  const confirmPasswordRef = useRef<TextInput>(null);
 
   const handleSignup = async () => {
     try {
@@ -44,7 +50,6 @@ export default function SignupScreen() {
 
       setIsLoading(true);
       await auth.signUpWithEmail(email, password, name);
-      router.replace("/(tabs)");
     } catch (error: any) {
       Alert.alert("Erro", error.message || "Não foi possível criar a conta");
     } finally {
@@ -53,7 +58,7 @@ export default function SignupScreen() {
   };
 
   return (
-    <ScreenContainer containerClassName="bg-[#1F2937]" className="">
+    <ScreenContainer className="">
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
@@ -64,66 +69,77 @@ export default function SignupScreen() {
             style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
             onPress={() => router.back()}
           >
-            <MaterialIcons name="arrow-back" size={24} color="#FFFFFF" />
+            <MaterialIcons name="arrow-back" size={24} color={colors.foreground} />
           </Pressable>
-          <Text style={styles.title}>Criar Conta</Text>
+          <Text style={[styles.title, { color: colors.foreground }]}>Criar Conta</Text>
         </View>
 
         {/* Form */}
         <View style={styles.form}>
           {/* Name Input */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Nome completo</Text>
-            <View style={styles.inputWrapper}>
-              <MaterialIcons name="person-outline" size={18} color="#9CA3AF" />
+            <Text style={[styles.label, { color: colors.foreground }]}>Nome completo</Text>
+            <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <MaterialIcons name="person-outline" size={18} color={colors.muted} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: colors.foreground }]}
                 placeholder="Seu nome"
-                placeholderTextColor="#6B7280"
+                placeholderTextColor={colors.muted}
                 value={name}
                 onChangeText={setName}
                 editable={!isLoading}
+                returnKeyType="next"
+                onSubmitEditing={() => emailRef.current?.focus()}
+                blurOnSubmit={false}
               />
             </View>
           </View>
 
           {/* Email Input */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email</Text>
-            <View style={styles.inputWrapper}>
-              <MaterialIcons name="mail-outline" size={18} color="#9CA3AF" />
+            <Text style={[styles.label, { color: colors.foreground }]}>Email</Text>
+            <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <MaterialIcons name="mail-outline" size={18} color={colors.muted} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: colors.foreground }]}
                 placeholder="seu@email.com"
-                placeholderTextColor="#6B7280"
+                placeholderTextColor={colors.muted}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 editable={!isLoading}
+                ref={emailRef}
+                returnKeyType="next"
+                onSubmitEditing={() => passwordRef.current?.focus()}
+                blurOnSubmit={false}
               />
             </View>
           </View>
 
           {/* Password Input */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Senha</Text>
-            <View style={styles.inputWrapper}>
-              <MaterialIcons name="lock-outline" size={18} color="#9CA3AF" />
+            <Text style={[styles.label, { color: colors.foreground }]}>Senha</Text>
+            <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <MaterialIcons name="lock-outline" size={18} color={colors.muted} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: colors.foreground }]}
                 placeholder="Mínimo 6 caracteres"
-                placeholderTextColor="#6B7280"
+                placeholderTextColor={colors.muted}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
                 editable={!isLoading}
+                ref={passwordRef}
+                returnKeyType="next"
+                onSubmitEditing={() => confirmPasswordRef.current?.focus()}
+                blurOnSubmit={false}
               />
               <Pressable onPress={() => setShowPassword(!showPassword)}>
                 <MaterialIcons
                   name={showPassword ? "visibility" : "visibility-off"}
                   size={18}
-                  color="#9CA3AF"
+                  color={colors.muted}
                 />
               </Pressable>
             </View>
@@ -131,17 +147,20 @@ export default function SignupScreen() {
 
           {/* Confirm Password Input */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Confirmar senha</Text>
-            <View style={styles.inputWrapper}>
-              <MaterialIcons name="lock-outline" size={18} color="#9CA3AF" />
+            <Text style={[styles.label, { color: colors.foreground }]}>Confirmar senha</Text>
+            <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <MaterialIcons name="lock-outline" size={18} color={colors.muted} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: colors.foreground }]}
                 placeholder="Confirme sua senha"
-                placeholderTextColor="#6B7280"
+                placeholderTextColor={colors.muted}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry={!showPassword}
                 editable={!isLoading}
+                ref={confirmPasswordRef}
+                returnKeyType="go"
+                onSubmitEditing={handleSignup}
               />
             </View>
           </View>
@@ -150,6 +169,7 @@ export default function SignupScreen() {
           <Pressable
             style={({ pressed }) => [
               styles.signupButton,
+              { backgroundColor: colors.primary },
               pressed && { opacity: 0.85 },
               isLoading && { opacity: 0.6 },
             ]}
@@ -165,16 +185,16 @@ export default function SignupScreen() {
 
           {/* Login Link */}
           <View style={styles.loginContainer}>
-            <Text style={styles.loginText}>Já tem conta? </Text>
+            <Text style={[styles.loginText, { color: colors.muted }]}>Já tem conta? </Text>
             <Pressable onPress={() => router.back()} disabled={isLoading}>
-              <Text style={styles.loginLink}>Faça login</Text>
+              <Text style={[styles.loginLink, { color: colors.primary }]}>Faça login</Text>
             </Pressable>
           </View>
         </View>
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>
+          <Text style={[styles.footerText, { color: colors.muted }]}>
             Ao criar uma conta, você concorda com nossos Termos de Serviço e Política de Privacidade
           </Text>
         </View>
@@ -204,7 +224,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "700",
-    color: "#FFFFFF",
   },
   form: {
     gap: 20,
@@ -216,27 +235,22 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#E5E7EB",
   },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#374151",
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     gap: 10,
     borderWidth: 1,
-    borderColor: "#4B5563",
   },
   input: {
     flex: 1,
     fontSize: 14,
-    color: "#FFFFFF",
     padding: 0,
   },
   signupButton: {
-    backgroundColor: "#25D366",
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: "center",
@@ -256,12 +270,10 @@ const styles = StyleSheet.create({
   },
   loginText: {
     fontSize: 14,
-    color: "#9CA3AF",
   },
   loginLink: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#25D366",
   },
   footer: {
     marginTop: 24,
@@ -269,7 +281,6 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 11,
-    color: "#6B7280",
     textAlign: "center",
     lineHeight: 16,
   },

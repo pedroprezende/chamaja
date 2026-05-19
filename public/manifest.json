@@ -1,0 +1,24 @@
+{
+  "short_name": "ChamaJá",
+  "name": "ChamaJá - Profissionais Confiáveis",
+  "description": "Encontre e contrate profissionais confiáveis para os seus serviços.",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/favicon.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/?source=pwa",
+  "background_color": "#F8F9FA",
+  "display": "standalone",
+  "scope": "/",
+  "theme_color": "#25D366",
+  "orientation": "portrait",
+  "lang": "pt-BR"
+}

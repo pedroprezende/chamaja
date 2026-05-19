@@ -1,13 +1,14 @@
 import "@/global.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
-import { Platform } from "react-native";
+import { Platform, View } from "react-native";
 import "@/lib/_core/nativewind-pressable";
 import { ThemeProvider } from "@/lib/theme-provider";
+import { useColors } from "@/hooks/use-colors";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { ProviderContextProvider } from "@/lib/provider-context";
 import { FavoritesProvider } from "@/lib/favorites-context";
@@ -22,6 +23,7 @@ import type { EdgeInsets, Metrics, Rect } from "react-native-safe-area-context";
 
 import { trpc, createTRPCClient } from "@/lib/trpc";
 import { initManusRuntime, subscribeSafeAreaInsets } from "@/lib/_core/manus-runtime";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const DEFAULT_WEB_INSETS: EdgeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 const DEFAULT_WEB_FRAME: Rect = { x: 0, y: 0, width: 0, height: 0 };
@@ -32,36 +34,92 @@ export const unstable_settings = {
 
 function RootLayoutNav() {
   const { isSignedIn, isLoading } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    const inAuthGroup = segments[0] === "auth";
+    const path = segments.join("/");
+
+    if (!isSignedIn && !inAuthGroup) {
+      if (path !== "oauth/callback" && path !== "") {
+        router.replace("/auth/login" as any);
+      } else if (path === "") {
+        router.replace("/auth/login" as any);
+      }
+    } else if (isSignedIn && inAuthGroup) {
+      router.replace("/(tabs)" as any);
+    }
+  }, [isSignedIn, isLoading, segments, router]);
 
   if (isLoading) {
     return null;
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      {isSignedIn ? (
-        <>
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="admin" />
-        </>
-      ) : (
-        <>
-          <Stack.Screen name="auth" />
-          <Stack.Screen name="admin" />
-        </>
-      )}
-      <Stack.Screen name="oauth/callback" />
-      <Stack.Screen name="professionals/[category]" />
-      <Stack.Screen name="categories/[section]" />
-      <Stack.Screen name="professional/[id]" />
-      <Stack.Screen name="admin" />
-      <Stack.Screen name="become-provider" />
-      <Stack.Screen name="provider-dashboard" />
-      <Stack.Screen name="favorites" />
-      <Stack.Screen name="orders-history" />
-      <Stack.Screen name="notifications" />
-      <Stack.Screen name="admin-services/[serviceId]" />
-    </Stack>
+    <>
+      <StatusBar 
+        style="dark" 
+        backgroundColor="transparent" 
+        translucent={true} 
+      />
+      <Stack screenOptions={{ headerShown: false }}>
+        {isSignedIn ? (
+          <>
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="admin" />
+          </>
+        ) : (
+          <>
+            <Stack.Screen name="auth" />
+            <Stack.Screen name="admin" />
+          </>
+        )}
+        <Stack.Screen name="oauth/callback" />
+        <Stack.Screen name="professionals/[category]" />
+        <Stack.Screen name="categories/[section]" />
+        <Stack.Screen name="professional/[id]" />
+        <Stack.Screen name="become-provider" />
+        <Stack.Screen name="provider-dashboard" />
+        <Stack.Screen name="favorites" />
+        <Stack.Screen name="notifications" />
+        <Stack.Screen name="admin-services/[serviceId]" />
+      </Stack>
+    </>
+  );
+}
+
+function MainContent({ children }: { children: React.ReactNode }) {
+  const colors = useColors();
+  
+  return (
+    <View style={[
+      Platform.OS === 'web' ? {
+        flex: 1,
+        backgroundColor: "#E5E7EB", // Light gray for web outer area
+        alignItems: 'center',
+        justifyContent: 'center',
+      } : { flex: 1 }
+    ]}>
+      <View style={[
+        Platform.OS === 'web' ? {
+          width: '100%',
+          maxWidth: 500,
+          height: '100dvh' as any,
+          backgroundColor: colors.background,
+          overflow: 'hidden',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 0.1,
+          shadowRadius: 20,
+          elevation: 10,
+        } : { flex: 1 }
+      ]}>
+        {children}
+      </View>
+    </View>
   );
 }
 
@@ -94,17 +152,16 @@ export default function RootLayout() {
       new QueryClient({
         defaultOptions: {
           queries: {
-            // Disable automatic refetching on window focus for mobile
             refetchOnWindowFocus: false,
-            // Retry failed requests once
             retry: 1,
+            staleTime: 1000 * 60 * 5, // 5 minutos
+            gcTime: 1000 * 60 * 10, // 10 minutos
           },
         },
       }),
   );
   const [trpcClient] = useState(() => createTRPCClient());
 
-  // Ensure minimum 8px padding for top and bottom on mobile
   const providerInitialMetrics = useMemo(() => {
     const metrics = initialWindowMetrics ?? { insets: initialInsets, frame: initialFrame };
     return {
@@ -119,43 +176,40 @@ export default function RootLayout() {
 
   const content = (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <trpc.Provider client={trpcClient} queryClient={queryClient}>
-        <QueryClientProvider client={queryClient}>
-          <AuthProvider>
-            <ProviderContextProvider>
-              <FavoritesProvider>
-                <NotificationsProvider>
-                  <RootLayoutNav />
-                  <StatusBar style="dark" backgroundColor="#FFFFFF" translucent={false} />
-                </NotificationsProvider>
-              </FavoritesProvider>
-            </ProviderContextProvider>
-          </AuthProvider>
-        </QueryClientProvider>
-      </trpc.Provider>
+      <ErrorBoundary>
+        <trpc.Provider client={trpcClient} queryClient={queryClient}>
+          <QueryClientProvider client={queryClient}>
+            <AuthProvider>
+              <ProviderContextProvider>
+                <FavoritesProvider>
+                  <NotificationsProvider>
+                    <MainContent>
+                      <RootLayoutNav />
+                    </MainContent>
+                  </NotificationsProvider>
+                </FavoritesProvider>
+              </ProviderContextProvider>
+            </AuthProvider>
+          </QueryClientProvider>
+        </trpc.Provider>
+      </ErrorBoundary>
     </GestureHandlerRootView>
   );
 
   const shouldOverrideSafeArea = Platform.OS === "web";
 
-  if (shouldOverrideSafeArea) {
-    return (
-      <ThemeProvider>
-        <SafeAreaProvider initialMetrics={providerInitialMetrics}>
+  return (
+    <ThemeProvider>
+      <SafeAreaProvider initialMetrics={providerInitialMetrics}>
+        {shouldOverrideSafeArea ? (
           <SafeAreaFrameContext.Provider value={frame}>
             <SafeAreaInsetsContext.Provider value={insets}>
               {content}
             </SafeAreaInsetsContext.Provider>
           </SafeAreaFrameContext.Provider>
-        </SafeAreaProvider>
-      </ThemeProvider>
-    );
-  }
-
-  return (
-    <ThemeProvider>
-      <SafeAreaProvider initialMetrics={providerInitialMetrics}>
-        {content}
+        ) : (
+          content
+        )}
       </SafeAreaProvider>
     </ThemeProvider>
   );

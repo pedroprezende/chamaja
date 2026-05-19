@@ -2,21 +2,43 @@ import {
   View,
   Text,
   FlatList,
-  Image,
   StyleSheet,
   Pressable,
   TextInput,
   Linking,
   Alert,
+  ActivityIndicator,
+  Image as RNImage,
+  Dimensions,
+  Platform,
 } from "react-native";
+import { Image } from "expo-image";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useState, useEffect, useMemo } from "react";
 
-import { getProfessionalsByRanking } from "@/data/mock";
-import type { Professional } from "@/data/mock";
-import { providersDB, type StoredProvider } from "@/lib/providers-database";
+import { trpc } from "@/lib/trpc";
+
+export interface Professional {
+  id: string;
+  name: string;
+  category: string;
+  categoryId: string;
+  type: "PREMIUM" | "FREE";
+  rating: number;
+  reviewCount: number;
+  phone: string;
+  avatar: string;
+  neighborhood: string;
+  city: string;
+  distance: string;
+  description: string;
+  serviceArea: string;
+  schedule: string;
+  paymentMethods: string;
+}
 
 function openWhatsApp(phone: string) {
   const message = encodeURIComponent(
@@ -28,23 +50,23 @@ function openWhatsApp(phone: string) {
   );
 }
 
-// Converte StoredProvider para o formato Professional do mock
-function providerToProfessional(p: StoredProvider): Professional {
+// Converte o objeto do banco para o formato Professional do mock
+function dbToProfessional(p: any): Professional {
   return {
-    id: p.userId,
+    id: p.id || p.userId,
     name: p.name,
     category: p.category,
     categoryId: p.categoryId || "",
-    type: p.plan ? "PREMIUM" : "FREE",
-    rating: p.rating,
-    reviewCount: p.reviewCount,
-    phone: p.phone,
-    avatar: p.avatar || `https://i.pravatar.cc/150?u=${p.userId}`,
-    neighborhood: p.neighborhood,
-    city: p.city,
+    type: p.plan === "premium" || p.plan === "monthly" || p.plan === "annual" ? "PREMIUM" : "FREE",
+    rating: p.rating || 0,
+    reviewCount: p.ratingCount || 0,
+    phone: p.phone || p.whatsapp || "",
+    avatar: p.avatarUri || `https://i.pravatar.cc/150?u=${p.id || p.userId}`,
+    neighborhood: p.neighborhood || "",
+    city: p.city || "",
     distance: "Próximo",
-    description: p.description,
-    serviceArea: p.city,
+    description: p.description || "",
+    serviceArea: p.city || "",
     schedule: "Consultar disponibilidade",
     paymentMethods: "Consultar",
   };
@@ -62,7 +84,12 @@ function ProfessionalCard({
       style={({ pressed }) => [styles.card, pressed && { opacity: 0.9 }]}
       onPress={onPress}
     >
-      <Image source={{ uri: item.avatar }} style={styles.avatar} />
+      <Image 
+        source={{ uri: item.avatar }} 
+        style={styles.avatar} 
+        contentFit="cover"
+        transition={200}
+      />
       <View style={styles.info}>
         <View style={styles.nameRow}>
           <Text style={styles.name} numberOfLines={1}>
@@ -70,7 +97,6 @@ function ProfessionalCard({
           </Text>
           {item.type === "PREMIUM" && (
             <View style={styles.premiumBadge}>
-              <MaterialIcons name="star" size={12} color="#FCD34D" />
               <Text style={styles.premiumText}>Premium</Text>
             </View>
           )}
@@ -111,39 +137,27 @@ export default function ProfessionalsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState("");
-  const [realProviders, setRealProviders] = useState<Professional[]>([]);
 
-  // Carregar prestadores reais do banco global
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const stored = category
-          ? await providersDB.getByCategory(category)
-          : await providersDB.getAllActive();
-        setRealProviders(stored.map(providerToProfessional));
-      } catch {
-        setRealProviders([]);
-      }
-    };
-    load();
-  }, [category]);
+  // Carregar prestadores reais via tRPC
+  const { data: dbProviders = [], isLoading } = trpc.providers.getByCategory.useQuery(
+    category || "",
+    { enabled: !!category }
+  );
 
-  // Combinar mock + reais, sem duplicatas
+  const realProviders = useMemo(() => {
+    return dbProviders.map(dbToProfessional);
+  }, [dbProviders]);
+
+  // Usar apenas prestadores reais
   const allProfessionals = useMemo(() => {
-    const mockData = category
-      ? getProfessionalsByRanking(category)
-      : getProfessionalsByRanking();
-    // Evitar duplicatas: se um prestador real tem o mesmo ID de um mock, usar o real
-    const realIds = new Set(realProviders.map((p) => p.id));
-    const filteredMock = mockData.filter((p) => !realIds.has(p.id));
     // PREMIUM primeiro
-    const combined = [...realProviders, ...filteredMock];
-    return combined.sort((a, b) => {
+    const sorted = [...realProviders].sort((a, b) => {
       if (a.type === "PREMIUM" && b.type !== "PREMIUM") return -1;
       if (a.type !== "PREMIUM" && b.type === "PREMIUM") return 1;
       return b.rating - a.rating;
     });
-  }, [realProviders, category]);
+    return sorted;
+  }, [realProviders]);
 
   // Filtrar por busca
   const filteredData = useMemo(() => {
@@ -205,7 +219,7 @@ export default function ProfessionalsScreen() {
       </Pressable>
 
       {/* Count */}
-      {filteredData.length > 0 && (
+      {!isLoading && filteredData.length > 0 && (
         <View style={styles.countRow}>
           <Text style={styles.countText}>
             {filteredData.length} profissional{filteredData.length !== 1 ? "is" : ""} encontrado{filteredData.length !== 1 ? "s" : ""}
@@ -219,6 +233,10 @@ export default function ProfessionalsScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        windowSize={10}
+        initialNumToRender={5}
+        maxToRenderPerBatch={5}
+        removeClippedSubviews={true}
         renderItem={({ item }) => (
           <ProfessionalCard
             item={item}
@@ -227,32 +245,37 @@ export default function ProfessionalsScreen() {
             }
           />
         )}
+        ListHeaderComponent={
+          isLoading ? (
+            <View style={{ gap: 16 }}>
+              {[1, 2, 3].map(i => (
+                <Skeleton key={i} height={140} borderRadius={24} />
+              ))}
+            </View>
+          ) : null
+        }
         ListEmptyComponent={
-          searchQuery.trim() ? (
+          !isLoading && searchQuery.trim() ? (
             <View style={styles.comingSoon}>
               <View style={styles.comingSoonIconWrapper}>
                 <MaterialIcons name="search-off" size={48} color="#9CA3AF" />
               </View>
-              <Text style={styles.comingSoonTitle}>Sem resultados</Text>
+              <Text style={styles.comingSoonTitle}>Nenhum resultado</Text>
               <Text style={styles.comingSoonSubtitle}>
-                Nenhum profissional encontrado para "{searchQuery}".{"\n"}Tente outro termo.
+                Não encontramos profissionais para "{searchQuery}"
               </Text>
             </View>
-          ) : (
+          ) : !isLoading ? (
             <View style={styles.comingSoon}>
               <View style={styles.comingSoonIconWrapper}>
-                <MaterialIcons name="schedule" size={48} color="#25D366" />
+                <MaterialIcons name="event-busy" size={48} color="#9CA3AF" />
               </View>
               <Text style={styles.comingSoonTitle}>Em breve</Text>
               <Text style={styles.comingSoonSubtitle}>
-                {`Estamos adicionando profissionais nesta categoria.\nVolte em breve!`}
+                Estamos cadastrando profissionais nesta região.
               </Text>
-              <View style={styles.comingSoonBadge}>
-                <MaterialIcons name="notifications-active" size={14} color="#25D366" />
-                <Text style={styles.comingSoonBadgeText}>Novidades chegando</Text>
-              </View>
             </View>
-          )
+          ) : null
         }
       />
     </View>
@@ -269,15 +292,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#FCD34D",
     borderRadius: 4,
     paddingHorizontal: 6,
-    paddingVertical: 2,
-    flexDirection: "row",
+    paddingVertical: 3,
     alignItems: "center",
-    gap: 2,
+    justifyContent: "center",
   },
   premiumText: {
     fontSize: 10,
     fontWeight: "700",
     color: "#78350F",
+    includeFontPadding: false,
+    lineHeight: 12,
   },
   container: {
     flex: 1,

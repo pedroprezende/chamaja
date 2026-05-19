@@ -9,60 +9,316 @@ import {
   Image,
   Platform,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter, useLocalSearchParams } from "expo-router";
-
-const CATEGORIES = [
-  "Eletricista", "Encanador", "Pedreiro", "Pintor", "Diarista",
-  "Barbearia", "Cabeleireiro", "Mecânico", "Alimentação", "Técnico em TI",
-];
-
-const ADDRESSES = [
-  "Centro, Bragança Paulista - SP",
-  "Jd. América, Bragança Paulista - SP",
-  "Vila Nova, Bragança Paulista - SP",
-  "Atibaia - SP",
-];
+import { trpc } from "@/lib/trpc";
+import { storage } from "@/lib/storage";
+import * as ImagePicker from "expo-image-picker";
+// Removed mock import
 
 export default function EditarPrestador() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const isEditing = !!id;
 
-  const [name, setName] = useState("Elétrica do Zé");
-  const [category, setCategory] = useState("Eletricista");
-  const [description, setDescription] = useState("Serviços elétricos em geral.\nResidencial, comercial e predial.");
-  const [address, setAddress] = useState("Centro, Bragança Paulista - SP");
+  // Real data
+  const { data: categories = [], isLoading: loadingCats, error: catError } = trpc.categories.list.useQuery();
+  const { data: dbProvider, isLoading: loadingProvider } = trpc.providers.getById.useQuery(id as string, { enabled: isEditing });
+
+  useEffect(() => {
+    if (catError) console.error("[EditarPrestador] Erro categorias:", catError);
+    console.log("[EditarPrestador] Categorias carregadas:", categories.length);
+  }, [categories, catError]);
+
+  const createMutation = trpc.providers.create.useMutation({ onSuccess: () => router.back() });
+  const updateMutation = trpc.providers.update.useMutation({ onSuccess: () => router.back() });
+  const deleteMutation = trpc.providers.delete.useMutation({ onSuccess: () => router.back() });
+
+  const [name, setName] = useState("");
+  const [category, setCategory] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [subcategoryName, setSubcategoryName] = useState("");
+  const [subcategoryId, setSubcategoryId] = useState("");
+  const [description, setDescription] = useState("");
+  const [address, setAddress] = useState("");
+  const [city, setCity] = useState("Bragança Paulista");
+  const [neighborhood, setNeighborhood] = useState("");
   const [isActive, setIsActive] = useState(true);
-  const [whatsapp, setWhatsapp] = useState("(11) 99999-9999");
-  const [showDistance, setShowDistance] = useState(true);
+  const [whatsapp, setWhatsapp] = useState("");
+  const [avatarUri, setAvatarUri] = useState("");
+  const [gallery, setGallery] = useState<string[]>([]);
+  
+  const [selectedSpecialties, setSelectedSpecialties] = useState<Record<string, boolean>>({});
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
-  const [showAddressPicker, setShowAddressPicker] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [showSubcategoryPicker, setShowSubcategoryPicker] = useState(false);
+  const [saving, setSaving] = useState(false);
+  
+  // ── New subcategory state ──
+  const [newSubName, setNewSubName] = useState("");
+  const [isCreatingSub, setIsCreatingSub] = useState(false);
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => {
-      setSaved(false);
+  const utils = trpc.useUtils();
+  const createSubService = trpc.categories.subServices.create.useMutation({
+    onSuccess: (newSub) => {
+      utils.categories.subServices.list.invalidate({ categoryId });
+      utils.categories.subServices.listAll.invalidate();
+      setNewSubName("");
+      setIsCreatingSub(false);
+      // Auto-select the new one
+      setSelectedSpecialties(prev => ({ ...prev, [newSub.id]: true }));
+    }
+  });
+
+  // Fetch subcategories for the selected category
+  const { data: dbSubcategories = [], isLoading: loadingSubs } = trpc.categories.subServices.list.useQuery(
+    { categoryId },
+    { enabled: !!categoryId }
+  );
+
+  // Fetch admin services for this category to use as specialties too
+  const { data: dbServices = [] } = trpc.services.getByCategory.useQuery(
+    { categoryId },
+    { enabled: !!categoryId }
+  );
+
+  // Fetch all subcategories globally for restoration mapping
+  const { data: allSubServices = [] } = trpc.categories.subServices.listAll.useQuery();
+
+  // Merge both lists
+  const mergedSubcategories = React.useMemo(() => {
+    const list: any[] = [];
+    
+    // 1. Subcategorias do DB
+    dbSubcategories.forEach((s: any) => {
+      list.push({ ...s, type: 'subcategory' });
+    });
+
+    // 2. Serviços Administrativos (como especialidades)
+    dbServices.forEach((s: any) => {
+      if (!list.find(item => item.name.toLowerCase() === s.name.toLowerCase())) {
+        list.push({
+          id: s.id,
+          name: s.name,
+          categoryId: s.categoryId || "",
+          type: 'service',
+        });
+      }
+    });
+    return list;
+  }, [categoryId, dbSubcategories, dbServices]);
+
+  const hasInitialized = React.useRef(false);
+
+  useEffect(() => {
+    if (dbProvider && !hasInitialized.current) {
+      setName(dbProvider.name || "");
+      setCategory(dbProvider.category || "");
+      setCategoryId(dbProvider.categoryId || "");
+      setSubcategoryName(dbProvider.subcategoryName || "");
+      setSubcategoryId(dbProvider.subcategoryId || "");
+      setDescription(dbProvider.description || "");
+      setAddress(dbProvider.address || "");
+      setCity(dbProvider.city || "Bragança Paulista");
+      setNeighborhood(dbProvider.neighborhood || "");
+      setIsActive(dbProvider.isActive);
+      setWhatsapp(dbProvider.whatsapp || dbProvider.phone || "");
+      setAvatarUri(dbProvider.avatarUri || "");
+      setGallery(dbProvider.gallery || []);
+
+      let specNames: string[] = [];
+      try {
+        if (dbProvider.services) {
+          specNames = JSON.parse(dbProvider.services);
+        } else if (dbProvider.subcategoryName) {
+          specNames = dbProvider.subcategoryName.split(",").map(s => s.trim()).filter(Boolean);
+        }
+      } catch (e) {
+        if (dbProvider.subcategoryName) {
+          specNames = dbProvider.subcategoryName.split(",").map(s => s.trim()).filter(Boolean);
+        }
+      }
+
+      // Restaurar múltiplas especialidades no mapa de seleção
+      // Usamos allSubServices para garantir que encontramos os IDs mesmo antes da categoria carregar
+      const newSelected: Record<string, boolean> = {};
+      
+      // Também tentamos restaurar pelos IDs se estiverem salvos no subcategoryId
+      if (dbProvider.subcategoryId) {
+        const ids = dbProvider.subcategoryId.split(",").map(id => id.trim()).filter(Boolean);
+        ids.forEach(id => { newSelected[id] = true; });
+      }
+
+      // Se não tivermos IDs ou para garantir nomes consistentes, usamos specNames
+      specNames.forEach(name => {
+        // Procurar tanto em sub-serviços quanto em serviços administrativos
+        const found = allSubServices.find(m => m.name.toLowerCase() === name.toLowerCase()) ||
+                      dbServices.find(m => m.name.toLowerCase() === name.toLowerCase());
+        if (found) {
+          newSelected[found.id] = true;
+        }
+      });
+      
+      setSelectedSpecialties(newSelected);
+      setSubcategoryName(specNames.join(", "));
+      hasInitialized.current = true;
+    }
+  }, [dbProvider, allSubServices, dbServices]);
+
+  const handleSave = async () => {
+    if (!name.trim() || !category) {
+      if (Platform.OS === "web") window.alert("Erro: Nome e categoria são obrigatórios.");
+      else Alert.alert("Erro", "Nome e categoria são obrigatórios.");
+      return;
+    }
+    
+    setSaving(true);
+    let errorDetails = "";
+    try {
+      // 1. Upload Avatar
+      let finalAvatar = avatarUri;
+      if (avatarUri && !avatarUri.startsWith("http")) {
+        try {
+          const uploadedUrl = await storage.uploadImage(avatarUri);
+          if (uploadedUrl) finalAvatar = uploadedUrl;
+        } catch (err: any) {
+          errorDetails += `Avatar: ${err.message || "Erro no upload"}\n`;
+        }
+      }
+
+      // 2. Upload Galeria
+      const finalGallery = [];
+      let galleryFailures = 0;
+      
+      for (const img of gallery) {
+        if (img.startsWith("http")) {
+          finalGallery.push(img);
+        } else {
+          try {
+            const uploadedUrl = await storage.uploadImage(img);
+            if (uploadedUrl) {
+              finalGallery.push(uploadedUrl);
+            }
+          } catch (err: any) {
+            galleryFailures++;
+            errorDetails += `Galeria [${galleryFailures}]: ${err.message || "Erro no upload"}\n`;
+          }
+        }
+      }
+
+      const selectedIds = Object.keys(selectedSpecialties).filter(id => selectedSpecialties[id]);
+      const selectedItems = mergedSubcategories.filter(s => selectedIds.includes(s.id));
+      
+      const selectedNames = selectedItems.map(s => s.name);
+      
+      // Encontrar primeiro serviço selecionado (se houver) para o vínculo oficial
+      const primaryService = selectedItems.find(s => s.type === 'service');
+      const primarySubcat = selectedItems.find(s => s.type === 'subcategory');
+
+      const data = {
+        name: name.trim(),
+        category: category || null,
+        categoryId: categoryId || null,
+        subcategoryName: selectedNames.join(", ") || subcategoryName || null,
+        subcategoryId: selectedIds.join(", ") || subcategoryId || null,
+        serviceId: primaryService?.id || null,
+        serviceName: primaryService?.name || null,
+        description: description || null,
+        address: address || null,
+        city: city || null,
+        neighborhood: neighborhood || null,
+        isActive,
+        whatsapp: whatsapp || null,
+        phone: whatsapp || null,
+        avatarUri: finalAvatar || null,
+        gallery: finalGallery.length > 0 ? finalGallery : null,
+        services: JSON.stringify(selectedNames.length > 0 ? selectedNames : (subcategoryName ? [subcategoryName] : [])),
+      };
+
+      if (isEditing) {
+        await updateMutation.mutateAsync({ id, ...data });
+      } else {
+        await createMutation.mutateAsync(data);
+      }
+
+      if (Platform.OS === "web") {
+        let msg = "Prestador salvo com sucesso!";
+        if (errorDetails) msg += `\n\nAVISO DE FOTOS:\n${errorDetails}`;
+        window.alert(msg);
+      } else {
+        Alert.alert("Sucesso", "Prestador salvo com sucesso!" + (errorDetails ? "\n\nAlgumas fotos falharam." : ""));
+      }
+      
       router.back();
-    }, 1200);
+    } catch (e: any) {
+      const msg = e.message || "Erro desconhecido";
+      console.error("[EditarPrestador] Erro ao salvar:", e);
+      if (Platform.OS === "web") window.alert("Erro ao salvar dados: " + msg);
+      else Alert.alert("Erro ao salvar dados", msg);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleDelete = () => {
-    if (Platform.OS === "web") {
-      if (window.confirm("Remover este prestador? Esta ação não pode ser desfeita.")) {
+  const handleDelete = async () => {
+    const perform = async () => {
+      try {
+        await deleteMutation.mutateAsync({ id: id as string });
         router.back();
+      } catch (e: any) {
+        console.error("[EditarPrestador] Erro ao excluir:", e);
+        const msg = e.message || "Erro desconhecido";
+        if (Platform.OS === "web") window.alert("Erro ao excluir: " + msg);
+        else Alert.alert("Erro ao excluir", msg);
       }
+    };
+
+    if (Platform.OS === "web") {
+      if (window.confirm("Remover este prestador? Esta ação não pode ser desfeita.")) perform();
     } else {
       Alert.alert("Remover prestador", "Esta ação não pode ser desfeita.", [
         { text: "Cancelar", style: "cancel" },
-        { text: "Remover", style: "destructive", onPress: () => router.back() },
+        { text: "Remover", style: "destructive", onPress: perform },
       ]);
     }
   };
+
+  const pickAvatar = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.6, // Reduzido para maior estabilidade
+    });
+    if (!result.canceled) {
+      setAvatarUri(result.assets[0].uri);
+    }
+  };
+
+  const pickGallery = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      selectionLimit: 8,
+      quality: 0.6, // Reduzido para maior estabilidade
+    });
+    if (!result.canceled) {
+      const uris = result.assets.map(a => a.uri);
+      setGallery(prev => [...prev, ...uris]);
+    }
+  };
+
+  if (loadingProvider) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator size="large" color="#25D366" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.screen}>
@@ -70,10 +326,12 @@ export default function EditarPrestador() {
         <Pressable style={styles.backBtn} onPress={() => router.back()}>
           <MaterialIcons name="arrow-back" size={22} color="#111827" />
         </Pressable>
-        <Text style={styles.headerTitle}>Editar Prestador</Text>
-        <Pressable style={styles.deleteBtn} onPress={handleDelete}>
-          <MaterialIcons name="delete-outline" size={22} color="#EF4444" />
-        </Pressable>
+        <Text style={styles.headerTitle}>{isEditing ? "Editar Prestador" : "Novo Prestador"}</Text>
+        {isEditing && (
+          <Pressable style={styles.deleteBtn} onPress={handleDelete}>
+            <MaterialIcons name="delete-outline" size={22} color="#EF4444" />
+          </Pressable>
+        )}
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
@@ -81,10 +339,10 @@ export default function EditarPrestador() {
         <View style={styles.avatarSection}>
           <View style={styles.avatarWrap}>
             <Image
-              source={{ uri: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=120&q=80" }}
+              source={{ uri: avatarUri || "https://ui-avatars.com/api/?name=" + encodeURIComponent(name || "P") }}
               style={styles.avatar}
             />
-            <Pressable style={styles.cameraBtn}>
+            <Pressable style={styles.cameraBtn} onPress={pickAvatar}>
               <MaterialIcons name="camera-alt" size={16} color="#FFF" />
             </Pressable>
           </View>
@@ -100,31 +358,137 @@ export default function EditarPrestador() {
             placeholderTextColor="#9CA3AF"
           />
 
-          <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Categoria</Text>
-          <Pressable
+          <Text style={styles.fieldLabel}>Categoria Principal</Text>
+          <Pressable 
             style={styles.selectField}
-            onPress={() => { setShowCategoryPicker(!showCategoryPicker); setShowAddressPicker(false); }}
+            onPress={() => setShowCategoryPicker(!showCategoryPicker)}
           >
-            <Text style={styles.selectText}>{category}</Text>
-            <MaterialIcons
-              name={showCategoryPicker ? "keyboard-arrow-up" : "keyboard-arrow-down"}
-              size={20}
-              color="#6B7280"
-            />
+            <Text style={[styles.selectText, !category && { color: "#9CA3AF" }]}>
+              {category || "Selecionar categoria"}
+            </Text>
+            <MaterialIcons name={showCategoryPicker ? "expand-less" : "expand-more"} size={24} color="#6B7280" />
           </Pressable>
+
           {showCategoryPicker && (
             <View style={styles.pickerDropdown}>
-              {CATEGORIES.map((c) => (
-                <Pressable
-                  key={c}
-                  style={({ pressed }) => [styles.pickerOption, pressed && { backgroundColor: "#F0FDF4" }, c === category && styles.pickerOptionActive]}
-                  onPress={() => { setCategory(c); setShowCategoryPicker(false); }}
+              {loadingCats ? (
+                <ActivityIndicator size="small" color="#25D366" style={{ padding: 20 }} />
+              ) : categories.length === 0 ? (
+                <Text style={{ padding: 20, color: "#9CA3AF", textAlign: "center" }}>Nenhuma categoria encontrada.</Text>
+              ) : categories.map((c) => (
+                <Pressable 
+                  key={c.id} 
+                  style={[styles.pickerOption, categoryId === c.id && styles.pickerOptionActive]}
+                  onPress={() => {
+                    setCategory(c.name);
+                    setCategoryId(c.id);
+                    setSubcategoryName(""); 
+                    setSubcategoryId("");
+                    setShowCategoryPicker(false);
+                  }}
                 >
-                  <Text style={[styles.pickerOptionText, c === category && { color: "#25D366", fontWeight: "700" }]}>{c}</Text>
-                  {c === category && <MaterialIcons name="check" size={16} color="#25D366" />}
+                  <Text style={[styles.pickerOptionText, categoryId === c.id && { color: "#25D366", fontWeight: "700" }]}>{c.name}</Text>
+                  {categoryId === c.id && <MaterialIcons name="check" size={20} color="#25D366" />}
                 </Pressable>
               ))}
             </View>
+          )}
+
+          {/* Especialidade Picker */}
+          {categoryId && (
+            <>
+              <View style={{ height: 16 }} />
+              <Text style={styles.fieldLabel}>Especialidade</Text>
+              <Pressable 
+                style={styles.selectField}
+                onPress={() => setShowSubcategoryPicker(!showSubcategoryPicker)}
+              >
+                <Text style={[styles.selectText, !subcategoryName && Object.keys(selectedSpecialties).filter(k => selectedSpecialties[k]).length === 0 && { color: "#9CA3AF" }]}>
+                  {Object.keys(selectedSpecialties).filter(k => selectedSpecialties[k]).length > 0 
+                    ? `${Object.keys(selectedSpecialties).filter(k => selectedSpecialties[k]).length} selecionados`
+                    : subcategoryName || "Selecionar especialidade"}
+                </Text>
+                <MaterialIcons name={showSubcategoryPicker ? "expand-less" : "expand-more"} size={24} color="#6B7280" />
+              </Pressable>
+
+              {showSubcategoryPicker && (
+                <View style={styles.pickerDropdown}>
+                  {/* Option to create new subcategory */}
+                  <View style={styles.addSubBox}>
+                    <TextInput
+                      style={styles.addSubInput}
+                      placeholder="Nova subcategoria..."
+                      value={newSubName}
+                      onChangeText={setNewSubName}
+                      placeholderTextColor="#9CA3AF"
+                    />
+                    <Pressable
+                      style={[styles.addSubBtn, (!newSubName.trim() || isCreatingSub) && { opacity: 0.5 }]}
+                      disabled={!newSubName.trim() || isCreatingSub}
+                      onPress={async () => {
+                        setIsCreatingSub(true);
+                        try {
+                          await createSubService.mutateAsync({
+                            categoryId,
+                            name: newSubName.trim(),
+                            icon: "build"
+                          });
+                        } catch (e) {
+                          Alert.alert("Erro", "Não foi possível criar a subcategoria");
+                        } finally {
+                          setIsCreatingSub(false);
+                        }
+                      }}
+                    >
+                      {isCreatingSub ? (
+                        <ActivityIndicator size="small" color="#FFF" />
+                      ) : (
+                        <MaterialIcons name="add" size={20} color="#FFF" />
+                      )}
+                    </Pressable>
+                  </View>
+
+                  <View style={{ height: 1, backgroundColor: "#F3F4F6" }} />
+
+                  {loadingSubs ? (
+                    <ActivityIndicator size="small" color="#25D366" style={{ padding: 20 }} />
+                  ) : mergedSubcategories.length === 0 ? (
+                    <Text style={{ padding: 20, color: "#9CA3AF", textAlign: "center" }}>Nenhuma subcategoria disponível.</Text>
+                  ) : (
+                    mergedSubcategories.map((s) => {
+                      const isSelected = !!selectedSpecialties[s.id] || subcategoryId === s.id;
+                      return (
+                        <Pressable 
+                          key={s.id} 
+                          style={[styles.pickerOption, isSelected && styles.pickerOptionActive]}
+                          onPress={() => {
+                            setSelectedSpecialties(prev => ({
+                              ...prev,
+                              [s.id]: !isSelected
+                            }));
+                            // Se estiver desmarcando o principal antigo
+                            if (subcategoryId === s.id && isSelected) {
+                              setSubcategoryId("");
+                              setSubcategoryName("");
+                            }
+                          }}
+                        >
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
+                            <MaterialIcons 
+                              name={s.type === 'service' ? 'star-outline' : 'label-outline'} 
+                              size={16} 
+                              color={isSelected ? "#25D366" : "#9CA3AF"} 
+                            />
+                            <Text style={[styles.pickerOptionText, isSelected && { color: "#25D366", fontWeight: "700" }]}>{s.name}</Text>
+                          </View>
+                          {isSelected && <MaterialIcons name="check-circle" size={20} color="#25D366" />}
+                        </Pressable>
+                      );
+                    })
+                  )}
+                </View>
+              )}
+            </>
           )}
 
           <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Descrição</Text>
@@ -137,32 +501,35 @@ export default function EditarPrestador() {
             placeholderTextColor="#9CA3AF"
           />
 
-          <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Endereço</Text>
-          <Pressable
-            style={styles.selectField}
-            onPress={() => { setShowAddressPicker(!showAddressPicker); setShowCategoryPicker(false); }}
-          >
-            <Text style={styles.selectText}>{address}</Text>
-            <MaterialIcons
-              name={showAddressPicker ? "keyboard-arrow-up" : "keyboard-arrow-down"}
-              size={20}
-              color="#6B7280"
-            />
-          </Pressable>
-          {showAddressPicker && (
-            <View style={styles.pickerDropdown}>
-              {ADDRESSES.map((a) => (
-                <Pressable
-                  key={a}
-                  style={({ pressed }) => [styles.pickerOption, pressed && { backgroundColor: "#F0FDF4" }, a === address && styles.pickerOptionActive]}
-                  onPress={() => { setAddress(a); setShowAddressPicker(false); }}
-                >
-                  <Text style={[styles.pickerOptionText, a === address && { color: "#25D366", fontWeight: "700" }]}>{a}</Text>
-                  {a === address && <MaterialIcons name="check" size={16} color="#25D366" />}
-                </Pressable>
-              ))}
+          <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.fieldLabel}>Cidade</Text>
+              <TextInput
+                style={styles.fieldInput}
+                value={city}
+                onChangeText={setCity}
+                placeholderTextColor="#9CA3AF"
+              />
             </View>
-          )}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.fieldLabel}>Bairro</Text>
+              <TextInput
+                style={styles.fieldInput}
+                value={neighborhood}
+                onChangeText={setNeighborhood}
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
+          </View>
+
+          <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Endereço Completo / Google Maps Link</Text>
+          <TextInput
+            style={styles.fieldInput}
+            value={address}
+            onChangeText={setAddress}
+            placeholder="Ex: Rua Central, 123 ou link do maps"
+            placeholderTextColor="#9CA3AF"
+          />
 
           <View style={styles.switchRow}>
             <Text style={styles.fieldLabel}>Status</Text>
@@ -180,6 +547,27 @@ export default function EditarPrestador() {
           </View>
         </View>
 
+        {/* Gallery */}
+        <Text style={styles.sectionTitle}>Galeria de fotos (Local/Serviços)</Text>
+        <View style={styles.card}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+            {gallery.map((uri, idx) => (
+              <View key={idx} style={{ position: "relative" }}>
+                <Image source={{ uri }} style={{ width: 80, height: 80, borderRadius: 10 }} />
+                <Pressable
+                  style={{ position: "absolute", top: -5, right: -5, backgroundColor: "#EF4444", borderRadius: 10 }}
+                  onPress={() => setGallery(prev => prev.filter((_, i) => i !== idx))}
+                >
+                  <MaterialIcons name="close" size={16} color="#FFF" />
+                </Pressable>
+              </View>
+            ))}
+            <Pressable style={styles.addGalleryBtn} onPress={pickGallery}>
+              <MaterialIcons name="add-a-photo" size={24} color="#25D366" />
+            </Pressable>
+          </ScrollView>
+        </View>
+
         {/* Contact */}
         <Text style={styles.sectionTitle}>Informações de contato</Text>
         <View style={styles.card}>
@@ -193,32 +581,25 @@ export default function EditarPrestador() {
               value={whatsapp}
               onChangeText={setWhatsapp}
               keyboardType="phone-pad"
+              placeholder="Ex: 11999999999"
               placeholderTextColor="#9CA3AF"
             />
-          </View>
-
-          <View style={[styles.switchRow, { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#F3F4F6" }]}>
-            <Text style={styles.fieldLabel}>Mostrar distância</Text>
-            <View style={styles.switchRight}>
-              <Text style={[styles.switchLabel, { color: showDistance ? "#374151" : "#9CA3AF" }]}>
-                {showDistance ? "Mostrar no app" : "Oculto"}
-              </Text>
-              <Switch
-                value={showDistance}
-                onValueChange={setShowDistance}
-                trackColor={{ false: "#E5E7EB", true: "#BBF7D0" }}
-                thumbColor={showDistance ? "#25D366" : "#D1D5DB"}
-              />
-            </View>
           </View>
         </View>
 
         <Pressable
-          style={({ pressed }) => [styles.saveBtn, pressed && { opacity: 0.85 }, saved && styles.saveBtnSaved]}
+          style={({ pressed }) => [styles.saveBtn, pressed && { opacity: 0.85 }, saving && { opacity: 0.7 }]}
           onPress={handleSave}
+          disabled={saving}
         >
-          <MaterialIcons name={saved ? "check-circle" : "save"} size={20} color="#FFF" />
-          <Text style={styles.saveBtnText}>{saved ? "Salvo!" : "Salvar alterações"}</Text>
+          {saving ? (
+            <ActivityIndicator color="#FFF" />
+          ) : (
+            <>
+              <MaterialIcons name="save" size={20} color="#FFF" />
+              <Text style={styles.saveBtnText}>Salvar Prestador</Text>
+            </>
+          )}
         </Pressable>
 
         <View style={{ height: 32 }} />
@@ -300,4 +681,35 @@ const styles = StyleSheet.create({
   },
   saveBtnSaved: { backgroundColor: "#16A34A" },
   saveBtnText: { fontSize: 16, fontWeight: "800", color: "#FFF" },
+  addGalleryBtn: {
+    width: 80, height: 80, borderRadius: 10, backgroundColor: "#F0FDF4",
+    alignItems: "center", justifyContent: "center", borderStyle: "dashed",
+    borderWidth: 1, borderColor: "#25D366",
+  },
+  addSubBox: {
+    flexDirection: "row",
+    padding: 10,
+    gap: 8,
+    alignItems: "center",
+    backgroundColor: "#F9FAFB",
+  },
+  addSubInput: {
+    flex: 1,
+    height: 38,
+    backgroundColor: "#FFF",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    fontSize: 13,
+    color: "#111827",
+  },
+  addSubBtn: {
+    width: 38,
+    height: 38,
+    backgroundColor: "#25D366",
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });

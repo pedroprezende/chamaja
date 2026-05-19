@@ -7,15 +7,20 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
+  Platform,
 } from "react-native";
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
+import * as Linking from "expo-linking";
 
 import { ScreenContainer } from "@/components/screen-container";
+import { supabase } from "@/lib/supabase";
+import { useColors } from "@/hooks/use-colors";
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const colors = useColors();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -28,18 +33,27 @@ export default function ForgotPasswordScreen() {
       }
 
       setIsLoading(true);
-      // Simular envio de email
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      
+      const redirectTo = Platform.OS === "web"
+        ? `${window.location.origin}/auth/reset-password`
+        : Linking.createURL("/auth/reset-password");
+
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo,
+      });
+
+      if (error) throw error;
+      
       setIsSubmitted(true);
-    } catch (error) {
-      Alert.alert("Erro", "Não foi possível enviar o email");
+    } catch (error: any) {
+      Alert.alert("Erro", error.message || "Não foi possível enviar o e-mail de recuperação");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <ScreenContainer containerClassName="bg-[#1F2937]" className="">
+    <ScreenContainer className="">
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
@@ -50,23 +64,27 @@ export default function ForgotPasswordScreen() {
             style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
             onPress={() => router.back()}
           >
-            <MaterialIcons name="arrow-back" size={24} color="#FFFFFF" />
+            <MaterialIcons name="arrow-back" size={24} color={colors.foreground} />
           </Pressable>
-          <Text style={styles.title}>Redefinir Senha</Text>
+          <Text style={[styles.title, { color: colors.foreground }]}>Redefinir Senha</Text>
         </View>
 
         {isSubmitted ? (
           // Success State
           <View style={styles.successContainer}>
-            <View style={styles.successIcon}>
-              <MaterialIcons name="check-circle" size={64} color="#25D366" />
+            <View style={[styles.successIconBox, { backgroundColor: colors.success + "20" }]}>
+              <MaterialIcons name="check-circle" size={64} color={colors.success || "#22C55E"} />
             </View>
-            <Text style={styles.successTitle}>Email enviado!</Text>
-            <Text style={styles.successMessage}>
-              Verifique sua caixa de entrada para um link de redefinição de senha
+            <Text style={[styles.successTitle, { color: colors.foreground }]}>E-mail enviado!</Text>
+            <Text style={[styles.successMessage, { color: colors.muted }]}>
+              Verifique sua caixa de entrada para obter o link de redefinição de senha
             </Text>
             <Pressable
-              style={({ pressed }) => [styles.backToLoginBtn, pressed && { opacity: 0.85 }]}
+              style={({ pressed }) => [
+                styles.backToLoginBtn,
+                { backgroundColor: colors.primary },
+                pressed && { opacity: 0.85 }
+              ]}
               onPress={() => router.back()}
             >
               <Text style={styles.backToLoginText}>Voltar para Login</Text>
@@ -75,18 +93,18 @@ export default function ForgotPasswordScreen() {
         ) : (
           // Form State
           <View style={styles.form}>
-            <Text style={styles.description}>
-              Digite seu email e enviaremos um link para redefinir sua senha
+            <Text style={[styles.description, { color: colors.muted }]}>
+              Digite seu e-mail cadastrado e enviaremos um link seguro para redefinir sua senha.
             </Text>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email</Text>
-              <View style={styles.inputWrapper}>
-                <MaterialIcons name="mail-outline" size={18} color="#9CA3AF" />
+              <Text style={[styles.label, { color: colors.foreground }]}>Email</Text>
+              <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <MaterialIcons name="mail-outline" size={18} color={colors.muted} />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.foreground }]}
                   placeholder="seu@email.com"
-                  placeholderTextColor="#6B7280"
+                  placeholderTextColor={colors.muted}
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
@@ -99,6 +117,7 @@ export default function ForgotPasswordScreen() {
             <Pressable
               style={({ pressed }) => [
                 styles.resetButton,
+                { backgroundColor: colors.primary },
                 pressed && { opacity: 0.85 },
                 isLoading && { opacity: 0.6 },
               ]}
@@ -139,16 +158,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "700",
-    color: "#FFFFFF",
   },
   form: {
     gap: 24,
     flex: 1,
   },
   description: {
-    fontSize: 14,
-    color: "#9CA3AF",
-    lineHeight: 20,
+    fontSize: 15,
+    lineHeight: 22,
   },
   inputGroup: {
     gap: 8,
@@ -156,29 +173,24 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#E5E7EB",
   },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#374151",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 10,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 12,
     borderWidth: 1,
-    borderColor: "#4B5563",
   },
   input: {
     flex: 1,
-    fontSize: 14,
-    color: "#FFFFFF",
+    fontSize: 15,
     padding: 0,
   },
   resetButton: {
-    backgroundColor: "#25D366",
-    borderRadius: 10,
-    paddingVertical: 14,
+    borderRadius: 16,
+    paddingVertical: 16,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 8,
@@ -193,28 +205,31 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 16,
+    paddingVertical: 40,
   },
-  successIcon: {
+  successIconBox: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 8,
   },
   successTitle: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#FFFFFF",
   },
   successMessage: {
-    fontSize: 14,
-    color: "#9CA3AF",
+    fontSize: 15,
     textAlign: "center",
     paddingHorizontal: 20,
-    lineHeight: 20,
+    lineHeight: 22,
   },
   backToLoginBtn: {
     marginTop: 24,
-    backgroundColor: "#25D366",
-    borderRadius: 10,
+    borderRadius: 16,
     paddingHorizontal: 32,
-    paddingVertical: 12,
+    paddingVertical: 16,
   },
   backToLoginText: {
     fontSize: 15,

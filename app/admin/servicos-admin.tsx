@@ -15,12 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "expo-router";
 import { AdminTabBar } from "@/components/admin/AdminTabBar";
-import {
-  categoriesDB,
-  subServicesDB,
-  type DbCategory,
-  type DbSubService,
-} from "@/lib/db";
+import { trpc } from "@/lib/trpc";
 
 // ── Ícones disponíveis para categorias ───────────────────────────────────────
 const ICONS = [
@@ -38,10 +33,30 @@ export default function ServicosAdmin() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("categorias");
 
-  // ── Estado principal ──────────────────────────────────────────────────────
-  const [categories, setCategories] = useState<DbCategory[]>([]);
-  const [subCounts, setSubCounts] = useState<Record<string, number>>({});
-  const [loading, setLoading] = useState(true);
+  // ── tRPC Queries e Mutations ──────────────────────────────────────────────
+  const utils = trpc.useUtils();
+  const { data: categories = [], isLoading: loading, error } = trpc.categories.all.useQuery();
+  const { data: allSubServices = [] } = trpc.categories.subServices.listAll.useQuery();
+  
+  useEffect(() => {
+    console.log("[Admin Debug] Categorias carregadas:", categories.length);
+    if (error) console.error("[Admin Debug] Erro ao carregar categorias:", error);
+  }, [categories, error]);
+  const createCategory = trpc.categories.create.useMutation({
+    onSuccess: () => {
+      utils.categories.all.invalidate();
+      setShowAddCat(false);
+      setNewCatName("");
+    }
+  });
+
+  const deleteCategory = trpc.categories.delete.useMutation({
+    onSuccess: () => utils.categories.all.invalidate()
+  });
+
+  const reorderCategories = trpc.categories.reorder.useMutation({
+    onSuccess: () => utils.categories.all.invalidate()
+  });
 
   // ── Modal: nova categoria ─────────────────────────────────────────────────
   const [showAddCat, setShowAddCat] = useState(false);
@@ -50,73 +65,60 @@ export default function ServicosAdmin() {
   const [saving, setSaving] = useState(false);
 
   // ── Modal: sub-serviços da categoria ─────────────────────────────────────
-  const [selectedCat, setSelectedCat] = useState<DbCategory | null>(null);
-  const [subServices, setSubServices] = useState<DbSubService[]>([]);
-  const [loadingSubs, setLoadingSubs] = useState(false);
+  const [selectedCatId, setSelectedCatId] = useState<string | null>(null);
+  const selectedCat = categories.find(c => c.id === selectedCatId);
+  
+  const { data: subServices = [], isLoading: loadingSubs } = trpc.categories.subServices.list.useQuery(
+    { categoryId: selectedCatId! },
+    { enabled: !!selectedCatId }
+  );
+
+  const createSubService = trpc.categories.subServices.create.useMutation({
+    onSuccess: () => {
+      utils.categories.subServices.list.invalidate({ categoryId: selectedCatId! });
+      setShowAddSub(false);
+      setNewSubName("");
+    }
+  });
+
+  const deleteSubService = trpc.categories.subServices.delete.useMutation({
+    onSuccess: () => utils.categories.subServices.list.invalidate({ categoryId: selectedCatId! })
+  });
+
   const [showAddSub, setShowAddSub] = useState(false);
   const [newSubName, setNewSubName] = useState("");
   const [newSubIcon, setNewSubIcon] = useState("build");
-
-  // ── Carrega dados ─────────────────────────────────────────────────────────
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    const [catsResult, countsResult] = await Promise.all([
-      categoriesDB.list(),
-      subServicesDB.countByCategory(),
-    ]);
-    setCategories(catsResult.data);
-    setSubCounts(countsResult);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { loadData(); }, [loadData]);
-
-  // ── Abre sub-serviços de uma categoria ───────────────────────────────────
-  const openSubs = async (cat: DbCategory) => {
-    setSelectedCat(cat);
-    setLoadingSubs(true);
-    const result = await subServicesDB.listByCategory(cat.id);
-    setSubServices(result.data);
-    setLoadingSubs(false);
-  };
 
   // ── Adicionar categoria ───────────────────────────────────────────────────
   const handleAddCategory = async () => {
     if (!newCatName.trim()) return;
     setSaving(true);
-    const result = await categoriesDB.insert({ name: newCatName, icon: newCatIcon });
-    setSaving(false);
-    if (result.error) {
-      alert(result.error);
-      return;
+    try {
+      await createCategory.mutateAsync({ name: newCatName, icon: newCatIcon });
+    } catch (err) {
+      alert("Erro ao adicionar categoria");
+    } finally {
+      setSaving(false);
     }
-    setNewCatName("");
-    setNewCatIcon("build");
-    setShowAddCat(false);
-    loadData();
   };
 
   // ── Excluir categoria ─────────────────────────────────────────────────────
-  const handleDeleteCategory = (cat: DbCategory) => {
+  const handleDeleteCategory = (id: string, name: string) => {
     const doDelete = async () => {
-      const result = await categoriesDB.delete(cat.id);
-      if (result.error) { alert(result.error); return; }
-      loadData();
+      try {
+        await deleteCategory.mutateAsync({ id });
+      } catch (err) {
+        alert("Erro ao excluir categoria");
+      }
     };
     if (Platform.OS === "web") {
-      if (window.confirm(`Remover "${cat.name}" e todos os seus serviços?`)) doDelete();
+      if (window.confirm(`Remover "${name}" e todos os seus serviços?`)) doDelete();
     } else {
-      Alert.alert("Remover categoria", `Remover "${cat.name}" e todos os seus serviços?`, [
+      Alert.alert("Remover categoria", `Remover "${name}" e todos os seus serviços?`, [
         { text: "Cancelar", style: "cancel" },
         { text: "Remover", style: "destructive", onPress: doDelete },
       ]);
     }
-  };
-
-  // ── Toggle ativo/inativo ──────────────────────────────────────────────────
-  const handleToggleActive = async (cat: DbCategory) => {
-    await categoriesDB.update(cat.id, { is_active: !cat.is_active });
-    loadData();
   };
 
   // ── Reordenar (mover para cima/baixo) ────────────────────────────────────
@@ -127,43 +129,44 @@ export default function ServicosAdmin() {
     const next = [...categories];
     const swap = dir === "up" ? idx - 1 : idx + 1;
     [next[idx], next[swap]] = [next[swap], next[idx]];
-    setCategories(next);
-    await categoriesDB.reorder(next.map((c) => c.id));
+    
+    try {
+      await reorderCategories.mutateAsync({ ids: next.map(c => c.id) });
+    } catch (err) {
+      alert("Erro ao reordenar");
+    }
   };
 
   // ── Adicionar sub-serviço ─────────────────────────────────────────────────
   const handleAddSub = async () => {
-    if (!newSubName.trim() || !selectedCat) return;
+    if (!newSubName.trim() || !selectedCatId) return;
     setSaving(true);
-    const result = await subServicesDB.insert({
-      category_id: selectedCat.id,
-      name: newSubName,
-      icon: newSubIcon,
-    });
-    setSaving(false);
-    if (result.error) { alert(result.error); return; }
-    setNewSubName("");
-    setNewSubIcon("build");
-    setShowAddSub(false);
-    // Refresh subs
-    const updated = await subServicesDB.listByCategory(selectedCat.id);
-    setSubServices(updated.data);
-    // Update count
-    setSubCounts((prev) => ({ ...prev, [selectedCat.id]: (prev[selectedCat.id] || 0) + 1 }));
+    try {
+      await createSubService.mutateAsync({
+        categoryId: selectedCatId,
+        name: newSubName,
+        icon: newSubIcon,
+      });
+    } catch (err) {
+      alert("Erro ao adicionar serviço");
+    } finally {
+      setSaving(false);
+    }
   };
 
   // ── Excluir sub-serviço ───────────────────────────────────────────────────
-  const handleDeleteSub = (sub: DbSubService) => {
+  const handleDeleteSub = (id: string, name: string) => {
     const doDelete = async () => {
-      await subServicesDB.delete(sub.id);
-      const updated = await subServicesDB.listByCategory(selectedCat!.id);
-      setSubServices(updated.data);
-      setSubCounts((prev) => ({ ...prev, [selectedCat!.id]: Math.max(0, (prev[selectedCat!.id] || 1) - 1) }));
+      try {
+        await deleteSubService.mutateAsync({ id });
+      } catch (err) {
+        alert("Erro ao excluir serviço");
+      }
     };
     if (Platform.OS === "web") {
-      if (window.confirm(`Remover "${sub.name}"?`)) doDelete();
+      if (window.confirm(`Remover "${name}"?`)) doDelete();
     } else {
-      Alert.alert("Remover serviço", `Remover "${sub.name}"?`, [
+      Alert.alert("Remover serviço", `Remover "${name}"?`, [
         { text: "Cancelar", style: "cancel" },
         { text: "Remover", style: "destructive", onPress: doDelete },
       ]);
@@ -178,9 +181,17 @@ export default function ServicosAdmin() {
           <MaterialIcons name="arrow-back" size={22} color="#111827" />
         </Pressable>
         <Text style={styles.headerTitle}>Serviços</Text>
-        <Pressable style={styles.addBtn} onPress={() => setShowAddCat(true)}>
-          <MaterialIcons name="add" size={22} color="#FFF" />
-        </Pressable>
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          <Pressable 
+            style={[styles.addBtn, { backgroundColor: "#EFF6FF" }]} 
+            onPress={() => router.push("/admin/subcategory-images" as any)}
+          >
+            <MaterialIcons name="image" size={20} color="#2563EB" />
+          </Pressable>
+          <Pressable style={styles.addBtn} onPress={() => setShowAddCat(true)}>
+            <MaterialIcons name="add" size={22} color="#FFF" />
+          </Pressable>
+        </View>
       </View>
 
       {/* Tabs */}
@@ -205,40 +216,53 @@ export default function ServicosAdmin() {
             {categories.length} categorias • Toque para ver e editar os serviços dentro de cada uma.
           </Text>
           <View style={styles.catList}>
-            {categories.map((cat, i) => (
-              <View key={cat.id} style={[styles.catCard, i < categories.length - 1 && styles.catBorder]}>
-                <Pressable
-                  style={styles.catMain}
-                  onPress={() => openSubs(cat)}
-                >
-                  <View style={[styles.catIconBox, !cat.is_active && { backgroundColor: "#F3F4F6" }]}>
-                    <MaterialIcons
-                      name={cat.icon as any}
-                      size={22}
-                      color={cat.is_active ? "#25D366" : "#9CA3AF"}
-                    />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.catName, !cat.is_active && { color: "#9CA3AF" }]}>{cat.name}</Text>
-                    <Text style={styles.catCount}>{subCounts[cat.id] ?? 0} serviços</Text>
-                  </View>
-                  <View style={styles.catActions}>
-                    <Pressable
-                      style={({ pressed }) => [styles.editBtn, pressed && { opacity: 0.7 }]}
-                      onPress={() => openSubs(cat)}
-                    >
-                      <Text style={styles.editBtnText}>Editar</Text>
-                    </Pressable>
-                    <Pressable
-                      style={({ pressed }) => [styles.deleteBtn, pressed && { opacity: 0.7 }]}
-                      onPress={() => handleDeleteCategory(cat)}
-                    >
-                      <MaterialIcons name="delete-outline" size={18} color="#EF4444" />
-                    </Pressable>
-                  </View>
-                </Pressable>
-              </View>
-            ))}
+            {categories.map((cat, i) => {
+              const catSubs = allSubServices.filter(s => s.categoryId === cat.id);
+              return (
+                <View key={cat.id} style={[styles.catCard, i < categories.length - 1 && styles.catBorder]}>
+                  <Pressable
+                    style={styles.catMain}
+                    onPress={() => setSelectedCatId(cat.id)}
+                  >
+                    <View style={[styles.catIconBox, !cat.isActive && { backgroundColor: "#F3F4F6" }]}>
+                      <MaterialIcons
+                        name={cat.icon as any}
+                        size={22}
+                        color={cat.isActive ? "#25D366" : "#9CA3AF"}
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.catName, !cat.isActive && { color: "#9CA3AF" }]}>{cat.name}</Text>
+                      {catSubs.length > 0 ? (
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.subPreviewScroll}>
+                          {catSubs.map(sub => (
+                            <View key={sub.id} style={styles.subPreviewIcon}>
+                              <MaterialIcons name={(sub.icon || "build") as any} size={14} color="#94A3B8" />
+                            </View>
+                          ))}
+                        </ScrollView>
+                      ) : (
+                        <Text style={styles.catCount}>Nenhum serviço</Text>
+                      )}
+                    </View>
+                    <View style={styles.catActions}>
+                      <Pressable
+                        style={({ pressed }) => [styles.editBtn, pressed && { opacity: 0.7 }]}
+                        onPress={() => setSelectedCatId(cat.id)}
+                      >
+                        <Text style={styles.editBtnText}>Editar</Text>
+                      </Pressable>
+                      <Pressable
+                        style={({ pressed }) => [styles.deleteBtn, pressed && { opacity: 0.7 }]}
+                        onPress={() => handleDeleteCategory(cat.id, cat.name)}
+                      >
+                        <MaterialIcons name="delete-outline" size={18} color="#EF4444" />
+                      </Pressable>
+                    </View>
+                  </Pressable>
+                </View>
+              );
+            })}
           </View>
           {categories.length === 0 && (
             <View style={styles.emptyState}>
@@ -344,7 +368,7 @@ export default function ServicosAdmin() {
       </Modal>
 
       {/* ── Modal: Sub-serviços da Categoria ─────────────────────────────── */}
-      <Modal visible={!!selectedCat} transparent animationType="slide">
+      <Modal visible={!!selectedCatId} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { maxHeight: "85%" }]}>
             <View style={styles.modalHeader}>
@@ -352,7 +376,7 @@ export default function ServicosAdmin() {
                 <MaterialIcons name={(selectedCat?.icon ?? "build") as any} size={20} color="#25D366" />
                 <Text style={styles.modalTitle}>{selectedCat?.name}</Text>
               </View>
-              <Pressable onPress={() => { setSelectedCat(null); setShowAddSub(false); }}>
+              <Pressable onPress={() => { setSelectedCatId(null); setShowAddSub(false); }}>
                 <MaterialIcons name="close" size={22} color="#6B7280" />
               </Pressable>
             </View>
@@ -374,7 +398,7 @@ export default function ServicosAdmin() {
                     <Text style={styles.subName}>{sub.name}</Text>
                     <Pressable
                       style={({ pressed }) => [styles.subDeleteBtn, pressed && { opacity: 0.7 }]}
-                      onPress={() => handleDeleteSub(sub)}
+                      onPress={() => handleDeleteSub(sub.id, sub.name)}
                     >
                       <MaterialIcons name="delete-outline" size={18} color="#EF4444" />
                     </Pressable>
@@ -456,6 +480,8 @@ const styles = StyleSheet.create({
   catIconBox: { width: 42, height: 42, borderRadius: 10, backgroundColor: "#F0FDF4", alignItems: "center", justifyContent: "center" },
   catName: { fontSize: 14, fontWeight: "700", color: "#111827" },
   catCount: { fontSize: 12, color: "#6B7280", marginTop: 1 },
+  subPreviewScroll: { marginTop: 4, flexDirection: "row" },
+  subPreviewIcon: { width: 24, height: 24, borderRadius: 6, backgroundColor: "#F9FAFB", alignItems: "center", justifyContent: "center", marginRight: 4, borderWidth: 1, borderColor: "#F3F4F6" },
   catActions: { flexDirection: "row", alignItems: "center", gap: 8 },
   editBtn: { backgroundColor: "#F0FDF4", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: "#BBF7D0" },
   editBtnText: { fontSize: 13, fontWeight: "700", color: "#15803D" },

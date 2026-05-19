@@ -10,42 +10,44 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { trpc } from "@/lib/trpc";
+import { ActivityIndicator } from "react-native";
 import { AdminTabBar } from "@/components/admin/AdminTabBar";
 
 const REGIONS = ["Bragança Paulista", "Atibaia", "Extrema", "Itatiba", "Camanducaia"];
 
-const STATS = [
-  { label: "Prestadores\nativos", value: "128", sub: "+5 hoje", icon: "people", color: "#EFF6FF", iconColor: "#2563EB" },
-  { label: "Cliques no\nWhatsApp", value: "47", sub: "Hoje", icon: "chat", color: "#F0FDF4", iconColor: "#16A34A" },
-  { label: "Visualizações\nde serviços", value: "1.320", sub: "Hoje", icon: "bar-chart", color: "#FFF7ED", iconColor: "#EA580C" },
-  { label: "Anúncios\nativos", value: "12", sub: "Em destaque", icon: "star", color: "#FEFCE8", iconColor: "#CA8A04" },
-];
-
-const RECENT_ACTIVITY = [
-  { id: "1", title: "Novo prestador cadastrado", name: "Elétrica Forte Serviços", time: "há 25 min", icon: "person-add" },
-  { id: "2", title: "Novo clique no WhatsApp", name: "Eletricista do Zé", time: "há 40 min", icon: "chat" },
-  { id: "3", title: "Nova avaliação recebida", name: "Encanador Rápido", time: "há 1h", icon: "star" },
-  { id: "4", title: "Prestador ativou plano", name: "Top Barber", time: "há 2h", icon: "workspace-premium" },
-];
-
 export default function DashboardAdmin() {
-  const { user, signOut } = useAuth();
+  const { user, isAdmin, signOut, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [selectedRegion, setSelectedRegion] = useState("Bragança Paulista");
   const [showRegionPicker, setShowRegionPicker] = useState(false);
 
+  // Proteção de rota robusta via Contexto
+  useEffect(() => {
+    if (!authLoading && !isAdmin) {
+      router.replace("/" as any);
+    }
+  }, [isAdmin, authLoading]);
+
+  const { data: dashboardData, isLoading } = trpc.dashboard.getAdminStats.useQuery(undefined, {
+    enabled: isAdmin,
+  });
+
+  if (authLoading || !isAdmin) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F5F5F5" }}>
+        <ActivityIndicator size="large" color="#25D366" />
+        <Text style={{ marginTop: 12, color: "#6B7280" }}>Carregando painel...</Text>
+      </View>
+    );
+  }
+
   const firstName = (user?.name || "Admin").split(" ")[0];
 
   const handleSignOut = async () => {
-    const confirmed =
-      Platform.OS === "web"
-        ? window.confirm("Sair do painel administrativo?")
-        : true;
-    if (!confirmed) return;
-    try { await signOut(); } catch {}
-    router.replace("/auth/login" as any);
+    try { await signOut(); } catch (e) { console.error(e); }
   };
 
   return (
@@ -60,11 +62,18 @@ export default function DashboardAdmin() {
         </View>
         <View style={styles.headerRight}>
           <Pressable
+            style={({ pressed }) => [styles.backBtn, { marginRight: 8 }, pressed && { opacity: 0.7 }]}
+            onPress={() => router.push("/admin/logs" as any)}
+          >
+            <MaterialIcons name="bug-report" size={16} color="#25D366" />
+            <Text style={styles.backBtnText}>Logs</Text>
+          </Pressable>
+          <Pressable
             style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.7 }]}
             onPress={() => router.replace("/" as any)}
           >
             <MaterialIcons name="arrow-back" size={16} color="#25D366" />
-            <Text style={styles.backBtnText}>Voltar ao App</Text>
+            <Text style={styles.backBtnText}>Sair</Text>
           </Pressable>
         </View>
       </View>
@@ -111,55 +120,124 @@ export default function DashboardAdmin() {
 
         <Text style={styles.sectionTitle}>Visão geral de hoje</Text>
 
-        <View style={styles.statsGrid}>
-          {STATS.map((stat) => (
-            <View key={stat.label} style={styles.statCard}>
-              <View style={[styles.statIconBox, { backgroundColor: stat.color }]}>
-                <MaterialIcons name={stat.icon as any} size={22} color={stat.iconColor} />
-              </View>
-              <Text style={styles.statValue}>{stat.value}</Text>
-              <Text style={styles.statLabel}>{stat.label}</Text>
-              <Text style={styles.statSub}>{stat.sub}</Text>
+        {isLoading ? (
+          <ActivityIndicator size="large" color="#25D366" style={{ marginVertical: 20 }} />
+        ) : (
+          <>
+            <View style={styles.statsGrid}>
+              {[
+                { label: "Prestadores\nativos", value: dashboardData?.stats.activeProviders || 0, sub: "Total", icon: "people", color: "#EFF6FF", iconColor: "#2563EB" },
+                { label: "Cliques no\nWhatsApp", value: dashboardData?.stats.whatsappClicks || 0, sub: "Hoje", icon: "chat", color: "#F0FDF4", iconColor: "#16A34A" },
+                { label: "Visualizações\nde serviços", value: dashboardData?.stats.serviceViews || 0, sub: "Hoje", icon: "bar-chart", color: "#FFF7ED", iconColor: "#EA580C" },
+                {
+                  label: "Anúncios\nativos",
+                  value: dashboardData?.stats.activeAds || 0,
+                  sub: "Gerenciar",
+                  icon: "star",
+                  color: "#FEFCE8",
+                  iconColor: "#CA8A04",
+                  onPress: () => router.push("/admin/destaques-admin" as any)
+                },
+              ].map((stat) => (
+                <Pressable
+                  key={stat.label}
+                  style={({ pressed }) => [styles.statCard, pressed && { opacity: 0.85 }]}
+                  onPress={(stat as any).onPress}
+                  disabled={!(stat as any).onPress}
+                >
+                  <View style={[styles.statIconBox, { backgroundColor: stat.color }]}>
+                    <MaterialIcons name={stat.icon as any} size={22} color={stat.iconColor} />
+                  </View>
+                  <Text style={styles.statValue}>{stat.value}</Text>
+                  <Text style={styles.statLabel}>{stat.label}</Text>
+                  <Text style={styles.statSub}>{stat.sub}</Text>
+                </Pressable>
+              ))}
             </View>
-          ))}
-        </View>
 
-        <Text style={styles.sectionTitle}>Serviço mais buscado</Text>
-        <View style={styles.topServiceCard}>
-          <View style={styles.topServiceIcon}>
-            <MaterialIcons name="electrical-services" size={26} color="#25D366" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.topServiceName}>Eletricista</Text>
-            <Text style={styles.topServicePct}>23% das buscas de hoje</Text>
-          </View>
-          <View style={styles.topServiceBadge}>
-            <Text style={styles.topServiceBadgeText}>#1</Text>
-          </View>
-        </View>
-
-        <View style={styles.activityHeader}>
-          <Text style={styles.sectionTitle}>Atividade recente</Text>
-          <Pressable><Text style={styles.verTudo}>Ver tudo</Text></Pressable>
-        </View>
-
-        <View style={styles.activityList}>
-          {RECENT_ACTIVITY.map((item, i) => (
-            <View
-              key={item.id}
-              style={[styles.activityItem, i < RECENT_ACTIVITY.length - 1 && styles.activityBorder]}
-            >
-              <View style={styles.activityIconBox}>
-                <MaterialIcons name={item.icon as any} size={18} color="#25D366" />
+            <Text style={styles.sectionTitle}>Serviço mais buscado</Text>
+            <View style={styles.topServiceCard}>
+              <View style={styles.topServiceIcon}>
+                <MaterialIcons name={dashboardData?.topService.icon as any || "electrical-services"} size={26} color="#25D366" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.activityTitle}>{item.title}</Text>
-                <Text style={styles.activityName}>{item.name}</Text>
+                <Text style={styles.topServiceName}>{dashboardData?.topService.name || "-"}</Text>
+                <Text style={styles.topServicePct}>{dashboardData?.topService.percentage || 0}% das buscas de hoje</Text>
               </View>
-              <Text style={styles.activityTime}>{item.time}</Text>
+              <View style={styles.topServiceBadge}>
+                <Text style={styles.topServiceBadgeText}>#1</Text>
+              </View>
             </View>
-          ))}
-        </View>
+
+            <Text style={styles.sectionTitle}>Últimas buscas dos usuários</Text>
+            <View style={styles.activityList}>
+              {(dashboardData?.recentSearches || []).map((item, i) => {
+                const queryFormatted = item.query.charAt(0).toUpperCase() + item.query.slice(1);
+                const isSuggestion = item.query.startsWith("[sugestão]:") || item.query.startsWith("[SUGESTÃO]:");
+                const cleanQuery = isSuggestion 
+                  ? item.query.replace(/\[SUGESTÃO\]:\s*/i, "Ideia: ") 
+                  : queryFormatted;
+
+                return (
+                  <View
+                    key={item.id}
+                    style={[styles.activityItem, i < (dashboardData?.recentSearches?.length || 0) - 1 && styles.activityBorder]}
+                  >
+                    <View style={[styles.activityIconBox, { backgroundColor: isSuggestion ? "#FEF3C7" : "#E0F2FE" }]}>
+                      <MaterialIcons 
+                        name={isSuggestion ? "lightbulb" : "search"} 
+                        size={18} 
+                        color={isSuggestion ? "#D97706" : "#0284C7"} 
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.activityTitle, { fontWeight: "700" }, isSuggestion && { color: "#B45309" }]}>{cleanQuery}</Text>
+                      <Text style={styles.activityName}>
+                        {isSuggestion ? "Enviada via formulário" : "Pesquisada no aplicativo"}
+                      </Text>
+                    </View>
+                    <Text style={styles.activityTime}>
+                      {new Date(item.time).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                    </Text>
+                  </View>
+                );
+              })}
+              {(!dashboardData?.recentSearches || dashboardData?.recentSearches.length === 0) && (
+                <View style={[styles.activityItem, { justifyContent: "center" }]}>
+                  <Text style={{ color: "#6B7280" }}>Nenhuma busca recente registrada.</Text>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.activityHeader}>
+              <Text style={styles.sectionTitle}>Atividade recente</Text>
+              <Pressable onPress={() => router.push("/admin/prestadores-admin" as any)}><Text style={styles.verTudo}>Ver prestadores</Text></Pressable>
+            </View>
+
+            <View style={styles.activityList}>
+              {(dashboardData?.recentActivity || []).map((item, i) => (
+                <View
+                  key={item.id}
+                  style={[styles.activityItem, i < (dashboardData?.recentActivity?.length || 0) - 1 && styles.activityBorder]}
+                >
+                  <View style={styles.activityIconBox}>
+                    <MaterialIcons name={item.icon as any} size={18} color="#25D366" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.activityTitle}>{item.title}</Text>
+                    <Text style={styles.activityName}>{item.name}</Text>
+                  </View>
+                  <Text style={styles.activityTime}>{new Date(item.time).toLocaleDateString("pt-BR")}</Text>
+                </View>
+              ))}
+              {(!dashboardData?.recentActivity || dashboardData?.recentActivity.length === 0) && (
+                 <View style={[styles.activityItem, { justifyContent: "center" }]}>
+                   <Text style={{ color: "#6B7280" }}>Nenhuma atividade recente.</Text>
+                 </View>
+              )}
+            </View>
+          </>
+        )}
 
         <View style={{ height: 20 }} />
       </ScrollView>

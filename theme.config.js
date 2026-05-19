@@ -1,17 +1,17 @@
 /** @type {const} */
 const themeColors = {
-  primary: { light: '#25D366', dark: '#25D366' },
-  background: { light: '#F5F5F5', dark: '#151718' },
-  surface: { light: '#FFFFFF', dark: '#1e2022' },
-  foreground: { light: '#111827', dark: '#ECEDEE' },
-  muted: { light: '#6B7280', dark: '#9BA1A6' },
-  border: { light: '#E5E7EB', dark: '#334155' },
+  primary: { light: '#25D366', dark: '#22C55E' },
+  background: { light: '#F8F9FA', dark: '#0F172A' },
+  surface: { light: '#FFFFFF', dark: '#1E293B' },
+  foreground: { light: '#0F172A', dark: '#F8FAFC' },
+  muted: { light: '#64748B', dark: '#94A3B8' },
+  border: { light: '#E2E8F0', dark: '#334155' },
   success: { light: '#22C55E', dark: '#4ADE80' },
   warning: { light: '#F59E0B', dark: '#FBBF24' },
   error: { light: '#EF4444', dark: '#F87171' },
-  accent: { light: '#1A73E8', dark: '#60A5FA' },
+  accent: { light: '#3B82F6', dark: '#60A5FA' },
   star: { light: '#F59E0B', dark: '#FBBF24' },
-  tint: { light: '#25D366', dark: '#25D366' },
+  tint: { light: '#25D366', dark: '#22C55E' },
 };
 
 module.exports = { themeColors };

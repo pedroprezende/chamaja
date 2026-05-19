@@ -1,3 +1,20 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Aplica box-sizing globalmente */
+* {
+  box-sizing: border-box;
+}
+
+/* Garante que o app ocupe exatamente 100% da altura do viewport visível (100dvh) para evitar que o Safari corte o rodapé */
+html, body, #root {
+  height: 100dvh;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Evita qualquer scroll global no body */
+  background-color: #000; /* Fundo preto atrás do "celular" no PC */
+}
+

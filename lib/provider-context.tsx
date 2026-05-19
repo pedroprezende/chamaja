@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { providersDB } from "@/lib/providers-database";
+import { storage } from "@/lib/storage";
 
 export type PlanType = "monthly" | "annual" | null;
 
@@ -85,8 +86,17 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
     } else if (plan === "annual") {
       expiresAt = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString();
     }
+
+    // Upload do avatar se for local
+    let finalAvatar = data.avatar;
+    if (data.avatar && !data.avatar.startsWith("http")) {
+      const uploadedUrl = await storage.uploadImage(data.avatar);
+      if (uploadedUrl) finalAvatar = uploadedUrl;
+    }
+
     const newProvider: ProviderProfile = {
       ...data,
+      avatar: finalAvatar,
       userId,
       plan,
       planExpiresAt: expiresAt,
@@ -103,8 +113,10 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
       city: data.city,
       neighborhood: data.neighborhood,
       phone: data.phone,
-      avatar: data.avatar,
+      avatar: finalAvatar,
       description: data.description,
+      address: "",
+      gallery: [],
       plan,
       planExpiresAt: expiresAt,
       isActive: true,
@@ -118,6 +130,13 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
   const updateProvider = async (data: Partial<ProviderProfile>) => {
     if (!provider) return;
     const updated = { ...provider, ...data };
+
+    // Upload do avatar se houver alteração
+    if (data.avatar && !data.avatar.startsWith("http")) {
+      const uploadedUrl = await storage.uploadImage(data.avatar);
+      if (uploadedUrl) updated.avatar = uploadedUrl;
+    }
+
     await save(updated);
     // Sincronizar com o banco global
     await providersDB.updateProvider(provider.userId, {
@@ -136,8 +155,31 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
 
   const addService = async (service: Omit<ProviderService, "id" | "createdAt">) => {
     if (!provider) return;
+
+    // Upload da imagem principal do serviço
+    let finalImageUri = service.imageUri;
+    if (service.imageUri && !service.imageUri.startsWith("http")) {
+      const uploadedUrl = await storage.uploadImage(service.imageUri);
+      if (uploadedUrl) finalImageUri = uploadedUrl;
+    }
+
+    // Upload da galeria do serviço
+    let finalGallery: string[] = [];
+    if (service.gallery && service.gallery.length > 0) {
+      for (const uri of service.gallery) {
+        if (uri.startsWith("http")) {
+          finalGallery.push(uri);
+        } else {
+          const uploadedUrl = await storage.uploadImage(uri);
+          if (uploadedUrl) finalGallery.push(uploadedUrl);
+        }
+      }
+    }
+
     const newService: ProviderService = {
       ...service,
+      imageUri: finalImageUri,
+      gallery: finalGallery.length > 0 ? finalGallery : undefined,
       id: `svc-${Date.now()}`,
       createdAt: new Date().toISOString(),
     };
@@ -149,9 +191,32 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
 
   const updateService = async (id: string, data: Partial<ProviderService>) => {
     if (!provider) return;
+
+    const updates = { ...data };
+
+    // Upload da imagem se mudou
+    if (data.imageUri && !data.imageUri.startsWith("http")) {
+      const uploadedUrl = await storage.uploadImage(data.imageUri);
+      if (uploadedUrl) updates.imageUri = uploadedUrl;
+    }
+
+    // Upload da galeria se mudou
+    if (data.gallery && data.gallery.length > 0) {
+      const finalGallery: string[] = [];
+      for (const uri of data.gallery) {
+        if (uri.startsWith("http")) {
+          finalGallery.push(uri);
+        } else {
+          const uploadedUrl = await storage.uploadImage(uri);
+          if (uploadedUrl) finalGallery.push(uploadedUrl);
+        }
+      }
+      updates.gallery = finalGallery;
+    }
+
     const updated = {
       ...provider,
-      services: provider.services.map((s) => (s.id === id ? { ...s, ...data } : s)),
+      services: provider.services.map((s) => (s.id === id ? { ...s, ...updates } : s)),
     };
     await save(updated);
     // Sincronizar com o banco global

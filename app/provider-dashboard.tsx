@@ -10,6 +10,7 @@ import {
   TextInput,
   Alert,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -24,6 +25,7 @@ export default function ProviderDashboard() {
   const [showModal, setShowModal] = useState(false);
   const [editingService, setEditingService] = useState<ProviderService | null>(null);
   const [form, setForm] = useState({ name: "", description: "", imageUri: "", gallery: [] as string[] });
+  const [saving, setSaving] = useState(false);
 
   if (!isProvider || !provider) {
     return (
@@ -96,22 +98,30 @@ export default function ProviderDashboard() {
       Alert.alert("Erro", "Preencha nome e descrição do serviço.");
       return;
     }
-    if (editingService) {
-      await updateService(editingService.id, {
-        name: form.name.trim(),
-        description: form.description.trim(),
-        imageUri: form.imageUri || undefined,
-        gallery: form.gallery.length > 0 ? form.gallery : undefined,
-      });
-    } else {
-      await addService({
-        name: form.name.trim(),
-        description: form.description.trim(),
-        imageUri: form.imageUri || undefined,
-        gallery: form.gallery.length > 0 ? form.gallery : undefined,
-      });
+
+    setSaving(true);
+    try {
+      if (editingService) {
+        await updateService(editingService.id, {
+          name: form.name.trim(),
+          description: form.description.trim(),
+          imageUri: form.imageUri || undefined,
+          gallery: form.gallery.length > 0 ? form.gallery : undefined,
+        });
+      } else {
+        await addService({
+          name: form.name.trim(),
+          description: form.description.trim(),
+          imageUri: form.imageUri || undefined,
+          gallery: form.gallery.length > 0 ? form.gallery : undefined,
+        });
+      }
+      setShowModal(false);
+    } catch (e: any) {
+      Alert.alert("Erro", "Não foi possível salvar o serviço.");
+    } finally {
+      setSaving(false);
     }
-    setShowModal(false);
   };
 
   const handleDelete = (id: string, name: string) => {
@@ -336,11 +346,18 @@ export default function ProviderDashboard() {
                   <Text style={styles.cancelBtnText}>Cancelar</Text>
                 </Pressable>
                 <Pressable
-                  style={({ pressed }) => [styles.saveBtn, pressed && { opacity: 0.85 }]}
+                  style={({ pressed }) => [styles.saveBtn, (pressed || saving) && { opacity: 0.85 }]}
                   onPress={handleSave}
+                  disabled={saving}
                 >
-                  <MaterialIcons name={editingService ? "check" : "add"} size={18} color="#fff" />
-                  <Text style={styles.saveBtnText}>{editingService ? "Salvar" : "Adicionar"}</Text>
+                  {saving ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <>
+                      <MaterialIcons name={editingService ? "check" : "add"} size={18} color="#fff" />
+                      <Text style={styles.saveBtnText}>{editingService ? "Salvar" : "Adicionar"}</Text>
+                    </>
+                  )}
                 </Pressable>
               </View>
             </ScrollView>

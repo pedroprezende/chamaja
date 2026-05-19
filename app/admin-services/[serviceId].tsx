@@ -9,13 +9,15 @@ import {
   Alert,
   Dimensions,
   FlatList,
+  Platform,
 } from "react-native";
+import { useEffect } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAdminServices } from "@/hooks/use-admin-services";
-
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
+import { trpc } from "@/lib/trpc";
+import { useWindowDimensions } from "react-native";
 
 const CATEGORY_ICONS: Record<string, string> = {
   eletricista: "electrical-services",
@@ -39,8 +41,7 @@ function getCategoryIcon(category: string): string {
   return CATEGORY_ICONS.default;
 }
 
-/** Normaliza número brasileiro e abre WhatsApp */
-function openWhatsApp(phone: string, serviceName: string) {
+function getWhatsAppUrl(phone: string, serviceName: string) {
   let number = phone.replace(/\D/g, "");
   if (!number.startsWith("55")) {
     number = "55" + number;
@@ -48,16 +49,13 @@ function openWhatsApp(phone: string, serviceName: string) {
   const message = encodeURIComponent(
     `Olá! Vi o serviço "${serviceName}" no ChamaJá e gostaria de mais informações. 😊`
   );
-  const url = `https://wa.me/${number}?text=${message}`;
-  Linking.openURL(url).catch(() => {
-    Alert.alert(
-      "WhatsApp não encontrado",
-      "Não foi possível abrir o WhatsApp. Verifique se o aplicativo está instalado."
-    );
-  });
+  return `https://wa.me/${number}?text=${message}`;
 }
 
 export default function AdminServiceDetailScreen() {
+  const { width: WINDOW_WIDTH } = useWindowDimensions();
+  const SCREEN_WIDTH = Platform.OS === "web" ? Math.min(WINDOW_WIDTH, 500) : WINDOW_WIDTH;
+
   const { serviceId, title } = useLocalSearchParams<{
     serviceId: string;
     title?: string;
@@ -65,8 +63,34 @@ export default function AdminServiceDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { services } = useAdminServices();
+  const trackView = trpc.analytics.trackServiceView.useMutation();
+  const trackWhatsapp = trpc.analytics.trackWhatsappClick.useMutation();
 
   const service = services.find((s) => s.id === serviceId);
+
+  useEffect(() => {
+    if (service) {
+      trackView.mutate({
+        categoryId: service.categoryId || undefined,
+        serviceId: service.id,
+      });
+    }
+  }, [service?.id]);
+
+  const handleOpenWhatsApp = () => {
+    if (!service) return;
+    trackWhatsapp.mutate({
+      providerId: service.adminId, // or keep it empty if admin
+      serviceName: service.name,
+      city: service.address || undefined,
+    });
+    
+    const phone = service.whatsapp || "";
+    const url = getWhatsAppUrl(phone, service.name);
+    Linking.openURL(url).catch(() =>
+      Alert.alert("Erro", "Não foi possível abrir o WhatsApp.")
+    );
+  };
 
   if (!service) {
     return (
@@ -187,7 +211,7 @@ export default function AdminServiceDetailScreen() {
 
               <Pressable
                 style={({ pressed }) => [styles.whatsappBtn, pressed && { opacity: 0.85 }]}
-                onPress={() => openWhatsApp(service.whatsapp!, service.name)}
+                onPress={handleOpenWhatsApp}
               >
                 <MaterialIcons name="chat" size={20} color="#FFFFFF" />
                 <Text style={styles.whatsappBtnText}>Chamar no WhatsApp</Text>

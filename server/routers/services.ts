@@ -7,13 +7,21 @@ const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 export const servicesRouter = router({
   list: publicProcedure
     .input(z.object({ homeOnly: z.boolean().optional() }).optional())
-    .query(async ({ input }) => {
-      return db.getHomeServices();
+    .query(async () => {
+      // O usuário quer ver os prestadores reais (Pedro Automotivo, etc.)
+      return db.getProviders();
     }),
 
   all: adminProcedure.query(async () => {
     return db.getServices(false);
   }),
+
+  getByCategory: publicProcedure
+    .input(z.object({ categoryId: z.string() }))
+    .query(async ({ input }) => {
+      const all = await db.getServices(true);
+      return all.filter(s => s.categoryId === input.categoryId || s.subcategoryId === input.categoryId);
+    }),
 
   getById: publicProcedure
     .input(z.object({ id: z.string() }))
