@@ -28,6 +28,7 @@ const config: ExpoConfig = {
   ios: {
     supportsTablet: true,
     bundleIdentifier: env.iosBundleId,
+    associatedDomains: ["applinks:chamaja-production.up.railway.app"],
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
       NSPhotoLibraryUsageDescription: "O ChamaJá precisa acessar sua galeria para você poder enviar fotos para o perfil do seu serviço.",
@@ -61,6 +62,18 @@ const config: ExpoConfig = {
           {
             scheme: env.scheme,
             host: "*",
+          },
+        ],
+        category: ["BROWSABLE", "DEFAULT"],
+      },
+      {
+        action: "VIEW",
+        autoVerify: true,
+        data: [
+          {
+            scheme: "https",
+            host: "chamaja-production.up.railway.app",
+            pathPrefix: "/",
           },
         ],
         category: ["BROWSABLE", "DEFAULT"],

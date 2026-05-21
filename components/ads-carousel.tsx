@@ -104,7 +104,7 @@ export function AdsCarousel({ ads }: AdsCarouselProps) {
             }}
           >
             <Image
-              source={{ uri: item.imageUrl }}
+              source={{ uri: item.imageUrl || undefined }}
               style={[styles.image, { width: CARD_WIDTH, height: CARD_HEIGHT }]}
               resizeMode="cover"
             />

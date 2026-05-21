@@ -24,7 +24,7 @@ export function useAds(onlyActive = true): UseAdsResult {
   const { data = [], isLoading, refetch } = trpc.featuredAds.list.useQuery();
 
   const allAds = useMemo(() => {
-    return data.map(ad => ({
+    return data.map((ad: any) => ({
       ...ad,
       id: ad.id,
       title: ad.title,
