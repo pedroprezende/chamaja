@@ -16,8 +16,10 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
 import { AdminTabBar } from "@/components/admin/AdminTabBar";
 import { trpc } from "@/lib/trpc";
+import { storage } from "@/lib/storage";
 
 type TabType = "em-destaque" | "todos";
 
@@ -43,6 +45,24 @@ export default function DestaquesAdmin() {
   // Step 2 State
   const [selectedProvider, setSelectedProvider] = useState<any | null>(null);
   const [customAdDescription, setCustomAdDescription] = useState("");
+  const [customAdImage, setCustomAdImage] = useState<string | null>(null);
+
+  const pickAdImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permissão necessária", "Permita o acesso à galeria para adicionar imagens.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setCustomAdImage(result.assets[0].uri);
+    }
+  };
 
   // ── Mutations ──
   const toggleMutation = trpc.featuredAds.toggle.useMutation({
@@ -66,6 +86,7 @@ export default function DestaquesAdmin() {
       setModalVisible(false);
       setSelectedProvider(null);
       setCustomAdDescription("");
+      setCustomAdImage(null);
       setActiveTab("em-destaque");
     },
     onError: (err) => {
@@ -90,19 +111,31 @@ export default function DestaquesAdmin() {
     setCustomAdDescription("");
   };
 
-  const handleConfirmAdd = () => {
+  const handleConfirmAdd = async () => {
     if (!selectedProvider) return;
     
     console.log("[Admin] Confirmado adição de:", selectedProvider.name);
     setSaving(true);
-    createMutation.mutate({
-      providerId: selectedProvider.id,
-      providerName: selectedProvider.name,
-      providerAvatar: selectedProvider.avatarUri || null,
-      categoryName: selectedProvider.category || "Geral",
-      customDescription: customAdDescription,
-      isFeatured: true,
-    });
+    try {
+      let adImageUrl: string | null = null;
+      if (customAdImage) {
+        adImageUrl = await storage.uploadImage(customAdImage, "providers");
+      }
+      
+      createMutation.mutate({
+        providerId: selectedProvider.id,
+        providerName: selectedProvider.name,
+        providerAvatar: selectedProvider.avatarUri || null,
+        categoryName: selectedProvider.category || "Geral",
+        customDescription: customAdDescription,
+        adImageUrl: adImageUrl || null,
+        isFeatured: true,
+      });
+    } catch (e: any) {
+      console.error("[Admin] Erro ao fazer upload da imagem do anúncio:", e);
+      Alert.alert("Erro", "Não foi possível enviar a imagem: " + (e.message || ""));
+      setSaving(false);
+    }
   };
 
   const displayAds = activeTab === "em-destaque"
@@ -236,7 +269,6 @@ export default function DestaquesAdmin() {
         </ScrollView>
       )}
 
-      {/* MODAL ADICIONAR DESTAQUE */}
       <Modal 
         visible={modalVisible} 
         animationType="slide" 
@@ -244,6 +276,7 @@ export default function DestaquesAdmin() {
         onRequestClose={() => {
           setModalVisible(false);
           setSelectedProvider(null);
+          setCustomAdImage(null);
         }}
       >
         <View style={styles.modalOverlay}>
@@ -251,7 +284,7 @@ export default function DestaquesAdmin() {
             <View style={styles.modalHeader}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                 {selectedProvider && (
-                  <Pressable onPress={() => setSelectedProvider(null)}>
+                  <Pressable onPress={() => { setSelectedProvider(null); setCustomAdImage(null); }}>
                     <MaterialIcons name="arrow-back" size={24} color="#111827" />
                   </Pressable>
                 )}
@@ -262,6 +295,7 @@ export default function DestaquesAdmin() {
               <Pressable onPress={() => {
                 setModalVisible(false);
                 setSelectedProvider(null);
+                setCustomAdImage(null);
               }}>
                 <MaterialIcons name="close" size={24} color="#6B7280" />
               </Pressable>
@@ -303,7 +337,7 @@ export default function DestaquesAdmin() {
                 </ScrollView>
               </>
             ) : (
-              <View style={styles.step2Container}>
+              <ScrollView style={styles.step2Container} showsVerticalScrollIndicator={false}>
                 <View style={styles.selectedPreview}>
                   <Image source={{ uri: selectedProvider.avatarUri || "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800&q=80" }} style={styles.previewAvatar} />
                   <View>
@@ -311,6 +345,28 @@ export default function DestaquesAdmin() {
                     <Text style={styles.previewCategory}>{selectedProvider.category || "Profissional"}</Text>
                   </View>
                 </View>
+
+                <Text style={styles.inputLabel}>Imagem do Banner (Opcional - Proporção 16:9)</Text>
+                <Pressable
+                  style={({ pressed }) => [styles.imagePicker, pressed && { opacity: 0.85 }]}
+                  onPress={pickAdImage}
+                >
+                  {customAdImage ? (
+                    <View style={{ position: "relative", width: "100%", height: "100%" }}>
+                      <Image source={{ uri: customAdImage }} style={styles.imagePreview} resizeMode="cover" />
+                      <View style={styles.imageOverlay}>
+                        <MaterialIcons name="photo-camera" size={20} color="#FFFFFF" />
+                        <Text style={styles.imageOverlayText}>Trocar imagem do anúncio</Text>
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={styles.imagePlaceholder}>
+                      <MaterialIcons name="add-photo-alternate" size={32} color="#9CA3AF" />
+                      <Text style={styles.imagePlaceholderText}>Selecionar foto para o anúncio</Text>
+                      <Text style={styles.imagePlaceholderSub}>Se não escolher, usará a foto de perfil do prestador</Text>
+                    </View>
+                  )}
+                </Pressable>
                 
                 <Text style={styles.inputLabel}>Descrição do Anúncio (Opcional)</Text>
                 <TextInput
@@ -334,7 +390,7 @@ export default function DestaquesAdmin() {
                     <Text style={styles.confirmBtnText}>Confirmar e Publicar</Text>
                   )}
                 </Pressable>
-              </View>
+              </ScrollView>
             )}
           </View>
         </View>
@@ -429,6 +485,33 @@ const styles = StyleSheet.create({
   previewCategory: { fontSize: 14, color: "#6B7280" },
   inputLabel: { fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 8 },
   textArea: { backgroundColor: "#F3F4F6", borderRadius: 12, padding: 12, fontSize: 15, color: "#111827", minHeight: 100 },
+  imagePicker: {
+    height: 140,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "#E5E7EB",
+    overflow: "hidden",
+    backgroundColor: "#F9FAFB",
+    marginBottom: 16,
+  },
+  imagePreview: { width: "100%", height: "100%" },
+  imageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+  },
+  imageOverlayText: { color: "#FFFFFF", fontSize: 13, fontWeight: "600" },
+  imagePlaceholder: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    padding: 20,
+  },
+  imagePlaceholderText: { fontSize: 14, fontWeight: "600", color: "#374151" },
+  imagePlaceholderSub: { fontSize: 11, color: "#9CA3AF", textAlign: "center", marginTop: 2 },
   confirmBtn: { backgroundColor: "#25D366", borderRadius: 12, height: 50, alignItems: "center", justifyContent: "center", marginTop: 24 },
   confirmBtnDisabled: { opacity: 0.6 },
   confirmBtnText: { color: "#FFF", fontSize: 16, fontWeight: "700" },

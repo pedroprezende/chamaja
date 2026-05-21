@@ -60,6 +60,7 @@ export const featuredAdsRouter = router({
       providerAvatar: z.string().nullish(),
       categoryName: z.string().nullish(),
       customDescription: z.string().default(""),
+      adImageUrl: z.string().nullish(),
       isFeatured: z.boolean().default(true),
     }))
     .mutation(async ({ input }) => {
@@ -75,7 +76,7 @@ export const featuredAdsRouter = router({
         id: uid(),
         title: input.categoryName || "Destaque",
         providerName: input.providerName || "Prestador",
-        imageUrl: input.providerAvatar || null,
+        imageUrl: input.adImageUrl || input.providerAvatar || null,
         description: combinedDescription,
         isFeatured: input.isFeatured,
         displayOrder: maxOrder + 1,
