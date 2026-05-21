@@ -2,6 +2,8 @@ import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
+import path from "path";
+import { fileURLToPath } from "url";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
@@ -80,7 +82,25 @@ async function startServer() {
     }),
   );
 
-  const PORT = 3000;
+  // Serve static files from the Expo web build
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  const webDistPath = path.resolve(__dirname, "web");
+  app.use(express.static(webDistPath));
+
+  // Fallback for client-side routing (SPA fallback)
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api")) {
+      return next();
+    }
+    res.sendFile(path.join(webDistPath, "index.html"), (err) => {
+      if (err) {
+        res.status(404).send("Frontend assets not found. Make sure to run the web build first.");
+      }
+    });
+  });
+
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
   const serverInstance = app.listen(PORT, "0.0.0.0", () => {
     console.log(`[api] server listening on port ${PORT}`);
   });

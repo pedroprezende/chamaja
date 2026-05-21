@@ -10,6 +10,7 @@ import {
   providers, InsertProvider,
   featuredAds, InsertFeaturedAd,
   reviews, InsertReview,
+  favorites,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -301,4 +302,35 @@ export async function createReview(data: InsertReview) {
   if (!db) throw new Error("Database not available");
   await db.insert(reviews).values(data);
   return db.select().from(reviews).where(eq(reviews.id, data.id)).limit(1).then(r => r[0]);
+}
+
+// ── Favorites ─────────────────────────────────────────────────────────────────
+export async function addFavorite(userId: string, providerId: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(favorites).values({ userId, providerId }).catch((err) => {
+    // If already favorited, ignore error (unique/primary key or constraint check if any, or just let it pass)
+    console.warn("[Database] Failed to add favorite, might already exist:", err.message);
+  });
+}
+
+export async function removeFavorite(userId: string, providerId: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(favorites).where(and(eq(favorites.userId, userId), eq(favorites.providerId, providerId)));
+}
+
+export async function getFavoritesByUser(userId: string) {
+  const db = await getDb();
+  if (!db) return [];
+  const results = await db
+    .select({
+      provider: providers,
+    })
+    .from(favorites)
+    .innerJoin(providers, eq(favorites.providerId, providers.id))
+    .where(eq(favorites.userId, userId))
+    .orderBy(desc(favorites.createdAt));
+  
+  return results.map((r) => r.provider);
 }

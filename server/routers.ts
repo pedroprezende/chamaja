@@ -9,6 +9,7 @@ import { featuredAdsRouter } from "./routers/featuredAds";
 import { dashboardRouter } from "./routers/dashboard";
 import { analyticsRouter } from "./routers/analytics";
 import { logsRouter } from "./routers/logs";
+import { favoritesRouter } from "./routers/favorites";
 
 export const appRouter = router({
   system: systemRouter,
@@ -28,6 +29,7 @@ export const appRouter = router({
   dashboard: dashboardRouter,
   analytics: analyticsRouter,
   logs: logsRouter,
+  favorites: favoritesRouter,
 });
 
 export type AppRouter = typeof appRouter;
