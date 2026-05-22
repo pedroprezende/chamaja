@@ -1,5 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import * as Location from "expo-location";
+import { Platform } from "react-native";
+
+const Location = (Platform.OS !== "web" || typeof window !== "undefined")
+  ? require("expo-location")
+  : null;
 
 export interface Coordinates {
   latitude: number;
