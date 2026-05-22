@@ -15,7 +15,7 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { LeaveReviewModal } from "@/components/leave-review-modal";
@@ -24,6 +24,8 @@ import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/lib/auth-context";
 import { addReview } from "@/data/mock";
+import { useLocation } from "@/lib/location-context";
+import { calculateHaversineDistance, formatDistancePtBr } from "@/lib/location-utils";
 
 function getWhatsAppUrl(phone: string, name: string) {
   const cleaned = phone.replace(/\D/g, "");
@@ -43,6 +45,7 @@ export default function ProfessionalDetailScreen() {
   const { isFavorite, toggleFavorite } = useFavorites();
   const trackView = trpc.analytics.trackServiceView.useMutation();
   const trackWhatsapp = trpc.analytics.trackWhatsappClick.useMutation();
+  const { coords } = useLocation();
 
   const { user } = useAuth();
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
@@ -52,6 +55,18 @@ export default function ProfessionalDetailScreen() {
   const { data: professional, isLoading: loading, refetch } = trpc.providers.getById.useQuery(id as string, {
     enabled: !!id,
   });
+
+  const distance = useMemo(() => {
+    if (coords && professional && professional.latitude !== null && professional.latitude !== undefined && professional.longitude !== null && professional.longitude !== undefined) {
+      const lat = Number(professional.latitude);
+      const lon = Number(professional.longitude);
+      if (!isNaN(lat) && !isNaN(lon)) {
+        const distKm = calculateHaversineDistance(coords.latitude, coords.longitude, lat, lon);
+        return formatDistancePtBr(distKm);
+      }
+    }
+    return null;
+  }, [coords, professional]);
 
   const favored = professional ? isFavorite(professional.id) : false;
 
@@ -176,7 +191,7 @@ export default function ProfessionalDetailScreen() {
             <View style={styles.locationRow}>
               <MaterialIcons name="location-on" size={14} color={colors.muted} />
               <Text style={[styles.locationText, { color: colors.muted }]}>
-                {professional.neighborhood || "Bairro não informado"} • {professional.city || "Cidade não informada"}
+                {professional.neighborhood || "Bairro não informado"} • {professional.city || "Cidade não informada"}{distance ? ` • ${distance}` : ""}
               </Text>
             </View>
           </View>
@@ -258,6 +273,11 @@ export default function ProfessionalDetailScreen() {
               <Text style={[styles.infoValue, { color: colors.primary, fontWeight: "700" }]}>
                 {professional.address || professional.city || "Ver localização no Google Maps"}
               </Text>
+              {distance ? (
+                <Text style={{ fontSize: 12, color: colors.muted, marginTop: 2, fontWeight: "500" }}>
+                  Distância aproximada: {distance}
+                </Text>
+              ) : null}
             </View>
             <MaterialIcons name="open-in-new" size={18} color={colors.muted} />
           </Pressable>

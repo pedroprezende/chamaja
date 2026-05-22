@@ -1,11 +1,3 @@
-/**
- * Tela de Subcategoria — lista os SERVIÇOS de uma subcategoria específica.
- * Nível 3 da hierarquia: Categoria → Subcategoria → Serviços
- *
- * Combina:
- *  - Serviços do adminDB com subcategoryId correspondente
- *  - Profissionais do providersDB com categoryId correspondente
- */
 import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
@@ -28,6 +20,8 @@ import { providersDB, type StoredProvider } from "@/lib/providers-database";
 import { adminProvidersDB, type AdminProvider } from "@/lib/admin-providers-db";
 import { trpc } from "@/lib/trpc";
 import { useMemo } from "react";
+import { useLocation } from "@/lib/location-context";
+import { calculateHaversineDistance, formatDistancePtBr } from "@/lib/location-utils";
 
 // ─── Tipo unificado ───────────────────────────────────────────────────────────
 type DisplayItem = {
@@ -41,6 +35,9 @@ type DisplayItem = {
   isAdmin: boolean;
   isProvider: boolean;
   isAdminProvider: boolean;
+  latitude?: number;
+  longitude?: number;
+  distance?: string;
 };
 
 function adminToDisplay(s: AdminService): DisplayItem {
@@ -107,6 +104,7 @@ export default function SubcategoryScreen() {
   }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { coords } = useLocation();
 
   const subcategoryTitle =
     title ||
@@ -130,28 +128,43 @@ export default function SubcategoryScreen() {
     const adminItems = dbServices.filter(s => s.isActive).map(s => ({
       id: s.id,
       name: s.name,
-      image: s.imageUri,
-      whatsapp: s.whatsapp,
-      address: s.address,
-      description: s.description,
-      gallery: s.gallery,
+      image: s.imageUri ?? undefined,
+      whatsapp: s.whatsapp ?? undefined,
+      address: s.address ?? undefined,
+      description: s.description ?? undefined,
+      gallery: s.gallery ?? undefined,
       isAdmin: true,
       isProvider: false,
       isAdminProvider: false,
     }));
 
     // 2. Prestadores
-    const providerItems = dbProviders.map(p => ({
-      id: p.id,
-      name: p.name,
-      image: p.avatarUri,
-      whatsapp: p.whatsapp || p.phone,
-      address: p.address || p.neighborhood,
-      description: p.description,
-      isAdmin: false,
-      isProvider: true,
-      isAdminProvider: false,
-    }));
+    const providerItems = dbProviders.map(p => {
+      let distance = "";
+      if (coords && p.latitude !== null && p.latitude !== undefined && p.longitude !== null && p.longitude !== undefined) {
+        const lat = Number(p.latitude);
+        const lon = Number(p.longitude);
+        if (!isNaN(lat) && !isNaN(lon)) {
+          const distKm = calculateHaversineDistance(coords.latitude, coords.longitude, lat, lon);
+          distance = formatDistancePtBr(distKm);
+        }
+      }
+
+      return {
+        id: p.id,
+        name: p.name,
+        image: p.avatarUri ?? undefined,
+        whatsapp: (p.whatsapp || p.phone) ?? undefined,
+        address: (p.address || p.neighborhood) ?? undefined,
+        description: p.description ?? undefined,
+        isAdmin: false,
+        isProvider: true,
+        isAdminProvider: false,
+        latitude: p.latitude !== null && p.latitude !== undefined ? Number(p.latitude) : undefined,
+        longitude: p.longitude !== null && p.longitude !== undefined ? Number(p.longitude) : undefined,
+        distance,
+      };
+    });
 
     // Combinar (sem duplicatas)
     const seenIds = new Set<string>();
@@ -163,7 +176,7 @@ export default function SubcategoryScreen() {
       }
     }
     return merged;
-  }, [dbServices, dbProviders, loadingServices, loadingProviders]);
+  }, [dbServices, dbProviders, loadingServices, loadingProviders, coords]);
 
   const loading = loadingServices || loadingProviders;
 
@@ -205,11 +218,13 @@ export default function SubcategoryScreen() {
         {item.name}
       </Text>
 
-      {/* Endereço */}
-      {!!item.address && (
+      {/* Endereço / Distância */}
+      {(!!item.distance || !!item.address) && (
         <View style={styles.cardAddressRow}>
           <MaterialIcons name="place" size={10} color="#9CA3AF" />
-          <Text style={styles.cardAddress} numberOfLines={1}>{item.address}</Text>
+          <Text style={styles.cardAddress} numberOfLines={1}>
+            {item.distance || item.address}
+          </Text>
         </View>
       )}
 

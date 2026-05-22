@@ -4,6 +4,7 @@ import * as db from "../db";
 import { providers } from "../../drizzle/schema";
 import { eq, or, ilike } from "drizzle-orm";
 import { getReviewsByProfessional as getMockReviewsByProfessional } from "../../data/mock";
+import { geocodeAddress } from "../geocoding";
 
 const ProviderUpsertSchema = z.object({
   name: z.string().min(1),
@@ -32,6 +33,16 @@ const ProviderUpdateSchema = z.object({
   updates: z.object({
     name: z.string().optional(),
     avatar: z.string().optional(),
+    category: z.string().optional(),
+    city: z.string().optional(),
+    neighborhood: z.string().optional(),
+    phone: z.string().optional(),
+    description: z.string().optional(),
+    address: z.string().optional(),
+    services: z.any().optional(),
+    plan: z.string().nullable().optional(),
+    planExpiresAt: z.string().nullable().optional(),
+    isActive: z.boolean().optional(),
   }),
 });
 
@@ -58,6 +69,22 @@ export const providersRouter = router({
       // Verify if user already has a provider profile
       const existing = await dbInstance.select().from(providers).where(eq(providers.userId, userId)).limit(1);
       
+      let latitude = existing.length > 0 ? existing[0].latitude : null;
+      let longitude = existing.length > 0 ? existing[0].longitude : null;
+
+      const hasAddressChanged = existing.length === 0 || 
+        existing[0].address !== input.address || 
+        existing[0].neighborhood !== input.neighborhood || 
+        existing[0].city !== input.city;
+
+      if (hasAddressChanged) {
+        const coords = await geocodeAddress(input.address, input.neighborhood, input.city);
+        if (coords) {
+          latitude = coords.latitude;
+          longitude = coords.longitude;
+        }
+      }
+
       if (existing.length > 0) {
         // Update
         await dbInstance.update(providers).set({
@@ -78,6 +105,8 @@ export const providersRouter = router({
           avatarUri: input.avatar,
           gallery: input.gallery || [],
           address: input.address,
+          latitude,
+          longitude,
           updatedAt: new Date(),
         }).where(eq(providers.userId, userId));
       } else {
@@ -104,6 +133,8 @@ export const providersRouter = router({
           address: input.address,
           rating: input.rating || 0,
           ratingCount: input.reviewCount || 0,
+          latitude,
+          longitude,
           isActive: true,
           displayOrder: 0,
         });
@@ -122,11 +153,42 @@ export const providersRouter = router({
         throw new Error("Forbidden: You can only update your own profile");
       }
       
-      
       const mappedUpdates: any = {};
       if (input.updates.name !== undefined) mappedUpdates.name = input.updates.name;
       if (input.updates.avatar !== undefined) mappedUpdates.avatarUri = input.updates.avatar;
-      // Map other fields as needed
+      if (input.updates.category !== undefined) mappedUpdates.category = input.updates.category;
+      if (input.updates.city !== undefined) mappedUpdates.city = input.updates.city;
+      if (input.updates.neighborhood !== undefined) mappedUpdates.neighborhood = input.updates.neighborhood;
+      if (input.updates.phone !== undefined) mappedUpdates.phone = input.updates.phone;
+      if (input.updates.description !== undefined) mappedUpdates.description = input.updates.description;
+      if (input.updates.address !== undefined) mappedUpdates.address = input.updates.address;
+      if (input.updates.services !== undefined) mappedUpdates.services = JSON.stringify(input.updates.services || []);
+      if (input.updates.plan !== undefined) mappedUpdates.plan = input.updates.plan;
+      if (input.updates.planExpiresAt !== undefined) {
+        mappedUpdates.planExpiresAt = input.updates.planExpiresAt ? new Date(input.updates.planExpiresAt) : null;
+      }
+      if (input.updates.isActive !== undefined) mappedUpdates.isActive = input.updates.isActive;
+      mappedUpdates.updatedAt = new Date();
+
+      const existing = await dbInstance.select().from(providers).where(eq(providers.userId, input.userId)).limit(1);
+      if (existing.length > 0) {
+        const hasAddressChanged = 
+          (input.updates.address !== undefined && existing[0].address !== input.updates.address) ||
+          (input.updates.neighborhood !== undefined && existing[0].neighborhood !== input.updates.neighborhood) ||
+          (input.updates.city !== undefined && existing[0].city !== input.updates.city);
+
+        if (hasAddressChanged) {
+          const coords = await geocodeAddress(
+            input.updates.address !== undefined ? input.updates.address : existing[0].address,
+            input.updates.neighborhood !== undefined ? input.updates.neighborhood : existing[0].neighborhood,
+            input.updates.city !== undefined ? input.updates.city : existing[0].city
+          );
+          if (coords) {
+            mappedUpdates.latitude = coords.latitude;
+            mappedUpdates.longitude = coords.longitude;
+          }
+        }
+      }
       
       await dbInstance.update(providers).set(mappedUpdates).where(eq(providers.userId, input.userId));
       return { success: true };
@@ -281,6 +343,15 @@ export const providersRouter = router({
       const all = await db.getProviders(false);
       const maxOrder = all.length > 0 ? Math.max(...all.map((p) => p.displayOrder)) : -1;
       const id = uid();
+
+      let latitude = null;
+      let longitude = null;
+      const coords = await geocodeAddress(input.address, input.neighborhood, input.city);
+      if (coords) {
+        latitude = coords.latitude;
+        longitude = coords.longitude;
+      }
+
       return db.createProvider({
         id,
         name: input.name,
@@ -303,6 +374,8 @@ export const providersRouter = router({
         ratingCount: 0,
         isActive: input.isActive ?? true,
         displayOrder: maxOrder + 1,
+        latitude,
+        longitude,
       });
     }),
 
@@ -310,6 +383,28 @@ export const providersRouter = router({
     .input(z.any())
     .mutation(async ({ input }) => {
       const { id, ...data } = input;
+      const dbInstance = await db.getDb();
+      if (dbInstance) {
+        const existing = await dbInstance.select().from(providers).where(eq(providers.id, id)).limit(1);
+        if (existing.length > 0) {
+          const hasAddressChanged = 
+            (data.address !== undefined && existing[0].address !== data.address) ||
+            (data.neighborhood !== undefined && existing[0].neighborhood !== data.neighborhood) ||
+            (data.city !== undefined && existing[0].city !== data.city);
+
+          if (hasAddressChanged) {
+            const coords = await geocodeAddress(
+              data.address !== undefined ? data.address : existing[0].address,
+              data.neighborhood !== undefined ? data.neighborhood : existing[0].neighborhood,
+              data.city !== undefined ? data.city : existing[0].city
+            );
+            if (coords) {
+              data.latitude = coords.latitude;
+              data.longitude = coords.longitude;
+            }
+          }
+        }
+      }
       await db.updateProvider(id, data);
     }),
 

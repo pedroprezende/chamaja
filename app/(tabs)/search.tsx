@@ -19,6 +19,8 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { ScreenContainer } from "@/components/screen-container";
 import { trpc } from "@/lib/trpc";
 import { useColors } from "@/hooks/use-colors";
+import { useLocation } from "@/lib/location-context";
+import { calculateHaversineDistance, formatDistancePtBr } from "@/lib/location-utils";
 
 const POPULAR = [
   { id: "eletricista",       name: "Eletricista",        icon: "bolt" },
@@ -49,6 +51,7 @@ export default function SearchScreen() {
   const colors = useColors();
   const [query, setQuery] = useState("");
   const router = useRouter();
+  const { coords } = useLocation();
   
   // Queries via tRPC
   const { data: dbCategories = [] } = trpc.categories.list.useQuery();
@@ -69,24 +72,36 @@ export default function SearchScreen() {
 
     // 1. Mapear Serviços Administrativos do Banco
     const svcs: SearchResult[] = dbServices
-      .filter(s => s.isActive && (s.name.toLowerCase().includes(q) || s.category.toLowerCase().includes(q)))
+      .filter(s => s.isActive && (s.name.toLowerCase().includes(q) || (s.category?.toLowerCase() || "").includes(q)))
       .map(s => ({
         id: s.id,
         type: "admin-service",
         name: s.name,
-        subtitle: s.category,
-        avatar: s.imageUri || undefined,
+        subtitle: s.category ?? undefined,
+        avatar: s.avatarUri || undefined,
         categoryId: s.categoryId || undefined,
       }));
 
     // 2. Mapear Prestadores da Busca
-    const providers: SearchResult[] = dbSearchResults.map(p => ({
-      id: p.id,
-      type: "professional",
-      name: p.name,
-      subtitle: `${p.category || "Profissional"} • ${p.city || ""}`,
-      avatar: p.avatarUri || undefined,
-    }));
+    const providers: SearchResult[] = dbSearchResults.map(p => {
+      let distanceStr = "";
+      if (coords && p.latitude !== null && p.latitude !== undefined && p.longitude !== null && p.longitude !== undefined) {
+        const lat = Number(p.latitude);
+        const lon = Number(p.longitude);
+        if (!isNaN(lat) && !isNaN(lon)) {
+          const distKm = calculateHaversineDistance(coords.latitude, coords.longitude, lat, lon);
+          distanceStr = formatDistancePtBr(distKm);
+        }
+      }
+
+      return {
+        id: p.id,
+        type: "professional",
+        name: p.name,
+        subtitle: `${p.category || "Profissional"}${distanceStr ? ` • ${distanceStr}` : p.city ? ` • ${p.city}` : ""}`,
+        avatar: p.avatarUri || undefined,
+      };
+    });
 
     // 3. Mapear Categorias que coincidem
     const cats: SearchResult[] = dbCategories

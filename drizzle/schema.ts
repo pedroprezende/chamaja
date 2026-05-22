@@ -109,6 +109,8 @@ export const providers = pgTable("providers", {
   gallery: text("gallery").array(),
   rating: real("rating").default(0),
   ratingCount: integer("rating_count").default(0),
+  latitude: real("latitude"),
+  longitude: real("longitude"),
   isActive: boolean("is_active").notNull().default(true),
   displayOrder: integer("display_order").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),

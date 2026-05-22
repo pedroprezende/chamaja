@@ -31,6 +31,8 @@ export interface AdminProvider {
   rating?: number;
   /** Número de avaliações */
   ratingCount?: number;
+  latitude?: number;
+  longitude?: number;
   isActive: boolean;
   displayOrder: number;
   createdAt: string;

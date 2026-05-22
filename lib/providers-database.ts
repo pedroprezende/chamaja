@@ -20,6 +20,8 @@ export interface StoredProvider {
   createdAt: string;
   rating: number;
   reviewCount: number;
+  latitude?: number;
+  longitude?: number;
   services: Array<{
     id: string;
     name: string;
@@ -59,6 +61,8 @@ function mapToStoredProvider(dbProvider: any): StoredProvider {
     rating: dbProvider.rating || 0,
     reviewCount: dbProvider.ratingCount || 0,
     services: parsedServices,
+    latitude: dbProvider.latitude !== null && dbProvider.latitude !== undefined ? Number(dbProvider.latitude) : undefined,
+    longitude: dbProvider.longitude !== null && dbProvider.longitude !== undefined ? Number(dbProvider.longitude) : undefined,
   };
 }
 

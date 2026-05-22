@@ -189,7 +189,7 @@ export async function getServices(activeOnly: boolean = true) {
     return [
       { id: "s1", name: "Pedro Automotivo", category: "Automotivo", showOnHome: true, isActive: true, imageUri: "https://images.unsplash.com/photo-1530046339160-ce3e530c7d2f?w=400&q=80" },
       { id: "s2", name: "Theusin Serviços", category: "Serviços Externos", showOnHome: true, isActive: true, imageUri: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=400&q=80" }
-    ];
+    ] as typeof results;
   }
   
   return results;

@@ -2,7 +2,7 @@
  * Tela de detalhe de um Prestador Admin
  * Exibe informações completas do prestador cadastrado pelo admin.
  */
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -21,6 +21,8 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { adminProvidersDB, type AdminProvider } from "@/lib/admin-providers-db";
 import { useWindowDimensions } from "react-native";
+import { useLocation } from "@/lib/location-context";
+import { calculateHaversineDistance, formatDistancePtBr } from "@/lib/location-utils";
 
 function openWhatsApp(phone: string, name: string) {
   let number = phone.replace(/\D/g, "");
@@ -40,10 +42,23 @@ export default function AdminProviderDetailScreen() {
   const { providerId, title } = useLocalSearchParams<{ providerId: string; title: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { coords } = useLocation();
 
   const [provider, setProvider] = useState<AdminProvider | null>(null);
   const [loading, setLoading] = useState(true);
   const [galleryIndex, setGalleryIndex] = useState(0);
+
+  const distance = useMemo(() => {
+    if (coords && provider && provider.latitude !== null && provider.latitude !== undefined && provider.longitude !== null && provider.longitude !== undefined) {
+      const lat = Number(provider.latitude);
+      const lon = Number(provider.longitude);
+      if (!isNaN(lat) && !isNaN(lon)) {
+        const distKm = calculateHaversineDistance(coords.latitude, coords.longitude, lat, lon);
+        return formatDistancePtBr(distKm);
+      }
+    }
+    return null;
+  }, [coords, provider]);
 
   useEffect(() => {
     (async () => {
@@ -127,10 +142,12 @@ export default function AdminProviderDetailScreen() {
             <MaterialIcons name="work" size={12} color="#3B82F6" />
             <Text style={styles.serviceBadgeText}>{provider.serviceName}</Text>
           </View>
-          {!!provider.address && (
+          {(!!provider.address || !!distance) && (
             <View style={styles.addressRow}>
               <MaterialIcons name="place" size={14} color="#9CA3AF" />
-              <Text style={styles.addressText}>{provider.address}</Text>
+              <Text style={styles.addressText}>
+                {provider.address || "Localização não informada"}{distance ? ` • ${distance}` : ""}
+              </Text>
             </View>
           )}
           {provider.rating !== undefined && (
@@ -220,7 +237,14 @@ export default function AdminProviderDetailScreen() {
               <View style={styles.infoRow}>
                 <MaterialIcons name="place" size={16} color="#6B7280" />
                 <Text style={styles.infoLabel}>Endereço</Text>
-                <Text style={styles.infoValue}>{provider.address}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.infoValue}>{provider.address}</Text>
+                  {distance ? (
+                    <Text style={{ fontSize: 11, color: "#6B7280", marginTop: 2 }}>
+                      Distância aproximada: {distance}
+                    </Text>
+                  ) : null}
+                </View>
               </View>
             )}
             {!!provider.whatsapp && (

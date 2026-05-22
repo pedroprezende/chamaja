@@ -18,6 +18,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useState, useEffect, useMemo } from "react";
+import { useLocation } from "@/lib/location-context";
+import { calculateHaversineDistance, formatDistancePtBr } from "@/lib/location-utils";
 
 import { trpc } from "@/lib/trpc";
 
@@ -34,10 +36,13 @@ export interface Professional {
   neighborhood: string;
   city: string;
   distance: string;
+  distanceKm?: number;
   description: string;
   serviceArea: string;
   schedule: string;
   paymentMethods: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 function openWhatsApp(phone: string) {
@@ -51,7 +56,19 @@ function openWhatsApp(phone: string) {
 }
 
 // Converte o objeto do banco para o formato Professional do mock
-function dbToProfessional(p: any): Professional {
+function dbToProfessional(p: any, userCoords?: { latitude: number; longitude: number } | null): Professional {
+  let distance = "";
+  let distanceKm: number | undefined = undefined;
+
+  if (userCoords && p.latitude !== null && p.latitude !== undefined && p.longitude !== null && p.longitude !== undefined) {
+    const lat = Number(p.latitude);
+    const lon = Number(p.longitude);
+    if (!isNaN(lat) && !isNaN(lon)) {
+      distanceKm = calculateHaversineDistance(userCoords.latitude, userCoords.longitude, lat, lon);
+      distance = formatDistancePtBr(distanceKm);
+    }
+  }
+
   return {
     id: p.id || p.userId,
     name: p.name,
@@ -64,11 +81,14 @@ function dbToProfessional(p: any): Professional {
     avatar: p.avatarUri || `https://i.pravatar.cc/150?u=${p.id || p.userId}`,
     neighborhood: p.neighborhood || "",
     city: p.city || "",
-    distance: "Próximo",
+    distance,
+    distanceKm,
     description: p.description || "",
     serviceArea: p.city || "",
     schedule: "Consultar disponibilidade",
     paymentMethods: "Consultar",
+    latitude: p.latitude !== null && p.latitude !== undefined ? Number(p.latitude) : undefined,
+    longitude: p.longitude !== null && p.longitude !== undefined ? Number(p.longitude) : undefined,
   };
 }
 
@@ -111,7 +131,7 @@ function ProfessionalCard({
         <View style={styles.locationRow}>
           <MaterialIcons name="location-on" size={13} color="#9CA3AF" />
           <Text style={styles.location}>
-            {item.neighborhood} • {item.distance}
+            {item.neighborhood}{item.distance ? ` • ${item.distance}` : ""}
           </Text>
         </View>
       </View>
@@ -137,6 +157,8 @@ export default function ProfessionalsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState("");
+  const { coords } = useLocation();
+  const [sortBy, setSortBy] = useState<"default" | "closest" | "farthest">("default");
 
   // Carregar prestadores reais via tRPC
   const { data: dbProviders = [], isLoading } = trpc.providers.getByCategory.useQuery(
@@ -145,19 +167,34 @@ export default function ProfessionalsScreen() {
   );
 
   const realProviders = useMemo(() => {
-    return dbProviders.map(dbToProfessional);
-  }, [dbProviders]);
+    return dbProviders.map((p) => dbToProfessional(p, coords));
+  }, [dbProviders, coords]);
 
   // Usar apenas prestadores reais
   const allProfessionals = useMemo(() => {
-    // PREMIUM primeiro
-    const sorted = [...realProviders].sort((a, b) => {
-      if (a.type === "PREMIUM" && b.type !== "PREMIUM") return -1;
-      if (a.type !== "PREMIUM" && b.type === "PREMIUM") return 1;
-      return b.rating - a.rating;
-    });
+    const sorted = [...realProviders];
+    if (sortBy === "closest") {
+      sorted.sort((a, b) => {
+        const distA = a.distanceKm ?? Infinity;
+        const distB = b.distanceKm ?? Infinity;
+        return distA - distB;
+      });
+    } else if (sortBy === "farthest") {
+      sorted.sort((a, b) => {
+        const distA = a.distanceKm ?? -Infinity;
+        const distB = b.distanceKm ?? -Infinity;
+        return distB - distA;
+      });
+    } else {
+      // PREMIUM primeiro, depois avaliação
+      sorted.sort((a, b) => {
+        if (a.type === "PREMIUM" && b.type !== "PREMIUM") return -1;
+        if (a.type !== "PREMIUM" && b.type === "PREMIUM") return 1;
+        return b.rating - a.rating;
+      });
+    }
     return sorted;
-  }, [realProviders]);
+  }, [realProviders, sortBy]);
 
   // Filtrar por busca
   const filteredData = useMemo(() => {
@@ -171,6 +208,36 @@ export default function ProfessionalsScreen() {
         p.description?.toLowerCase().includes(q)
     );
   }, [allProfessionals, searchQuery]);
+
+  const handleSortPress = () => {
+    if (!coords) {
+      Alert.alert(
+        "Localização indisponível",
+        "Não conseguimos acessar sua localização atual. Certifique-se de conceder a permissão de localização ao app.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+
+    Alert.alert(
+      "Ordenar por",
+      "Escolha como deseja visualizar os profissionais:",
+      [
+        { text: "Padrão (Destaques/Premium)", onPress: () => setSortBy("default") },
+        { text: "Mais próximos primeiro", onPress: () => setSortBy("closest") },
+        { text: "Mais distantes primeiro", onPress: () => setSortBy("farthest") },
+        { text: "Cancelar", style: "cancel" }
+      ]
+    );
+  };
+
+  const filterLabel = !coords 
+    ? "Localização desativada" 
+    : sortBy === "default" 
+      ? "Ordenação: Padrão" 
+      : sortBy === "closest" 
+        ? "Mais próximos" 
+        : "Mais distantes";
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -206,15 +273,21 @@ export default function ProfessionalsScreen() {
             </Pressable>
           )}
         </View>
-        <Pressable style={styles.filterBtn}>
+        <Pressable 
+          style={styles.filterBtn}
+          onPress={handleSortPress}
+        >
           <MaterialIcons name="filter-list" size={22} color="#374151" />
         </Pressable>
       </View>
 
       {/* Location filter */}
-      <Pressable style={styles.locationFilter}>
+      <Pressable 
+        style={styles.locationFilter}
+        onPress={handleSortPress}
+      >
         <MaterialIcons name="location-on" size={16} color="#25D366" />
-        <Text style={styles.locationFilterText}>Próximo a você</Text>
+        <Text style={styles.locationFilterText}>{filterLabel}</Text>
         <MaterialIcons name="keyboard-arrow-down" size={18} color="#374151" />
       </Pressable>
 
