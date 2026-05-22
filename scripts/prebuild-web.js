@@ -1,5 +1,5 @@
-import fs from "fs";
-import path from "path";
+const fs = require("fs");
+const path = require("path");
 
 const dir = path.join("node_modules", "react-native-css-interop", ".cache");
 const file = path.join(dir, "web.css");
