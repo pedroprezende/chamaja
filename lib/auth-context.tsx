@@ -119,17 +119,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(JSON.parse(cachedUser));
         }
 
-        const { data: { session } } = await supabase.auth.getSession();
+        // Recupera sessão do Supabase com timeout de segurança de 5 segundos
+        const sessionResult = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise<{ data: { session: null } }>((_, reject) =>
+            setTimeout(() => reject(new Error("Supabase getSession timeout")), 5000)
+          )
+        ]).catch(err => {
+          logger.warn("AUTH", "Timeout ou falha ao obter sessão do Supabase", err);
+          return { data: { session: null } };
+        });
+
+        const session = sessionResult.data?.session;
         if (session) {
           logger.info("AUTH", "Sessão válida encontrada no Supabase");
-          await syncUserSession(session);
+          // Sincroniza a sessão mas protege contra travamentos com timeout de 5 segundos
+          await Promise.race([
+            syncUserSession(session),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error("Sync user session timeout")), 5000)
+            )
+          ]).catch(err => {
+            logger.warn("AUTH", "Sincronização lenta ou falhou durante inicialização", err);
+          });
         } else {
           logger.info("AUTH", "Nenhuma sessão ativa encontrada");
           setUser(null);
           await removeSessionToken();
         }
       } catch (err) {
-        logger.error("AUTH", "Erro ao restaurar sessão", err);
+        logger.error("AUTH", "Erro crítico ao restaurar sessão", err);
       } finally {
         setIsLoading(false);
       }
