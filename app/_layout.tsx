@@ -37,9 +37,14 @@ function RootLayoutNav() {
   const { isSignedIn, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
-    if (isLoading) return;
+    setHasMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hasMounted || isLoading) return;
 
     const inAuthGroup = segments[0] === "auth";
     const path = segments.join("/");
@@ -53,9 +58,9 @@ function RootLayoutNav() {
     } else if (isSignedIn && inAuthGroup) {
       router.replace("/(tabs)" as any);
     }
-  }, [isSignedIn, isLoading, segments, router]);
+  }, [isSignedIn, isLoading, segments, router, hasMounted]);
 
-  if (isLoading) {
+  if (!hasMounted || isLoading) {
     return null;
   }
 
