@@ -39,6 +39,7 @@ ALTER TABLE public.search_queries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.service_views ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.regions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.system_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.favorites ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
 -- 3. LIMPEZA DE POLÍTICAS EXISTENTES (Garantir idempotência e evitar conflitos)
@@ -54,7 +55,8 @@ BEGIN
           AND tablename IN (
             'categories', 'services', 'users', 'sub_services', 
             'providers', 'reviews', 'featured_ads', 'whatsapp_clicks', 
-            'search_queries', 'service_views', 'regions', 'system_logs'
+            'search_queries', 'service_views', 'regions', 'system_logs',
+            'favorites'
           )
     LOOP
         EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', pol.policyname, pol.tablename);
@@ -101,6 +103,11 @@ CREATE POLICY "Public/Own SELECT providers" ON public.providers FOR SELECT TO pu
 CREATE POLICY "User/Admin INSERT providers" ON public.providers FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid()::text OR public.is_admin());
 CREATE POLICY "User/Admin UPDATE providers" ON public.providers FOR UPDATE TO authenticated USING (user_id = auth.uid()::text OR public.is_admin()) WITH CHECK (user_id = auth.uid()::text OR public.is_admin());
 CREATE POLICY "Admin DELETE providers" ON public.providers FOR DELETE TO authenticated USING (public.is_admin());
+
+-- favorites
+CREATE POLICY "User/Admin SELECT favorites" ON public.favorites FOR SELECT TO authenticated USING (user_id = auth.uid()::text OR public.is_admin());
+CREATE POLICY "User/Admin INSERT favorites" ON public.favorites FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid()::text OR public.is_admin());
+CREATE POLICY "User/Admin DELETE favorites" ON public.favorites FOR DELETE TO authenticated USING (user_id = auth.uid()::text OR public.is_admin());
 
 -- ── 4.3. Avaliações (reviews - Escrita Autenticada, Leitura Pública, Moderada por Admin) ──
 
