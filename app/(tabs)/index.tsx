@@ -1027,7 +1027,7 @@ export default function HomeScreen() {
                   </View>
 
                   {/* Anúncios Patrocinados (Aparecem logo abaixo do título) */}
-                  <View style={{ marginBottom: 20 }}>
+                  <View style={{ marginBottom: 40 }}>
                     <AdsCarousel ads={ads} isLoading={adsLoading} />
                   </View>
                   

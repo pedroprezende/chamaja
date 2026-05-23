@@ -72,17 +72,9 @@ function RootLayoutNav() {
         translucent={true} 
       />
       <Stack screenOptions={{ headerShown: false }}>
-        {isSignedIn ? (
-          <>
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="admin" />
-          </>
-        ) : (
-          <>
-            <Stack.Screen name="auth" />
-            <Stack.Screen name="admin" />
-          </>
-        )}
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="auth" />
+        <Stack.Screen name="admin" />
         <Stack.Screen name="oauth/callback" />
         <Stack.Screen name="professionals/[category]" />
         <Stack.Screen name="categories/[section]" />
