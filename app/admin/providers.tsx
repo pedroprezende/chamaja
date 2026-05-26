@@ -152,6 +152,73 @@ function ProviderCard({
   );
 }
 
+async function geocodeAddressClient(
+  address: string | null | undefined,
+  neighborhood?: string | null,
+  city?: string | null
+): Promise<{ latitude: number; longitude: number } | null> {
+  const parts: string[] = [];
+  if (address && address.trim() !== "") parts.push(address.trim());
+  if (neighborhood && neighborhood.trim() !== "") parts.push(neighborhood.trim());
+  if (city && city.trim() !== "") parts.push(city.trim());
+  
+  if (parts.length === 0) return null;
+  parts.push("Brasil");
+
+  const queryStr = parts.join(", ");
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(queryStr)}&format=json&limit=1`,
+      {
+        headers: {
+          "User-Agent": "ChamaJaAdmin/1.0 (pedro@example.com)",
+        },
+      }
+    );
+    const data = await response.json();
+    if (data && Array.isArray(data) && data.length > 0) {
+      const lat = parseFloat(data[0].lat);
+      const lon = parseFloat(data[0].lon);
+      if (!isNaN(lat) && !isNaN(lon)) {
+        return { latitude: lat, longitude: lon };
+      }
+    }
+  } catch (error: any) {
+    console.warn("[Geocoding Client] Failed for query:", queryStr, error.message);
+  }
+  
+  // Se falhar, tenta apenas o bairro e cidade
+  if (parts.length > 2) {
+    const backupParts: string[] = [];
+    if (neighborhood && neighborhood.trim() !== "") backupParts.push(neighborhood.trim());
+    if (city && city.trim() !== "") backupParts.push(city.trim());
+    backupParts.push("Brasil");
+    const backupQuery = backupParts.join(", ");
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(backupQuery)}&format=json&limit=1`,
+        {
+          headers: {
+            "User-Agent": "ChamaJaAdmin/1.0 (pedro@example.com)",
+          },
+        }
+      );
+      const data = await response.json();
+      if (data && Array.isArray(data) && data.length > 0) {
+        const lat = parseFloat(data[0].lat);
+        const lon = parseFloat(data[0].lon);
+        if (!isNaN(lat) && !isNaN(lon)) {
+          return { latitude: lat, longitude: lon };
+        }
+      }
+    } catch (e: any) {
+      console.warn("[Geocoding Client] Backup failed for:", backupQuery, e.message);
+    }
+  }
+  
+  return null;
+}
+
 // ─── Tela Principal ───────────────────────────────────────────────────────────
 export default function AdminProvidersScreen() {
   const router = useRouter();
@@ -265,6 +332,27 @@ export default function AdminProvidersScreen() {
     }
     setSaving(true);
     try {
+      // Geocodificação no Cliente
+      let latitude: number | null = null;
+      let longitude: number | null = null;
+      
+      if (form.address && form.address.trim() !== "") {
+        const coords = await geocodeAddressClient(form.address);
+        if (coords) {
+          latitude = coords.latitude;
+          longitude = coords.longitude;
+        } else {
+          // Fallback para o centro de Bragança Paulista se o geocoding falhar
+          console.warn("[Geocoding] Falha, usando coordenadas do centro da cidade.");
+          latitude = -22.9519;
+          longitude = -46.5419;
+        }
+      } else {
+        // Se não tiver endereço, define o centro da cidade por padrão para evitar nulos
+        latitude = -22.9519;
+        longitude = -46.5419;
+      }
+
       // 1. Upload Avatar
       let finalAvatar = form.avatarUri;
       if (finalAvatar && !finalAvatar.startsWith("http")) {
@@ -307,6 +395,8 @@ export default function AdminProvidersScreen() {
         ratingCount: form.ratingCount || 0,
         plan: "premium",
         services: JSON.stringify(currentSelectedNames),
+        latitude: latitude,
+        longitude: longitude,
       };
 
       if (editingProvider) {

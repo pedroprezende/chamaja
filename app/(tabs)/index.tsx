@@ -683,8 +683,8 @@ export default function HomeScreen() {
             onPress={() =>
               !editMode &&
               router.push({
-                pathname: "/admin-services/[serviceId]",
-                params: { serviceId: item.id, title: item.name },
+                pathname: "/professional/[id]",
+                params: { id: item.id },
               } as any)
             }
             onLongPress={editMode ? drag : undefined}
@@ -764,8 +764,8 @@ export default function HomeScreen() {
         style={({ pressed }) => [styles.adminServiceCard, pressed && { opacity: 0.85 }]}
         onPress={() =>
           router.push({
-            pathname: "/admin-services/[serviceId]",
-            params: { serviceId: item.id, title: item.name },
+            pathname: "/professional/[id]",
+            params: { id: item.id },
           } as any)
         }
       >
@@ -909,17 +909,10 @@ export default function HomeScreen() {
                 ]}
                 onPress={() => {
                   if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  if (item.type === "SERVICE") {
-                    router.push({
-                      pathname: "/admin-services/[serviceId]",
-                      params: { serviceId: item.id, title: item.name }
-                    } as any);
-                  } else {
-                    router.push({
-                      pathname: "/professional/[id]",
-                      params: { id: item.id }
-                    } as any);
-                  }
+                  router.push({
+                    pathname: "/professional/[id]",
+                    params: { id: item.id }
+                  } as any);
                 }}
               >
                 <View style={styles.verticalCardContent}>

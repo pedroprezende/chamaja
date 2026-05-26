@@ -145,13 +145,8 @@ export default function SearchScreen() {
   }, [query, dbServices, dbSearchResults, dbCategories]);
 
   const handleResultPress = (item: SearchResult) => {
-    if (item.type === "professional") {
+    if (item.type === "professional" || item.type === "admin-service") {
       router.push(`/professional/${item.id}` as any);
-    } else if (item.type === "admin-service") {
-      router.push({
-        pathname: "/admin-services/[serviceId]",
-        params: { serviceId: item.id, title: item.name },
-      } as any);
     } else if (item.type === "admin-provider") {
       router.push({
         pathname: "/admin-provider/[providerId]",

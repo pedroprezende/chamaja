@@ -26,6 +26,8 @@ const ProviderUpsertSchema = z.object({
   address: z.string().nullable().optional(),
   rating: z.number().optional(),
   reviewCount: z.number().optional(),
+  latitude: z.number().nullable().optional(),
+  longitude: z.number().nullable().optional(),
 });
 
 const ProviderUpdateSchema = z.object({
@@ -43,6 +45,8 @@ const ProviderUpdateSchema = z.object({
     plan: z.string().nullable().optional(),
     planExpiresAt: z.string().nullable().optional(),
     isActive: z.boolean().optional(),
+    latitude: z.number().nullable().optional(),
+    longitude: z.number().nullable().optional(),
   }),
 });
 
@@ -69,15 +73,15 @@ export const providersRouter = router({
       // Verify if user already has a provider profile
       const existing = await dbInstance.select().from(providers).where(eq(providers.userId, userId)).limit(1);
       
-      let latitude = existing.length > 0 ? existing[0].latitude : null;
-      let longitude = existing.length > 0 ? existing[0].longitude : null;
+      let latitude = input.latitude !== undefined && input.latitude !== null ? input.latitude : (existing.length > 0 ? existing[0].latitude : null);
+      let longitude = input.longitude !== undefined && input.longitude !== null ? input.longitude : (existing.length > 0 ? existing[0].longitude : null);
 
       const hasAddressChanged = existing.length === 0 || 
         existing[0].address !== input.address || 
         existing[0].neighborhood !== input.neighborhood || 
         existing[0].city !== input.city;
 
-      if (hasAddressChanged) {
+      if (hasAddressChanged && (input.latitude === undefined || input.latitude === null)) {
         const coords = await geocodeAddress(input.address, input.neighborhood, input.city);
         if (coords) {
           latitude = coords.latitude;
@@ -168,6 +172,8 @@ export const providersRouter = router({
         mappedUpdates.planExpiresAt = input.updates.planExpiresAt ? new Date(input.updates.planExpiresAt) : null;
       }
       if (input.updates.isActive !== undefined) mappedUpdates.isActive = input.updates.isActive;
+      if (input.updates.latitude !== undefined) mappedUpdates.latitude = input.updates.latitude;
+      if (input.updates.longitude !== undefined) mappedUpdates.longitude = input.updates.longitude;
       mappedUpdates.updatedAt = new Date();
 
       const existing = await dbInstance.select().from(providers).where(eq(providers.userId, input.userId)).limit(1);
@@ -177,7 +183,7 @@ export const providersRouter = router({
           (input.updates.neighborhood !== undefined && existing[0].neighborhood !== input.updates.neighborhood) ||
           (input.updates.city !== undefined && existing[0].city !== input.updates.city);
 
-        if (hasAddressChanged) {
+        if (hasAddressChanged && (input.updates.latitude === undefined || input.updates.latitude === null)) {
           const coords = await geocodeAddress(
             input.updates.address !== undefined ? input.updates.address : existing[0].address,
             input.updates.neighborhood !== undefined ? input.updates.neighborhood : existing[0].neighborhood,
@@ -344,12 +350,14 @@ export const providersRouter = router({
       const maxOrder = all.length > 0 ? Math.max(...all.map((p) => p.displayOrder)) : -1;
       const id = uid();
 
-      let latitude = null;
-      let longitude = null;
-      const coords = await geocodeAddress(input.address, input.neighborhood, input.city);
-      if (coords) {
-        latitude = coords.latitude;
-        longitude = coords.longitude;
+      let latitude = input.latitude !== undefined && input.latitude !== null ? Number(input.latitude) : null;
+      let longitude = input.longitude !== undefined && input.longitude !== null ? Number(input.longitude) : null;
+      if (latitude === null || longitude === null) {
+        const coords = await geocodeAddress(input.address, input.neighborhood, input.city);
+        if (coords) {
+          latitude = coords.latitude;
+          longitude = coords.longitude;
+        }
       }
 
       return db.createProvider({
@@ -392,7 +400,7 @@ export const providersRouter = router({
             (data.neighborhood !== undefined && existing[0].neighborhood !== data.neighborhood) ||
             (data.city !== undefined && existing[0].city !== data.city);
 
-          if (hasAddressChanged) {
+          if (hasAddressChanged && (data.latitude === undefined || data.latitude === null)) {
             const coords = await geocodeAddress(
               data.address !== undefined ? data.address : existing[0].address,
               data.neighborhood !== undefined ? data.neighborhood : existing[0].neighborhood,

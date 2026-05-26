@@ -10,8 +10,9 @@ import {
   Dimensions,
   FlatList,
   Platform,
+  ActivityIndicator,
 } from "react-native";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -66,7 +67,40 @@ export default function AdminServiceDetailScreen() {
   const trackView = trpc.analytics.trackServiceView.useMutation();
   const trackWhatsapp = trpc.analytics.trackWhatsappClick.useMutation();
 
-  const service = services.find((s) => s.id === serviceId);
+  // Caso o ID seja de um prestador, tentamos carregar do banco via tRPC
+  const { data: serverProvider, isLoading: loadingProvider } = trpc.providers.getById.useQuery(
+    serviceId || "",
+    { enabled: !!serviceId }
+  );
+
+  const service = useMemo(() => {
+    const localService = services.find((s) => s.id === serviceId);
+    if (localService) return localService;
+
+    if (serverProvider) {
+      return {
+        id: serverProvider.id,
+        adminId: serverProvider.userId || "admin",
+        name: serverProvider.name,
+        category: serverProvider.category || "Profissional",
+        categoryId: serverProvider.categoryId || undefined,
+        subcategoryId: serverProvider.subcategoryId || undefined,
+        subcategoryName: serverProvider.subcategoryName || undefined,
+        description: serverProvider.description || "",
+        icon: "build",
+        imageUri: serverProvider.avatarUri || undefined,
+        whatsapp: serverProvider.phone || serverProvider.whatsapp || "",
+        address: serverProvider.address || undefined,
+        gallery: serverProvider.gallery || [],
+        showOnHome: true,
+        displayOrder: 0,
+        createdAt: serverProvider.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        isActive: true,
+      };
+    }
+    return null;
+  }, [services, serviceId, serverProvider]);
 
   useEffect(() => {
     if (service) {
@@ -91,6 +125,15 @@ export default function AdminServiceDetailScreen() {
       Alert.alert("Erro", "Não foi possível abrir o WhatsApp.")
     );
   };
+
+  if (loadingProvider) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top, alignItems: "center", justifyContent: "center" }]}>
+        <ActivityIndicator size="large" color="#25D366" />
+        <Text style={{ marginTop: 12, color: "#6B7280", fontWeight: "600" }}>Carregando...</Text>
+      </View>
+    );
+  }
 
   if (!service) {
     return (
