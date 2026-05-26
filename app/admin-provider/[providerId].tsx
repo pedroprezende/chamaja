@@ -22,7 +22,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { adminProvidersDB, type AdminProvider } from "@/lib/admin-providers-db";
 import { useWindowDimensions } from "react-native";
 import { useLocation } from "@/lib/location-context";
-import { calculateHaversineDistance, formatDistancePtBr } from "@/lib/location-utils";
+import {
+  calculateHaversineDistance,
+  formatDistancePtBr,
+  estimateDrivingTimeMinutes,
+  formatDrivingTimePtBr,
+  formatDistanceWithPreposition,
+} from "@/lib/location-utils";
 
 function openWhatsApp(phone: string, name: string) {
   let number = phone.replace(/\D/g, "");
@@ -48,13 +54,18 @@ export default function AdminProviderDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [galleryIndex, setGalleryIndex] = useState(0);
 
-  const distance = useMemo(() => {
+  const distanceInfo = useMemo(() => {
     if (coords && provider && provider.latitude !== null && provider.latitude !== undefined && provider.longitude !== null && provider.longitude !== undefined) {
       const lat = Number(provider.latitude);
       const lon = Number(provider.longitude);
       if (!isNaN(lat) && !isNaN(lon)) {
         const distKm = calculateHaversineDistance(coords.latitude, coords.longitude, lat, lon);
-        return formatDistancePtBr(distKm);
+        const timeMin = estimateDrivingTimeMinutes(distKm);
+        return {
+          distanceText: formatDistancePtBr(distKm),
+          distancePrepText: formatDistanceWithPreposition(distKm),
+          drivingTimeText: formatDrivingTimePtBr(timeMin),
+        };
       }
     }
     return null;
@@ -142,11 +153,11 @@ export default function AdminProviderDetailScreen() {
             <MaterialIcons name="work" size={12} color="#3B82F6" />
             <Text style={styles.serviceBadgeText}>{provider.serviceName}</Text>
           </View>
-          {(!!provider.address || !!distance) && (
+          {(!!provider.address || !!distanceInfo) && (
             <View style={styles.addressRow}>
               <MaterialIcons name="place" size={14} color="#9CA3AF" />
               <Text style={styles.addressText}>
-                {provider.address || "Localização não informada"}{distance ? ` • ${distance}` : ""}
+                {provider.address || "Localização não informada"}{distanceInfo ? ` • ${distanceInfo.distanceText}` : ""}
               </Text>
             </View>
           )}
@@ -164,6 +175,16 @@ export default function AdminProviderDetailScreen() {
                 {provider.rating.toFixed(1)}
                 {provider.ratingCount ? ` (${provider.ratingCount} avaliações)` : ""}
               </Text>
+            </View>
+          )}
+          {distanceInfo && (
+            <View style={styles.distanceBadgeRow}>
+              <View style={styles.distanceBadge}>
+                <MaterialIcons name="directions-car" size={13} color="#25D366" />
+                <Text style={styles.distanceBadgeText}>
+                  {distanceInfo.distancePrepText} • {distanceInfo.drivingTimeText}
+                </Text>
+              </View>
             </View>
           )}
         </View>
@@ -239,10 +260,15 @@ export default function AdminProviderDetailScreen() {
                 <Text style={styles.infoLabel}>Endereço</Text>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.infoValue}>{provider.address}</Text>
-                  {distance ? (
-                    <Text style={{ fontSize: 11, color: "#6B7280", marginTop: 2 }}>
-                      Distância aproximada: {distance}
-                    </Text>
+                  {distanceInfo ? (
+                    <View style={{ marginTop: 4, gap: 2 }}>
+                      <Text style={{ fontSize: 12, color: "#111827", fontWeight: "600" }}>
+                        📍 {distanceInfo.distancePrepText}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: "#6B7280", fontWeight: "500" }}>
+                        🚗 {distanceInfo.drivingTimeText}
+                      </Text>
+                    </View>
                   ) : null}
                 </View>
               </View>
@@ -368,4 +394,22 @@ const styles = StyleSheet.create({
   },
   infoLabel: { fontSize: 13, color: "#6B7280", width: 70 },
   infoValue: { flex: 1, fontSize: 13, color: "#111827", fontWeight: "500" },
+  distanceBadgeRow: {
+    flexDirection: "row",
+    marginTop: 4,
+  },
+  distanceBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0FDF4",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    gap: 6,
+  },
+  distanceBadgeText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#25D366",
+  },
 });

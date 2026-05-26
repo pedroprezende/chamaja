@@ -42,3 +42,41 @@ export function formatDistancePtBr(distanceKm: number): string {
   }
   return `${roundedKm.toFixed(1).replace(".", ",")} km de você`;
 }
+
+/**
+ * Estimates driving time based on distance in kilometers.
+ * Assumes average driving speed of 50 km/h (1.2 minutes per km) + baseline traffic.
+ */
+export function estimateDrivingTimeMinutes(distanceKm: number): number {
+  if (distanceKm < 0.1) return 1; // Less than 100m is ~1 min
+  const minutes = Math.round(distanceKm * 1.2);
+  return Math.max(1, minutes);
+}
+
+/**
+ * Returns driving time text in Portuguese.
+ * Example: "aproximadamente 5min de carro"
+ */
+export function formatDrivingTimePtBr(minutes: number): string {
+  return `aproximadamente ${minutes}min de carro`;
+}
+
+/**
+ * Formats distance with "está a ..." prefix.
+ * Example: "está a 5,2km de você"
+ */
+export function formatDistanceWithPreposition(distanceKm: number): string {
+  if (distanceKm < 1) {
+    const meters = Math.round(distanceKm * 1000);
+    if (meters < 50) {
+      return "está bem próximo de você";
+    }
+    return `está a ${meters}m de você`;
+  }
+  const roundedKm = Math.round(distanceKm * 10) / 10;
+  const kmStr = roundedKm % 1 === 0 
+    ? `${Math.round(roundedKm)}km` 
+    : `${roundedKm.toFixed(1).replace(".", ",")}km`;
+  return `está a ${kmStr} de você`;
+}
+

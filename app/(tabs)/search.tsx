@@ -20,7 +20,12 @@ import { ScreenContainer } from "@/components/screen-container";
 import { trpc } from "@/lib/trpc";
 import { useColors } from "@/hooks/use-colors";
 import { useLocation } from "@/lib/location-context";
-import { calculateHaversineDistance, formatDistancePtBr } from "@/lib/location-utils";
+import {
+  calculateHaversineDistance,
+  formatDistancePtBr,
+  estimateDrivingTimeMinutes,
+  formatDrivingTimePtBr,
+} from "@/lib/location-utils";
 
 const POPULAR = [
   { id: "eletricista",       name: "Eletricista",        icon: "bolt" },
@@ -90,7 +95,10 @@ export default function SearchScreen() {
         const lon = Number(p.longitude);
         if (!isNaN(lat) && !isNaN(lon)) {
           const distKm = calculateHaversineDistance(coords.latitude, coords.longitude, lat, lon);
-          distanceStr = formatDistancePtBr(distKm);
+          const distText = formatDistancePtBr(distKm);
+          const timeMin = estimateDrivingTimeMinutes(distKm);
+          const drivingTime = formatDrivingTimePtBr(timeMin).replace("aproximadamente ", "");
+          distanceStr = `${distText} (${drivingTime})`;
         }
       }
 

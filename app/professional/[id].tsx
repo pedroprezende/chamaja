@@ -25,7 +25,13 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/lib/auth-context";
 import { addReview } from "@/data/mock";
 import { useLocation } from "@/lib/location-context";
-import { calculateHaversineDistance, formatDistancePtBr } from "@/lib/location-utils";
+import {
+  calculateHaversineDistance,
+  formatDistancePtBr,
+  estimateDrivingTimeMinutes,
+  formatDrivingTimePtBr,
+  formatDistanceWithPreposition,
+} from "@/lib/location-utils";
 
 function getWhatsAppUrl(phone: string, name: string) {
   const cleaned = phone.replace(/\D/g, "");
@@ -56,13 +62,18 @@ export default function ProfessionalDetailScreen() {
     enabled: !!id,
   });
 
-  const distance = useMemo(() => {
+  const distanceInfo = useMemo(() => {
     if (coords && professional && professional.latitude !== null && professional.latitude !== undefined && professional.longitude !== null && professional.longitude !== undefined) {
       const lat = Number(professional.latitude);
       const lon = Number(professional.longitude);
       if (!isNaN(lat) && !isNaN(lon)) {
         const distKm = calculateHaversineDistance(coords.latitude, coords.longitude, lat, lon);
-        return formatDistancePtBr(distKm);
+        const timeMin = estimateDrivingTimeMinutes(distKm);
+        return {
+          distanceText: formatDistancePtBr(distKm),
+          distancePrepText: formatDistanceWithPreposition(distKm),
+          drivingTimeText: formatDrivingTimePtBr(timeMin),
+        };
       }
     }
     return null;
@@ -191,11 +202,28 @@ export default function ProfessionalDetailScreen() {
             <View style={styles.locationRow}>
               <MaterialIcons name="location-on" size={14} color={colors.muted} />
               <Text style={[styles.locationText, { color: colors.muted }]}>
-                {professional.neighborhood || "Bairro não informado"} • {professional.city || "Cidade não informada"}{distance ? ` • ${distance}` : ""}
+                {professional.neighborhood || "Bairro não informado"} • {professional.city || "Cidade não informada"}{distanceInfo ? ` • ${distanceInfo.distanceText}` : ""}
               </Text>
             </View>
           </View>
         </View>
+
+        {/* Distance Card */}
+        {distanceInfo && (
+          <View style={[styles.distanceCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[styles.distanceIconWrap, { backgroundColor: colors.primary + "15" }]}>
+              <MaterialIcons name="directions-car" size={22} color={colors.primary} />
+            </View>
+            <View style={styles.distanceContent}>
+              <Text style={[styles.distanceText, { color: colors.foreground }]}>
+                {distanceInfo.distancePrepText}
+              </Text>
+              <Text style={[styles.drivingTimeText, { color: colors.muted }]}>
+                {distanceInfo.drivingTimeText}
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Rating */}
         <Pressable
@@ -273,10 +301,15 @@ export default function ProfessionalDetailScreen() {
               <Text style={[styles.infoValue, { color: colors.primary, fontWeight: "700" }]}>
                 {professional.address || professional.city || "Ver localização no Google Maps"}
               </Text>
-              {distance ? (
-                <Text style={{ fontSize: 12, color: colors.muted, marginTop: 2, fontWeight: "500" }}>
-                  Distância aproximada: {distance}
-                </Text>
+              {distanceInfo ? (
+                <View style={{ marginTop: 4, gap: 2 }}>
+                  <Text style={{ fontSize: 13, color: colors.foreground, fontWeight: "600" }}>
+                    📍 {distanceInfo.distancePrepText}
+                  </Text>
+                  <Text style={{ fontSize: 12, color: colors.muted, fontWeight: "500" }}>
+                    🚗 {distanceInfo.drivingTimeText}
+                  </Text>
+                </View>
               ) : null}
             </View>
             <MaterialIcons name="open-in-new" size={18} color={colors.muted} />
@@ -639,5 +672,40 @@ const styles = StyleSheet.create({
   fullImage: {
     width: "100%",
     height: "100%",
+  },
+  distanceCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 20,
+    padding: 14,
+    borderRadius: 18,
+    borderWidth: 1,
+    gap: 12,
+    marginTop: 4,
+    marginBottom: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 5,
+    elevation: 1,
+  },
+  distanceIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  distanceContent: {
+    flex: 1,
+    gap: 2,
+  },
+  distanceText: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  drivingTimeText: {
+    fontSize: 13,
+    fontWeight: "500",
   },
 });

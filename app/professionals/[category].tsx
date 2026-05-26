@@ -19,7 +19,12 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "@/lib/location-context";
-import { calculateHaversineDistance, formatDistancePtBr } from "@/lib/location-utils";
+import {
+  calculateHaversineDistance,
+  formatDistancePtBr,
+  estimateDrivingTimeMinutes,
+  formatDrivingTimePtBr,
+} from "@/lib/location-utils";
 
 import { trpc } from "@/lib/trpc";
 
@@ -37,6 +42,7 @@ export interface Professional {
   city: string;
   distance: string;
   distanceKm?: number;
+  drivingTime?: string;
   description: string;
   serviceArea: string;
   schedule: string;
@@ -59,6 +65,7 @@ function openWhatsApp(phone: string) {
 function dbToProfessional(p: any, userCoords?: { latitude: number; longitude: number } | null): Professional {
   let distance = "";
   let distanceKm: number | undefined = undefined;
+  let drivingTime: string | undefined = undefined;
 
   if (userCoords && p.latitude !== null && p.latitude !== undefined && p.longitude !== null && p.longitude !== undefined) {
     const lat = Number(p.latitude);
@@ -66,6 +73,8 @@ function dbToProfessional(p: any, userCoords?: { latitude: number; longitude: nu
     if (!isNaN(lat) && !isNaN(lon)) {
       distanceKm = calculateHaversineDistance(userCoords.latitude, userCoords.longitude, lat, lon);
       distance = formatDistancePtBr(distanceKm);
+      const timeMin = estimateDrivingTimeMinutes(distanceKm);
+      drivingTime = formatDrivingTimePtBr(timeMin);
     }
   }
 
@@ -83,6 +92,7 @@ function dbToProfessional(p: any, userCoords?: { latitude: number; longitude: nu
     city: p.city || "",
     distance,
     distanceKm,
+    drivingTime,
     description: p.description || "",
     serviceArea: p.city || "",
     schedule: "Consultar disponibilidade",
@@ -130,8 +140,8 @@ function ProfessionalCard({
         </View>
         <View style={styles.locationRow}>
           <MaterialIcons name="location-on" size={13} color="#9CA3AF" />
-          <Text style={styles.location}>
-            {item.neighborhood}{item.distance ? ` • ${item.distance}` : ""}
+          <Text style={styles.location} numberOfLines={1}>
+            {item.neighborhood}{item.distance ? ` • ${item.distance}${item.drivingTime ? ` (${item.drivingTime.replace("aproximadamente ", "")})` : ""}` : ""}
           </Text>
         </View>
       </View>
