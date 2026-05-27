@@ -102,11 +102,16 @@ export default function SearchScreen() {
         }
       }
 
+      const location = p.neighborhood || p.city || "";
+      let subtitle = p.category || "Profissional";
+      if (location) subtitle += ` • ${location}`;
+      if (distanceStr) subtitle += ` • ${distanceStr}`;
+
       return {
         id: p.id,
         type: "professional",
         name: p.name,
-        subtitle: `${p.category || "Profissional"}${distanceStr ? ` • ${distanceStr}` : p.city ? ` • ${p.city}` : ""}`,
+        subtitle,
         avatar: p.avatarUri || undefined,
       };
     });

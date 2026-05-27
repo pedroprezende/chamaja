@@ -4,7 +4,8 @@ import Animated, {
   useSharedValue, 
   useAnimatedStyle, 
   withSpring, 
-  withTiming 
+  withTiming,
+  withDelay
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 
@@ -23,8 +24,8 @@ export function AnimatedCard({ children, onPress, style, delay = 0 }: AnimatedCa
   const translateY = useSharedValue(20);
 
   React.useEffect(() => {
-    opacity.value = withTiming(1, { duration: 600, delay });
-    translateY.value = withSpring(0, { damping: 15, stiffness: 100, delay });
+    opacity.value = withDelay(delay, withTiming(1, { duration: 600 }));
+    translateY.value = withDelay(delay, withSpring(0, { damping: 15, stiffness: 100 }));
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({

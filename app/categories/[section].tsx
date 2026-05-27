@@ -19,7 +19,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { trpc } from "@/lib/trpc";
 import { useColors } from "@/hooks/use-colors";
 
-import { CategoryCard } from "@/components/ui/category-card";
 import { useWindowDimensions } from "react-native";
 
 const CARD_GAP = 12;

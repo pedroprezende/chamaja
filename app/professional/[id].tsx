@@ -33,6 +33,8 @@ import {
   formatDistanceWithPreposition,
 } from "@/lib/location-utils";
 
+const DEFAULT_COVER = "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800&q=80";
+
 function getWhatsAppUrl(phone: string, name: string) {
   const cleaned = phone.replace(/\D/g, "");
   const number = cleaned.startsWith("55") ? cleaned : `55${cleaned}`;
@@ -41,6 +43,22 @@ function getWhatsAppUrl(phone: string, name: string) {
   );
   return `https://wa.me/${number}?text=${message}`;
 }
+
+const parseJsonArray = (val: any): string[] => {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  try {
+    const parsed = JSON.parse(val);
+    if (Array.isArray(parsed)) return parsed;
+  } catch {}
+  if (typeof val === "string") {
+    return val.split(",").map(s => s.trim()).filter(Boolean);
+  }
+  return [];
+};
+
+const getAvatarUrl = (name: string) =>
+  `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=25D366&color=fff&size=150`;
 
 export default function ProfessionalDetailScreen() {
   const colors = useColors();
@@ -59,6 +77,25 @@ export default function ProfessionalDetailScreen() {
 
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const { data: professional, isLoading: loading, refetch } = trpc.providers.getById.useQuery(id as string, {
+    enabled: !!id,
+  });
+
+  const galleryImages = professional?.gallery || [];
+  const currentImageIndex = selectedImage ? galleryImages.indexOf(selectedImage) : -1;
+
+  const handlePrevImage = () => {
+    if (currentImageIndex > 0) {
+      setSelectedImage(galleryImages[currentImageIndex - 1]);
+    }
+  };
+
+  const handleNextImage = () => {
+    if (currentImageIndex < galleryImages.length - 1) {
+      setSelectedImage(galleryImages[currentImageIndex + 1]);
+    }
+  };
+
+  const { data: reviews = [], refetch: refetchReviews } = trpc.providers.getReviews.useQuery(id as string, {
     enabled: !!id,
   });
 
@@ -117,7 +154,7 @@ export default function ProfessionalDetailScreen() {
   if (!professional) {
     return (
       <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-        <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.surface }]}>
+        <View style={[styles.notFoundHeader, { borderBottomColor: colors.border, backgroundColor: colors.surface }]}>
           <Pressable onPress={() => router.back()} style={styles.backBtn}>
             <MaterialIcons name="arrow-back" size={24} color={colors.foreground} />
           </Pressable>
@@ -145,41 +182,44 @@ export default function ProfessionalDetailScreen() {
     );
   }
 
+  // Type-narrowed alias to prevent TS closure warnings
+  const prof = professional;
+
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.surface }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Floating Header */}
+      <View style={[styles.floatingHeader, { paddingTop: insets.top + 8 }]}>
         <Pressable
-          style={({ pressed }) => [styles.backBtn, { backgroundColor: colors.background }, pressed && { opacity: 0.6 }]}
+          style={({ pressed }) => [styles.floatingBackBtn, pressed && { opacity: 0.6 }]}
           onPress={() => router.back()}
         >
-          <MaterialIcons name="arrow-back" size={24} color={colors.foreground} />
+          <MaterialIcons name="arrow-back" size={22} color="#FFF" />
         </Pressable>
         <View style={{ flex: 1 }} />
         <Pressable
-          style={({ pressed }) => [styles.shareBtn, { backgroundColor: colors.background, marginRight: 8 }, pressed && { opacity: 0.6 }]}
-          onPress={() => professional && toggleFavorite({
-            id: professional.id,
-            name: professional.name,
-            category: professional.category || "",
-            city: professional.city || "",
-            avatar: professional.avatarUri || `https://ui-avatars.com/api/?name=${encodeURIComponent(professional.name)}`,
-            rating: Number(professional.rating) || 0,
-            phone: professional.phone || "",
-            type: (professional.plan?.toLowerCase() as "free" | "premium") ?? "free",
+          style={({ pressed }) => [styles.floatingBackBtn, { marginRight: 8 }, pressed && { opacity: 0.6 }]}
+          onPress={() => toggleFavorite({
+            id: prof.id,
+            name: prof.name,
+            category: prof.category || "",
+            city: prof.city || "",
+            avatar: prof.avatarUri || getAvatarUrl(prof.name),
+            rating: Number(prof.rating) || 0,
+            phone: prof.phone || "",
+            type: (prof.plan?.toLowerCase() as "free" | "premium") ?? "free",
           })}
         >
-          <MaterialIcons name={favored ? "favorite" : "favorite-border"} size={22} color={favored ? "#EF4444" : colors.foreground} />
+          <MaterialIcons name={favored ? "favorite" : "favorite-border"} size={22} color={favored ? "#EF4444" : "#FFF"} />
         </Pressable>
         <Pressable
-          style={({ pressed }) => [styles.shareBtn, { backgroundColor: colors.background }, pressed && { opacity: 0.6 }]}
+          style={({ pressed }) => [styles.floatingBackBtn, pressed && { opacity: 0.6 }]}
           onPress={() =>
             Share.share({
-              message: `Confira ${professional.name} no app ChamaJá!`,
+              message: `Confira ${prof.name} no app ChamaJá!`,
             })
           }
         >
-          <MaterialIcons name="share" size={22} color={colors.foreground} />
+          <MaterialIcons name="share" size={22} color="#FFF" />
         </Pressable>
       </View>
 
@@ -187,70 +227,165 @@ export default function ProfessionalDetailScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 160 }}
       >
-        {/* Profile Section */}
-        <View style={styles.profileSection}>
+        {/* Banner Superior (Capa) */}
+        <View style={styles.coverContainer}>
           <Image
-            source={{ uri: professional.avatarUri || `https://ui-avatars.com/api/?name=${encodeURIComponent(professional.name)}` }}
-            style={[styles.avatar, { borderColor: colors.border, borderWidth: 1 }]}
+            source={{ uri: prof.coverUri || DEFAULT_COVER }}
+            style={styles.coverImage}
+            resizeMode="cover"
           />
-          <View style={styles.profileInfo}>
-            <Text style={[styles.name, { color: colors.foreground }]}>{professional.name}</Text>
-            <View style={[styles.categoryBadge, { backgroundColor: colors.primary + "15" }]}>
-              <MaterialIcons name="check-circle" size={13} color={colors.primary} />
-              <Text style={[styles.categoryText, { color: colors.primary }]}>{professional.category}</Text>
+          <LinearGradient
+            colors={["rgba(0,0,0,0.5)", "transparent", "rgba(0,0,0,0.7)"]}
+            style={StyleSheet.absoluteFillObject}
+          />
+          
+          {/* Badges Overlays */}
+          <View style={styles.badgeOverlayContainer}>
+            {prof.onlineStatus && (
+              <View style={[styles.overlayBadge, styles.onlineBadge]}>
+                <View style={styles.onlineDot} />
+                <Text style={styles.onlineText}>Online agora</Text>
+              </View>
+            )}
+            {prof.topBadge && (
+              <View style={[styles.overlayBadge, styles.topBadge]}>
+                <MaterialIcons name="emoji-events" size={13} color="#FFF" />
+                <Text style={styles.topBadgeText}>{prof.topBadge}</Text>
+              </View>
+            )}
+            {prof.responseTime && (
+              <View style={[styles.overlayBadge, styles.responseBadge]}>
+                <MaterialIcons name="speed" size={13} color="#FFF" />
+                <Text style={styles.responseBadgeText}>Responde rápido</Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Profile Card Overlay */}
+        <View style={[styles.profileCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          {/* Avatar floating */}
+          <View style={styles.avatarContainer}>
+            <Image
+              source={{ uri: prof.avatarUri || getAvatarUrl(prof.name) }}
+              style={[styles.avatar, { borderColor: colors.surface }]}
+            />
+            {prof.isVerified && (
+              <View style={styles.verifiedIconWrap}>
+                <MaterialIcons name="verified" size={20} color="#15803D" />
+              </View>
+            )}
+          </View>
+
+          {/* Professional Details */}
+          <View style={styles.detailsContainer}>
+            <View style={styles.titleRow}>
+              <Text style={[styles.name, { color: colors.foreground }]}>{prof.name}</Text>
             </View>
+            
+            {prof.isVerified && (
+              <View style={styles.verifiedRow}>
+                <MaterialIcons name="check" size={12} color="#15803D" />
+                <Text style={styles.verifiedText}>Prestador Verificado</Text>
+              </View>
+            )}
+
+            <Text style={[styles.categoryText, { color: colors.primary }]}>
+              {prof.subcategoryName || prof.category}
+            </Text>
+
             <View style={styles.locationRow}>
-              <MaterialIcons name="location-on" size={14} color={colors.muted} />
-              <Text style={[styles.locationText, { color: colors.muted }]}>
-                {professional.neighborhood || "Bairro não informado"} • {professional.city || "Cidade não informada"}{distanceInfo ? ` • ${distanceInfo.distanceText}` : ""}
+              <MaterialIcons name="location-on" size={14} color={colors.primary} />
+              <Text style={[styles.locationText, { color: colors.foreground }]}>
+                {prof.neighborhood || "Bairro não informado"}, {prof.city || "Cidade não informada"}
+                {distanceInfo ? ` • ` : ""}
               </Text>
+              {distanceInfo && (
+                <Text style={[styles.distanceGreenText, { color: "#15803D" }]}>
+                  {distanceInfo.distanceText} de você
+                </Text>
+              )}
             </View>
           </View>
         </View>
 
-        {/* Distance Card */}
-        {distanceInfo && (
-          <View style={[styles.distanceCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View style={[styles.distanceIconWrap, { backgroundColor: colors.primary + "15" }]}>
-              <MaterialIcons name="directions-car" size={22} color={colors.primary} />
-            </View>
-            <View style={styles.distanceContent}>
-              <Text style={[styles.distanceText, { color: colors.foreground }]}>
-                {distanceInfo.distancePrepText}
-              </Text>
-              <Text style={[styles.drivingTimeText, { color: colors.muted }]}>
-                {distanceInfo.drivingTimeText}
-              </Text>
+        {/* Metric Grid (3 Columns) */}
+        <View style={[styles.metricGrid, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          {/* Col 1: Rating */}
+          <View style={styles.metricItem}>
+            <MaterialIcons name="star" size={22} color="#F59E0B" />
+            <Text style={[styles.metricValue, { color: colors.foreground }]}>
+              {Number(prof.rating || 0).toFixed(1)}
+            </Text>
+            <Text style={styles.metricLabel}>{prof.ratingCount || 0} avaliações</Text>
+          </View>
+
+          <View style={styles.metricDivider} />
+
+          {/* Col 2: Founded Year */}
+          <View style={styles.metricItem}>
+            <MaterialIcons name="event" size={22} color="#15803D" />
+            <Text style={[styles.metricValue, { color: colors.foreground }]}>
+              {prof.foundedYear ? `Desde ${prof.foundedYear}` : "--"}
+            </Text>
+            <Text style={styles.metricLabel}>Ano início</Text>
+          </View>
+
+          <View style={styles.metricDivider} />
+
+          {/* Col 3: Response Time */}
+          <View style={styles.metricItem}>
+            <MaterialIcons name="speed" size={22} color="#7C3AED" />
+            <Text style={[styles.metricValue, { color: colors.foreground }]} numberOfLines={1}>
+              {prof.responseTime || "Rápido"}
+            </Text>
+            <Text style={styles.metricLabel}>Tempo resp.</Text>
+          </View>
+        </View>
+
+        {/* Popular Services Section */}
+        {parseJsonArray(prof.popularServices).length > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Serviços Mais Procurados</Text>
+            <View style={styles.chipsContainer}>
+              {parseJsonArray(prof.popularServices).map((service, index) => (
+                <View key={index} style={[styles.chip, { backgroundColor: colors.primary + "12", borderColor: colors.primary + "30" }]}>
+                  <MaterialIcons name="bolt" size={13} color={colors.primary} />
+                  <Text style={[styles.chipText, { color: colors.primary }]}>{service}</Text>
+                </View>
+              ))}
             </View>
           </View>
         )}
 
-        {/* Rating */}
-        <Pressable
-          style={[styles.ratingRow, { backgroundColor: colors.surface, marginHorizontal: 20, borderRadius: 16, marginTop: 4, borderWidth: 1, borderColor: colors.border }]}
-          onPress={() => router.push(`/reviews/${id}` as any)}
-        >
-          <MaterialIcons name="star" size={22} color={colors.star} />
-          <Text style={[styles.ratingValue, { color: colors.foreground }]}>{Number(professional.rating || 0).toFixed(1)}</Text>
-          <Text style={[styles.ratingCount, { color: colors.muted }]}>
-            ({professional.ratingCount || 0} avaliações)
-          </Text>
-          <View style={{ flex: 1 }} />
-          <MaterialIcons name="chevron-right" size={20} color={colors.muted} />
-        </Pressable>
-
-        {/* About */}
+        {/* About Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Sobre</Text>
-          <Text style={[styles.description, { color: colors.muted }]}>{professional.description}</Text>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Sobre o Prestador</Text>
+          <Text style={[styles.description, { color: colors.muted }]}>{prof.description || "Nenhuma descrição fornecida."}</Text>
+          
+          {parseJsonArray(prof.tags).length > 0 && (
+            <View style={[styles.chipsContainer, { marginTop: 12 }]}>
+              {parseJsonArray(prof.tags).map((tag, index) => (
+                <View key={index} style={[styles.tagChip, { backgroundColor: "#F1F5F9" }]}>
+                  <MaterialIcons name="check" size={12} color="#64748B" />
+                  <Text style={styles.tagChipText}>{tag}</Text>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
 
         {/* Gallery */}
-        {professional.gallery && Array.isArray(professional.gallery) && professional.gallery.length > 0 && (
+        {prof.gallery && Array.isArray(prof.gallery) && prof.gallery.length > 0 && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Galeria de Fotos</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: 20 }}>
-              {professional.gallery.map((uri: string, idx: number) => (
+            <View style={styles.sectionHeaderRow}>
+              <Text style={[styles.sectionTitle, { color: colors.foreground, marginBottom: 0 }]}>Galeria de Fotos</Text>
+              <Pressable onPress={() => setSelectedImage(prof.gallery[0])}>
+                <Text style={[styles.sectionHeaderLink, { color: colors.primary }]}>Ver todas ({prof.gallery.length})</Text>
+              </Pressable>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: 20, paddingTop: 10 }}>
+              {prof.gallery.map((uri: string, idx: number) => (
                 <Pressable 
                   key={idx} 
                   onPress={() => setSelectedImage(uri)}
@@ -267,15 +402,17 @@ export default function ProfessionalDetailScreen() {
           </View>
         )}
 
-        {/* Info Items */}
-        <View style={[styles.infoList, { backgroundColor: colors.surface, marginHorizontal: 20, borderRadius: 20, marginTop: 10, borderWidth: 1, borderColor: colors.border }]}>
+        {/* Bloco de Localização, Contato e Horários */}
+        <View style={[styles.infoList, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          
+          {/* Endereço */}
           <Pressable 
             style={[styles.infoItem, { borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 16 }]}
             onPress={async () => {
-              if (professional.address && professional.address.startsWith("http")) {
-                Linking.openURL(professional.address);
-              } else if (professional.address) {
-                const query = encodeURIComponent(professional.address);
+              if (prof.address && prof.address.startsWith("http")) {
+                Linking.openURL(prof.address);
+              } else if (prof.address) {
+                const query = encodeURIComponent(prof.address);
                 const url = Platform.select({
                   ios: `http://maps.apple.com/?q=${query}`,
                   android: `geo:0,0?q=${query}`,
@@ -293,87 +430,137 @@ export default function ProfessionalDetailScreen() {
               }
             }}
           >
-            <View style={[styles.infoIconWrap, { backgroundColor: colors.primary + "15" }]}>
+            <View style={[styles.infoIconWrap, { backgroundColor: colors.primary + "12" }]}>
               <MaterialIcons name="location-on" size={20} color={colors.primary} />
             </View>
             <View style={styles.infoContent}>
-              <Text style={[styles.infoLabel, { color: colors.foreground }]}>Localização / Ver no Mapa</Text>
-              <Text style={[styles.infoValue, { color: colors.primary, fontWeight: "700" }]}>
-                {professional.address || professional.city || "Ver localização no Google Maps"}
+              <Text style={[styles.infoLabel, { color: colors.foreground }]}>Endereço</Text>
+              <Text style={[styles.infoValue, { color: colors.foreground }]}>
+                {prof.address || `${prof.neighborhood || ""}, ${prof.city || ""}`}
               </Text>
-              {distanceInfo ? (
-                <View style={{ marginTop: 4, gap: 2 }}>
-                  <Text style={{ fontSize: 13, color: colors.foreground, fontWeight: "600" }}>
-                    📍 {distanceInfo.distancePrepText}
-                  </Text>
-                  <Text style={{ fontSize: 12, color: colors.muted, fontWeight: "500" }}>
-                    🚗 {distanceInfo.drivingTimeText}
-                  </Text>
-                </View>
-              ) : null}
+              <Text style={styles.mapLinkText}>Toque para ver no mapa</Text>
             </View>
-            <MaterialIcons name="open-in-new" size={18} color={colors.muted} />
+            <MaterialIcons name="open-in-new" size={16} color={colors.muted} />
           </Pressable>
 
+          {/* Contato */}
           <Pressable 
             style={[styles.infoItem, { borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: 16 }]}
             onPress={handleOpenWhatsApp}
           >
-            <View style={[styles.infoIconWrap, { backgroundColor: colors.primary + "15" }]}>
-              <MaterialIcons name="chat" size={20} color={colors.primary} />
+            <View style={[styles.infoIconWrap, { backgroundColor: "#25D36615" }]}>
+              <MaterialIcons name="chat" size={20} color="#25D366" />
             </View>
             <View style={styles.infoContent}>
-              <Text style={[styles.infoLabel, { color: colors.foreground }]}>Contato Direto</Text>
-              <Text style={[styles.infoValue, { color: colors.primary, fontWeight: "700" }]}>
-                Chamar no WhatsApp agora
+              <Text style={[styles.infoLabel, { color: colors.foreground }]}>Contato</Text>
+              <Text style={[styles.infoValue, { color: colors.foreground, fontWeight: "600" }]}>
+                {prof.phone || prof.whatsapp || "Chamar no WhatsApp"}
               </Text>
+              <Text style={styles.whatsappSubText}>Clique para abrir conversa</Text>
             </View>
-            <MaterialIcons name="chevron-right" size={22} color={colors.muted} />
+            <MaterialIcons name="chevron-right" size={20} color={colors.muted} />
           </Pressable>
 
+          {/* Horário de Atendimento */}
           <View style={[styles.infoItem, { paddingTop: 16 }]}>
-            <View style={[styles.infoIconWrap, { backgroundColor: colors.background }]}>
-              <MaterialIcons name="access-time" size={20} color={colors.muted} />
+            <View style={[styles.infoIconWrap, { backgroundColor: "#7C3AED12" }]}>
+              <MaterialIcons name="access-time" size={20} color="#7C3AED" />
             </View>
             <View style={styles.infoContent}>
-              <Text style={[styles.infoLabel, { color: colors.foreground }]}>Atendimento</Text>
-              <Text style={[styles.infoValue, { color: colors.muted }]}>Consultar disponibilidade via WhatsApp</Text>
+              <Text style={[styles.infoLabel, { color: colors.foreground }]}>Horário de atendimento</Text>
+              {(() => {
+                let weekdayHours = "";
+                let satHours = "";
+                if (prof.workingHours) {
+                  try {
+                    const parsed = JSON.parse(prof.workingHours);
+                    weekdayHours = parsed.weekday || "";
+                    satHours = parsed.saturday || "";
+                  } catch {
+                    weekdayHours = prof.workingHours;
+                  }
+                }
+                
+                if (weekdayHours || satHours) {
+                  return (
+                    <View style={{ gap: 2, marginTop: 2 }}>
+                      {!!weekdayHours && (
+                        <Text style={styles.hoursText}>Segunda a Sexta: <Text style={styles.hoursValueText}>{weekdayHours}</Text></Text>
+                      )}
+                      {!!satHours && (
+                        <Text style={styles.hoursText}>Sábado: <Text style={styles.hoursValueText}>{satHours}</Text></Text>
+                      )}
+                    </View>
+                  );
+                }
+                return (
+                  <Text style={[styles.infoValue, { color: colors.muted }]}>Consultar disponibilidade via WhatsApp</Text>
+                );
+              })()}
             </View>
           </View>
         </View>
 
-        {/* Image Viewer Modal */}
-        <Modal
-          visible={!!selectedImage}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setSelectedImage(null)}
-        >
-          <View style={styles.modalBackground}>
-            <Pressable 
-              style={styles.modalOverlay} 
-              onPress={() => setSelectedImage(null)} 
-            />
-            <View style={styles.modalContent}>
-              <Pressable 
-                style={styles.closeModalBtn} 
-                onPress={() => setSelectedImage(null)}
-              >
-                <MaterialIcons name="close" size={28} color="#FFF" />
-              </Pressable>
-              {selectedImage && (
-                <Image 
-                  source={{ uri: selectedImage }} 
-                  style={styles.fullImage} 
-                  resizeMode="contain" 
-                />
+        {/* Reviews Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={[styles.sectionTitle, { color: colors.foreground, marginBottom: 0 }]}>
+              Avaliações e Comentários
+            </Text>
+            <Pressable onPress={() => setShowReviewModal(true)}>
+              <Text style={[styles.sectionHeaderLink, { color: colors.primary }]}>Escrever avaliação</Text>
+            </Pressable>
+          </View>
+
+          {reviews && reviews.length > 0 ? (
+            <View style={{ gap: 16, marginTop: 14 }}>
+              {reviews.slice(0, 5).map((rev: any) => (
+                <View key={rev.id} style={[styles.reviewCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  <View style={styles.reviewHeader}>
+                    <Image
+                      source={{ uri: rev.userAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(rev.userName)}` }}
+                      style={styles.reviewAvatar}
+                    />
+                    <View style={styles.reviewUserMeta}>
+                      <Text style={[styles.reviewUserName, { color: colors.foreground }]}>{rev.userName}</Text>
+                      <Text style={styles.reviewDate}>{rev.createdAt}</Text>
+                    </View>
+                    <View style={styles.reviewStars}>
+                      <MaterialIcons name="star" size={14} color="#F59E0B" />
+                      <Text style={styles.reviewRatingText}>{Number(rev.rating).toFixed(1)}</Text>
+                    </View>
+                  </View>
+                  {!!rev.comment && (
+                    <Text style={[styles.reviewComment, { color: colors.muted }]}>
+                      {rev.comment}
+                    </Text>
+                  )}
+                </View>
+              ))}
+              {reviews.length > 5 && (
+                <Pressable 
+                  style={styles.viewAllReviewsBtn}
+                  onPress={() => router.push(`/reviews/${id}` as any)}
+                >
+                  <Text style={[styles.viewAllReviewsText, { color: colors.primary }]}>
+                    Ver todas as {reviews.length} avaliações
+                  </Text>
+                  <MaterialIcons name="arrow-forward" size={16} color={colors.primary} />
+                </Pressable>
               )}
             </View>
-          </View>
-        </Modal>
+          ) : (
+            <View style={styles.emptyReviews}>
+              <MaterialIcons name="rate-review" size={32} color={colors.muted} />
+              <Text style={[styles.emptyReviewsText, { color: colors.muted }]}>
+                Nenhuma avaliação ainda. Seja o primeiro a avaliar!
+              </Text>
+            </View>
+          )}
+        </View>
       </ScrollView>
 
-      {/* Buttons */}
+      {/* Footer / Call to Action */}
       <View style={[styles.footer, { backgroundColor: colors.surface, borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 16) }]}>
         <View style={styles.footerRow}>
           <Pressable
@@ -401,7 +588,66 @@ export default function ProfessionalDetailScreen() {
         </View>
       </View>
 
-      {/* Review Modal */}
+      {/* Image Viewer Modal */}
+      <Modal
+        visible={!!selectedImage}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setSelectedImage(null)}
+      >
+        <View style={styles.modalBackground}>
+          <Pressable 
+            style={styles.modalOverlay} 
+            onPress={() => setSelectedImage(null)} 
+          />
+          <View style={styles.modalContent}>
+            <Pressable 
+              style={styles.closeModalBtn} 
+              onPress={() => setSelectedImage(null)}
+            >
+              <MaterialIcons name="close" size={28} color="#FFF" />
+            </Pressable>
+            {selectedImage && (
+              <Image 
+                source={{ uri: selectedImage }} 
+                style={styles.fullImage} 
+                resizeMode="contain" 
+              />
+            )}
+            
+            {/* Gallery Navigation Controls */}
+            {galleryImages.length > 1 && (
+              <>
+                {currentImageIndex > 0 && (
+                  <Pressable 
+                    style={styles.modalLeftBtn} 
+                    onPress={handlePrevImage}
+                  >
+                    <MaterialIcons name="chevron-left" size={36} color="#FFF" />
+                  </Pressable>
+                )}
+                {currentImageIndex < galleryImages.length - 1 && (
+                  <Pressable 
+                    style={styles.modalRightBtn} 
+                    onPress={handleNextImage}
+                  >
+                    <MaterialIcons name="chevron-right" size={36} color="#FFF" />
+                  </Pressable>
+                )}
+                
+                {/* Image counter indicator */}
+                <View style={styles.imageCounter}>
+                  <Text style={styles.imageCounterText}>
+                    {currentImageIndex + 1} de {galleryImages.length}
+                  </Text>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Leave Review Modal */}
       <LeaveReviewModal
         visible={showReviewModal}
         onClose={() => setShowReviewModal(false)}
@@ -413,16 +659,15 @@ export default function ProfessionalDetailScreen() {
             const userAvatar = user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}`;
 
             await submitReview.mutateAsync({
-              providerId: professional.id,
+              providerId: prof.id,
               rating,
               comment,
               userName,
               userAvatar,
             });
 
-            // Adiciona a avaliação aos mocks locais para exibição imediata
             addReview({
-              professionalId: professional.id,
+              professionalId: prof.id,
               userName,
               userAvatar,
               rating,
@@ -430,8 +675,8 @@ export default function ProfessionalDetailScreen() {
               createdAt: new Date().toISOString().split("T")[0],
             });
 
-            // Atualiza os dados do prestador no banco (rating e ratingCount)
             await refetch();
+            await refetchReviews();
 
             setShowReviewModal(false);
             Alert.alert("Sucesso", "Sua avaliação foi registrada!");
@@ -442,7 +687,7 @@ export default function ProfessionalDetailScreen() {
             setIsSubmittingReview(false);
           }
         }}
-        professionalName={professional.name}
+        professionalName={prof.name}
       />
     </View>
   );
@@ -450,112 +695,282 @@ export default function ProfessionalDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
+  floatingHeader: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1,
   },
-  backBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+  floatingBackBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(0,0,0,0.5)",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05, shadowRadius: 5, elevation: 2,
   },
-  shareBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05, shadowRadius: 5, elevation: 2,
+  coverContainer: {
+    width: "100%",
+    height: 220,
+    position: "relative",
   },
-  profileSection: {
+  coverImage: {
+    width: "100%",
+    height: "100%",
+  },
+  badgeOverlayContainer: {
+    position: "absolute",
+    bottom: 48,
+    left: 16,
     flexDirection: "row",
-    alignItems: "flex-start",
-    padding: 20,
-    gap: 16,
+    flexWrap: "wrap",
+    gap: 8,
+    zIndex: 2,
+  },
+  overlayBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  onlineBadge: {
+    backgroundColor: "#16A34A",
+  },
+  onlineDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#4ADE80",
+  },
+  onlineText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  topBadge: {
+    backgroundColor: "#D97706",
+  },
+  topBadgeText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  responseBadge: {
+    backgroundColor: "#2563EB",
+  },
+  responseBadgeText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  profileCard: {
+    marginHorizontal: 16,
+    marginTop: -35,
+    padding: 16,
+    borderRadius: 24,
+    borderWidth: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+    alignItems: "center",
+  },
+  avatarContainer: {
+    position: "relative",
+    marginTop: -55,
   },
   avatar: {
     width: 84,
     height: 84,
     borderRadius: 42,
+    borderWidth: 4,
     backgroundColor: "#E5E7EB",
   },
-  profileInfo: {
-    flex: 1,
-    gap: 6,
-    paddingTop: 4,
+  verifiedIconWrap: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
   },
-  name: {
-    fontSize: 22,
-    fontWeight: "800",
-    letterSpacing: -0.5,
+  detailsContainer: {
+    alignItems: "center",
+    marginTop: 10,
+    gap: 4,
+    width: "100%",
   },
-  categoryBadge: {
+  titleRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    alignSelf: "flex-start",
+    gap: 6,
+  },
+  name: {
+    fontSize: 21,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+  verifiedRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: "#DCFCE7",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  verifiedText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#15803D",
   },
   categoryText: {
     fontSize: 13,
     fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   locationRow: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    flexWrap: "wrap",
     gap: 4,
-    marginTop: 2,
+    marginTop: 4,
   },
   locationText: {
     fontSize: 13,
     fontWeight: "500",
+    color: "#64748B",
   },
-  ratingRow: {
+  distanceGreenText: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  metricGrid: {
     flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
+    marginHorizontal: 16,
+    marginTop: 16,
     paddingVertical: 14,
-    gap: 6,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03, shadowRadius: 5, elevation: 1,
+    borderRadius: 20,
+    borderWidth: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
+    elevation: 1,
   },
-  ratingValue: {
-    fontSize: 18,
-    fontWeight: "800",
+  metricItem: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 3,
+    paddingHorizontal: 4,
   },
-  ratingCount: {
+  metricValue: {
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "800",
+    textAlign: "center",
+  },
+  metricLabel: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: "#64748B",
+    textAlign: "center",
+  },
+  metricDivider: {
+    width: 1,
+    height: "80%",
+    backgroundColor: "#E2E8F0",
+    alignSelf: "center",
   },
   section: {
-    padding: 20,
+    paddingHorizontal: 20,
     paddingTop: 24,
   },
+  sectionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  sectionHeaderLink: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "800",
     marginBottom: 10,
-    letterSpacing: -0.5,
   },
   description: {
-    fontSize: 15,
-    lineHeight: 24,
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  chipsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 8,
+  },
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  chipText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  tagChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  tagChipText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#475569",
+  },
+  galleryImageWrapper: {
+    borderRadius: 16,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  galleryImage: {
+    width: 200,
+    height: 125,
+    backgroundColor: "#F3F4F6",
   },
   infoList: {
-    padding: 20,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05, shadowRadius: 10, elevation: 3,
-    marginBottom: 20,
+    marginHorizontal: 16,
+    borderRadius: 20,
+    marginTop: 20,
+    borderWidth: 1,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
   infoItem: {
     flexDirection: "row",
@@ -574,12 +989,110 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   infoLabel: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "700",
+    color: "#64748B",
+    textTransform: "uppercase",
   },
   infoValue: {
+    fontSize: 14,
+    lineHeight: 18,
+    fontWeight: "600",
+  },
+  mapLinkText: {
+    fontSize: 12,
+    color: "#2563EB",
+    fontWeight: "600",
+    marginTop: 2,
+  },
+  whatsappSubText: {
+    fontSize: 12,
+    color: "#16A34A",
+    fontWeight: "600",
+    marginTop: 2,
+  },
+  hoursText: {
+    fontSize: 13,
+    color: "#475569",
+    fontWeight: "500",
+  },
+  hoursValueText: {
+    fontWeight: "700",
+    color: "#1E293B",
+  },
+  reviewCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    gap: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.02,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  reviewHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  reviewAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#E5E7EB",
+  },
+  reviewUserMeta: {
+    flex: 1,
+    gap: 2,
+  },
+  reviewUserName: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  reviewDate: {
+    fontSize: 10,
+    color: "#64748B",
+  },
+  reviewStars: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: "#FEF3C7",
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  reviewRatingText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#D97706",
+  },
+  reviewComment: {
     fontSize: 13,
     lineHeight: 18,
+  },
+  viewAllReviewsBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    paddingVertical: 10,
+  },
+  viewAllReviewsText: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  emptyReviews: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 20,
+    gap: 6,
+  },
+  emptyReviewsText: {
+    fontSize: 13,
+    fontWeight: "500",
+    textAlign: "center",
   },
   footer: {
     position: "absolute",
@@ -589,8 +1102,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 14,
     borderTopWidth: 1,
-    shadowColor: "#000", shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.05, shadowRadius: 10, elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 8,
   },
   footerRow: {
     flexDirection: "row",
@@ -623,16 +1139,21 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#FFFFFF",
   },
-  galleryImageWrapper: {
-    borderRadius: 16,
-    overflow: "hidden",
-    shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1, shadowRadius: 4, elevation: 3,
+  notFoundHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
   },
-  galleryImage: {
-    width: 220,
-    height: 160,
-    backgroundColor: "#F3F4F6",
+  backBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05, shadowRadius: 5, elevation: 2,
   },
   notFound: {
     flex: 1,
@@ -673,39 +1194,33 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-  distanceCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginHorizontal: 20,
-    padding: 14,
-    borderRadius: 18,
-    borderWidth: 1,
-    gap: 12,
-    marginTop: 4,
-    marginBottom: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 5,
-    elevation: 1,
+  modalLeftBtn: {
+    position: "absolute",
+    left: 20,
+    zIndex: 10,
+    padding: 10,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    borderRadius: 25,
   },
-  distanceIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
+  modalRightBtn: {
+    position: "absolute",
+    right: 20,
+    zIndex: 10,
+    padding: 10,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    borderRadius: 25,
   },
-  distanceContent: {
-    flex: 1,
-    gap: 2,
+  imageCounter: {
+    position: "absolute",
+    bottom: 20,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
   },
-  distanceText: {
+  imageCounterText: {
+    color: "#FFF",
     fontSize: 14,
-    fontWeight: "700",
-  },
-  drivingTimeText: {
-    fontSize: 13,
-    fontWeight: "500",
+    fontWeight: "600",
   },
 });

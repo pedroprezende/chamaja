@@ -141,7 +141,7 @@ function ProfessionalCard({
         <View style={styles.locationRow}>
           <MaterialIcons name="location-on" size={13} color="#9CA3AF" />
           <Text style={styles.location} numberOfLines={1}>
-            {item.neighborhood}{item.distance ? ` • ${item.distance}${item.drivingTime ? ` (${item.drivingTime.replace("aproximadamente ", "")})` : ""}` : ""}
+            {item.neighborhood || item.city || "Local não informado"}{item.distance ? ` • ${item.distance}${item.drivingTime ? ` (${item.drivingTime.replace("aproximadamente ", "")})` : ""}` : ""}
           </Text>
         </View>
       </View>

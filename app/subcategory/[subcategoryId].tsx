@@ -223,7 +223,7 @@ export default function SubcategoryScreen() {
         <View style={styles.cardAddressRow}>
           <MaterialIcons name="place" size={10} color="#9CA3AF" />
           <Text style={styles.cardAddress} numberOfLines={1}>
-            {item.distance || item.address}
+            {item.address ? `${item.address}${item.distance ? ` • ${item.distance}` : ""}` : item.distance}
           </Text>
         </View>
       )}

@@ -64,7 +64,7 @@ export default function ReviewsScreen() {
             key={star}
             name={star <= rating ? "star" : "star-outline"}
             size={18}
-            color={star <= rating ? colors.star : colors.muted + "40"}
+            color={star <= rating ? "#F59E0B" : colors.muted + "40"}
           />
         ))}
       </View>
@@ -108,15 +108,15 @@ export default function ReviewsScreen() {
         {/* Professional Info */}
         <View style={[styles.profCard, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}>
           <Image 
-            source={{ uri: professional.avatarUri || `https://ui-avatars.com/api/?name=${encodeURIComponent(professional.name)}` }} 
+            source={{ uri: professional!.avatarUri || `https://ui-avatars.com/api/?name=${encodeURIComponent(professional!.name)}` }} 
             style={styles.profAvatar} 
           />
           <View style={styles.profInfo}>
-            <Text style={[styles.profName, { color: colors.foreground }]}>{professional.name}</Text>
+            <Text style={[styles.profName, { color: colors.foreground }]}>{professional!.name}</Text>
             <View style={styles.ratingContainer}>
-              {renderStars(Number(professional.rating) || 0)}
+              {renderStars(Number(professional!.rating) || 0)}
               <Text style={[styles.ratingText, { color: colors.muted }]}>
-                {Number(professional.rating).toFixed(1)} ({professional.ratingCount || 0} avaliações)
+                {Number(professional!.rating).toFixed(1)} ({professional!.ratingCount || 0} avaliações)
               </Text>
             </View>
           </View>
@@ -133,13 +133,13 @@ export default function ReviewsScreen() {
               <View key={stars} style={styles.statRow}>
                 <View style={styles.starLabel}>
                   <Text style={[styles.statText, { color: colors.foreground }]}>{stars}</Text>
-                  <MaterialIcons name="star" size={14} color={colors.star} />
+                  <MaterialIcons name="star" size={14} color="#F59E0B" />
                 </View>
                 <View style={[styles.barContainer, { backgroundColor: colors.background }]}>
                   <View
                     style={[
                       styles.bar,
-                      { width: `${percentage}%`, backgroundColor: colors.star },
+                      { width: `${percentage}%`, backgroundColor: "#F59E0B" },
                     ]}
                   />
                 </View>

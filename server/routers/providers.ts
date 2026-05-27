@@ -6,6 +6,12 @@ import { eq, or, ilike } from "drizzle-orm";
 import { getReviewsByProfessional as getMockReviewsByProfessional } from "../../data/mock";
 import { geocodeAddress } from "../geocoding";
 
+const safeStringify = (val: any) => {
+  if (val === undefined || val === null) return null;
+  if (typeof val === "string") return val;
+  return JSON.stringify(val);
+};
+
 const ProviderUpsertSchema = z.object({
   name: z.string().min(1),
   category: z.string().nullable().optional(),
@@ -28,6 +34,16 @@ const ProviderUpsertSchema = z.object({
   reviewCount: z.number().optional(),
   latitude: z.number().nullable().optional(),
   longitude: z.number().nullable().optional(),
+  coverUri: z.string().nullable().optional(),
+  isVerified: z.boolean().optional(),
+  onlineStatus: z.boolean().optional(),
+  responseTime: z.string().nullable().optional(),
+  clientsServed: z.number().nullable().optional(),
+  foundedYear: z.number().nullable().optional(),
+  topBadge: z.string().nullable().optional(),
+  popularServices: z.any().optional(),
+  tags: z.any().optional(),
+  workingHours: z.any().optional(),
 });
 
 const ProviderUpdateSchema = z.object({
@@ -47,6 +63,16 @@ const ProviderUpdateSchema = z.object({
     isActive: z.boolean().optional(),
     latitude: z.number().nullable().optional(),
     longitude: z.number().nullable().optional(),
+    coverUri: z.string().nullable().optional(),
+    isVerified: z.boolean().optional(),
+    onlineStatus: z.boolean().optional(),
+    responseTime: z.string().nullable().optional(),
+    clientsServed: z.number().nullable().optional(),
+    foundedYear: z.number().nullable().optional(),
+    topBadge: z.string().nullable().optional(),
+    popularServices: z.any().optional(),
+    tags: z.any().optional(),
+    workingHours: z.any().optional(),
   }),
 });
 
@@ -111,6 +137,16 @@ export const providersRouter = router({
           address: input.address,
           latitude,
           longitude,
+          coverUri: input.coverUri,
+          isVerified: input.isVerified ?? false,
+          onlineStatus: input.onlineStatus ?? false,
+          responseTime: input.responseTime,
+          clientsServed: input.clientsServed || 0,
+          foundedYear: input.foundedYear,
+          topBadge: input.topBadge,
+          popularServices: safeStringify(input.popularServices),
+          tags: safeStringify(input.tags),
+          workingHours: safeStringify(input.workingHours),
           updatedAt: new Date(),
         }).where(eq(providers.userId, userId));
       } else {
@@ -139,6 +175,16 @@ export const providersRouter = router({
           ratingCount: input.reviewCount || 0,
           latitude,
           longitude,
+          coverUri: input.coverUri || null,
+          isVerified: input.isVerified ?? false,
+          onlineStatus: input.onlineStatus ?? false,
+          responseTime: input.responseTime || null,
+          clientsServed: input.clientsServed || 0,
+          foundedYear: input.foundedYear || null,
+          topBadge: input.topBadge || null,
+          popularServices: safeStringify(input.popularServices),
+          tags: safeStringify(input.tags),
+          workingHours: safeStringify(input.workingHours),
           isActive: true,
           displayOrder: 0,
         });
@@ -174,6 +220,16 @@ export const providersRouter = router({
       if (input.updates.isActive !== undefined) mappedUpdates.isActive = input.updates.isActive;
       if (input.updates.latitude !== undefined) mappedUpdates.latitude = input.updates.latitude;
       if (input.updates.longitude !== undefined) mappedUpdates.longitude = input.updates.longitude;
+      if (input.updates.coverUri !== undefined) mappedUpdates.coverUri = input.updates.coverUri;
+      if (input.updates.isVerified !== undefined) mappedUpdates.isVerified = input.updates.isVerified;
+      if (input.updates.onlineStatus !== undefined) mappedUpdates.onlineStatus = input.updates.onlineStatus;
+      if (input.updates.responseTime !== undefined) mappedUpdates.responseTime = input.updates.responseTime;
+      if (input.updates.clientsServed !== undefined) mappedUpdates.clientsServed = input.updates.clientsServed;
+      if (input.updates.foundedYear !== undefined) mappedUpdates.foundedYear = input.updates.foundedYear;
+      if (input.updates.topBadge !== undefined) mappedUpdates.topBadge = input.updates.topBadge;
+      if (input.updates.popularServices !== undefined) mappedUpdates.popularServices = safeStringify(input.updates.popularServices);
+      if (input.updates.tags !== undefined) mappedUpdates.tags = safeStringify(input.updates.tags);
+      if (input.updates.workingHours !== undefined) mappedUpdates.workingHours = safeStringify(input.updates.workingHours);
       mappedUpdates.updatedAt = new Date();
 
       const existing = await dbInstance.select().from(providers).where(eq(providers.userId, input.userId)).limit(1);
@@ -384,6 +440,16 @@ export const providersRouter = router({
         displayOrder: maxOrder + 1,
         latitude,
         longitude,
+        coverUri: input.coverUri || null,
+        isVerified: input.isVerified ?? false,
+        onlineStatus: input.onlineStatus ?? false,
+        responseTime: input.responseTime || null,
+        clientsServed: input.clientsServed !== undefined ? Number(input.clientsServed) : 0,
+        foundedYear: input.foundedYear !== undefined ? Number(input.foundedYear) : null,
+        topBadge: input.topBadge || null,
+        popularServices: safeStringify(input.popularServices),
+        tags: safeStringify(input.tags),
+        workingHours: safeStringify(input.workingHours),
       });
     }),
 
@@ -413,6 +479,12 @@ export const providersRouter = router({
           }
         }
       }
+      if (data.popularServices !== undefined) data.popularServices = safeStringify(data.popularServices);
+      if (data.tags !== undefined) data.tags = safeStringify(data.tags);
+      if (data.workingHours !== undefined) data.workingHours = safeStringify(data.workingHours);
+      if (data.clientsServed !== undefined) data.clientsServed = Number(data.clientsServed);
+      if (data.foundedYear !== undefined) data.foundedYear = data.foundedYear ? Number(data.foundedYear) : null;
+      
       await db.updateProvider(id, data);
     }),
 

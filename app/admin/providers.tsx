@@ -31,6 +31,8 @@ import { storage } from "@/lib/storage";
 interface ProviderForm extends CreateAdminProviderInput {
   serviceIds: string[];
   serviceNames: string[];
+  workingHoursWeekday?: string;
+  workingHoursSaturday?: string;
 }
 
 const EMPTY_FORM: ProviderForm = {
@@ -49,6 +51,18 @@ const EMPTY_FORM: ProviderForm = {
   rating: undefined,
   ratingCount: undefined,
   isActive: true,
+  coverUri: "",
+  isVerified: false,
+  onlineStatus: false,
+  responseTime: "",
+  clientsServed: undefined,
+  foundedYear: undefined,
+  topBadge: "",
+  popularServices: "",
+  tags: "",
+  workingHours: "",
+  workingHoursWeekday: "",
+  workingHoursSaturday: "",
 };
 
 // ─── Card de Prestador ────────────────────────────────────────────────────────
@@ -58,7 +72,7 @@ function ProviderCard({
   onDelete,
   onToggle,
 }: {
-  item: AdminProvider;
+  item: any;
   onEdit: () => void;
   onDelete: () => void;
   onToggle: () => void;
@@ -81,6 +95,12 @@ function ProviderCard({
             <Text style={styles.cardName} numberOfLines={1} ellipsizeMode="tail">
               {item.name}
             </Text>
+            {item.isVerified && (
+              <MaterialIcons name="verified" size={15} color="#15803D" style={{ marginLeft: 2 }} />
+            )}
+            {item.onlineStatus && (
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: "#25D366", marginLeft: 2 }} />
+            )}
             {!item.isActive && (
               <View style={styles.inactivePill}>
                 <Text style={styles.inactivePillText}>Inativo</Text>
@@ -243,6 +263,7 @@ export default function AdminProvidersScreen() {
   const [editingProvider, setEditingProvider] = useState<any>(null);
   const [showServicePicker, setShowServicePicker] = useState(false);
   const [serviceSearchQuery, setServiceSearchQuery] = useState("");
+  const [selectedServicesMap, setSelectedServicesMap] = useState<Record<string, boolean>>({});
 
   const loadData = useCallback(async () => {
     await utils.providers.list.invalidate();
@@ -276,6 +297,15 @@ export default function AdminProvidersScreen() {
     setModalVisible(true);
   };
 
+  const parseJsonArrayToCommaString = (val: any) => {
+    if (!val) return "";
+    try {
+      const parsed = typeof val === "string" ? JSON.parse(val) : val;
+      if (Array.isArray(parsed)) return parsed.join(", ");
+    } catch {}
+    return String(val);
+  };
+
   const openEdit = (p: any) => {
     setEditingProvider(p);
     
@@ -296,6 +326,18 @@ export default function AdminProvidersScreen() {
     sIds.forEach(id => { initialMap[id] = true; });
     setSelectedServicesMap(initialMap);
 
+    let weekdayHours = "";
+    let satHours = "";
+    if (p.workingHours) {
+      try {
+        const parsed = JSON.parse(p.workingHours);
+        weekdayHours = parsed.weekday || "";
+        satHours = parsed.saturday || "";
+      } catch {
+        weekdayHours = p.workingHours || "";
+      }
+    }
+
     setForm({
       name: p.name,
       serviceId: p.serviceId || "",
@@ -312,10 +354,28 @@ export default function AdminProvidersScreen() {
       rating: p.rating,
       ratingCount: p.ratingCount,
       isActive: p.isActive,
+      coverUri: p.coverUri || "",
+      isVerified: p.isVerified || false,
+      onlineStatus: p.onlineStatus || false,
+      responseTime: p.responseTime || "",
+      clientsServed: p.clientsServed,
+      foundedYear: p.foundedYear,
+      topBadge: p.topBadge || "",
+      popularServices: parseJsonArrayToCommaString(p.popularServices),
+      tags: parseJsonArrayToCommaString(p.tags),
+      workingHours: p.workingHours || "",
+      workingHoursWeekday: weekdayHours,
+      workingHoursSaturday: satHours,
     });
     setShowServicePicker(false);
     setServiceSearchQuery("");
     setModalVisible(true);
+  };
+
+  const parseCommaStringToJsonArray = (val: string | null | undefined) => {
+    if (!val) return JSON.stringify([]);
+    const arr = val.split(",").map(s => s.trim()).filter(Boolean);
+    return JSON.stringify(arr);
   };
 
   const handleSave = async () => {
@@ -364,7 +424,18 @@ export default function AdminProvidersScreen() {
         }
       }
 
-      // 2. Upload Galeria
+      // 2. Upload Capa
+      let finalCover = form.coverUri;
+      if (finalCover && !finalCover.startsWith("http")) {
+        const uploadedUrl = await storage.uploadImage(finalCover);
+        if (uploadedUrl) {
+          finalCover = uploadedUrl;
+        } else {
+          throw new Error("Erro no upload da imagem de capa");
+        }
+      }
+
+      // 3. Upload Galeria
       const finalGallery = [];
       for (const img of form.gallery || []) {
         if (img.startsWith("http")) {
@@ -377,7 +448,7 @@ export default function AdminProvidersScreen() {
         }
       }
 
-      // 3. Preparar dados para o banco
+      // 4. Preparar dados para o banco
       const providerData = {
         name: form.name,
         serviceId: currentSelectedIds.join(", "),
@@ -397,6 +468,19 @@ export default function AdminProvidersScreen() {
         services: JSON.stringify(currentSelectedNames),
         latitude: latitude,
         longitude: longitude,
+        coverUri: finalCover || null,
+        isVerified: form.isVerified,
+        onlineStatus: form.onlineStatus,
+        responseTime: form.responseTime || null,
+        clientsServed: form.clientsServed ? Number(form.clientsServed) : 0,
+        foundedYear: form.foundedYear ? Number(form.foundedYear) : null,
+        topBadge: form.topBadge || null,
+        popularServices: parseCommaStringToJsonArray(form.popularServices),
+        tags: parseCommaStringToJsonArray(form.tags),
+        workingHours: JSON.stringify({
+          weekday: form.workingHoursWeekday || "",
+          saturday: form.workingHoursSaturday || "",
+        }),
       };
 
       if (editingProvider) {
@@ -445,9 +529,6 @@ export default function AdminProvidersScreen() {
     await loadData();
   };
 
-  // Usaremos um objeto para rastrear seleções múltiplas de forma estável
-  const [selectedServicesMap, setSelectedServicesMap] = useState<Record<string, boolean>>({});
-
   const toggleServiceSelection = (svc: any) => {
     setSelectedServicesMap(prev => ({
       ...prev,
@@ -455,11 +536,11 @@ export default function AdminProvidersScreen() {
     }));
     
     // Atualizar também nomes para exibição imediata no botão
-    setForm(prev => {
+    setForm((prev: any) => {
       const isSelected = !!selectedServicesMap[svc.id];
       let newNames = [];
       if (isSelected) {
-        newNames = prev.serviceNames.filter(n => n !== svc.name);
+        newNames = prev.serviceNames.filter((n: any) => n !== svc.name);
       } else {
         newNames = [...prev.serviceNames, svc.name];
       }
@@ -479,6 +560,21 @@ export default function AdminProvidersScreen() {
       const asset = result.assets[0];
       const uri = (Platform.OS === "web" && asset.base64) ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
       setForm((f) => ({ ...f, avatarUri: uri }));
+    }
+  };
+
+  const handlePickCover = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.85,
+      base64: true,
+    });
+    if (!result.canceled) {
+      const asset = result.assets[0];
+      const uri = (Platform.OS === "web" && asset.base64) ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+      setForm((f) => ({ ...f, coverUri: uri }));
     }
   };
 
@@ -708,6 +804,148 @@ export default function AdminProvidersScreen() {
                 </View>
               </View>
 
+              {/* Informações Premium */}
+              <View style={styles.formSection}>
+                <Text style={styles.sectionTitle}>Informações Premium</Text>
+                
+                {/* Imagem de Capa (Banner) */}
+                <Text style={styles.fieldLabel}>Imagem de Capa (Banner)</Text>
+                <Pressable
+                  style={({ pressed }) => [styles.coverPickerBtn, pressed && { opacity: 0.8 }]}
+                  onPress={handlePickCover}
+                >
+                  {form.coverUri ? (
+                    <View style={styles.coverPreviewWrap}>
+                      <Image source={{ uri: form.coverUri }} style={styles.coverPreview} />
+                      <View style={styles.coverOverlay}>
+                        <MaterialIcons name="photo-camera" size={16} color="#FFFFFF" />
+                        <Text style={styles.coverOverlayText}>Trocar Capa</Text>
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={styles.coverPlaceholder}>
+                      <MaterialIcons name="add-photo-alternate" size={30} color="#94A3B8" />
+                      <Text style={styles.coverPlaceholderText}>Adicionar imagem de capa</Text>
+                    </View>
+                  )}
+                </Pressable>
+
+                {/* Switches/Toggles */}
+                <View style={styles.premiumTogglesRow}>
+                  <View style={styles.premiumToggleItem}>
+                    <Text style={styles.premiumToggleLabel}>Prestador Verificado</Text>
+                    <Switch
+                      value={form.isVerified}
+                      onValueChange={(v) => setForm((f) => ({ ...f, isVerified: v }))}
+                      trackColor={{ false: "#E2E8F0", true: "#BBF7D0" }}
+                      thumbColor={form.isVerified ? "#15803D" : "#CBD5E1"}
+                    />
+                  </View>
+
+                  <View style={styles.premiumToggleItem}>
+                    <Text style={styles.premiumToggleLabel}>Online Agora</Text>
+                    <Switch
+                      value={form.onlineStatus}
+                      onValueChange={(v) => setForm((f) => ({ ...f, onlineStatus: v }))}
+                      trackColor={{ false: "#E2E8F0", true: "#BBF7D0" }}
+                      thumbColor={form.onlineStatus ? "#25D366" : "#CBD5E1"}
+                    />
+                  </View>
+                </View>
+
+                {/* Métricas e Selos */}
+                <Text style={styles.fieldLabel}>Tempo de Resposta</Text>
+                <View style={styles.inputWrap}>
+                  <MaterialIcons name="speed" size={17} color="#94A3B8" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Ex: em até 15 min"
+                    value={form.responseTime}
+                    onChangeText={(v) => setForm((f) => ({ ...f, responseTime: v }))}
+                  />
+                </View>
+
+                <Text style={styles.fieldLabel}>Clientes Atendidos</Text>
+                <View style={styles.inputWrap}>
+                  <MaterialIcons name="people" size={17} color="#94A3B8" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Ex: 120"
+                    keyboardType="numeric"
+                    value={form.clientsServed !== undefined ? String(form.clientsServed) : ""}
+                    onChangeText={(v) => setForm((f) => ({ ...f, clientsServed: v ? Number(v.replace(/\D/g, "")) : undefined }))}
+                  />
+                </View>
+
+                <Text style={styles.fieldLabel}>Ano de Fundação</Text>
+                <View style={styles.inputWrap}>
+                  <MaterialIcons name="event" size={17} color="#94A3B8" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Ex: 2020"
+                    keyboardType="numeric"
+                    value={form.foundedYear !== undefined ? String(form.foundedYear) : ""}
+                    onChangeText={(v) => setForm((f) => ({ ...f, foundedYear: v ? Number(v.replace(/\D/g, "")) : undefined }))}
+                  />
+                </View>
+
+                <Text style={styles.fieldLabel}>Selo de Destaque / Ranking</Text>
+                <View style={styles.inputWrap}>
+                  <MaterialIcons name="emoji-events" size={17} color="#94A3B8" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Ex: Top 3 em Streaming"
+                    value={form.topBadge}
+                    onChangeText={(v) => setForm((f) => ({ ...f, topBadge: v }))}
+                  />
+                </View>
+
+                <Text style={styles.fieldLabel}>Serviços Populares (separados por vírgula)</Text>
+                <View style={styles.inputWrap}>
+                  <MaterialIcons name="star-outline" size={17} color="#94A3B8" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Ex: Vazamentos, Desentupimento"
+                    value={form.popularServices}
+                    onChangeText={(v) => setForm((f) => ({ ...f, popularServices: v }))}
+                  />
+                </View>
+
+                <Text style={styles.fieldLabel}>Tags Personalizadas (separados por vírgula)</Text>
+                <View style={styles.inputWrap}>
+                  <MaterialIcons name="label-outline" size={17} color="#94A3B8" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Ex: Atendimento domicílio, Preço justo $$"
+                    value={form.tags}
+                    onChangeText={(v) => setForm((f) => ({ ...f, tags: v }))}
+                  />
+                </View>
+
+                {/* Horários de Funcionamento */}
+                <Text style={styles.fieldLabel}>Horário Seg a Sex</Text>
+                <View style={styles.inputWrap}>
+                  <MaterialIcons name="schedule" size={17} color="#94A3B8" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Ex: 08:00 - 18:00"
+                    value={form.workingHoursWeekday}
+                    onChangeText={(v) => setForm((f) => ({ ...f, workingHoursWeekday: v }))}
+                  />
+                </View>
+
+                <Text style={styles.fieldLabel}>Horário Sábado</Text>
+                <View style={styles.inputWrap}>
+                  <MaterialIcons name="schedule" size={17} color="#94A3B8" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Ex: 08:00 - 12:00"
+                    value={form.workingHoursSaturday}
+                    onChangeText={(v) => setForm((f) => ({ ...f, workingHoursSaturday: v }))}
+                  />
+                </View>
+              </View>
+
               {/* Especialidades */}
               <View style={styles.formSection}>
                 <Text style={styles.sectionTitle}>Serviços / Especialidades</Text>
@@ -867,7 +1105,14 @@ const styles = StyleSheet.create({
   searchBar: { flexDirection: "row", alignItems: "center", backgroundColor: "#F8FAFC", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1.5, borderColor: "#E2E8F0", gap: 8 },
   searchInput: { flex: 1, fontSize: 14, color: "#0F172A" },
   loadingBox: { flex: 1, alignItems: "center", justifyContent: "center" },
+  loadingText: { fontSize: 14, color: "#64748B", marginTop: 8 },
   listContent: { padding: 16, gap: 12 },
+  listCount: { fontSize: 13, color: "#64748B", marginVertical: 8 },
+  emptyState: { alignItems: "center", justifyContent: "center", padding: 32 },
+  emptyIconBox: { width: 64, height: 64, borderRadius: 32, backgroundColor: "#F1F5F9", alignItems: "center", justifyContent: "center", marginBottom: 16 },
+  emptyTitle: { fontSize: 16, fontWeight: "700", color: "#0F172A", marginBottom: 4 },
+  emptySubtitle: { fontSize: 14, color: "#64748B", textAlign: "center" },
+  inputIcon: { marginRight: 8 },
   card: { backgroundColor: "#FFFFFF", borderRadius: 16, padding: 14, borderWidth: 1, borderColor: "#F1F5F9", gap: 12 },
   cardInactive: { opacity: 0.55 },
   cardMain: { flexDirection: "row", gap: 12 },
@@ -911,6 +1156,16 @@ const styles = StyleSheet.create({
   avatarOverlayText: { fontSize: 10, color: "#FFFFFF" },
   avatarPlaceholder: { alignItems: "center" },
   avatarPlaceholderText: { fontSize: 11, color: "#94A3B8" },
+  coverPickerBtn: { alignSelf: "stretch", height: 120, borderRadius: 12, overflow: "hidden", backgroundColor: "#F1F5F9", borderWidth: 2, borderColor: "#E2E8F0", borderStyle: "dashed", alignItems: "center", justifyContent: "center", marginTop: 6, marginBottom: 12 },
+  coverPreviewWrap: { width: "100%", height: "100%", position: "relative" },
+  coverPreview: { width: "100%", height: "100%", resizeMode: "cover" },
+  coverOverlay: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center", paddingVertical: 6 },
+  coverOverlayText: { fontSize: 11, color: "#FFFFFF", fontWeight: "600" },
+  coverPlaceholder: { alignItems: "center" },
+  coverPlaceholderText: { fontSize: 12, color: "#94A3B8", marginTop: 4 },
+  premiumTogglesRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 12, marginBottom: 6, gap: 12 },
+  premiumToggleItem: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
+  premiumToggleLabel: { fontSize: 12, fontWeight: "600", color: "#374151" },
   servicePickerBtn: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#FFFFFF", borderWidth: 1.5, borderColor: "#E2E8F0", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
   servicePickerBtnOpen: { borderColor: "#25D366" },
   servicePickerBtnText: { flex: 1, fontSize: 14, color: "#94A3B8" },

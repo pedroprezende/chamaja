@@ -51,6 +51,8 @@ export default function EditarPrestador() {
   const [isActive, setIsActive] = useState(true);
   const [whatsapp, setWhatsapp] = useState("");
   const [avatarUri, setAvatarUri] = useState("");
+  const [coverUri, setCoverUri] = useState("");
+  const [foundedYear, setFoundedYear] = useState("");
   const [gallery, setGallery] = useState<string[]>([]);
   
   const [selectedSpecialties, setSelectedSpecialties] = useState<Record<string, boolean>>({});
@@ -128,6 +130,8 @@ export default function EditarPrestador() {
       setIsActive(dbProvider.isActive);
       setWhatsapp(dbProvider.whatsapp || dbProvider.phone || "");
       setAvatarUri(dbProvider.avatarUri || "");
+      setCoverUri(dbProvider.coverUri || "");
+      setFoundedYear(dbProvider.foundedYear ? String(dbProvider.foundedYear) : "");
       setGallery(dbProvider.gallery || []);
 
       let specNames: string[] = [];
@@ -190,7 +194,18 @@ export default function EditarPrestador() {
         }
       }
 
-      // 2. Upload Galeria
+      // 2. Upload Capa
+      let finalCover = coverUri;
+      if (coverUri && !coverUri.startsWith("http")) {
+        try {
+          const uploadedUrl = await storage.uploadImage(coverUri);
+          if (uploadedUrl) finalCover = uploadedUrl;
+        } catch (err: any) {
+          errorDetails += `Capa: ${err.message || "Erro no upload"}\n`;
+        }
+      }
+
+      // 3. Upload Galeria
       const finalGallery = [];
       let galleryFailures = 0;
       
@@ -235,6 +250,8 @@ export default function EditarPrestador() {
         whatsapp: whatsapp || null,
         phone: whatsapp || null,
         avatarUri: finalAvatar || null,
+        coverUri: finalCover || null,
+        foundedYear: foundedYear ? Number(foundedYear) : null,
         gallery: finalGallery.length > 0 ? finalGallery : null,
         services: JSON.stringify(selectedNames.length > 0 ? selectedNames : (subcategoryName ? [subcategoryName] : [])),
       };
@@ -299,6 +316,18 @@ export default function EditarPrestador() {
     }
   };
 
+  const pickCover = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.6,
+    });
+    if (!result.canceled) {
+      setCoverUri(result.assets[0].uri);
+    }
+  };
+
   const pickGallery = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -335,15 +364,29 @@ export default function EditarPrestador() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-        {/* Avatar */}
-        <View style={styles.avatarSection}>
-          <View style={styles.avatarWrap}>
+        {/* Cover & Avatar Header Section */}
+        <View style={styles.coverAvatarSection}>
+          <Pressable style={styles.coverWrap} onPress={pickCover}>
+            {coverUri ? (
+              <Image source={{ uri: coverUri }} style={styles.coverImage} resizeMode="cover" />
+            ) : (
+              <View style={styles.coverPlaceholder}>
+                <MaterialIcons name="add-photo-alternate" size={32} color="#9CA3AF" />
+                <Text style={styles.coverPlaceholderText}>Adicionar Foto de Capa</Text>
+              </View>
+            )}
+            <View style={styles.coverEditBtn}>
+              <MaterialIcons name="camera-alt" size={18} color="#FFF" />
+            </View>
+          </Pressable>
+
+          <View style={styles.avatarWrapFloating}>
             <Image
               source={{ uri: avatarUri || "https://ui-avatars.com/api/?name=" + encodeURIComponent(name || "P") }}
-              style={styles.avatar}
+              style={styles.avatarFloating}
             />
-            <Pressable style={styles.cameraBtn} onPress={pickAvatar}>
-              <MaterialIcons name="camera-alt" size={16} color="#FFF" />
+            <Pressable style={styles.avatarCameraBtn} onPress={pickAvatar}>
+              <MaterialIcons name="camera-alt" size={14} color="#FFF" />
             </Pressable>
           </View>
         </View>
@@ -531,6 +574,16 @@ export default function EditarPrestador() {
             placeholderTextColor="#9CA3AF"
           />
 
+          <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Ano início (Fundação)</Text>
+          <TextInput
+            style={styles.fieldInput}
+            value={foundedYear}
+            onChangeText={setFoundedYear}
+            placeholder="Ex: 2020"
+            keyboardType="numeric"
+            placeholderTextColor="#9CA3AF"
+          />
+
           <View style={styles.switchRow}>
             <Text style={styles.fieldLabel}>Status</Text>
             <View style={styles.switchRight}>
@@ -621,14 +674,77 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
   },
   content: { padding: 16, gap: 0 },
-  avatarSection: { alignItems: "center", marginBottom: 20 },
-  avatarWrap: { position: "relative" },
-  avatar: { width: 90, height: 90, borderRadius: 45, backgroundColor: "#F3F4F6" },
-  cameraBtn: {
-    position: "absolute", bottom: 0, right: 0,
-    width: 28, height: 28, borderRadius: 14, backgroundColor: "#25D366",
-    alignItems: "center", justifyContent: "center",
-    borderWidth: 2, borderColor: "#FFF",
+  coverAvatarSection: {
+    alignItems: "center",
+    marginBottom: 20,
+    position: "relative",
+    width: "100%",
+  },
+  coverWrap: {
+    width: "100%",
+    height: 160,
+    backgroundColor: "#E5E7EB",
+    borderRadius: 14,
+    overflow: "hidden",
+    justifyContent: "center",
+    alignItems: "center",
+    position: "relative",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  coverImage: {
+    width: "100%",
+    height: "100%",
+  },
+  coverPlaceholder: {
+    alignItems: "center",
+    gap: 4,
+  },
+  coverPlaceholderText: {
+    fontSize: 12,
+    color: "#6B7280",
+    fontWeight: "600",
+  },
+  coverEditBtn: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarWrapFloating: {
+    position: "relative",
+    marginTop: -45,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  avatarFloating: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    borderWidth: 4,
+    borderColor: "#FFFFFF",
+    backgroundColor: "#F3F4F6",
+  },
+  avatarCameraBtn: {
+    position: "absolute",
+    bottom: 2,
+    right: 2,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: "#25D366",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#FFF",
   },
   card: {
     backgroundColor: "#FFFFFF", borderRadius: 14, padding: 16,

@@ -36,7 +36,7 @@ export async function geocodeAddress(
         limit: 1,
       },
       headers: {
-        "User-Agent": "ChamaJaGeolocation/1.0 (pedro@example.com)",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       },
       timeout: 5000,
     });
@@ -60,37 +60,60 @@ async function geocodeBackup(
   neighborhood?: string | null,
   city?: string | null
 ): Promise<{ latitude: number; longitude: number } | null> {
-  const parts: string[] = [];
-  if (neighborhood) parts.push(neighborhood);
-  if (city) parts.push(city);
-  
-  if (parts.length === 0) return null;
-  parts.push("Brasil");
+  // Try 1: neighborhood + city
+  if (neighborhood && city) {
+    const queryStr = `${neighborhood}, ${city}, Brasil`;
+    try {
+      const response = await axios.get("https://nominatim.openstreetmap.org/search", {
+        params: {
+          q: queryStr,
+          format: "json",
+          limit: 1,
+        },
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        },
+        timeout: 4000,
+      });
 
-  const queryStr = parts.join(", ");
-
-  try {
-    const response = await axios.get("https://nominatim.openstreetmap.org/search", {
-      params: {
-        q: queryStr,
-        format: "json",
-        limit: 1,
-      },
-      headers: {
-        "User-Agent": "ChamaJaGeolocation/1.0 (pedro@example.com)",
-      },
-      timeout: 4000,
-    });
-
-    if (response.data && Array.isArray(response.data) && response.data.length > 0) {
-      const lat = parseFloat(response.data[0].lat);
-      const lon = parseFloat(response.data[0].lon);
-      if (!isNaN(lat) && !isNaN(lon)) {
-        return { latitude: lat, longitude: lon };
+      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+        const lat = parseFloat(response.data[0].lat);
+        const lon = parseFloat(response.data[0].lon);
+        if (!isNaN(lat) && !isNaN(lon)) {
+          return { latitude: lat, longitude: lon };
+        }
       }
+    } catch (error: any) {
+      console.warn(`[Geocoding] Backup geocoding failed for "${queryStr}":`, error.message);
     }
-  } catch (error: any) {
-    console.warn(`[Geocoding] Backup geocoding failed for "${queryStr}":`, error.message);
+  }
+
+  // Try 2: city only
+  if (city) {
+    const queryStr = `${city}, Brasil`;
+    try {
+      const response = await axios.get("https://nominatim.openstreetmap.org/search", {
+        params: {
+          q: queryStr,
+          format: "json",
+          limit: 1,
+        },
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        },
+        timeout: 4000,
+      });
+
+      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+        const lat = parseFloat(response.data[0].lat);
+        const lon = parseFloat(response.data[0].lon);
+        if (!isNaN(lat) && !isNaN(lon)) {
+          return { latitude: lat, longitude: lon };
+        }
+      }
+    } catch (error: any) {
+      console.warn(`[Geocoding] City backup geocoding failed for "${queryStr}":`, error.message);
+    }
   }
 
   return null;

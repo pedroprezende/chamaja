@@ -8,7 +8,6 @@ export const trpcVanilla = createTRPCClient<AppRouter>({
   links: [
     httpBatchLink({
       url: `${getApiBaseUrl()}/api/trpc`,
-      transformer: superjson,
       async headers() {
         const token = await Auth.getSessionToken();
         return token ? { Authorization: `Bearer ${token}` } : {};

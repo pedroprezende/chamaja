@@ -466,11 +466,11 @@ export default function ProfileScreen() {
                 Entre em contato com nossa equipe:
               </Text>
               <Pressable
-                onPress={() => Linking.openURL("mailto:chamajasuporte@gmai.com")}
+                onPress={() => Linking.openURL("mailto:chamajasuporte@gmail.com")}
                 style={({ pressed }) => [styles.emailButton, pressed && { opacity: 0.8 }]}
               >
                 <MaterialIcons name="email" size={16} color="#FFFFFF" />
-                <Text style={styles.emailButtonText}>chamajasuporte@gmai.com</Text>
+                <Text style={styles.emailButtonText}>chamajasuporte@gmail.com</Text>
               </Pressable>
 
               <Text style={[styles.policySectionTitle, { color: colors.primary, marginTop: 24 }]}>Problemas comuns</Text>

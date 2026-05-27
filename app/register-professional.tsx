@@ -34,6 +34,8 @@ export default function RegisterProfessionalScreen() {
 
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
 
+  const selectedIds = Object.keys(selectedSpecialties).filter(id => selectedSpecialties[id]);
+
   const handlePickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -133,8 +135,6 @@ export default function RegisterProfessionalScreen() {
     }));
   };
 
-  const selectedIds = Object.keys(selectedSpecialties).filter(id => selectedSpecialties[id]);
-
   return (
     <ScreenContainer containerClassName="bg-[#F5F5F5]" className="">
       <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
@@ -190,7 +190,7 @@ export default function RegisterProfessionalScreen() {
                 <Text
                   style={[
                     styles.selectButtonText,
-                    formData.categories.length === 0 && { color: "#9CA3AF" },
+                    selectedIds.length === 0 && { color: "#9CA3AF" },
                   ]}
                   numberOfLines={1}
                 >

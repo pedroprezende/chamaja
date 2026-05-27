@@ -33,6 +33,16 @@ export interface AdminProvider {
   ratingCount?: number;
   latitude?: number;
   longitude?: number;
+  coverUri?: string;
+  isVerified?: boolean;
+  onlineStatus?: boolean;
+  responseTime?: string;
+  clientsServed?: number;
+  foundedYear?: number;
+  topBadge?: string;
+  popularServices?: string;
+  tags?: string;
+  workingHours?: string;
   isActive: boolean;
   displayOrder: number;
   createdAt: string;
