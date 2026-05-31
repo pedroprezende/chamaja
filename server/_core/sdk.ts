@@ -78,6 +78,7 @@ class SDKServer {
           tipoEvento: "cadastro",
           valor: authUser.app_metadata?.provider ?? "email",
           usuarioId: sessionUserId,
+          utmSource: authUser.user_metadata?.utm_source || null,
         });
       } catch (upsertError) {
         console.error("[Auth] Failed to sync user from Supabase:", upsertError);

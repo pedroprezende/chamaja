@@ -10,10 +10,20 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "expo-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { ActivityIndicator } from "react-native";
 import { AdminTabBar } from "@/components/admin/AdminTabBar";
+import Svg, {
+  Path,
+  Circle,
+  Text as SvgText,
+  Defs,
+  LinearGradient,
+  Stop,
+  Line,
+  G,
+} from "react-native-svg";
 
 const REGIONS = ["Bragança Paulista", "Atibaia", "Extrema", "Itatiba", "Camanducaia"];
 
@@ -24,7 +34,10 @@ export default function DashboardAdmin() {
   const [selectedRegion, setSelectedRegion] = useState("Bragança Paulista");
   const [showRegionPicker, setShowRegionPicker] = useState(false);
 
-  // Proteção de rota robusta via Contexto
+  // Dynamic width state for custom SVG chart
+  const [chartWidth, setChartWidth] = useState(300);
+
+  // Route protection
   useEffect(() => {
     if (!authLoading && !isAdmin) {
       router.replace("/" as any);
@@ -34,6 +47,42 @@ export default function DashboardAdmin() {
   const { data: dashboardData, isLoading } = trpc.dashboard.getAdminStats.useQuery(undefined, {
     enabled: isAdmin,
   });
+
+  // Memoized SVG path math for line chart
+  const chartData = dashboardData?.stats.monthlyRevenueEvolution || [];
+  const chartHeight = 180;
+  const chartPadding = 30;
+
+  const { chartPoints, chartLinePath, chartFillPath, chartGridPoints } = useMemo(() => {
+    if (chartData.length === 0) {
+      return { chartPoints: [], chartLinePath: "", chartFillPath: "", chartGridPoints: [] };
+    }
+
+    const maxVal = Math.max(...chartData.map((d) => d.revenue), 100);
+
+    const points = chartData.map((d, index) => {
+      // Scale X evenly across the width minus padding
+      const x = chartPadding + (index * (chartWidth - 2 * chartPadding - 10)) / 5;
+      // Scale Y inversely (higher value = lower Y coordinate in SVG space)
+      const y = chartHeight - chartPadding - (d.revenue / maxVal) * (chartHeight - 2 * chartPadding);
+      return { x, y, label: d.month, value: d.revenue };
+    });
+
+    const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+    const fillPath = points.length > 0
+      ? `${linePath} L ${points[points.length - 1].x} ${chartHeight - chartPadding} L ${points[0].x} ${chartHeight - chartPadding} Z`
+      : "";
+
+    // Dotted grid lines at 0%, 50%, and 100% of height scale
+    const gridY = [
+      chartHeight - chartPadding,
+      chartHeight - chartPadding - (chartHeight - 2 * chartPadding) / 2,
+      chartPadding
+    ];
+    const gridPoints = gridY.map((yVal) => ({ y: yVal }));
+
+    return { chartPoints: points, chartLinePath: linePath, chartFillPath: fillPath, chartGridPoints: gridPoints };
+  }, [chartData, chartWidth]);
 
   if (authLoading || !isAdmin) {
     return (
@@ -118,12 +167,12 @@ export default function DashboardAdmin() {
           </View>
         )}
 
-        <Text style={styles.sectionTitle}>Visão geral de hoje</Text>
-
         {isLoading ? (
-          <ActivityIndicator size="large" color="#25D366" style={{ marginVertical: 20 }} />
+          <ActivityIndicator size="large" color="#25D366" style={{ marginVertical: 40 }} />
         ) : (
           <>
+            {/* --- VISÃO GERAL HOJE --- */}
+            <Text style={styles.sectionTitle}>Visão geral de hoje</Text>
             <View style={styles.statsGrid}>
               {[
                 { label: "Prestadores\nativos", value: dashboardData?.stats.activeProviders || 0, sub: "Total", icon: "people", color: "#EFF6FF", iconColor: "#2563EB" },
@@ -141,9 +190,9 @@ export default function DashboardAdmin() {
               ].map((stat) => (
                 <Pressable
                   key={stat.label}
-                  style={({ pressed }) => [styles.statCard, pressed && { opacity: 0.85 }]}
-                  onPress={(stat as any).onPress}
-                  disabled={!(stat as any).onPress}
+                  style={({ pressed }) => [styles.statCard, pressed && stat.onPress && { opacity: 0.85 }]}
+                  onPress={stat.onPress}
+                  disabled={!stat.onPress}
                 >
                   <View style={[styles.statIconBox, { backgroundColor: stat.color }]}>
                     <MaterialIcons name={stat.icon as any} size={22} color={stat.iconColor} />
@@ -155,6 +204,163 @@ export default function DashboardAdmin() {
               ))}
             </View>
 
+            {/* --- ASSINATURAS E FATURAMENTO (NEW SECTION) --- */}
+            <Text style={styles.sectionTitle}>Assinaturas & Faturamento</Text>
+            
+            {/* MRR Card (Highlight) */}
+            <Pressable
+              style={({ pressed }) => [styles.mrrCard, pressed && { opacity: 0.9 }]}
+              onPress={() => router.push("/admin/payments" as any)}
+            >
+              <View style={styles.mrrHeader}>
+                <View style={styles.mrrIconBox}>
+                  <MaterialIcons name="monetization-on" size={24} color="#059669" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.mrrLabel}>Receita Bruta Mensalizada (MRR)</Text>
+                  <Text style={styles.mrrValue}>
+                    R$ {dashboardData?.stats.monthlyRecurringRevenue?.toFixed(2).replace(".", ",") || "0,00"}
+                  </Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={24} color="#9CA3AF" />
+              </View>
+              <Text style={styles.mrrSub}>
+                Baseado em planos ativos • Clique para gerenciar pagamentos
+              </Text>
+            </Pressable>
+
+            {/* Subscriptions Grid */}
+            <View style={styles.statsGrid}>
+              {[
+                { 
+                  label: "Plano Mensal\nAtivos", 
+                  value: dashboardData?.stats.activeMonthlyCount || 0, 
+                  sub: "R$ 10,00/mês", 
+                  icon: "calendar-today", 
+                  color: "#ECFDF5", 
+                  iconColor: "#059669" 
+                },
+                { 
+                  label: "Plano Anual\nAtivos", 
+                  value: dashboardData?.stats.activeAnnualCount || 0, 
+                  sub: "R$ 149,90/ano", 
+                  icon: "workspace-premium", 
+                  color: "#EEF2F6", 
+                  iconColor: "#1E3A8A" 
+                },
+                { 
+                  label: "Plaquinhas NFC\npendentes", 
+                  value: dashboardData?.stats.pendingNfcCount || 0, 
+                  sub: "Ver pendências", 
+                  icon: "local-shipping", 
+                  color: "#FFFBEB", 
+                  iconColor: "#D97706",
+                  onPress: () => router.push("/admin/payments" as any)
+                },
+                { 
+                  label: "Captados via\ntráfego", 
+                  value: dashboardData?.stats.trafficAcquiredCount || 0, 
+                  sub: "Cadastros com UTM", 
+                  icon: "traffic", 
+                  color: "#FDF2F8", 
+                  iconColor: "#DB2777" 
+                },
+              ].map((stat) => (
+                <Pressable
+                  key={stat.label}
+                  style={({ pressed }) => [styles.statCard, pressed && stat.onPress && { opacity: 0.85 }]}
+                  onPress={stat.onPress}
+                  disabled={!stat.onPress}
+                >
+                  <View style={[styles.statIconBox, { backgroundColor: stat.color }]}>
+                    <MaterialIcons name={stat.icon as any} size={22} color={stat.iconColor} />
+                  </View>
+                  <Text style={styles.statValue}>{stat.value}</Text>
+                  <Text style={styles.statLabel}>{stat.label}</Text>
+                  <Text style={styles.statSub}>{stat.sub}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {/* --- LINE CHART (EVOLUÇÃO DA RECEITA) --- */}
+            <Text style={styles.sectionTitle}>Evolução da Receita (últimos 6 meses)</Text>
+            <View 
+              style={styles.chartCard} 
+              onLayout={(event) => {
+                const { width } = event.nativeEvent.layout;
+                setChartWidth(width - 32); // account for padding
+              }}
+            >
+              {chartData.length > 0 ? (
+                <View style={styles.chartContainer}>
+                  <Svg width={chartWidth} height={chartHeight}>
+                    <Defs>
+                      <LinearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                        <Stop offset="0%" stopColor="#10B981" stopOpacity="0.25" />
+                        <Stop offset="100%" stopColor="#10B981" stopOpacity="0.0" />
+                      </LinearGradient>
+                    </Defs>
+                    
+                    {/* Dotted Grid Lines */}
+                    {chartGridPoints.map((g, index) => (
+                      <Line
+                        key={index}
+                        x1={30}
+                        y1={g.y}
+                        x2={chartWidth - 10}
+                        y2={g.y}
+                        stroke="#E5E7EB"
+                        strokeWidth="1"
+                        strokeDasharray="4 4"
+                      />
+                    ))}
+
+                    {/* Gradient Fill Under Curve */}
+                    {chartFillPath ? <Path d={chartFillPath} fill="url(#chartGrad)" /> : null}
+
+                    {/* Bezier Line Stroke */}
+                    {chartLinePath ? <Path d={chartLinePath} fill="none" stroke="#10B981" strokeWidth="3" /> : null}
+
+                    {/* Data Points (Dots and labels) */}
+                    {chartPoints.map((p, index) => (
+                      <G key={index}>
+                        <Circle cx={p.x} cy={p.y} r="4" fill="#FFFFFF" stroke="#10B981" strokeWidth="2" />
+                        
+                        {/* Value text tag above point */}
+                        <SvgText
+                          x={p.x}
+                          y={p.y - 10}
+                          fill="#059669"
+                          fontSize="9"
+                          fontWeight="800"
+                          textAnchor="middle"
+                        >
+                          {`R$ ${p.value.toFixed(0)}`}
+                        </SvgText>
+
+                        {/* Month name at the bottom */}
+                        <SvgText
+                          x={p.x}
+                          y={170}
+                          fill="#6B7280"
+                          fontSize="9"
+                          fontWeight="600"
+                          textAnchor="middle"
+                        >
+                          {p.label}
+                        </SvgText>
+                      </G>
+                    ))}
+                  </Svg>
+                </View>
+              ) : (
+                <View style={styles.emptyChart}>
+                  <Text style={styles.emptyChartText}>Dados de evolução indisponíveis</Text>
+                </View>
+              )}
+            </View>
+
+            {/* --- MAIS BUSCADOS E ATIVIDADE --- */}
             <Text style={styles.sectionTitle}>Serviço mais buscado</Text>
             <View style={styles.topServiceCard}>
               <View style={styles.topServiceIcon}>
@@ -271,15 +477,6 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: "#BBF7D0",
   },
   backBtnText: { fontSize: 13, fontWeight: "600", color: "#25D366" },
-  iconBtn: {
-    width: 36, height: 36, borderRadius: 18, backgroundColor: "#F9FAFB",
-    alignItems: "center", justifyContent: "center",
-  },
-  notifDot: {
-    position: "absolute", top: 6, right: 6,
-    width: 7, height: 7, borderRadius: 4,
-    backgroundColor: "#EF4444", borderWidth: 1.5, borderColor: "#FFF",
-  },
   content: { padding: 16 },
   greetingRow: { marginBottom: 16 },
   greeting: { fontSize: 22, fontWeight: "800", color: "#111827" },
@@ -301,7 +498,7 @@ const styles = StyleSheet.create({
   },
   regionOptionActive: { backgroundColor: "#F0FDF4" },
   regionOptionText: { fontSize: 14, color: "#374151" },
-  sectionTitle: { fontSize: 15, fontWeight: "700", color: "#111827", marginTop: 16, marginBottom: 10 },
+  sectionTitle: { fontSize: 15, fontWeight: "700", color: "#111827", marginTop: 20, marginBottom: 10 },
   statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   statCard: {
     width: "47.5%", backgroundColor: "#FFFFFF", borderRadius: 14,
@@ -311,21 +508,109 @@ const styles = StyleSheet.create({
   statValue: { fontSize: 26, fontWeight: "800", color: "#111827" },
   statLabel: { fontSize: 12, color: "#6B7280", marginTop: 2, lineHeight: 16 },
   statSub: { fontSize: 11, color: "#9CA3AF", marginTop: 4, fontWeight: "500" },
+  
+  // MRR Card Styles
+  mrrCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: "#059669",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  mrrHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  mrrIconBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: "#ECFDF5",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  mrrLabel: {
+    fontSize: 12,
+    color: "#6B7280",
+    fontWeight: "600",
+  },
+  mrrValue: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#059669",
+    marginTop: 2,
+  },
+  mrrSub: {
+    fontSize: 11,
+    color: "#9CA3AF",
+    marginTop: 10,
+    fontWeight: "500",
+    borderTopWidth: 1,
+    borderTopColor: "#F3F4F6",
+    paddingTop: 8,
+  },
+  
+  // Custom Chart Styles
+  chartCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    padding: 16,
+    marginBottom: 12,
+    alignItems: "center",
+  },
+  chartContainer: {
+    width: "100%",
+    height: 180,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emptyChart: {
+    height: 180,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyChartText: {
+    color: "#9CA3AF",
+    fontSize: 12,
+  },
+
   topServiceCard: {
-    flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF",
-    borderRadius: 14, padding: 14, gap: 12, borderWidth: 1, borderColor: "#F3F4F6",
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    padding: 14,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
   },
   topServiceIcon: {
-    width: 50, height: 50, borderRadius: 12, backgroundColor: "#F0FDF4",
-    alignItems: "center", justifyContent: "center",
+    width: 50,
+    height: 50,
+    borderRadius: 12,
+    backgroundColor: "#F0FDF4",
+    alignItems: "center",
+    justifyContent: "center",
   },
   topServiceName: { fontSize: 15, fontWeight: "700", color: "#111827" },
   topServicePct: { fontSize: 12, color: "#6B7280", marginTop: 2 },
   topServiceBadge: { backgroundColor: "#DCFCE7", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
   topServiceBadgeText: { fontSize: 13, fontWeight: "800", color: "#15803D" },
   activityHeader: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    marginTop: 16, marginBottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 16,
+    marginBottom: 10,
   },
   verTudo: { fontSize: 13, fontWeight: "600", color: "#25D366" },
   activityList: { backgroundColor: "#FFFFFF", borderRadius: 14, borderWidth: 1, borderColor: "#F3F4F6", overflow: "hidden" },

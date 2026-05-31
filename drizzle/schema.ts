@@ -234,9 +234,26 @@ export const appEvents = pgTable("app_events", {
   cidade: varchar("cidade", { length: 255 }),
   prestadorId: varchar("prestador_id", { length: 64 }),
   usuarioId: varchar("usuario_id", { length: 64 }),
+  utmSource: varchar("utm_source", { length: 255 }),
   criadoEm: timestamp("created_at").defaultNow().notNull(),
 });
 
 export type AppEvent = typeof appEvents.$inferSelect;
 export type InsertAppEvent = typeof appEvents.$inferInsert;
+
+export const payments = pgTable("pagamentos", {
+  id: serial("id").primaryKey(),
+  prestadorId: varchar("prestador_id", { length: 64 }).notNull().references(() => providers.id, { onDelete: "cascade" }),
+  plano: varchar("plano", { length: 20 }).notNull(), // 'mensal' / 'anual'
+  valor: real("valor").notNull(),
+  dataPagamento: timestamp("data_pagamento").notNull(),
+  metodo: varchar("metodo", { length: 50 }).notNull(), // 'pix'
+  nfcEnviada: boolean("nfc_enviada").default(false).notNull(),
+  dataEnvioNfc: timestamp("data_envio_nfc"),
+  criadoEm: timestamp("criado_em").defaultNow().notNull(),
+});
+
+export type Payment = typeof payments.$inferSelect;
+export type InsertPayment = typeof payments.$inferInsert;
+
 

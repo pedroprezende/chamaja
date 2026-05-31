@@ -44,6 +44,7 @@ const ProviderUpsertSchema = z.object({
   popularServices: z.any().optional(),
   tags: z.any().optional(),
   workingHours: z.any().optional(),
+  utmSource: z.string().nullable().optional(),
 });
 
 const ProviderUpdateSchema = z.object({
@@ -197,6 +198,7 @@ export const providersRouter = router({
           cidade: input.city || null,
           prestadorId: providerId,
           usuarioId: userId,
+          utmSource: input.utmSource || null,
         });
       }
       return { success: true };

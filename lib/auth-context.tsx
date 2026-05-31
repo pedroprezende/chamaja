@@ -182,6 +182,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // Capture UTM Source on web platform load
+  useEffect(() => {
+    if (Platform.OS === "web") {
+      try {
+        const search = window?.location?.search;
+        if (search) {
+          const params = new URLSearchParams(search);
+          const utm = params.get("utm_source");
+          if (utm) {
+            logger.info("AUTH", `UTM Source detectado: ${utm}`);
+            AsyncStorage.setItem("utm_source", utm).catch(() => {});
+          }
+        }
+      } catch (err) {
+        logger.warn("AUTH", "Erro ao tentar obter utm_source da URL", err);
+      }
+    }
+  }, []);
+
   const refreshRole = async () => {
     if (user) {
       logger.info("AUTH", "Recarregando permissões do usuário...");
@@ -243,10 +262,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUpWithEmail = async (email: string, password: string, name: string) => {
     logger.info("AUTH", `Iniciando cadastro por e-mail: ${email}`);
+    
+    let utmSource: string | null = null;
+    try {
+      utmSource = await AsyncStorage.getItem("utm_source");
+    } catch (e) {
+      logger.warn("AUTH", "Erro ao recuperar utm_source do cache");
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: name } },
+      options: { 
+        data: { 
+          full_name: name,
+          ...(utmSource ? { utm_source: utmSource } : {})
+        } 
+      },
     });
     if (error) {
       logger.error("AUTH", "Erro no cadastro por e-mail", error);
