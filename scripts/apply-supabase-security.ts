@@ -40,6 +40,8 @@ ALTER TABLE public.service_views ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.regions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.system_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.favorites ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.app_events ENABLE ROW LEVEL SECURITY;
+
 
 -- ============================================================================
 -- 3. LIMPEZA DE POLÍTICAS EXISTENTES (Garantir idempotência e evitar conflitos)
@@ -56,7 +58,7 @@ BEGIN
             'categories', 'services', 'users', 'sub_services', 
             'providers', 'reviews', 'featured_ads', 'whatsapp_clicks', 
             'search_queries', 'service_views', 'regions', 'system_logs',
-            'favorites'
+            'favorites', 'app_events'
           )
     LOOP
         EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', pol.policyname, pol.tablename);
@@ -123,6 +125,8 @@ CREATE POLICY "Admin ALL whatsapp_clicks" ON public.whatsapp_clicks FOR ALL TO a
 CREATE POLICY "Admin ALL search_queries" ON public.search_queries FOR ALL TO authenticated USING (public.is_admin());
 CREATE POLICY "Admin ALL service_views" ON public.service_views FOR ALL TO authenticated USING (public.is_admin());
 CREATE POLICY "Admin ALL system_logs" ON public.system_logs FOR ALL TO authenticated USING (public.is_admin());
+CREATE POLICY "Admin ALL app_events" ON public.app_events FOR ALL TO authenticated USING (public.is_admin());
+
 
 -- ============================================================================
 -- 5. POLÍTICAS DE SEGURANÇA DO STORAGE BUCKETS (storage.objects)

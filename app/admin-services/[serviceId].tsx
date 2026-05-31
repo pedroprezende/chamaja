@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAdminServices } from "@/hooks/use-admin-services";
 import { trpc } from "@/lib/trpc";
 import { useWindowDimensions } from "react-native";
+import { useAuth } from "@/lib/auth-context";
 
 const CATEGORY_ICONS: Record<string, string> = {
   eletricista: "electrical-services",
@@ -66,6 +67,7 @@ export default function AdminServiceDetailScreen() {
   const { services } = useAdminServices();
   const trackView = trpc.analytics.trackServiceView.useMutation();
   const trackWhatsapp = trpc.analytics.trackWhatsappClick.useMutation();
+  const { user } = useAuth();
 
   // Caso o ID seja de um prestador, tentamos carregar do banco via tRPC
   const { data: serverProvider, isLoading: loadingProvider } = trpc.providers.getById.useQuery(
@@ -107,9 +109,10 @@ export default function AdminServiceDetailScreen() {
       trackView.mutate({
         categoryId: service.categoryId || undefined,
         serviceId: service.id,
+        userId: user?.id || undefined,
       });
     }
-  }, [service?.id]);
+  }, [service?.id, user?.id]);
 
   const handleOpenWhatsApp = () => {
     if (!service) return;
@@ -117,6 +120,7 @@ export default function AdminServiceDetailScreen() {
       providerId: service.adminId, // or keep it empty if admin
       serviceName: service.name,
       city: service.address || undefined,
+      userId: user?.id || undefined,
     });
     
     const phone = service.whatsapp || "";

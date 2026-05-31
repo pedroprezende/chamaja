@@ -226,3 +226,17 @@ export const favorites = pgTable("favorites", {
 
 export type Favorite = typeof favorites.$inferSelect;
 export type InsertFavorite = typeof favorites.$inferInsert;
+
+export const appEvents = pgTable("app_events", {
+  id: serial("id").primaryKey(),
+  tipoEvento: varchar("tipo_evento", { length: 50 }).notNull(), // busca, clique_whatsapp, visualizacao, cadastro
+  valor: text("valor"), // e.g. search query, provider name
+  cidade: varchar("cidade", { length: 255 }),
+  prestadorId: varchar("prestador_id", { length: 64 }),
+  usuarioId: varchar("usuario_id", { length: 64 }),
+  criadoEm: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type AppEvent = typeof appEvents.$inferSelect;
+export type InsertAppEvent = typeof appEvents.$inferInsert;
+

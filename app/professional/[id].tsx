@@ -123,9 +123,10 @@ export default function ProfessionalDetailScreen() {
       trackView.mutate({
         categoryId: professional.categoryId || undefined,
         serviceId: professional.id,
+        userId: user?.id || undefined,
       });
     }
-  }, [professional?.id]);
+  }, [professional?.id, user?.id]);
 
   const handleOpenWhatsApp = () => {
     if (!professional) return;
@@ -133,6 +134,7 @@ export default function ProfessionalDetailScreen() {
       providerId: professional.id,
       serviceName: professional.name,
       city: professional.city || undefined,
+      userId: user?.id || undefined,
     });
     
     const phone = professional.phone || professional.whatsapp || "";

@@ -45,7 +45,7 @@ async function main() {
     for (const mockSub of mockSubs) {
       try {
         const existing = await db.select().from(subServices).where(eq(subServices.id, mockSub.id));
-        
+
         if (existing.length === 0) {
           await db.insert(subServices).values({
             id: mockSub.id,

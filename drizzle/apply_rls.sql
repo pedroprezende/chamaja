@@ -20,6 +20,8 @@ ALTER TABLE public.whatsapp_clicks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.search_queries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.service_views ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.system_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.app_events ENABLE ROW LEVEL SECURITY;
+
 
 -- (Opcional) Limpar políticas caso já existam para recriar de forma limpa.
 -- Geralmente é bom apenas criar com nomes únicos.
@@ -74,6 +76,8 @@ CREATE POLICY "Admin full access whatsapp_clicks" ON public.whatsapp_clicks FOR 
 CREATE POLICY "Admin full access search_queries" ON public.search_queries FOR ALL USING (public.is_admin());
 CREATE POLICY "Admin full access service_views" ON public.service_views FOR ALL USING (public.is_admin());
 CREATE POLICY "Admin full access system_logs" ON public.system_logs FOR ALL USING (public.is_admin());
+CREATE POLICY "Admin full access app_events" ON public.app_events FOR ALL USING (public.is_admin());
+
 
 -- 7. Storage Buckets (Restringindo acesso de imagens do Supabase)
 CREATE POLICY "Public Access Objects" ON storage.objects FOR SELECT USING ( bucket_id = 'chamaja-images' );

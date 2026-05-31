@@ -11,6 +11,7 @@ import {
   featuredAds, InsertFeaturedAd,
   reviews, InsertReview,
   favorites,
+  appEvents,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -334,3 +335,18 @@ export async function getFavoritesByUser(userId: string) {
   
   return results.map((r) => r.provider);
 }
+
+// ── Analytics Events ──────────────────────────────────────────────────────────
+export async function createAppEvent(data: typeof appEvents.$inferInsert): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot insert app event: database not available");
+    return;
+  }
+  try {
+    await db.insert(appEvents).values(data);
+  } catch (error) {
+    console.error("[Database] Failed to insert app event:", error);
+  }
+}
+

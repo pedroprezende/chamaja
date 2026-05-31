@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { publicProcedure, adminProcedure, protectedProcedure, router } from "../_core/trpc";
 import * as db from "../db";
-import { providers } from "../../drizzle/schema";
+import { providers, appEvents } from "../../drizzle/schema";
 import { eq, or, ilike } from "drizzle-orm";
 import { getReviewsByProfessional as getMockReviewsByProfessional } from "../../data/mock";
 import { geocodeAddress } from "../geocoding";
@@ -150,9 +150,10 @@ export const providersRouter = router({
           updatedAt: new Date(),
         }).where(eq(providers.userId, userId));
       } else {
+        const providerId = uid();
         // Insert
         await dbInstance.insert(providers).values({
-          id: uid(),
+          id: providerId,
           userId,
           name: input.name,
           category: input.category,
@@ -187,6 +188,15 @@ export const providersRouter = router({
           workingHours: safeStringify(input.workingHours),
           isActive: true,
           displayOrder: 0,
+        });
+
+        // Log provider registration event
+        await dbInstance.insert(appEvents).values({
+          tipoEvento: "cadastro",
+          valor: "prestador",
+          cidade: input.city || null,
+          prestadorId: providerId,
+          usuarioId: userId,
         });
       }
       return { success: true };

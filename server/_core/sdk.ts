@@ -72,6 +72,13 @@ class SDKServer {
           lastSignedIn: signedInAt,
         });
         user = await db.getUserByOpenId(sessionUserId);
+
+        // Log user registration event
+        await db.createAppEvent({
+          tipoEvento: "cadastro",
+          valor: authUser.app_metadata?.provider ?? "email",
+          usuarioId: sessionUserId,
+        });
       } catch (upsertError) {
         console.error("[Auth] Failed to sync user from Supabase:", upsertError);
         throw ForbiddenError("Failed to sync user info");
