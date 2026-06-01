@@ -220,8 +220,8 @@ export default function AdminPaymentsScreen() {
       case "inativo":
         return (
           <View style={[styles.statusBadge, { backgroundColor: "rgba(156, 163, 175, 0.15)" }]}>
-            <MaterialIcons name="remove-circle" size={14} color="#9CA3AF" />
-            <Text style={[styles.statusText, { color: "#9CA3AF" }]}>Inativo</Text>
+            <MaterialIcons name="remove-circle" size={14} color="#4B5563" />
+            <Text style={[styles.statusText, { color: "#4B5563" }]}>Inativo</Text>
           </View>
         );
     }
@@ -230,20 +230,19 @@ export default function AdminPaymentsScreen() {
   const isLoading = loadingProviders || loadingPayments;
 
   return (
-    <ScreenContainer containerClassName="bg-[#111827]">
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top }]}>
+    <ScreenContainer style={{ backgroundColor: "#F9FAFB" }}>
+      {/* Header (Light background, aligned left with gap) */}
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <Pressable
           style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
           onPress={() => router.push("/admin/dashboard-admin" as any)}
         >
-          <MaterialIcons name="arrow-back" size={24} color="#E5E7EB" />
+          <MaterialIcons name="arrow-back" size={22} color="#111827" />
         </Pressable>
         <Text style={styles.headerTitle}>Gestão de Pagamentos</Text>
-        <View style={{ width: 40 }} />
       </View>
 
-      {/* Revenue and Quick Stats Card */}
+      {/* Revenue and Quick Stats Card (Light green theme) */}
       <View style={styles.revenueCard}>
         <View style={{ flex: 1 }}>
           <Text style={styles.revenueLabel}>Receita Recebida</Text>
@@ -255,7 +254,7 @@ export default function AdminPaymentsScreen() {
           </Text>
         </View>
         <View style={styles.revenueIcon}>
-          <MaterialIcons name="monetization-on" size={32} color="#25D366" />
+          <MaterialIcons name="monetization-on" size={28} color="#059669" />
         </View>
       </View>
 
@@ -266,7 +265,7 @@ export default function AdminPaymentsScreen() {
           <TextInput
             style={styles.searchInput}
             placeholder="Buscar prestador por nome ou categoria..."
-            placeholderTextColor="#6B7280"
+            placeholderTextColor="#9CA3AF"
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
@@ -326,7 +325,7 @@ export default function AdminPaymentsScreen() {
         <ScrollView showsVerticalScrollIndicator={false} style={styles.listContainer}>
           {filteredProviders.length === 0 ? (
             <View style={styles.emptyState}>
-              <MaterialIcons name="receipt-long" size={56} color="#4B5563" />
+              <MaterialIcons name="receipt-long" size={56} color="#9CA3AF" />
               <Text style={styles.emptyText}>Nenhum prestador encontrado</Text>
             </View>
           ) : (
@@ -377,7 +376,7 @@ export default function AdminPaymentsScreen() {
                         {/* Expired visual alert */}
                         {prov.isExpired && (
                           <View style={styles.expiryAlertContainer}>
-                            <MaterialIcons name="error-outline" size={16} color="#F87171" />
+                            <MaterialIcons name="error-outline" size={16} color="#991B1B" />
                             <Text style={styles.expiryAlertText}>
                               Pagamento vencido há {prov.daysDiff} {prov.daysDiff === 1 ? "dia" : "dias"}!
                             </Text>
@@ -397,11 +396,11 @@ export default function AdminPaymentsScreen() {
                             <MaterialIcons 
                               name={prov.latestPayment.nfcEnviada ? "local-shipping" : "hourglass-empty"} 
                               size={14} 
-                              color={prov.latestPayment.nfcEnviada ? "#10B981" : "#FBBF24"} 
+                              color={prov.latestPayment.nfcEnviada ? "#059669" : "#D97706"} 
                             />
                             <Text style={[
                               styles.nfcStatusText,
-                              { color: prov.latestPayment.nfcEnviada ? "#10B981" : "#FBBF24" }
+                              { color: prov.latestPayment.nfcEnviada ? "#059669" : "#D97706" }
                             ]}>
                               Plaquinha NFC: {prov.latestPayment.nfcEnviada 
                                 ? `Enviada em ${formatDate(prov.latestPayment.dataEnvioNfc)}`
@@ -434,7 +433,7 @@ export default function AdminPaymentsScreen() {
                           setShowModal(true);
                         }}
                       >
-                        <MaterialIcons name="add-card" size={16} color="#111827" />
+                        <MaterialIcons name="add-card" size={16} color="#FFFFFF" />
                         <Text style={styles.registerBtnText}>Registrar Pago</Text>
                       </Pressable>
 
@@ -445,7 +444,7 @@ export default function AdminPaymentsScreen() {
                         <MaterialIcons 
                           name={isExpanded ? "expand-less" : "expand-more"} 
                           size={16} 
-                          color="#E5E7EB" 
+                          color="#374151" 
                         />
                         <Text style={styles.historyBtnText}>
                           Histórico ({prov.paymentsCount})
@@ -484,11 +483,11 @@ export default function AdminPaymentsScreen() {
                                       <MaterialIcons 
                                         name={payment.nfcEnviada ? "check" : "close"} 
                                         size={12} 
-                                        color={payment.nfcEnviada ? "#10B981" : "#EF4444"} 
+                                        color={payment.nfcEnviada ? "#059669" : "#DC2626"} 
                                       />
                                       <Text style={[
                                         styles.historyItemNfcText,
-                                        { color: payment.nfcEnviada ? "#10B981" : "#EF4444" }
+                                        { color: payment.nfcEnviada ? "#059669" : "#DC2626" }
                                       ]}>
                                         Plaquinha NFC: {payment.nfcEnviada 
                                           ? `Enviada em ${formatDate(payment.dataEnvioNfc)}`
@@ -524,7 +523,7 @@ export default function AdminPaymentsScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Registrar Pagamento</Text>
               <Pressable onPress={() => setShowModal(false)} style={styles.closeModalBtn}>
-                <MaterialIcons name="close" size={24} color="#E5E7EB" />
+                <MaterialIcons name="close" size={24} color="#111827" />
               </Pressable>
             </View>
 
@@ -590,7 +589,7 @@ export default function AdminPaymentsScreen() {
                 value={valor}
                 onChangeText={setValor}
                 placeholder="Ex: 10.00"
-                placeholderTextColor="#4B5563"
+                placeholderTextColor="#9CA3AF"
               />
 
               {/* Data do Pagamento input */}
@@ -610,7 +609,7 @@ export default function AdminPaymentsScreen() {
                 value={dataPagamento}
                 onChangeText={setDataPagamento}
                 placeholder="AAAA-MM-DD"
-                placeholderTextColor="#4B5563"
+                placeholderTextColor="#9CA3AF"
                 maxLength={10}
               />
 
@@ -621,7 +620,7 @@ export default function AdminPaymentsScreen() {
                 value={metodo}
                 onChangeText={setMetodo}
                 placeholder="Ex: Pix, Cartão"
-                placeholderTextColor="#4B5563"
+                placeholderTextColor="#9CA3AF"
               />
 
               {/* NFC Plaqueta Option (Only shown if Anual) */}
@@ -632,7 +631,7 @@ export default function AdminPaymentsScreen() {
                     <Switch
                       value={nfcEnviada}
                       onValueChange={setNfcEnviada}
-                      trackColor={{ false: "#374151", true: "#059669" }}
+                      trackColor={{ false: "#E5E7EB", true: "#A7F3D0" }}
                       thumbColor={nfcEnviada ? "#10B981" : "#9CA3AF"}
                     />
                   </View>
@@ -655,7 +654,7 @@ export default function AdminPaymentsScreen() {
                         value={dataEnvioNfc}
                         onChangeText={setDataEnvioNfc}
                         placeholder="AAAA-MM-DD"
-                        placeholderTextColor="#4B5563"
+                        placeholderTextColor="#9CA3AF"
                         maxLength={10}
                       />
                     </View>
@@ -679,7 +678,7 @@ export default function AdminPaymentsScreen() {
                   disabled={registerMutation.isPending}
                 >
                   {registerMutation.isPending ? (
-                    <ActivityIndicator size="small" color="#111827" />
+                    <ActivityIndicator size="small" color="#FFFFFF" />
                   ) : (
                     <Text style={styles.modalSubmitBtnText}>Registrar</Text>
                   )}
@@ -696,56 +695,59 @@ export default function AdminPaymentsScreen() {
 const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    backgroundColor: "#FFFFFF",
     paddingHorizontal: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#1F2937",
+    borderBottomColor: "#E5E7EB",
   },
   backBtn: {
-    padding: 8,
+    padding: 6,
+    marginRight: 12,
     borderRadius: 8,
-    backgroundColor: "#1F2937",
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: "700",
-    color: "#FFFFFF",
+    fontWeight: "800",
+    color: "#111827",
   },
   revenueCard: {
     marginHorizontal: 16,
     marginTop: 16,
-    backgroundColor: "#1F2937",
+    backgroundColor: "#ECFDF5",
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#374151",
+    borderColor: "#A7F3D0",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
   revenueLabel: {
     fontSize: 13,
-    color: "#9CA3AF",
+    color: "#065F46",
     marginBottom: 4,
-    fontWeight: "500",
+    fontWeight: "600",
   },
   revenueValue: {
     fontSize: 26,
     fontWeight: "800",
-    color: "#25D366",
+    color: "#059669",
   },
   providersCountLabel: {
     fontSize: 12,
-    color: "#9CA3AF",
+    color: "#047857",
     marginTop: 4,
   },
   revenueIcon: {
-    width: 60,
-    height: 60,
+    width: 48,
+    height: 48,
     borderRadius: 14,
-    backgroundColor: "rgba(37, 211, 102, 0.1)",
+    backgroundColor: "rgba(5, 150, 105, 0.1)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -757,18 +759,18 @@ const styles = StyleSheet.create({
   searchBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1F2937",
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: "#374151",
+    borderColor: "#D1D5DB",
     gap: 8,
   },
   searchInput: {
     flex: 1,
     paddingVertical: 12,
     fontSize: 14,
-    color: "#FFFFFF",
+    color: "#111827",
     // Fix outline on web
     ...({ outlineStyle: "none" } as any),
   },
@@ -784,21 +786,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: "#1F2937",
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#374151",
+    borderColor: "#D1D5DB",
   },
   filterTabActive: {
-    backgroundColor: "#25D366",
-    borderColor: "#25D366",
+    backgroundColor: "#10B981",
+    borderColor: "#10B981",
   },
   filterTabText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#9CA3AF",
+    color: "#4B5563",
   },
   filterTabTextActive: {
-    color: "#111827",
+    color: "#FFFFFF",
   },
   loaderContainer: {
     flex: 1,
@@ -808,7 +810,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   loaderText: {
-    color: "#9CA3AF",
+    color: "#4B5563",
     fontSize: 14,
   },
   listContainer: {
@@ -821,11 +823,16 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   providerCard: {
-    backgroundColor: "#1F2937",
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#374151",
+    borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   providerHeader: {
     flexDirection: "row",
@@ -842,23 +849,23 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#374151",
+    backgroundColor: "#F3F4F6",
     alignItems: "center",
     justifyContent: "center",
   },
   avatarText: {
-    color: "#E5E7EB",
+    color: "#4B5563",
     fontWeight: "700",
     fontSize: 18,
   },
   providerName: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: "#111827",
   },
   providerCategory: {
     fontSize: 12,
-    color: "#9CA3AF",
+    color: "#6B7280",
     marginTop: 2,
   },
   statusBadge: {
@@ -875,10 +882,12 @@ const styles = StyleSheet.create({
   },
   subscriptionDetails: {
     marginTop: 14,
-    backgroundColor: "#111827",
+    backgroundColor: "#F9FAFB",
     borderRadius: 12,
     padding: 12,
     gap: 8,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
   },
   subDetailRow: {
     flexDirection: "row",
@@ -887,37 +896,39 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 12,
-    color: "#9CA3AF",
+    color: "#6B7280",
   },
   detailValue: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#111827",
   },
   textSuccess: {
-    color: "#10B981",
+    color: "#059669",
   },
   textDanger: {
-    color: "#EF4444",
+    color: "#DC2626",
   },
   expiryAlertContainer: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "rgba(239, 68, 68, 0.1)",
+    backgroundColor: "#FEF2F2",
     borderRadius: 8,
     padding: 8,
     marginTop: 4,
+    borderWidth: 1,
+    borderColor: "#FEE2E2",
   },
   expiryAlertText: {
     fontSize: 12,
-    color: "#F87171",
+    color: "#991B1B",
     fontWeight: "600",
   },
   remainingDaysText: {
     fontSize: 11,
-    color: "#10B981",
-    fontWeight: "500",
+    color: "#059669",
+    fontWeight: "600",
     marginTop: 2,
   },
   nfcStatusRow: {
@@ -925,7 +936,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     borderTopWidth: 1,
-    borderTopColor: "#1F2937",
+    borderTopColor: "#E5E7EB",
     paddingTop: 8,
     marginTop: 2,
   },
@@ -935,13 +946,15 @@ const styles = StyleSheet.create({
   },
   inactiveStateContainer: {
     marginTop: 14,
-    backgroundColor: "#111827",
+    backgroundColor: "#F9FAFB",
     borderRadius: 12,
     padding: 12,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
   },
   inactiveStateText: {
     fontSize: 12,
-    color: "#9CA3AF",
+    color: "#6B7280",
     textAlign: "center",
     fontStyle: "italic",
   },
@@ -962,49 +975,49 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   registerBtn: {
-    backgroundColor: "#25D366",
+    backgroundColor: "#10B981",
   },
   registerBtnText: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#111827",
+    color: "#FFFFFF",
   },
   historyBtn: {
-    backgroundColor: "#374151",
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#4B5563",
+    borderColor: "#D1D5DB",
   },
   historyBtnText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#E5E7EB",
+    color: "#374151",
   },
   historySection: {
     marginTop: 14,
     borderTopWidth: 1,
-    borderTopColor: "#374151",
+    borderTopColor: "#E5E7EB",
     paddingTop: 14,
   },
   historyTitle: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#E5E7EB",
+    color: "#111827",
     marginBottom: 8,
   },
   noHistoryText: {
     fontSize: 12,
-    color: "#6B7280",
+    color: "#9CA3AF",
     fontStyle: "italic",
   },
   historyList: {
     gap: 8,
   },
   historyItem: {
-    backgroundColor: "#111827",
+    backgroundColor: "#F9FAFB",
     borderRadius: 10,
     padding: 10,
     borderWidth: 1,
-    borderColor: "#1F2937",
+    borderColor: "#E5E7EB",
   },
   historyItemHeader: {
     flexDirection: "row",
@@ -1014,19 +1027,19 @@ const styles = StyleSheet.create({
   historyItemPlan: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#111827",
   },
   historyItemValue: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#25D366",
+    color: "#059669",
   },
   historyItemMeta: {
     marginTop: 4,
   },
   historyItemDetail: {
     fontSize: 11,
-    color: "#9CA3AF",
+    color: "#6B7280",
   },
   historyItemNfcRow: {
     flexDirection: "row",
@@ -1035,7 +1048,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
     paddingTop: 6,
     borderTopWidth: 1,
-    borderTopColor: "#1F2937",
+    borderTopColor: "#E5E7EB",
   },
   historyItemNfcText: {
     fontSize: 11,
@@ -1048,13 +1061,13 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 15,
-    color: "#6B7280",
+    color: "#9CA3AF",
     marginTop: 12,
     fontWeight: "500",
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
+    backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
@@ -1062,10 +1075,10 @@ const styles = StyleSheet.create({
   modalContainer: {
     width: "100%",
     maxWidth: 400,
-    backgroundColor: "#1F2937",
+    backgroundColor: "#FFFFFF",
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#374151",
+    borderColor: "#E5E7EB",
     padding: 20,
     maxHeight: "90%",
   },
@@ -1074,32 +1087,32 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: "#374151",
+    borderBottomColor: "#E5E7EB",
     paddingBottom: 12,
     marginBottom: 12,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: "#111827",
   },
   closeModalBtn: {
     padding: 4,
   },
   modalProviderBanner: {
-    backgroundColor: "#111827",
+    backgroundColor: "#F3F4F6",
     borderRadius: 10,
     padding: 10,
     marginBottom: 16,
   },
   modalProviderLabel: {
     fontSize: 11,
-    color: "#9CA3AF",
+    color: "#6B7280",
   },
   modalProviderName: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#25D366",
+    color: "#059669",
     marginTop: 2,
   },
   modalForm: {
@@ -1108,7 +1121,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#9CA3AF",
+    color: "#4B5563",
     marginBottom: 4,
   },
   inputLabelWithButtons: {
@@ -1122,15 +1135,15 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   quickDateBtn: {
-    backgroundColor: "#374151",
+    backgroundColor: "#F3F4F6",
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
   },
   quickDateText: {
     fontSize: 11,
-    color: "#E5E7EB",
-    fontWeight: "500",
+    color: "#4B5563",
+    fontWeight: "600",
   },
   planSelectorRow: {
     flexDirection: "row",
@@ -1139,51 +1152,51 @@ const styles = StyleSheet.create({
   },
   planSelectBtn: {
     flex: 1,
-    backgroundColor: "#111827",
+    backgroundColor: "#F9FAFB",
     borderWidth: 2,
-    borderColor: "#374151",
+    borderColor: "#E5E7EB",
     borderRadius: 12,
     padding: 12,
     alignItems: "center",
     gap: 4,
   },
   planSelectBtnActive: {
-    borderColor: "#25D366",
-    backgroundColor: "rgba(37, 211, 102, 0.05)",
+    borderColor: "#10B981",
+    backgroundColor: "#ECFDF5",
   },
   planSelectBtnText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#9CA3AF",
+    color: "#6B7280",
   },
   planSelectBtnTextActive: {
-    color: "#25D366",
+    color: "#059669",
   },
   planSelectPrice: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#E5E7EB",
+    color: "#374151",
   },
   planSelectPriceActive: {
-    color: "#FFFFFF",
+    color: "#111827",
   },
   modalInput: {
-    backgroundColor: "#111827",
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#374151",
+    borderColor: "#D1D5DB",
     borderRadius: 10,
     padding: 12,
-    color: "#FFFFFF",
+    color: "#111827",
     fontSize: 14,
     // Fix outline on web
     ...({ outlineStyle: "none" } as any),
   },
   nfcFormContainer: {
-    backgroundColor: "#111827",
+    backgroundColor: "#F9FAFB",
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#374151",
+    borderColor: "#E5E7EB",
     marginTop: 4,
   },
   nfcSwitchRow: {
@@ -1194,7 +1207,7 @@ const styles = StyleSheet.create({
   nfcSwitchLabel: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#E5E7EB",
+    color: "#374151",
     flex: 1,
     marginRight: 12,
   },
@@ -1212,19 +1225,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   modalCancelBtn: {
-    backgroundColor: "#374151",
+    backgroundColor: "#F3F4F6",
   },
   modalCancelBtnText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#E5E7EB",
+    color: "#4B5563",
   },
   modalSubmitBtn: {
-    backgroundColor: "#25D366",
+    backgroundColor: "#10B981",
   },
   modalSubmitBtnText: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#111827",
+    color: "#FFFFFF",
   },
 });
