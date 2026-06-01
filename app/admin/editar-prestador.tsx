@@ -103,7 +103,7 @@ export default function EditarPrestador() {
 
     // 2. Serviços Administrativos (como especialidades)
     dbServices.forEach((s: any) => {
-      if (!list.find(item => item.name.toLowerCase() === s.name.toLowerCase())) {
+      if (!list.find(item => typeof item.name === "string" && typeof s.name === "string" && item.name.toLowerCase() === s.name.toLowerCase())) {
         list.push({
           id: s.id,
           name: s.name,
@@ -162,8 +162,8 @@ export default function EditarPrestador() {
       // Se não tivermos IDs ou para garantir nomes consistentes, usamos specNames
       specNames.forEach(name => {
         // Procurar tanto em sub-serviços quanto em serviços administrativos
-        const found = allSubServices.find(m => m.name.toLowerCase() === name.toLowerCase()) ||
-                      dbServices.find(m => m.name.toLowerCase() === name.toLowerCase());
+        const found = allSubServices.find(m => typeof m.name === "string" && typeof name === "string" && m.name.toLowerCase() === name.toLowerCase()) ||
+                      dbServices.find(m => typeof m.name === "string" && typeof name === "string" && m.name.toLowerCase() === name.toLowerCase());
         if (found) {
           newSelected[found.id] = true;
         }
