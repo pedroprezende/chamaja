@@ -19,6 +19,7 @@ import { useColors } from "@/hooks/use-colors";
 import { useFavorites } from "@/lib/favorites-context";
 import { ScreenContainer } from "@/components/screen-container";
 import SearchMap from "@/components/search-map";
+import AddressSelectorModal from "@/components/address-selector-modal";
 import {
   calculateHaversineDistance,
   formatDistancePtBr,
@@ -65,13 +66,14 @@ const COMERCIOS_MORE = [
 export default function SearchScreen() {
   const colors = useColors();
   const router = useRouter();
-  const { coords } = useLocation();
+  const { coords, addressName } = useLocation();
   const { isFavorite, toggleFavorite } = useFavorites();
   const mapComponentRef = useRef<any>(null);
 
   // Estados principais
   const [query, setQuery] = useState("");
   const [isMapView, setIsMapView] = useState(false);
+  const [addressModalVisible, setAddressModalVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<"prestadores" | "comercios">("prestadores");
   const [selectedPill, setSelectedPill] = useState("todos");
   const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
@@ -197,10 +199,13 @@ export default function SearchScreen() {
             <Text style={styles.headerTitle}>
               {isMapView ? "Mapa" : "Profissionais próximos"}
             </Text>
-            <View style={styles.locationContainer}>
-              <Text style={styles.locationText}>📍 Bragança Paulista - SP</Text>
+            <Pressable 
+              style={styles.locationContainer}
+              onPress={() => setAddressModalVisible(true)}
+            >
+              <Text style={styles.locationText} numberOfLines={1}>📍 {addressName}</Text>
               <MaterialIcons name="keyboard-arrow-down" size={16} color="#22C55E" />
-            </View>
+            </Pressable>
             <Text style={styles.subtitleCount}>{countLabel}</Text>
           </View>
 
@@ -600,6 +605,11 @@ export default function SearchScreen() {
           </View>
         </View>
       </Modal>
+
+      <AddressSelectorModal
+        visible={addressModalVisible}
+        onClose={() => setAddressModalVisible(false)}
+      />
     </ScreenContainer>
   );
 }

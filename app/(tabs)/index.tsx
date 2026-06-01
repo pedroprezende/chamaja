@@ -53,6 +53,7 @@ import { calculateHaversineDistance, formatDistancePtBr } from "@/lib/location-u
 import { useDebounce } from "@/hooks/use-debounce";
 import { AnimatedCard } from "@/components/ui/animated-card";
 import Animated, { FadeInDown, FadeInRight } from "react-native-reanimated";
+import AddressSelectorModal from "@/components/address-selector-modal";
 
 // ─── Constantes ──────────────────────────────────────────────────────────────
 
@@ -277,42 +278,9 @@ export default function HomeScreen() {
   const { ads, isLoading: adsLoading } = useAds(true);
 
   const { colorScheme, setColorScheme } = useThemeContext();
-  const { coords } = useLocation();
+  const { coords, addressName } = useLocation();
 
-  const [selectedRegion, setSelectedRegion] = useState("Bragança Paulista - SP");
   const [regionModalVisible, setRegionModalVisible] = useState(false);
-
-  useEffect(() => {
-    const loadSavedRegion = async () => {
-      try {
-        const saved = await AsyncStorage.getItem("@chamaja_selected_region");
-        if (saved) {
-          setSelectedRegion(saved);
-        }
-      } catch (e) {
-        console.error("Erro ao carregar região salva:", e);
-      }
-    };
-    loadSavedRegion();
-  }, []);
-
-  const handleSelectRegion = async (regionName: string, available: boolean) => {
-    if (!available) {
-      if (Platform.OS === "web") {
-        window.alert("Esta região estará disponível em breve! 🚀");
-      } else {
-        Alert.alert("Em breve", "Esta região estará disponível em breve! 🚀");
-      }
-      return;
-    }
-    setSelectedRegion(regionName);
-    setRegionModalVisible(false);
-    try {
-      await AsyncStorage.setItem("@chamaja_selected_region", regionName);
-    } catch (e) {
-      console.error("Erro ao salvar região:", e);
-    }
-  };
 
 
 
@@ -1162,7 +1130,7 @@ export default function HomeScreen() {
               >
                 <MaterialIcons name="location-on" size={14} color="#22C55E" />
                 <Text style={[styles.locationText, { color: colors.foreground }]} numberOfLines={1}>
-                  {selectedRegion}
+                  {addressName}
                 </Text>
                 <MaterialIcons name="keyboard-arrow-down" size={14} color={colors.foreground} />
               </Pressable>
@@ -1878,80 +1846,11 @@ export default function HomeScreen() {
           </View>
         </Modal>
 
-        {/* Modal de Seleção de Região */}
-        <Modal
+        {/* Modal de Seleção de Endereço (Estilo iFood) */}
+        <AddressSelectorModal
           visible={regionModalVisible}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setRegionModalVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <Pressable style={styles.modalBackdrop} onPress={() => setRegionModalVisible(false)} />
-            <View style={[styles.filterSheet, { backgroundColor: colors.surface }]}>
-              <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
-              <Text style={[styles.modalTitle, { color: colors.foreground }]}>Selecionar Região</Text>
-              <Text style={[styles.fieldHint, { color: colors.muted, marginBottom: 16 }]}>
-                Escolha a região para buscar profissionais
-              </Text>
-
-              <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 350 }}>
-                {[
-                  { id: "braganca", name: "Bragança Paulista - SP", available: true },
-                  { id: "atibaia", name: "Atibaia - SP", available: false },
-                  { id: "extrema", name: "Extrema - MG", available: false },
-                  { id: "itatiba", name: "Itatiba - SP", available: false },
-                  { id: "itupeva", name: "Itupeva - SP", available: false },
-                  { id: "campinas", name: "Campinas - SP", available: false },
-                  { id: "saopaulo", name: "São Paulo - SP", available: false },
-                ].map((reg) => {
-                  const isSelected = selectedRegion === reg.name;
-                  return (
-                    <Pressable
-                      key={reg.id}
-                      style={[
-                        styles.filterOption,
-                        { backgroundColor: colors.background, borderColor: colors.border, marginBottom: 10 },
-                        isSelected && { borderColor: colors.primary, backgroundColor: colors.background }
-                      ]}
-                      onPress={() => handleSelectRegion(reg.name, reg.available)}
-                    >
-                      <MaterialIcons 
-                        name="place" 
-                        size={20} 
-                        color={isSelected ? colors.primary : reg.available ? colors.foreground : colors.muted} 
-                      />
-                      <View style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginLeft: 12 }}>
-                        <Text 
-                          style={[
-                            styles.filterOptionText, 
-                            { color: colors.foreground },
-                            isSelected && { color: colors.primary, fontWeight: "700" },
-                            !reg.available && { color: colors.muted }
-                          ]}
-                        >
-                          {reg.name}
-                        </Text>
-                        {!reg.available && (
-                          <View style={{ backgroundColor: colors.border, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
-                            <Text style={{ fontSize: 9, fontWeight: "700", color: colors.muted }}>Em breve</Text>
-                          </View>
-                        )}
-                      </View>
-                      {isSelected && <MaterialIcons name="check" size={20} color={colors.primary} />}
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-
-              <Pressable 
-                style={[styles.applyFilterBtn, { backgroundColor: colors.primary, marginTop: 16 }]} 
-                onPress={() => setRegionModalVisible(false)}
-              >
-                <Text style={styles.applyFilterBtnText}>Fechar</Text>
-              </Pressable>
-            </View>
-          </View>
-        </Modal>
+          onClose={() => setRegionModalVisible(false)}
+        />
       </ScreenContainer>
     </GestureHandlerRootView>
   );
