@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 import { useAuth } from "@/lib/auth-context";
+import { storage } from "@/lib/storage";
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -62,7 +63,14 @@ export default function EditProfileScreen() {
     }
     setSaving(true);
     try {
-      await updateProfile(name.trim(), avatarUri || undefined);
+      let finalAvatar = avatarUri;
+      if (avatarUri && !avatarUri.startsWith("http")) {
+        const uploadedUrl = await storage.uploadImage(avatarUri);
+        if (uploadedUrl) {
+          finalAvatar = uploadedUrl;
+        }
+      }
+      await updateProfile(name.trim(), finalAvatar || undefined);
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }

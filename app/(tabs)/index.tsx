@@ -279,6 +279,41 @@ export default function HomeScreen() {
   const { colorScheme, setColorScheme } = useThemeContext();
   const { coords } = useLocation();
 
+  const [selectedRegion, setSelectedRegion] = useState("Bragança Paulista - SP");
+  const [regionModalVisible, setRegionModalVisible] = useState(false);
+
+  useEffect(() => {
+    const loadSavedRegion = async () => {
+      try {
+        const saved = await AsyncStorage.getItem("@chamaja_selected_region");
+        if (saved) {
+          setSelectedRegion(saved);
+        }
+      } catch (e) {
+        console.error("Erro ao carregar região salva:", e);
+      }
+    };
+    loadSavedRegion();
+  }, []);
+
+  const handleSelectRegion = async (regionName: string, available: boolean) => {
+    if (!available) {
+      if (Platform.OS === "web") {
+        window.alert("Esta região estará disponível em breve! 🚀");
+      } else {
+        Alert.alert("Em breve", "Esta região estará disponível em breve! 🚀");
+      }
+      return;
+    }
+    setSelectedRegion(regionName);
+    setRegionModalVisible(false);
+    try {
+      await AsyncStorage.setItem("@chamaja_selected_region", regionName);
+    } catch (e) {
+      console.error("Erro ao salvar região:", e);
+    }
+  };
+
 
 
   const isAdmin = user?.role === "admin";
@@ -1110,21 +1145,27 @@ export default function HomeScreen() {
         <View style={[styles.header, { backgroundColor: colors.background, borderBottomWidth: 0, paddingBottom: 8 }]}>
           <View style={styles.headerLeftContainer}>
             {/* Avatar do Usuário */}
-            <View style={[styles.avatarHeaderWrapper, { borderColor: "#22C55E", borderWidth: 2 }]}>
+            <Pressable 
+              style={[styles.avatarHeaderWrapper, { borderColor: "#22C55E", borderWidth: 2 }]}
+              onPress={() => router.push("/profile" as any)}
+            >
               <Image
-                source={{ uri: (user as any)?.avatarUri || "https://images.unsplash.com/photo-1552728089-57bdde30ebd3?w=100&q=80" }}
+                source={{ uri: user?.avatar || "https://ui-avatars.com/api/?name=" + encodeURIComponent(firstName || "U") + "&background=22C55E&color=fff" }}
                 style={styles.avatarHeader}
               />
-            </View>
+            </Pressable>
             <View style={styles.headerTitleContainer}>
               <Text style={[styles.greeting, { color: colors.foreground }]} numberOfLines={1}>Olá, {firstName}!</Text>
-              <View style={styles.locationContainer}>
+              <Pressable 
+                style={styles.locationContainer} 
+                onPress={() => setRegionModalVisible(true)}
+              >
                 <MaterialIcons name="location-on" size={14} color="#22C55E" />
                 <Text style={[styles.locationText, { color: colors.foreground }]} numberOfLines={1}>
-                  Bragança Paulista - SP
+                  {selectedRegion}
                 </Text>
                 <MaterialIcons name="keyboard-arrow-down" size={14} color={colors.foreground} />
-              </View>
+              </Pressable>
               <Text style={[styles.nearbySummaryText, { color: colors.discreto }]}>
                 Encontramos <Text style={{ color: "#22C55E", fontWeight: "700" }}>{nearbyCount}</Text> profissionais próximos
               </Text>
@@ -1831,6 +1872,81 @@ export default function HomeScreen() {
               </View>
 
               <Pressable style={[styles.applyFilterBtn, { backgroundColor: colors.primary }]} onPress={() => setFilterModalVisible(false)}>
+                <Text style={styles.applyFilterBtnText}>Fechar</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Modal de Seleção de Região */}
+        <Modal
+          visible={regionModalVisible}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setRegionModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <Pressable style={styles.modalBackdrop} onPress={() => setRegionModalVisible(false)} />
+            <View style={[styles.filterSheet, { backgroundColor: colors.surface }]}>
+              <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
+              <Text style={[styles.modalTitle, { color: colors.foreground }]}>Selecionar Região</Text>
+              <Text style={[styles.fieldHint, { color: colors.muted, marginBottom: 16 }]}>
+                Escolha a região para buscar profissionais
+              </Text>
+
+              <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 350 }}>
+                {[
+                  { id: "braganca", name: "Bragança Paulista - SP", available: true },
+                  { id: "atibaia", name: "Atibaia - SP", available: false },
+                  { id: "extrema", name: "Extrema - MG", available: false },
+                  { id: "itatiba", name: "Itatiba - SP", available: false },
+                  { id: "itupeva", name: "Itupeva - SP", available: false },
+                  { id: "campinas", name: "Campinas - SP", available: false },
+                  { id: "saopaulo", name: "São Paulo - SP", available: false },
+                ].map((reg) => {
+                  const isSelected = selectedRegion === reg.name;
+                  return (
+                    <Pressable
+                      key={reg.id}
+                      style={[
+                        styles.filterOption,
+                        { backgroundColor: colors.background, borderColor: colors.border, marginBottom: 10 },
+                        isSelected && { borderColor: colors.primary, backgroundColor: colors.background }
+                      ]}
+                      onPress={() => handleSelectRegion(reg.name, reg.available)}
+                    >
+                      <MaterialIcons 
+                        name="place" 
+                        size={20} 
+                        color={isSelected ? colors.primary : reg.available ? colors.foreground : colors.muted} 
+                      />
+                      <View style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginLeft: 12 }}>
+                        <Text 
+                          style={[
+                            styles.filterOptionText, 
+                            { color: colors.foreground },
+                            isSelected && { color: colors.primary, fontWeight: "700" },
+                            !reg.available && { color: colors.muted }
+                          ]}
+                        >
+                          {reg.name}
+                        </Text>
+                        {!reg.available && (
+                          <View style={{ backgroundColor: colors.border, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                            <Text style={{ fontSize: 9, fontWeight: "700", color: colors.muted }}>Em breve</Text>
+                          </View>
+                        )}
+                      </View>
+                      {isSelected && <MaterialIcons name="check" size={20} color={colors.primary} />}
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+
+              <Pressable 
+                style={[styles.applyFilterBtn, { backgroundColor: colors.primary, marginTop: 16 }]} 
+                onPress={() => setRegionModalVisible(false)}
+              >
                 <Text style={styles.applyFilterBtnText}>Fechar</Text>
               </Pressable>
             </View>
