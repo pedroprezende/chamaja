@@ -42,6 +42,7 @@ ALTER TABLE public.system_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.favorites ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.app_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pagamentos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.utm_links ENABLE ROW LEVEL SECURITY;
 
 
 
@@ -60,7 +61,7 @@ BEGIN
             'categories', 'services', 'users', 'sub_services', 
             'providers', 'reviews', 'featured_ads', 'whatsapp_clicks', 
             'search_queries', 'service_views', 'regions', 'system_logs',
-            'favorites', 'app_events', 'pagamentos'
+            'favorites', 'app_events', 'pagamentos', 'utm_links'
           )
     LOOP
         EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', pol.policyname, pol.tablename);
@@ -129,6 +130,7 @@ CREATE POLICY "Admin ALL service_views" ON public.service_views FOR ALL TO authe
 CREATE POLICY "Admin ALL system_logs" ON public.system_logs FOR ALL TO authenticated USING (public.is_admin());
 CREATE POLICY "Admin ALL app_events" ON public.app_events FOR ALL TO authenticated USING (public.is_admin());
 CREATE POLICY "Admin ALL pagamentos" ON public.pagamentos FOR ALL TO authenticated USING (public.is_admin());
+CREATE POLICY "Admin ALL utm_links" ON public.utm_links FOR ALL TO authenticated USING (public.is_admin());
 
 
 

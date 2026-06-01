@@ -38,6 +38,7 @@ export default function AdminLayout() {
       <Stack.Screen name="professionals" />
       <Stack.Screen name="locations" />
       <Stack.Screen name="payments" />
+      <Stack.Screen name="utm" />
       <Stack.Screen name="ads" />
       <Stack.Screen name="services" />
       <Stack.Screen name="providers" />

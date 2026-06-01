@@ -263,7 +263,8 @@ export default function DashboardAdmin() {
                   sub: "Cadastros com UTM", 
                   icon: "traffic", 
                   color: "#FDF2F8", 
-                  iconColor: "#DB2777" 
+                  iconColor: "#DB2777",
+                  onPress: () => router.push("/admin/utm" as any)
                 },
               ].map((stat) => (
                 <Pressable

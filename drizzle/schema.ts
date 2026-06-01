@@ -256,4 +256,16 @@ export const payments = pgTable("pagamentos", {
 export type Payment = typeof payments.$inferSelect;
 export type InsertPayment = typeof payments.$inferInsert;
 
+export const utmLinks = pgTable("utm_links", {
+  id: serial("id").primaryKey(),
+  source: varchar("source", { length: 255 }).notNull(),
+  medium: varchar("medium", { length: 255 }).notNull(),
+  campaign: varchar("campaign", { length: 255 }).notNull(),
+  linkCompleto: text("link_completo").notNull(),
+  criadoEm: timestamp("criado_em").defaultNow().notNull(),
+});
+
+export type UtmLink = typeof utmLinks.$inferSelect;
+export type InsertUtmLink = typeof utmLinks.$inferInsert;
+
 

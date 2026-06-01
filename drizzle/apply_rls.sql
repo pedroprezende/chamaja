@@ -22,6 +22,7 @@ ALTER TABLE public.service_views ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.system_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.app_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pagamentos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.utm_links ENABLE ROW LEVEL SECURITY;
 
 
 
@@ -80,6 +81,7 @@ CREATE POLICY "Admin full access service_views" ON public.service_views FOR ALL 
 CREATE POLICY "Admin full access system_logs" ON public.system_logs FOR ALL USING (public.is_admin());
 CREATE POLICY "Admin full access app_events" ON public.app_events FOR ALL USING (public.is_admin());
 CREATE POLICY "Admin full access pagamentos" ON public.pagamentos FOR ALL USING (public.is_admin());
+CREATE POLICY "Admin full access utm_links" ON public.utm_links FOR ALL USING (public.is_admin());
 
 
 
