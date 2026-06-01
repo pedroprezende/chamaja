@@ -66,9 +66,12 @@ const COMERCIOS_MORE = [
 export default function SearchScreen() {
   const colors = useColors();
   const router = useRouter();
-  const { coords, addressName } = useLocation();
+  const { coords, addressName, permissionGranted } = useLocation();
   const { isFavorite, toggleFavorite } = useFavorites();
   const mapComponentRef = useRef<any>(null);
+
+  const isDefaultCity = addressName === "Bragança Paulista - SP";
+  const showDistance = permissionGranted || !isDefaultCity;
 
   // Estados principais
   const [query, setQuery] = useState("");
@@ -79,6 +82,9 @@ export default function SearchScreen() {
   const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
   const [showMoreModal, setShowMoreModal] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [activeProximityFilter, setActiveProximityFilter] = useState<"all" | "1" | "3" | "5" | "10">("all");
+  const [activeSort, setActiveSort] = useState<"distance" | "rating" | "none">("distance");
 
   // tRPC query para pegar prestadores e comércios ativos
   const { data: dbProviders = [], isLoading: loadingProviders, refetch } = trpc.providers.list.useQuery();
@@ -119,37 +125,54 @@ export default function SearchScreen() {
     });
   }, [dbProviders, activeTab, selectedPill, query]);
 
-  // Adicionar distância e ordenar (premium primeiro, depois distância)
+  // Adicionar distância, filtrar por proximidade e ordenar
   const providersList = useMemo(() => {
-    return filtered
-      .map((p) => {
-        let distanceKm = 0;
-        let distanceStr = "";
-        if (p.latitude && p.longitude) {
-          distanceKm = calculateHaversineDistance(
-            userCoords.latitude,
-            userCoords.longitude,
-            Number(p.latitude),
-            Number(p.longitude)
-          );
-          distanceStr = formatDistancePtBr(distanceKm);
-        }
-        return {
-          ...p,
-          distanceKm,
-          distanceStr,
-        };
-      })
-      .sort((a, b) => {
-        // Ordenação Premium
-        const isAPremium = a.plan === "premium";
-        const isBPremium = b.plan === "premium";
-        if (isAPremium && !isBPremium) return -1;
-        if (!isAPremium && isBPremium) return 1;
-        // Depois por distância
+    let list = filtered.map((p) => {
+      let distanceKm = 9999;
+      let distanceStr = "";
+      if (p.latitude !== null && p.latitude !== undefined && p.longitude !== null && p.longitude !== undefined) {
+        distanceKm = calculateHaversineDistance(
+          userCoords.latitude,
+          userCoords.longitude,
+          Number(p.latitude),
+          Number(p.longitude)
+        );
+        distanceStr = formatDistancePtBr(distanceKm);
+      }
+      return {
+        ...p,
+        distanceKm,
+        distanceStr,
+      };
+    });
+
+    // 1. Filtrar por proximidade máxima
+    if (showDistance && activeProximityFilter !== "all") {
+      const maxDist = Number(activeProximityFilter);
+      list = list.filter((p) => p.distanceKm <= maxDist);
+    }
+
+    // 2. Ordenar
+    return list.sort((a, b) => {
+      if (activeSort === "rating") {
+        return (b.rating || 0) - (a.rating || 0);
+      }
+      if (showDistance && activeSort === "distance") {
         return a.distanceKm - b.distanceKm;
-      });
-  }, [filtered, userCoords]);
+      }
+      
+      // Default (relevância): Premium/Annual primeiro, depois distância
+      const isAPremium = a.plan === "premium" || a.plan === "annual";
+      const isBPremium = b.plan === "premium" || b.plan === "annual";
+      if (isAPremium && !isBPremium) return -1;
+      if (!isAPremium && isBPremium) return 1;
+
+      if (showDistance) {
+        return a.distanceKm - b.distanceKm;
+      }
+      return 0;
+    });
+  }, [filtered, userCoords, activeProximityFilter, activeSort, showDistance]);
 
   // Prestador selecionado no mapa
   const selectedProvider = useMemo(() => {
@@ -212,9 +235,15 @@ export default function SearchScreen() {
           {/* Botões de Ação Direta */}
           <View style={styles.headerRightRow}>
             {!isMapView && (
-              <Pressable style={styles.headerFilterBtn}>
+              <Pressable 
+                style={styles.headerFilterBtn}
+                onPress={() => setFilterModalVisible(true)}
+              >
                 <MaterialIcons name="tune" size={20} color="#22C55E" />
                 <Text style={styles.headerFilterText}>Filtros</Text>
+                {(activeProximityFilter !== "all" || activeSort !== "distance") && (
+                  <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#EF4444", position: "absolute", top: 2, right: 2 }} />
+                )}
               </Pressable>
             )}
 
@@ -410,10 +439,14 @@ export default function SearchScreen() {
                       <Text style={styles.cardReviews}>
                         ({selectedProvider.ratingCount} avaliações)
                       </Text>
-                      <Text style={styles.cardDot}>•</Text>
-                      <Text style={styles.cardDistance}>
-                        {selectedProvider.distanceStr}
-                      </Text>
+                      {showDistance && selectedProvider.distanceStr ? (
+                        <>
+                          <Text style={styles.cardDot}>•</Text>
+                          <Text style={styles.cardDistance}>
+                            📍 {selectedProvider.distanceStr}
+                          </Text>
+                        </>
+                      ) : null}
                     </View>
 
                     <Text style={styles.cardOpenStatus}>Aberto agora</Text>
@@ -488,7 +521,18 @@ export default function SearchScreen() {
                       <Pressable
                         onPress={(e) => {
                           e.stopPropagation();
-                          toggleFavorite(item as any);
+                          toggleFavorite({
+                            id: item.id,
+                            name: item.name,
+                            category: item.category || "",
+                            city: item.city || "",
+                            avatar: item.avatarUri || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}`,
+                            rating: Number(item.rating) || 0,
+                            phone: item.phone || item.whatsapp || "",
+                            type: ((item.plan?.toLowerCase() === "premium" || item.plan?.toLowerCase() === "annual" || item.plan?.toLowerCase() === "monthly") ? "premium" : "free") as "free" | "premium",
+                            latitude: item.latitude ? Number(item.latitude) : null,
+                            longitude: item.longitude ? Number(item.longitude) : null,
+                          });
                         }}
                         style={styles.favBtn}
                       >
@@ -509,8 +553,12 @@ export default function SearchScreen() {
                       <MaterialIcons name="star" size={16} color="#FBBF24" />
                       <Text style={styles.ratingValue}>{Number(item.rating).toFixed(1)}</Text>
                       <Text style={styles.ratingCount}>({item.ratingCount})</Text>
-                      <Text style={styles.ratingDot}>•</Text>
-                      <Text style={styles.distanceText}>{item.distanceStr} de você</Text>
+                      {showDistance && item.distanceStr ? (
+                        <>
+                          <Text style={styles.ratingDot}>•</Text>
+                          <Text style={styles.distanceText}>📍 {item.distanceStr}</Text>
+                        </>
+                      ) : null}
                     </View>
 
                     <View style={styles.statusRow}>
@@ -602,6 +650,87 @@ export default function SearchScreen() {
                 </Pressable>
               ))}
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de Filtros Avançados */}
+      <Modal
+        visible={filterModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setFilterModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable style={StyleSheet.absoluteFillObject} onPress={() => setFilterModalVisible(false)} />
+          <View style={[styles.filterSheet, { backgroundColor: colors.surface }]}>
+            <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
+            <Text style={styles.modalTitle}>Filtrar e Ordenar</Text>
+            
+            <ScrollView showsVerticalScrollIndicator={false} style={{ marginVertical: 12 }}>
+              {/* Seção Ordenação */}
+              <Text style={styles.filterSectionTitle}>Ordenar por</Text>
+              <View style={styles.filterOptionsGroup}>
+                {[
+                  { id: "distance", label: "Mais próximos", icon: "gps-fixed" },
+                  { id: "rating", label: "Melhor Avaliação", icon: "star" },
+                  { id: "none", label: "Padrão (Relevância)", icon: "sort" }
+                ].map((opt) => {
+                  const isSel = activeSort === opt.id;
+                  return (
+                    <Pressable
+                      key={opt.id}
+                      onPress={() => setActiveSort(opt.id as any)}
+                      style={[styles.filterOption, isSel && styles.filterOptionActive]}
+                    >
+                      <MaterialIcons name={opt.icon as any} size={20} color={isSel ? "#22C55E" : "#9CA3AF"} />
+                      <Text style={[styles.filterOptionText, isSel && { color: "#22C55E", fontWeight: "700" }]}>
+                        {opt.label}
+                      </Text>
+                      {isSel && <MaterialIcons name="check" size={20} color="#22C55E" />}
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              {/* Seção Proximidade */}
+              {showDistance && (
+                <>
+                  <Text style={[styles.filterSectionTitle, { marginTop: 16 }]}>Distância Máxima</Text>
+                  <View style={styles.filterOptionsGroup}>
+                    {[
+                      { id: "all", label: "Qualquer distância" },
+                      { id: "1", label: "Até 1 km" },
+                      { id: "3", label: "Até 3 km" },
+                      { id: "5", label: "Até 5 km" },
+                      { id: "10", label: "Até 10 km" }
+                    ].map((opt) => {
+                      const isSel = activeProximityFilter === opt.id;
+                      return (
+                        <Pressable
+                          key={opt.id}
+                          onPress={() => setActiveProximityFilter(opt.id as any)}
+                          style={[styles.filterOption, isSel && styles.filterOptionActive]}
+                        >
+                          <MaterialIcons name="place" size={20} color={isSel ? "#22C55E" : "#9CA3AF"} />
+                          <Text style={[styles.filterOptionText, isSel && { color: "#22C55E", fontWeight: "700" }]}>
+                            {opt.label}
+                          </Text>
+                          {isSel && <MaterialIcons name="check" size={20} color="#22C55E" />}
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </>
+              )}
+            </ScrollView>
+
+            <Pressable
+              style={[styles.applyFilterBtn, { backgroundColor: "#22C55E" }]}
+              onPress={() => setFilterModalVisible(false)}
+            >
+              <Text style={styles.applyFilterBtnText}>Aplicar Filtros</Text>
+            </Pressable>
           </View>
         </View>
       </Modal>
@@ -1139,5 +1268,59 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     textAlign: "center",
+  },
+  modalHandle: {
+    width: 40,
+    height: 5,
+    borderRadius: 3,
+    alignSelf: "center",
+    marginBottom: 12,
+  },
+  filterSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    paddingBottom: 40,
+    maxHeight: Dimensions.get("window").height * 0.85,
+  },
+  filterSectionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    marginBottom: 10,
+  },
+  filterOptionsGroup: {
+    gap: 8,
+  },
+  filterOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1F2937",
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "transparent",
+    gap: 12,
+  },
+  filterOptionActive: {
+    borderColor: "#22C55E",
+    backgroundColor: "rgba(34, 197, 94, 0.08)",
+  },
+  filterOptionText: {
+    flex: 1,
+    fontSize: 14,
+    color: "#D1D5DB",
+  },
+  applyFilterBtn: {
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 16,
+  },
+  applyFilterBtnText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
   },
 });

@@ -19,6 +19,8 @@ export const favoritesRouter = router({
       rating: Number(pro.rating) || 0,
       phone: pro.phone || pro.whatsapp || "",
       type: ((pro.plan?.toLowerCase() === "premium" || pro.plan?.toLowerCase() === "annual" || pro.plan?.toLowerCase() === "monthly") ? "premium" : "free") as "free" | "premium",
+      latitude: pro.latitude !== null ? Number(pro.latitude) : null,
+      longitude: pro.longitude !== null ? Number(pro.longitude) : null,
     }));
   }),
 

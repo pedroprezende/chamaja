@@ -6,11 +6,16 @@ import { LinearGradient } from "expo-linear-gradient";
 import { ScreenContainer } from "@/components/screen-container";
 import { useFavorites } from "@/lib/favorites-context";
 import { useColors } from "@/hooks/use-colors";
+import { useLocation } from "@/lib/location-context";
+import { calculateHaversineDistance, formatDistancePtBr } from "@/lib/location-utils";
 
 export default function FavoritesScreen() {
   const colors = useColors();
   const router = useRouter();
   const { favorites, toggleFavorite } = useFavorites();
+  const { coords, addressName, permissionGranted } = useLocation();
+  const isDefaultCity = addressName === "Bragança Paulista - SP";
+  const showDistance = permissionGranted || !isDefaultCity;
 
   const handleWhatsApp = (phone: string, name: string) => {
     const cleaned = phone.replace(/\D/g, "");
@@ -39,40 +44,60 @@ export default function FavoritesScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => (
-          <Pressable
-            style={({ pressed }) => [
-              styles.card, 
-              { backgroundColor: colors.surface, borderColor: colors.border },
-              pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }
-            ]}
-            onPress={() => router.push(`/professional/${item.id}` as any)}
-          >
-            <Image source={{ uri: item.avatar }} style={styles.avatar} />
-            <View style={styles.info}>
-              <Text style={[styles.name, { color: colors.foreground }]}>{item.name}</Text>
-              <Text style={[styles.service, { color: colors.muted }]}>{item.category}</Text>
-              <View style={styles.ratingRow}>
-                <MaterialIcons name="star" size={14} color={colors.star} />
-                <Text style={[styles.ratingText, { color: colors.muted }]}>{item.rating.toFixed(1)}</Text>
+        renderItem={({ item }) => {
+          const distanceStr = (() => {
+            if (showDistance && coords && item.latitude !== null && item.latitude !== undefined && item.longitude !== null && item.longitude !== undefined) {
+              const distKm = calculateHaversineDistance(
+                coords.latitude,
+                coords.longitude,
+                Number(item.latitude),
+                Number(item.longitude)
+              );
+              return formatDistancePtBr(distKm);
+            }
+            return null;
+          })();
+
+          return (
+            <Pressable
+              style={({ pressed }) => [
+                styles.card, 
+                { backgroundColor: colors.surface, borderColor: colors.border },
+                pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }
+              ]}
+              onPress={() => router.push(`/professional/${item.id}` as any)}
+            >
+              <Image source={{ uri: item.avatar }} style={styles.avatar} />
+              <View style={styles.info}>
+                <Text style={[styles.name, { color: colors.foreground }]}>{item.name}</Text>
+                <Text style={[styles.service, { color: colors.muted }]}>{item.category}</Text>
+                <View style={styles.ratingRow}>
+                  <MaterialIcons name="star" size={14} color={colors.star} />
+                  <Text style={[styles.ratingText, { color: colors.muted }]}>{item.rating.toFixed(1)}</Text>
+                  {distanceStr && (
+                    <Text style={[styles.ratingText, { color: colors.primary, fontWeight: "700" }]}>
+                      {" • 📍 " + distanceStr}
+                    </Text>
+                  )}
+                </View>
               </View>
-            </View>
-            <View style={styles.right}>
-              <Pressable
-                style={({ pressed }) => [styles.favoriteBtn, pressed && { opacity: 0.7 }]}
-                onPress={() => toggleFavorite(item)}
-              >
-                <MaterialIcons name="favorite" size={24} color="#EF4444" />
-              </Pressable>
-              <Pressable
-                style={({ pressed }) => [styles.whatsappBtn, { backgroundColor: colors.primary }, pressed && { opacity: 0.8 }]}
-                onPress={() => handleWhatsApp(item.phone, item.name)}
-              >
-                <MaterialIcons name="chat" size={14} color="#fff" />
-              </Pressable>
-            </View>
-          </Pressable>
-        )}
+              <View style={styles.right}>
+                <Pressable
+                  style={({ pressed }) => [styles.favoriteBtn, pressed && { opacity: 0.7 }]}
+                  onPress={() => toggleFavorite(item)}
+                >
+                  <MaterialIcons name="favorite" size={24} color="#EF4444" />
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [styles.whatsappBtn, { backgroundColor: colors.primary }, pressed && { opacity: 0.8 }]}
+                  onPress={() => handleWhatsApp(item.phone, item.name)}
+                >
+                  <MaterialIcons name="chat" size={14} color="#fff" />
+                </Pressable>
+              </View>
+            </Pressable>
+          );
+        }}
         ListEmptyComponent={
           <View style={styles.empty}>
             <View style={[styles.emptyIconBg, { backgroundColor: colors.surface }]}>

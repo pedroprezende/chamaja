@@ -12,6 +12,8 @@ export interface FavoriteProfessional {
   rating: number;
   phone: string;
   type: "free" | "premium";
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 interface FavoritesContextType {

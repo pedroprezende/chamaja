@@ -69,7 +69,9 @@ export default function ProfessionalDetailScreen() {
   const { isFavorite, toggleFavorite } = useFavorites();
   const trackView = trpc.analytics.trackServiceView.useMutation();
   const trackWhatsapp = trpc.analytics.trackWhatsappClick.useMutation();
-  const { coords } = useLocation();
+  const { coords, addressName, permissionGranted } = useLocation();
+  const isDefaultCity = addressName === "Bragança Paulista - SP";
+  const showDistance = permissionGranted || !isDefaultCity;
 
   const { user } = useAuth();
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
@@ -100,7 +102,7 @@ export default function ProfessionalDetailScreen() {
   });
 
   const distanceInfo = useMemo(() => {
-    if (coords && professional && professional.latitude !== null && professional.latitude !== undefined && professional.longitude !== null && professional.longitude !== undefined) {
+    if (showDistance && coords && professional && professional.latitude !== null && professional.latitude !== undefined && professional.longitude !== null && professional.longitude !== undefined) {
       const lat = Number(professional.latitude);
       const lon = Number(professional.longitude);
       if (!isNaN(lat) && !isNaN(lon)) {
@@ -114,7 +116,7 @@ export default function ProfessionalDetailScreen() {
       }
     }
     return null;
-  }, [coords, professional]);
+  }, [coords, professional, showDistance]);
 
   const favored = professional ? isFavorite(professional.id) : false;
 
@@ -209,6 +211,8 @@ export default function ProfessionalDetailScreen() {
             rating: Number(prof.rating) || 0,
             phone: prof.phone || "",
             type: (prof.plan?.toLowerCase() as "free" | "premium") ?? "free",
+            latitude: prof.latitude ? Number(prof.latitude) : null,
+            longitude: prof.longitude ? Number(prof.longitude) : null,
           })}
         >
           <MaterialIcons name={favored ? "favorite" : "favorite-border"} size={22} color={favored ? "#EF4444" : "#FFF"} />
@@ -296,15 +300,13 @@ export default function ProfessionalDetailScreen() {
               {prof.subcategoryName || prof.category}
             </Text>
 
-            <View style={styles.locationRow}>
-              <MaterialIcons name="location-on" size={14} color={colors.primary} />
+            <View style={styles.locationContainer}>
               <Text style={[styles.locationText, { color: colors.foreground }]}>
-                {prof.neighborhood || "Bairro não informado"}, {prof.city || "Cidade não informada"}
-                {distanceInfo ? ` • ` : ""}
+                📍 {prof.neighborhood || "Bairro não informado"} • {prof.city || "Cidade não informada"}
               </Text>
-              {distanceInfo && (
-                <Text style={[styles.distanceGreenText, { color: "#15803D" }]}>
-                  {distanceInfo.distanceText} de você
+              {showDistance && distanceInfo && (
+                <Text style={[styles.distanceGreenText, { color: "#15803D", marginTop: 2 }]}>
+                  🚗 {distanceInfo.distanceText}
                 </Text>
               )}
             </View>
@@ -846,6 +848,12 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 4,
     marginTop: 4,
+  },
+  locationContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 4,
+    gap: 2,
   },
   locationText: {
     fontSize: 13,

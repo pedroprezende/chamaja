@@ -278,7 +278,10 @@ export default function HomeScreen() {
   const { ads, isLoading: adsLoading } = useAds(true);
 
   const { colorScheme, setColorScheme } = useThemeContext();
-  const { coords, addressName } = useLocation();
+  const { coords, addressName, permissionGranted } = useLocation();
+  
+  const isDefaultCity = addressName === "Bragança Paulista - SP";
+  const showDistance = permissionGranted || !isDefaultCity;
 
   const [regionModalVisible, setRegionModalVisible] = useState(false);
 
@@ -349,16 +352,14 @@ export default function HomeScreen() {
 
   const renderProviderCard = useCallback((item: any, index: number, isFeatured: boolean = false) => {
     let distanceText = "";
-    if (coords && item.latitude !== null && item.longitude !== null && item.latitude !== undefined && item.longitude !== undefined) {
+    if (showDistance && coords && item.latitude !== null && item.longitude !== null && item.latitude !== undefined && item.longitude !== undefined) {
       const distKm = calculateHaversineDistance(
         coords.latitude,
         coords.longitude,
         Number(item.latitude),
         Number(item.longitude)
       );
-      distanceText = formatDistancePtBr(distKm).replace(" de você", "");
-    } else {
-      distanceText = item.distance || `${(1.0 + (index * 0.4)).toFixed(1).replace(".", ",")} km`;
+      distanceText = formatDistancePtBr(distKm);
     }
 
     const isMock = String(item.id).startsWith("mock-");
@@ -405,7 +406,7 @@ export default function HomeScreen() {
           </View>
 
           <Text style={[styles.featuredSub, { color: colors.discreto }]} numberOfLines={1}>
-            {item.subcategoryName || item.category || "Profissional"} • {distanceText}
+            {item.subcategoryName || item.category || "Profissional"}{showDistance && distanceText ? ` • 📍 ${distanceText}` : ""}
           </Text>
 
           <View style={styles.featuredBottom}>
@@ -426,7 +427,7 @@ export default function HomeScreen() {
         </View>
       </Pressable>
     );
-  }, [coords, colors, colorScheme, router]);
+  }, [coords, showDistance, colors, colorScheme, router]);
 
   // Debug Logs
   useEffect(() => {
@@ -446,7 +447,7 @@ export default function HomeScreen() {
   const [editMode, setEditMode] = useState(false);
   const [homeSearchQuery, setHomeSearchQuery] = useState("");
   const [filterModalVisible, setFilterModalVisible] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<'rating' | 'name' | 'none'>('none');
+  const [activeFilter, setActiveFilter] = useState<'rating' | 'name' | 'none' | 'distance'>('none');
   const [suggestionInput, setSuggestionInput] = useState("");
   const [suggestionOffset, setSuggestionOffset] = useState(0);
   const [localRecentSearches, setLocalRecentSearches] = useState<string[]>([]);
@@ -816,6 +817,8 @@ export default function HomeScreen() {
         imageUri: p.avatarUri || specialty?.imageUrl || undefined,
         type: "PROVIDER" as const,
         rating: p.rating || 0,
+        latitude: p.latitude,
+        longitude: p.longitude,
       };
     });
 
@@ -828,19 +831,40 @@ export default function HomeScreen() {
       imageUri: s.imageUri || undefined,
       type: "SERVICE" as const,
       rating: 5, // Serviços do admin são considerados "premium/nota máxima"
+      latitude: undefined,
+      longitude: undefined,
     }));
 
     let results = [...svcs, ...providers];
 
-    // Aplicar Filtros
+    // Calcular distâncias
+    const mapped = results.map((r) => {
+      let distanceKm = 9999;
+      if (coords && r.latitude !== null && r.latitude !== undefined && r.longitude !== null && r.longitude !== undefined) {
+        distanceKm = calculateHaversineDistance(
+          coords.latitude,
+          coords.longitude,
+          Number(r.latitude),
+          Number(r.longitude)
+        );
+      }
+      return { ...r, distanceKm };
+    });
+
+    // Aplicar Filtros e Ordenação
     if (activeFilter === 'rating') {
-      results.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      mapped.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     } else if (activeFilter === 'name') {
-      results.sort((a, b) => a.name.localeCompare(b.name));
+      mapped.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (activeFilter === 'distance' && showDistance) {
+      mapped.sort((a, b) => a.distanceKm - b.distanceKm);
+    } else if (showDistance) {
+      // Padrão: mais próximos primeiro
+      mapped.sort((a, b) => a.distanceKm - b.distanceKm);
     }
 
-    return results;
-  }, [searchResults, filteredServices, homeSearchQuery, dbSubcategories, activeFilter]);
+    return mapped;
+  }, [searchResults, filteredServices, homeSearchQuery, dbSubcategories, activeFilter, coords, showDistance]);
 
   // ── Drag-and-drop Categorias ──
   const handleCategoryDragEnd = useCallback(async ({ data }: { data: any[] }) => {
@@ -1254,6 +1278,14 @@ export default function HomeScreen() {
                       <Text style={{ fontSize: 11, color: colors.muted }}>
                         {item.type === "SERVICE" ? "Serviço" : "Profissional"}
                       </Text>
+                      {showDistance && item.distanceKm && item.distanceKm < 9000 ? (
+                        <>
+                          <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.border }} />
+                          <Text style={{ fontSize: 11, color: colors.primary }}>
+                            📍 {formatDistancePtBr(item.distanceKm)}
+                          </Text>
+                        </>
+                      ) : null}
                     </View>
                     {item.description && (
                       <Text style={[styles.verticalCardDesc, { color: colors.muted }]} numberOfLines={1}>
@@ -1811,6 +1843,17 @@ export default function HomeScreen() {
               <Text style={[styles.fieldHint, { color: colors.muted }]}>Escolha como deseja visualizar os resultados</Text>
 
               <View style={styles.filterOptions}>
+                {showDistance && (
+                  <Pressable 
+                    style={[styles.filterOption, { backgroundColor: colors.background, borderColor: colors.border }, activeFilter === 'distance' && { borderColor: colors.primary, backgroundColor: colors.background }]}
+                    onPress={() => { setActiveFilter('distance'); setFilterModalVisible(false); }}
+                  >
+                    <MaterialIcons name="gps-fixed" size={20} color={activeFilter === 'distance' ? colors.primary : colors.muted} />
+                    <Text style={[styles.filterOptionText, { color: colors.foreground }, activeFilter === 'distance' && { color: colors.primary, fontWeight: "700" }]}>Mais Próximos</Text>
+                    {activeFilter === 'distance' && <MaterialIcons name="check" size={20} color={colors.primary} />}
+                  </Pressable>
+                )}
+
                 <Pressable 
                   style={[styles.filterOption, { backgroundColor: colors.background, borderColor: colors.border }, activeFilter === 'rating' && { borderColor: colors.primary, backgroundColor: colors.background }]}
                   onPress={() => { setActiveFilter('rating'); setFilterModalVisible(false); }}
