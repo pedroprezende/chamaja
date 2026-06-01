@@ -2396,6 +2396,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
     borderWidth: 1, 
     borderColor: "#F3F4F6", 
+    borderRadius: 16,
     overflow: "hidden" 
   },
   subCatImageWrapper: { width: "100%", height: 90, backgroundColor: "#F3F4F6", justifyContent: "center", alignItems: "center" },
