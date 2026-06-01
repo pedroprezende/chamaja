@@ -450,6 +450,7 @@ export const providersRouter = router({
         ratingCount: 0,
         isActive: input.isActive ?? true,
         displayOrder: maxOrder + 1,
+        destaque: input.destaque ?? false,
         latitude,
         longitude,
         coverUri: input.coverUri || null,

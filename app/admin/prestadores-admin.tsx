@@ -92,7 +92,7 @@ export default function PrestadoresAdmin() {
                 style={styles.provMain}
                 onPress={() => router.push({ pathname: "/admin/editar-prestador", params: { id: prov.id } } as any)}
               >
-                <Image source={{ uri: prov.imageUri || "https://ui-avatars.com/api/?name=" + encodeURIComponent(prov.name) }} style={styles.avatar} />
+                <Image source={{ uri: prov.avatarUri || "https://ui-avatars.com/api/?name=" + encodeURIComponent(prov.name) }} style={styles.avatar} />
                 <View style={{ flex: 1 }}>
                   <View style={styles.provNameRow}>
                     <Text style={styles.provName} numberOfLines={1}>{prov.name}</Text>

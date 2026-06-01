@@ -47,6 +47,9 @@ import { getSubcategories } from "@/data/mock";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 import { useColors } from "@/hooks/use-colors";
+import { useThemeContext } from "@/lib/theme-provider";
+import { useLocation } from "@/lib/location-context";
+import { calculateHaversineDistance, formatDistancePtBr } from "@/lib/location-utils";
 import { useDebounce } from "@/hooks/use-debounce";
 import { AnimatedCard } from "@/components/ui/animated-card";
 import Animated, { FadeInDown, FadeInRight } from "react-native-reanimated";
@@ -123,6 +126,11 @@ export default function HomeScreen() {
   const { unreadCount } = useNotifications();
   const { ads, isLoading: adsLoading } = useAds(true);
 
+  const { colorScheme, setColorScheme } = useThemeContext();
+  const { coords } = useLocation();
+
+
+
   const isAdmin = user?.role === "admin";
   const firstName = user?.name?.split(" ")[0] || "você";
 
@@ -168,7 +176,23 @@ export default function HomeScreen() {
   // ── Categorias via tRPC ──
   const { data: dbCategories = [], isLoading: loadingCats } = trpc.categories.list.useQuery();
   const { data: dbSubcategories = [] } = trpc.categories.subServices.listAll.useQuery();
-  
+
+  const featuredProviders = React.useMemo(() => {
+    const list = dbProviders.filter((p) => p.destaque && p.isActive);
+    if (list.length > 0) return list;
+    // Fallback: use first few active providers
+    return dbProviders.filter((p) => p.isActive).slice(0, 3);
+  }, [dbProviders]);
+
+  const popularSubcategories = React.useMemo(() => {
+    const popularNames = ["encanador", "eletricista", "chaveiro", "motoboy", "ar condicionado", "pintor", "diarista"];
+    const list = dbSubcategories.filter(sub => 
+      popularNames.some(name => sub.name.toLowerCase().includes(name))
+    );
+    if (list.length > 0) return list.slice(0, 6);
+    return dbSubcategories.slice(0, 6);
+  }, [dbSubcategories]);
+
   // Debug Logs
   useEffect(() => {
     console.log("[Supabase Debug] Categorias:", dbCategories.length);
@@ -456,7 +480,7 @@ export default function HomeScreen() {
       //   - Prioridade 1: avatar do prestador real
       //   - Prioridade 2: imagem oficial da subcategoria/serviço
       //   - Prioridade 3: Imagem linda e contextualizada de fallback
-      let finalImageUrl = providerWithAvatar?.avatarUri || sub.imageUrl || sub.imageUri || "";
+      let finalImageUrl = providerWithAvatar?.avatarUri || sub.imageUrl || "";
 
       if (!finalImageUrl) {
         const name = sub.name.toLowerCase();
@@ -522,7 +546,7 @@ export default function HomeScreen() {
       userId: user?.id || undefined
     });
 
-    const userCity = user?.city || "sua cidade";
+    const userCity = (user as any)?.city || "sua cidade";
     if (Platform.OS === "web") {
       window.alert(`Sugestão enviada! Obrigado por ajudar o ChamaJá a crescer em ${userCity}! 💚`);
     } else {
@@ -622,7 +646,7 @@ export default function HomeScreen() {
             keyExtractor={(item) => item.id}
             renderItem={({ item, index: subIndex }) => (
               <AnimatedCard
-                style={[styles.subCatCard, { backgroundColor: colors.background, borderColor: colors.border, borderWidth: 1 }]}
+                style={StyleSheet.flatten([styles.subCatCard, { backgroundColor: colors.background, borderColor: colors.border, borderWidth: 1 }])}
                 onPress={() => {
                   if (!editMode) {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -751,7 +775,7 @@ export default function HomeScreen() {
         </View>
       );
 
-      return drag ? <ScaleDecorator>{content}</ScaleDecorator> : content;
+      return typeof drag === "function" ? <ScaleDecorator>{content}</ScaleDecorator> : content;
     },
     [editMode, openEdit, handleDelete, router]
   );
@@ -827,7 +851,7 @@ export default function HomeScreen() {
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScreenContainer style={{ backgroundColor: colors.background }} edges={["top", "left", "right"]}>
-        <StatusBar style="dark" />
+        <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
         {/* MigrationManager temporarily removed to debug UI hang */}
       {/* <MigrationManager /> */}
         
@@ -838,6 +862,23 @@ export default function HomeScreen() {
             <Text style={{ fontSize: 13, color: colors.muted, fontWeight: "500" }}>Encontre o profissional ideal</Text>
           </View>
           <View style={styles.headerRight}>
+            {/* Botão de Chaveamento de Tema */}
+            <Pressable
+              style={[styles.bellBtn, { marginRight: 8 }]}
+              onPress={() => {
+                if (Platform.OS !== "web") {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }
+                setColorScheme(colorScheme === "dark" ? "light" : "dark");
+              }}
+            >
+              <MaterialIcons
+                name={colorScheme === "dark" ? "wb-sunny" : "brightness-2"}
+                size={24}
+                color={colors.foreground}
+              />
+            </Pressable>
+
             <Pressable
               style={styles.bellBtn}
               onPress={() => router.push("/notifications" as any)}
@@ -921,7 +962,7 @@ export default function HomeScreen() {
                   ) : (
                     <View style={[styles.verticalCardIconBg, { backgroundColor: colors.background }]}>
                       <MaterialIcons 
-                        name={item.type === "SERVICE" ? getAdminIcon(item.category) : "person"} 
+                        name={(item.type === "SERVICE" ? getAdminIcon(item.category) : "person") as any} 
                         size={24} 
                         color={colors.primary} 
                       />
@@ -974,11 +1015,19 @@ export default function HomeScreen() {
             onRefresh={loadServices}
             ListHeaderComponent={
               <View style={{ gap: 8 }}>
-                {/* Categorias Rápidas */}
-                <View style={{ marginTop: 16 }}>
+                {/* 1. Carrossel de Anúncios no Topo */}
+                <View style={{ marginTop: 12, marginBottom: 8, paddingHorizontal: 16 }}>
+                  <AdsCarousel ads={ads} />
+                </View>
+
+                {/* 2. Categorias Rápidas */}
+                <View style={{ marginTop: 8 }}>
                   <View style={styles.sectionWrapper}>
                     <View style={styles.sectionHeader}>
                       <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Categorias</Text>
+                      <Pressable onPress={() => router.push("/search" as any)}>
+                        <Text style={[styles.seeAllText, { color: colors.primary }]}>Ver todas</Text>
+                      </Pressable>
                     </View>
                   </View>
                   <ScrollView 
@@ -1009,24 +1058,157 @@ export default function HomeScreen() {
                   </ScrollView>
                 </View>
 
-                {/* Destaques e Anúncios */}
-                <View style={styles.sectionWrapper}>
-                  <View style={[styles.sectionHeader, { marginBottom: 8 }]}>
-                    <View style={styles.sectionTitleRow}>
-                      <MaterialIcons name="star" size={20} color="#FFB800" />
-                      <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Serviços em Destaque</Text>
+                {/* 3. Destaques para você */}
+                <View style={{ marginTop: 16 }}>
+                  <View style={styles.sectionWrapper}>
+                    <View style={styles.sectionHeader}>
+                      <View style={styles.sectionTitleRow}>
+                        <MaterialIcons name="star" size={20} color="#FFB800" />
+                        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Destaques para você</Text>
+                      </View>
+                      <Pressable onPress={() => router.push("/search" as any)}>
+                        <Text style={[styles.seeAllText, { color: colors.primary }]}>Ver todos</Text>
+                      </Pressable>
                     </View>
-
                   </View>
+                  {loadingProviders ? (
+                    <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 20 }} />
+                  ) : (
+                    <FlatList
+                      data={featuredProviders}
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={{ paddingHorizontal: 16, gap: 12, paddingBottom: 10 }}
+                      keyExtractor={(item) => item.id}
+                      renderItem={({ item, index }) => {
+                        let distanceText = "";
+                        if (coords && item.latitude !== null && item.longitude !== null) {
+                          const distKm = calculateHaversineDistance(
+                            coords.latitude,
+                            coords.longitude,
+                            Number(item.latitude),
+                            Number(item.longitude)
+                          );
+                          distanceText = formatDistancePtBr(distKm).replace(" de você", "");
+                        } else {
+                          distanceText = `${(1.0 + (index * 0.4)).toFixed(1).replace(".", ",")} km`;
+                        }
 
-                  {/* Anúncios Patrocinados (Aparecem logo abaixo do título) */}
-                  <View style={{ marginBottom: 40 }}>
-                    <AdsCarousel ads={ads} isLoading={adsLoading} />
-                  </View>
-                  
+                        return (
+                          <Pressable
+                            style={[
+                              styles.featuredCard,
+                              { backgroundColor: colors.surface, borderColor: colors.border }
+                            ]}
+                            onPress={() => {
+                              if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                              router.push(`/professional/${item.id}` as any);
+                            }}
+                          >
+                            <View style={styles.featuredImageWrapper}>
+                              <Image
+                                source={{ uri: item.coverUri || item.avatarUri || "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=300&q=80" }}
+                                style={styles.featuredImage}
+                              />
+                              <View style={styles.sponsoredBadge}>
+                                <Text style={styles.sponsoredText}>Patrocinado</Text>
+                              </View>
+                            </View>
 
+                            <View style={styles.featuredInfo}>
+                              <View style={styles.featuredTitleRow}>
+                                <Text style={[styles.featuredName, { color: colors.foreground }]} numberOfLines={1}>
+                                  {item.name}
+                                </Text>
+                                {item.isVerified && (
+                                  <MaterialIcons name="verified" size={14} color="#15803D" />
+                                )}
+                              </View>
+
+                              <Text style={styles.featuredSub} numberOfLines={1}>
+                                {item.category || "Profissional"} • {distanceText}
+                              </Text>
+
+                              <View style={styles.featuredBottom}>
+                                <View style={styles.ratingRow}>
+                                  <MaterialIcons name="star" size={14} color="#FBBF24" />
+                                  <Text style={[styles.ratingText, { color: colors.foreground }]}>
+                                    {Number(item.rating || 5.0).toFixed(1)} ({item.ratingCount || 0})
+                                  </Text>
+                                </View>
+                                <View style={[styles.abertoBadge, { backgroundColor: "#DCFCE7" }]}>
+                                  <Text style={styles.abertoText}>Aberto</Text>
+                                </View>
+                              </View>
+                            </View>
+                          </Pressable>
+                        );
+                      }}
+                    />
+                  )}
                 </View>
 
+                {/* 4. Mais procurados hoje */}
+                <View style={{ marginTop: 16, marginBottom: 8 }}>
+                  <View style={styles.sectionWrapper}>
+                    <View style={styles.sectionHeader}>
+                      <View style={styles.sectionTitleRow}>
+                        <MaterialIcons name="local-fire-department" size={20} color="#FF4500" />
+                        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Mais procurados hoje</Text>
+                      </View>
+                      <Pressable onPress={() => router.push("/search" as any)}>
+                        <Text style={[styles.seeAllText, { color: colors.primary }]}>Ver todos</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                  <FlatList
+                    data={popularSubcategories}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => {
+                      const count = dbProviders.filter((p) => {
+                        if (!p.subcategoryId) return false;
+                        const ids = p.subcategoryId.split(",").map(id => id.trim()).filter(Boolean);
+                        return ids.includes(item.id);
+                      }).length;
+                      
+                      const countText = count > 0 ? `${count} por perto` : "Ver profissionais";
+
+                      const lowerName = item.name.toLowerCase();
+                      let iconName = "build";
+                      if (lowerName.includes("encanador")) iconName = "plumbing";
+                      else if (lowerName.includes("eletricista")) iconName = "flash-on";
+                      else if (lowerName.includes("chaveiro")) iconName = "vpn-key";
+                      else if (lowerName.includes("motoboy") || lowerName.includes("entrega")) iconName = "motorcycle";
+                      else if (lowerName.includes("ar condicionado") || lowerName.includes("refrigera")) iconName = "ac-unit";
+                      else if (lowerName.includes("pintor")) iconName = "format-paint";
+                      else if (lowerName.includes("diarista") || lowerName.includes("limpeza")) iconName = "cleaning-services";
+
+                      return (
+                        <Pressable
+                          style={[
+                            styles.popularPill,
+                            { backgroundColor: colors.surface, borderColor: colors.border }
+                          ]}
+                          onPress={() => {
+                            if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            setHomeSearchQuery(item.name);
+                          }}
+                        >
+                          <View style={[styles.popularIconBg, { backgroundColor: colors.background }]}>
+                            <MaterialIcons name={iconName as any} size={20} color={colors.primary} />
+                          </View>
+                          <View>
+                            <Text style={[styles.popularName, { color: colors.foreground }]}>{item.name}</Text>
+                            <Text style={styles.popularCount}>{countText}</Text>
+                          </View>
+                        </Pressable>
+                      );
+                    }}
+                  />
+                </View>
               </View>
             }
             ListEmptyComponent={loadingServices ? <HomeSkeleton /> : null}
@@ -2237,5 +2419,109 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     color: "#FFFFFF",
+  },
+  featuredCard: {
+    width: 250,
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  featuredImageWrapper: {
+    width: "100%",
+    height: 110,
+    position: "relative",
+    backgroundColor: "#F3F4F6",
+  },
+  featuredImage: {
+    width: "100%",
+    height: "100%",
+  },
+  sponsoredBadge: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  sponsoredText: {
+    color: "#FFFFFF",
+    fontSize: 8,
+    fontWeight: "800",
+    textTransform: "uppercase",
+  },
+  featuredInfo: {
+    padding: 10,
+    gap: 4,
+  },
+  featuredTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  featuredName: {
+    fontSize: 13,
+    fontWeight: "700",
+    flex: 1,
+  },
+  featuredSub: {
+    fontSize: 11,
+    color: "#6B7280",
+  },
+  featuredBottom: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 4,
+  },
+  ratingText: {
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  abertoBadge: {
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  abertoText: {
+    color: "#15803D",
+    fontSize: 9,
+    fontWeight: "800",
+  },
+  popularPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  popularIconBg: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  popularName: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  popularCount: {
+    fontSize: 10,
+    color: "#9CA3AF",
+    marginTop: 1,
+  },
+  ratingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
   },
 });

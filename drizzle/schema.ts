@@ -123,6 +123,7 @@ export const providers = pgTable("providers", {
   workingHours: text("working_hours"),
   isActive: boolean("is_active").notNull().default(true),
   displayOrder: integer("display_order").notNull().default(0),
+  destaque: boolean("destaque").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

@@ -1,6 +1,7 @@
-import { createContext, useContext, useMemo } from "react";
+import { createContext, useContext, useMemo, useState, useEffect } from "react";
 import { View } from "react-native";
 import { colorScheme as nativewindColorScheme, vars } from "nativewind";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { SchemeColors, type ColorScheme } from "@/constants/theme";
 
@@ -12,37 +13,56 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // Always force light mode
-  const colorScheme: ColorScheme = "light";
+  const [colorScheme, setSchemeState] = useState<ColorScheme>("light");
 
-  // Dummy setter that does nothing to maintain API compatibility
-  const setColorScheme = () => {};
+  // Load theme on mount
+  useEffect(() => {
+    async function loadTheme() {
+      try {
+        const stored = await AsyncStorage.getItem("@chamaja_color_scheme");
+        if (stored === "light" || stored === "dark") {
+          setSchemeState(stored);
+          nativewindColorScheme.set(stored);
+        }
+      } catch (e) {
+        console.error("Failed to load theme:", e);
+      }
+    }
+    loadTheme();
+  }, []);
 
-  // Force nativewind to light
-  nativewindColorScheme.set("light");
+  const setColorScheme = (scheme: ColorScheme) => {
+    setSchemeState(scheme);
+    nativewindColorScheme.set(scheme);
+    AsyncStorage.setItem("@chamaja_color_scheme", scheme).catch((e) =>
+      console.error("Failed to save theme:", e)
+    );
+  };
 
   const themeVariables = useMemo(
-    () =>
-      vars({
-        "color-primary": SchemeColors.light.primary,
-        "color-background": SchemeColors.light.background,
-        "color-surface": SchemeColors.light.surface,
-        "color-foreground": SchemeColors.light.foreground,
-        "color-muted": SchemeColors.light.muted,
-        "color-border": SchemeColors.light.border,
-        "color-success": SchemeColors.light.success,
-        "color-warning": SchemeColors.light.warning,
-        "color-error": SchemeColors.light.error,
-      }),
-    [],
+    () => {
+      const activeColors = SchemeColors[colorScheme];
+      return vars({
+        "color-primary": activeColors.primary,
+        "color-background": activeColors.background,
+        "color-surface": activeColors.surface,
+        "color-foreground": activeColors.foreground,
+        "color-muted": activeColors.muted,
+        "color-border": activeColors.border,
+        "color-success": activeColors.success,
+        "color-warning": activeColors.warning,
+        "color-error": activeColors.error,
+      });
+    },
+    [colorScheme],
   );
 
   const value = useMemo(
     () => ({
-      colorScheme: "light" as const,
+      colorScheme,
       setColorScheme,
     }),
-    [],
+    [colorScheme],
   );
 
   return (

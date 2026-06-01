@@ -382,7 +382,7 @@ export default function ProfessionalDetailScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeaderRow}>
               <Text style={[styles.sectionTitle, { color: colors.foreground, marginBottom: 0 }]}>Galeria de Fotos</Text>
-              <Pressable onPress={() => setSelectedImage(prof.gallery[0])}>
+              <Pressable onPress={() => setSelectedImage(prof.gallery?.[0] || null)}>
                 <Text style={[styles.sectionHeaderLink, { color: colors.primary }]}>Ver todas ({prof.gallery.length})</Text>
               </Pressable>
             </View>

@@ -108,29 +108,7 @@ export function AdsCarousel({ ads }: AdsCarouselProps) {
               style={[styles.image, { width: CARD_WIDTH, height: CARD_HEIGHT }]}
               resizeMode="cover"
             />
-            {/* Gradient overlay */}
-            <View style={styles.overlay} />
-
-            {/* Badge patrocinado */}
-            <View style={styles.sponsoredBadge}>
-              <Text style={styles.sponsoredText}>Patrocinado</Text>
-            </View>
-
-            {/* Content */}
-            <View style={styles.content}>
-              <Text style={styles.adCategoryText}>{item.title}</Text>
-              <Text style={styles.title} numberOfLines={1}>
-                {item.providerName || "Profissional"}
-              </Text>
-              {item.description ? (
-                <Text style={styles.description} numberOfLines={2}>
-                  {item.description}
-                </Text>
-              ) : null}
-              <View style={styles.ctaRow}>
-                <Text style={styles.ctaText}>Ver perfil →</Text>
-              </View>
-            </View>
+            {/* Render clean banner image only */}
           </Pressable>
         ))}
       </ScrollView>

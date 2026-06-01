@@ -49,6 +49,7 @@ export default function EditarPrestador() {
   const [city, setCity] = useState("Bragança Paulista");
   const [neighborhood, setNeighborhood] = useState("");
   const [isActive, setIsActive] = useState(true);
+  const [destaque, setDestaque] = useState(false);
   const [whatsapp, setWhatsapp] = useState("");
   const [avatarUri, setAvatarUri] = useState("");
   const [coverUri, setCoverUri] = useState("");
@@ -128,6 +129,7 @@ export default function EditarPrestador() {
       setCity(dbProvider.city || "Bragança Paulista");
       setNeighborhood(dbProvider.neighborhood || "");
       setIsActive(dbProvider.isActive);
+      setDestaque(dbProvider.destaque ?? false);
       setWhatsapp(dbProvider.whatsapp || dbProvider.phone || "");
       setAvatarUri(dbProvider.avatarUri || "");
       setCoverUri(dbProvider.coverUri || "");
@@ -247,6 +249,7 @@ export default function EditarPrestador() {
         city: city || null,
         neighborhood: neighborhood || null,
         isActive,
+        destaque,
         whatsapp: whatsapp || null,
         phone: whatsapp || null,
         avatarUri: finalAvatar || null,
@@ -595,6 +598,21 @@ export default function EditarPrestador() {
                 onValueChange={setIsActive}
                 trackColor={{ false: "#E5E7EB", true: "#BBF7D0" }}
                 thumbColor={isActive ? "#25D366" : "#D1D5DB"}
+              />
+            </View>
+          </View>
+
+          <View style={styles.switchRow}>
+            <Text style={styles.fieldLabel}>Destaque para você</Text>
+            <View style={styles.switchRight}>
+              <Text style={[styles.switchLabel, { color: destaque ? "#25D366" : "#9CA3AF" }]}>
+                {destaque ? "Sim" : "Não"}
+              </Text>
+              <Switch
+                value={destaque}
+                onValueChange={setDestaque}
+                trackColor={{ false: "#E5E7EB", true: "#BBF7D0" }}
+                thumbColor={destaque ? "#25D366" : "#D1D5DB"}
               />
             </View>
           </View>
