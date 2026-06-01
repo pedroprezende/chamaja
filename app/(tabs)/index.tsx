@@ -328,10 +328,7 @@ export default function HomeScreen() {
   const { data: dbSubcategories = [] } = trpc.categories.subServices.listAll.useQuery();
 
   const featuredProviders = React.useMemo(() => {
-    const list = dbProviders.filter((p) => p.destaque && p.isActive);
-    if (list.length > 0) return list;
-    // Fallback: use first few active providers
-    return dbProviders.filter((p) => p.isActive).slice(0, 3);
+    return dbProviders.filter((p) => p.destaque && p.isActive);
   }, [dbProviders]);
 
   const popularSubcategories = React.useMemo(() => {
@@ -1346,31 +1343,33 @@ export default function HomeScreen() {
                 </View>
 
                 {/* 3. Destaques para você */}
-                <View style={{ marginTop: 16 }}>
-                  <View style={styles.sectionWrapper}>
-                    <View style={styles.sectionHeader}>
-                      <View style={styles.sectionTitleRow}>
-                        <MaterialIcons name="star" size={20} color="#FBBF24" />
-                        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Destaques para você</Text>
+                {featuredProviders.length > 0 && (
+                  <View style={{ marginTop: 16 }}>
+                    <View style={styles.sectionWrapper}>
+                      <View style={styles.sectionHeader}>
+                        <View style={styles.sectionTitleRow}>
+                          <MaterialIcons name="star" size={20} color="#FBBF24" />
+                          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Destaques para você</Text>
+                        </View>
+                        <Pressable onPress={() => router.push("/search" as any)}>
+                          <Text style={[styles.seeAllText, { color: colors.primary }]}>Ver todos</Text>
+                        </Pressable>
                       </View>
-                      <Pressable onPress={() => router.push("/search" as any)}>
-                        <Text style={[styles.seeAllText, { color: colors.primary }]}>Ver todos</Text>
-                      </Pressable>
                     </View>
+                    {loadingProviders ? (
+                      <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 20 }} />
+                    ) : (
+                      <FlatList
+                        data={featuredProviders}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ paddingHorizontal: 16, gap: 12, paddingBottom: 10 }}
+                        keyExtractor={(item) => item.id}
+                        renderItem={({ item, index }) => renderProviderCard(item, index, true)}
+                      />
+                    )}
                   </View>
-                  {loadingProviders ? (
-                    <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 20 }} />
-                  ) : (
-                    <FlatList
-                      data={featuredProviders}
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={{ paddingHorizontal: 16, gap: 12, paddingBottom: 10 }}
-                      keyExtractor={(item) => item.id}
-                      renderItem={({ item, index }) => renderProviderCard(item, index, true)}
-                    />
-                  )}
-                </View>
+                )}
 
                 {/* 4. Mais procurados hoje */}
                 <View style={{ marginTop: 16, marginBottom: 8 }}>
