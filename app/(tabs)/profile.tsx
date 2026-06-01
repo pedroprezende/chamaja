@@ -33,6 +33,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { ScreenContainer } from "@/components/screen-container";
 import { useAuth } from "@/lib/auth-context";
 import { useProvider } from "@/lib/provider-context";
+import { useLocation } from "@/lib/location-context";
 import { useFavorites } from "@/lib/favorites-context";
 import { useNotifications } from "@/lib/notifications-context";
 import { useColors } from "@/hooks/use-colors";
@@ -45,6 +46,7 @@ export default function ProfileScreen() {
   const { isProvider, provider } = useProvider();
   const { favorites } = useFavorites();
   const { unreadCount } = useNotifications();
+  const { coords } = useLocation();
   const [privacyModalVisible, setPrivacyModalVisible] = useState(false);
   const [termsModalVisible, setTermsModalVisible] = useState(false);
   const [helpModalVisible, setHelpModalVisible] = useState(false);
@@ -502,6 +504,26 @@ export default function ProfileScreen() {
                         )}
                       </Pressable>
                     </View>
+
+                    {addressInput.trim().length > 0 && (
+                      <Pressable
+                        onPress={() => {
+                          const manualItem: GeocodedAddress = {
+                            id: `manual-${Date.now()}`,
+                            displayName: addressInput.trim(),
+                            latitude: coords?.latitude ?? -22.9520,
+                            longitude: coords?.longitude ?? -46.5420,
+                          };
+                          setSelectedAddressToAdd(manualItem);
+                        }}
+                        style={[styles.manualAddRow, { borderColor: colors.primary + "40", backgroundColor: colors.background }]}
+                      >
+                        <MaterialIcons name="add-location" size={20} color={colors.primary} />
+                        <Text style={[styles.manualAddText, { color: colors.primary }]} numberOfLines={1}>
+                          Adicionar "{addressInput.trim()}" manualmente
+                        </Text>
+                      </Pressable>
+                    )}
 
                     {searchError && (
                       <Text style={{ color: "#EF4444", fontSize: 13 }}>{searchError}</Text>
@@ -1283,5 +1305,22 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
+  },
+  manualAddRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 0,
+    marginTop: 8,
+    marginBottom: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 10,
+  },
+  manualAddText: {
+    fontSize: 14,
+    fontWeight: "700",
+    flex: 1,
   },
 });

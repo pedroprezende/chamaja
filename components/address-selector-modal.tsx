@@ -40,7 +40,7 @@ interface GeocodedAddress {
 }
 
 export default function AddressSelectorModal({ visible, onClose }: AddressSelectorModalProps) {
-  const { addressName, updateLocation, useGpsLocation, loading: locationLoading } = useLocation();
+  const { coords, addressName, updateLocation, useGpsLocation, loading: locationLoading } = useLocation();
   
   const [addressInput, setAddressInput] = useState("");
   const [results, setResults] = useState<GeocodedAddress[]>([]);
@@ -390,6 +390,26 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
                   <Text style={styles.searchBtnText}>Buscar</Text>
                 </Pressable>
               </View>
+
+              {addressInput.trim().length > 0 && (
+                <Pressable
+                  onPress={() => {
+                    const manualItem: GeocodedAddress = {
+                      id: `manual-${Date.now()}`,
+                      displayName: addressInput.trim(),
+                      latitude: coords?.latitude ?? -22.9520,
+                      longitude: coords?.longitude ?? -46.5420,
+                    };
+                    setSelectedSearchAddress(manualItem);
+                  }}
+                  style={styles.manualAddRow}
+                >
+                  <MaterialIcons name="add-location" size={20} color="#22C55E" />
+                  <Text style={styles.manualAddText} numberOfLines={1}>
+                    Adicionar "{addressInput.trim()}" manualmente
+                  </Text>
+                </Pressable>
+              )}
 
               {/* Botão de Localização GPS */}
               <Pressable
@@ -848,5 +868,24 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "700",
+  },
+  manualAddRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1F2937",
+    marginHorizontal: 16,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(34, 197, 94, 0.3)",
+    gap: 10,
+  },
+  manualAddText: {
+    color: "#22C55E",
+    fontSize: 14,
+    fontWeight: "700",
+    flex: 1,
   },
 });
