@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,7 +11,21 @@ import {
   Switch,
   Modal,
   Linking,
+  FlatList,
+  TextInput,
+  ActivityIndicator,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { SavedAddress } from "@/components/address-selector-modal";
+
+interface GeocodedAddress {
+  id: string;
+  displayName: string;
+  latitude: number;
+  longitude: number;
+  neighborhood?: string;
+  city?: string;
+}
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -36,6 +50,171 @@ export default function ProfileScreen() {
   const [helpModalVisible, setHelpModalVisible] = useState(false);
   const [aboutModalVisible, setAboutModalVisible] = useState(false);
 
+  const [addressesModalVisible, setAddressesModalVisible] = useState(false);
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [addressInput, setAddressInput] = useState("");
+  const [searchResults, setSearchResults] = useState<GeocodedAddress[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [selectedAddressToAdd, setSelectedAddressToAdd] = useState<GeocodedAddress | null>(null);
+  const [activeLabelType, setActiveLabelType] = useState<"casa" | "trabalho" | "outro">("casa");
+  const [customLabel, setCustomLabel] = useState("");
+
+  const loadSavedAddresses = async () => {
+    try {
+      const raw = await AsyncStorage.getItem("@chamaja_saved_user_addresses");
+      if (raw) {
+        setSavedAddresses(JSON.parse(raw));
+      } else {
+        setSavedAddresses([]);
+      }
+    } catch (e) {
+      console.warn("Failed to load saved addresses:", e);
+    }
+  };
+
+  useEffect(() => {
+    if (addressesModalVisible) {
+      loadSavedAddresses();
+      setIsAddingNew(false);
+      setAddressInput("");
+      setSearchResults([]);
+      setSearchError(null);
+      setSelectedAddressToAdd(null);
+    }
+  }, [addressesModalVisible]);
+
+  const handleSearchAddress = async () => {
+    if (!addressInput.trim()) return;
+    setSearching(true);
+    setSearchError(null);
+    setSelectedAddressToAdd(null);
+    try {
+      let queryStr = addressInput;
+      if (!addressInput.toLowerCase().includes("bragança")) {
+        queryStr += ", Bragança Paulista";
+      }
+      queryStr += ", Brasil";
+
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+          queryStr
+        )}&format=json&limit=5&addressdetails=1&countrycodes=br`,
+        {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          },
+        }
+      );
+      const data = await response.json();
+      
+      if (Array.isArray(data) && data.length > 0) {
+        const formatted: GeocodedAddress[] = data.map((item: any, idx: number) => {
+          const { road, house_number, suburb, city, town, village, state } = item.address || {};
+          const streetPart = road ? (house_number ? `${road}, ${house_number}` : road) : "";
+          const neighborhoodPart = suburb || "";
+          const cityPart = city || town || village || "";
+          const statePart = state || "SP";
+          
+          const parts = [];
+          if (streetPart) parts.push(streetPart);
+          if (neighborhoodPart) parts.push(neighborhoodPart);
+          if (cityPart) parts.push(`${cityPart} - ${statePart}`);
+          
+          const finalName = parts.join(", ") || item.display_name;
+
+          return {
+            id: `${item.place_id}-${idx}`,
+            displayName: finalName,
+            latitude: parseFloat(item.lat),
+            longitude: parseFloat(item.lon),
+            neighborhood: neighborhoodPart || undefined,
+            city: cityPart || undefined,
+          };
+        });
+        setSearchResults(formatted);
+      } else {
+        setSearchResults([]);
+        setSearchError("Nenhum endereço encontrado. Tente refinar a busca.");
+      }
+    } catch (err) {
+      console.warn("Search geocoding failed:", err);
+      setSearchError("Erro ao buscar endereço. Verifique sua conexão.");
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleSaveAddress = async () => {
+    if (!selectedAddressToAdd) return;
+
+    let finalLabel = "Casa";
+    if (activeLabelType === "trabalho") {
+      finalLabel = "Trabalho";
+    } else if (activeLabelType === "outro") {
+      finalLabel = customLabel.trim() || "Outro";
+    }
+
+    const newAddress: SavedAddress = {
+      id: `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      label: finalLabel,
+      addressName: selectedAddressToAdd.displayName,
+      latitude: selectedAddressToAdd.latitude,
+      longitude: selectedAddressToAdd.longitude,
+      neighborhood: selectedAddressToAdd.neighborhood,
+      city: selectedAddressToAdd.city,
+    };
+
+    const updatedAddresses = [newAddress, ...savedAddresses];
+    setSavedAddresses(updatedAddresses);
+
+    try {
+      await AsyncStorage.setItem(
+        "@chamaja_saved_user_addresses",
+        JSON.stringify(updatedAddresses)
+      );
+      // Reset view to saved addresses list
+      setIsAddingNew(false);
+      setAddressInput("");
+      setSearchResults([]);
+      setSelectedAddressToAdd(null);
+      loadSavedAddresses();
+    } catch (e) {
+      console.warn("Failed to save address:", e);
+      Alert.alert("Erro", "Não foi possível salvar o endereço.");
+    }
+  };
+
+  const handleDeleteAddress = async (id: string) => {
+    const deleteAction = async () => {
+      const updated = savedAddresses.filter((a) => a.id !== id);
+      setSavedAddresses(updated);
+      try {
+        await AsyncStorage.setItem("@chamaja_saved_user_addresses", JSON.stringify(updated));
+      } catch (err) {
+        console.warn("Failed to delete address:", err);
+        Alert.alert("Erro", "Não foi possível excluir o endereço.");
+      }
+    };
+
+    if (Platform.OS === "web") {
+      await deleteAction();
+    } else {
+      Alert.alert("Excluir endereço", "Deseja realmente remover este endereço salvo?", [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Excluir", style: "destructive", onPress: deleteAction },
+      ]);
+    }
+  };
+
+  const getLabelIcon = (label: string) => {
+    const l = label.toLowerCase();
+    if (l === "casa") return "home";
+    if (l === "trabalho") return "work";
+    return "place";
+  };
+
   const handleLogout = async () => {
     if (Platform.OS === "web") {
       try { await signOut(); } catch (e) { console.error(e); }
@@ -54,6 +233,7 @@ export default function ProfileScreen() {
   };
 
   const MENU_ITEMS = [
+    { id: "addresses", label: "Meus endereços", icon: "place" },
     { id: "favorites", label: "Favoritos", icon: "favorite-border", badge: favorites.length > 0 ? String(favorites.length) : undefined },
     { id: "notifications", label: "Notificações", icon: "notifications-none", badge: unreadCount > 0 ? String(unreadCount) : undefined },
     { id: "provider", label: isProvider ? "Minha área de prestador" : "Seja um prestador", icon: isProvider ? "work" : "add-business", highlight: !isProvider },
@@ -66,6 +246,7 @@ export default function ProfileScreen() {
 
   const handleMenuPress = (itemId: string) => {
     switch (itemId) {
+      case "addresses": setAddressesModalVisible(true); break;
       case "favorites": router.push("/favorites" as any); break;
       case "notifications": router.push("/notifications" as any); break;
       case "provider": router.push(isProvider ? "/provider-dashboard" : "/become-provider" as any); break;
@@ -187,6 +368,235 @@ export default function ProfileScreen() {
           <Text style={styles.logoutText}>Sair da conta</Text>
         </Pressable>
       </ScrollView>
+
+      {/* Modal de Gerenciamento de Endereços */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={addressesModalVisible}
+        onRequestClose={() => {
+          if (isAddingNew) {
+            setIsAddingNew(false);
+            setAddressInput("");
+            setSearchResults([]);
+            setSelectedAddressToAdd(null);
+          } else {
+            setAddressesModalVisible(false);
+          }
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.foreground }]}>
+                {isAddingNew ? "Novo Endereço" : "Meus Endereços"}
+              </Text>
+              <Pressable
+                onPress={() => {
+                  if (isAddingNew) {
+                    setIsAddingNew(false);
+                    setAddressInput("");
+                    setSearchResults([]);
+                    setSelectedAddressToAdd(null);
+                  } else {
+                    setAddressesModalVisible(false);
+                  }
+                }}
+                style={({ pressed }) => [styles.closeButton, pressed && { opacity: 0.7 }]}
+              >
+                <MaterialIcons name={isAddingNew ? "arrow-back" : "close"} size={24} color={colors.muted} />
+              </Pressable>
+            </View>
+
+            {isAddingNew ? (
+              // TELA DE ADICIONAR NOVO ENDEREÇO
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalBody} keyboardShouldPersistTaps="handled">
+                {selectedAddressToAdd ? (
+                  // SUB-FLUXO: DEFINIR RÓTULO DO ENDEREÇO SELECIONADO
+                  <View style={styles.labelForm}>
+                    <Text style={[styles.policySectionTitle, { color: colors.foreground, marginTop: 0 }]}>
+                      Como quer salvar esse endereço?
+                    </Text>
+                    <Text style={{ color: colors.muted, fontSize: 13, marginBottom: 16 }}>
+                      {selectedAddressToAdd.displayName}
+                    </Text>
+
+                    {/* Chips de seleção de rótulo */}
+                    <View style={styles.chipContainer}>
+                      {[
+                        { type: "casa", label: "Casa", icon: "home" },
+                        { type: "trabalho", label: "Trabalho", icon: "work" },
+                        { type: "outro", label: "Outro", icon: "place" }
+                      ].map((chip) => {
+                        const isSelected = activeLabelType === chip.type;
+                        return (
+                          <Pressable
+                            key={chip.type}
+                            onPress={() => setActiveLabelType(chip.type as any)}
+                            style={[
+                              styles.chipButton,
+                              { backgroundColor: isSelected ? colors.primary : colors.background, borderColor: isSelected ? colors.primary : colors.border }
+                            ]}
+                          >
+                            <MaterialIcons name={chip.icon as any} size={18} color={isSelected ? "#FFFFFF" : colors.muted} />
+                            <Text style={[styles.chipText, { color: isSelected ? "#FFFFFF" : colors.foreground }]}>
+                              {chip.label}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+
+                    {activeLabelType === "outro" && (
+                      <TextInput
+                        style={[styles.inputField, { backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground }]}
+                        placeholder="Ex: Faculdade, Casa da Mãe"
+                        placeholderTextColor={colors.muted}
+                        value={customLabel}
+                        onChangeText={setCustomLabel}
+                        maxLength={20}
+                      />
+                    )}
+
+                    <View style={{ flexDirection: "row", gap: 12, marginTop: 24 }}>
+                      <Pressable
+                        onPress={() => setSelectedAddressToAdd(null)}
+                        style={[styles.actionButtonCancel, { backgroundColor: colors.background, borderColor: colors.border }]}
+                      >
+                        <Text style={{ color: colors.foreground, fontWeight: "600" }}>Voltar</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={handleSaveAddress}
+                        style={[styles.actionButtonConfirm, { backgroundColor: colors.primary }]}
+                      >
+                        <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>Salvar Endereço</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                ) : (
+                  // BUSCA DE ENDEREÇO VIA NOMINATIM
+                  <View style={{ gap: 16 }}>
+                    <Text style={{ color: colors.muted, fontSize: 14 }}>
+                      Busque o endereço completo para cadastrar
+                    </Text>
+                    
+                    <View style={{ flexDirection: "row", gap: 8 }}>
+                      <TextInput
+                        style={[styles.searchAddressInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground }]}
+                        placeholder="Rua, número, bairro..."
+                        placeholderTextColor={colors.muted}
+                        value={addressInput}
+                        onChangeText={setAddressInput}
+                        onSubmitEditing={handleSearchAddress}
+                        autoCorrect={false}
+                        returnKeyType="search"
+                      />
+                      <Pressable
+                        onPress={handleSearchAddress}
+                        style={[styles.searchAddressBtn, { backgroundColor: colors.primary }]}
+                      >
+                        {searching ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                          <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>Buscar</Text>
+                        )}
+                      </Pressable>
+                    </View>
+
+                    {searchError && (
+                      <Text style={{ color: "#EF4444", fontSize: 13 }}>{searchError}</Text>
+                    )}
+
+                    {searchResults.length > 0 && (
+                      <View style={{ gap: 8, marginTop: 8 }}>
+                        {searchResults.map((item) => (
+                          <Pressable
+                            key={item.id}
+                            onPress={() => {
+                              setSelectedAddressToAdd(item);
+                              setCustomLabel("");
+                              setActiveLabelType("casa");
+                            }}
+                            style={({ pressed }) => [
+                              styles.searchResultItem,
+                              { borderBottomColor: colors.border },
+                              pressed && { backgroundColor: colors.background }
+                            ]}
+                          >
+                            <MaterialIcons name="location-on" size={18} color={colors.muted} />
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ color: colors.foreground, fontWeight: "600", fontSize: 13 }} numberOfLines={1}>
+                                {item.displayName.split(",")[0]}
+                              </Text>
+                              <Text style={{ color: colors.muted, fontSize: 12 }} numberOfLines={2}>
+                                {item.displayName}
+                              </Text>
+                            </View>
+                            <MaterialIcons name="add" size={20} color={colors.primary} />
+                          </Pressable>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                )}
+              </ScrollView>
+            ) : (
+              // LISTA DE ENDEREÇOS SALVOS
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalBody}>
+                {savedAddresses.length > 0 ? (
+                  <View style={{ gap: 12 }}>
+                    {savedAddresses.map((item) => (
+                      <View
+                        key={item.id}
+                        style={[styles.addressItemRow, { backgroundColor: colors.background, borderColor: colors.border }]}
+                      >
+                        <View style={[styles.addressIconWrapper, { backgroundColor: colors.primary + "15" }]}>
+                          <MaterialIcons name={getLabelIcon(item.label) as any} size={20} color={colors.primary} />
+                        </View>
+                        
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ color: colors.foreground, fontWeight: "700", fontSize: 14 }}>
+                            {item.label}
+                          </Text>
+                          <Text style={{ color: colors.muted, fontSize: 12 }} numberOfLines={1}>
+                            {item.addressName}
+                          </Text>
+                        </View>
+
+                        <Pressable
+                          onPress={() => handleDeleteAddress(item.id)}
+                          style={({ pressed }) => [styles.deleteBtnRow, pressed && { opacity: 0.6 }]}
+                        >
+                          <MaterialIcons name="delete-outline" size={20} color="#EF4444" />
+                        </Pressable>
+                      </View>
+                    ))}
+                  </View>
+                ) : (
+                  <View style={styles.emptyAddressesView}>
+                    <MaterialIcons name="place" size={48} color={colors.muted} />
+                    <Text style={{ color: colors.muted, textAlign: "center", fontSize: 14, marginTop: 8 }}>
+                      Nenhum endereço cadastrado. Salve seus locais frequentes para facilitar o cálculo de distâncias.
+                    </Text>
+                  </View>
+                )}
+
+                <Pressable
+                  onPress={() => setIsAddingNew(true)}
+                  style={({ pressed }) => [
+                    styles.addNewAddressBtn,
+                    { backgroundColor: colors.primary },
+                    pressed && { opacity: 0.9 }
+                  ]}
+                >
+                  <MaterialIcons name="add" size={20} color="#FFFFFF" />
+                  <Text style={styles.addNewAddressBtnText}>Adicionar Endereço</Text>
+                </Pressable>
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
 
       {/* Modal da Política de Privacidade */}
       <Modal
@@ -768,5 +1178,110 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "700",
+  },
+  addressItemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 12,
+  },
+  addressIconWrapper: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteBtnRow: {
+    padding: 6,
+  },
+  emptyAddressesView: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+  },
+  addNewAddressBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 16,
+    gap: 8,
+    marginTop: 24,
+  },
+  addNewAddressBtnText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  searchAddressInput: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    fontSize: 14,
+  },
+  searchAddressBtn: {
+    height: 48,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  searchResultItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    gap: 10,
+  },
+  labelForm: {
+    paddingTop: 8,
+  },
+  chipContainer: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 16,
+  },
+  chipButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    gap: 6,
+  },
+  chipText: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  inputField: {
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    fontSize: 14,
+    marginBottom: 16,
+  },
+  actionButtonCancel: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  actionButtonConfirm: {
+    flex: 2,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

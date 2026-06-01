@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Modal,
   View,
@@ -9,13 +9,25 @@ import {
   StyleSheet,
   ActivityIndicator,
   Dimensions,
+  ScrollView,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useLocation } from "@/lib/location-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface AddressSelectorModalProps {
   visible: boolean;
   onClose: () => void;
+}
+
+export interface SavedAddress {
+  id: string;
+  label: string; // e.g. "Casa", "Trabalho", "Mãe"
+  addressName: string;
+  latitude: number;
+  longitude: number;
+  neighborhood?: string;
+  city?: string;
 }
 
 interface GeocodedAddress {
@@ -29,19 +41,52 @@ interface GeocodedAddress {
 
 export default function AddressSelectorModal({ visible, onClose }: AddressSelectorModalProps) {
   const { addressName, updateLocation, useGpsLocation, loading: locationLoading } = useLocation();
+  
   const [addressInput, setAddressInput] = useState("");
   const [results, setResults] = useState<GeocodedAddress[]>([]);
   const [searching, setSearching] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // Saved Addresses State
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  
+  // Label Flow State
+  const [selectedSearchAddress, setSelectedSearchAddress] = useState<GeocodedAddress | null>(null);
+  const [customLabel, setCustomLabel] = useState("");
+  const [activeLabelType, setActiveLabelType] = useState<"casa" | "trabalho" | "outro">("casa");
+
+  // Load saved addresses on open/mount
+  const loadSavedAddresses = async () => {
+    try {
+      const raw = await AsyncStorage.getItem("@chamaja_saved_user_addresses");
+      if (raw) {
+        setSavedAddresses(JSON.parse(raw));
+      } else {
+        setSavedAddresses([]);
+      }
+    } catch (e) {
+      console.warn("Failed to load saved addresses:", e);
+    }
+  };
+
+  useEffect(() => {
+    if (visible) {
+      loadSavedAddresses();
+      setAddressInput("");
+      setResults([]);
+      setSelectedSearchAddress(null);
+      setErrorMsg(null);
+    }
+  }, [visible]);
+
   // Searches addresses using the Nominatim API
   const handleSearch = async () => {
     if (!addressInput.trim()) return;
     setSearching(true);
     setErrorMsg(null);
+    setSelectedSearchAddress(null);
     try {
-      // Append Bragança Paulista to help search locally first, but allow national search
       let queryStr = addressInput;
       if (!addressInput.toLowerCase().includes("bragança")) {
         queryStr += ", Bragança Paulista";
@@ -111,13 +156,79 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
     }
   };
 
-  // Selects an address option and updates context
-  const handleSelectAddress = async (item: GeocodedAddress) => {
+  // Triggers selection of searched result and prompts for custom label
+  const handleSelectSearchAddress = (item: GeocodedAddress) => {
+    setSelectedSearchAddress(item);
+    setCustomLabel("");
+    setActiveLabelType("casa");
+  };
+
+  // Saves a new address to the saved addresses list and updates location
+  const handleSaveAndUseAddress = async () => {
+    if (!selectedSearchAddress) return;
+
+    let finalLabel = "Casa";
+    if (activeLabelType === "trabalho") {
+      finalLabel = "Trabalho";
+    } else if (activeLabelType === "outro") {
+      finalLabel = customLabel.trim() || "Outro";
+    }
+
+    const newAddress: SavedAddress = {
+      id: `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      label: finalLabel,
+      addressName: selectedSearchAddress.displayName,
+      latitude: selectedSearchAddress.latitude,
+      longitude: selectedSearchAddress.longitude,
+      neighborhood: selectedSearchAddress.neighborhood,
+      city: selectedSearchAddress.city,
+    };
+
+    const updatedAddresses = [newAddress, ...savedAddresses];
+    setSavedAddresses(updatedAddresses);
+
+    try {
+      await AsyncStorage.setItem(
+        "@chamaja_saved_user_addresses",
+        JSON.stringify(updatedAddresses)
+      );
+      // Set active
+      await updateLocation(
+        { latitude: newAddress.latitude, longitude: newAddress.longitude },
+        newAddress.addressName
+      );
+      onClose();
+    } catch (e) {
+      console.warn("Failed to save address:", e);
+    }
+  };
+
+  // Selects an already saved address
+  const handleSelectSavedAddress = async (item: SavedAddress) => {
     await updateLocation(
       { latitude: item.latitude, longitude: item.longitude },
-      item.displayName
+      item.addressName
     );
     onClose();
+  };
+
+  // Deletes an address from saved addresses
+  const handleDeleteSavedAddress = async (id: string, e: any) => {
+    e.stopPropagation();
+    const updated = savedAddresses.filter((a) => a.id !== id);
+    setSavedAddresses(updated);
+    try {
+      await AsyncStorage.setItem("@chamaja_saved_user_addresses", JSON.stringify(updated));
+    } catch (err) {
+      console.warn("Failed to delete address:", err);
+    }
+  };
+
+  const getLabelIcon = (label: string) => {
+    const l = label.toLowerCase();
+    if (l === "casa") return "home";
+    if (l === "trabalho") return "work";
+    return "place";
   };
 
   return (
@@ -131,7 +242,6 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
         <Pressable style={styles.dismissOverlay} onPress={onClose} />
         
         <View style={styles.modalContent}>
-          {/* Barra de arrastar superior */}
           <View style={styles.dragIndicator} />
 
           <View style={styles.modalHeader}>
@@ -141,7 +251,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
             </Pressable>
           </View>
 
-          {/* Endereço Atual */}
+          {/* Endereço Atual Ativo */}
           <View style={styles.currentAddressSection}>
             <MaterialIcons name="location-on" size={18} color="#22C55E" />
             <Text style={styles.currentAddressText} numberOfLines={1}>
@@ -150,105 +260,247 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
             <Text style={styles.currentAddressTag}>Atual</Text>
           </View>
 
-          {/* Barra de Busca de Endereço */}
-          <View style={styles.searchContainer}>
-            <View style={styles.searchBox}>
-              <MaterialIcons name="search" size={20} color="#9CA3AF" />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Buscar rua, número, bairro..."
-                placeholderTextColor="#9CA3AF"
-                value={addressInput}
-                onChangeText={setAddressInput}
-                onSubmitEditing={handleSearch}
-                autoCorrect={false}
-                returnKeyType="search"
-              />
-              {addressInput.length > 0 && (
-                <Pressable onPress={() => setAddressInput("")}>
-                  <MaterialIcons name="close" size={18} color="#9CA3AF" />
-                </Pressable>
-              )}
-            </View>
-            <Pressable onPress={handleSearch} style={styles.searchBtn}>
-              <Text style={styles.searchBtnText}>Buscar</Text>
-            </Pressable>
-          </View>
+          {/* Fluxo de Formulário de Rótulo / Rótulo de Endereço */}
+          {selectedSearchAddress ? (
+            <View style={styles.labelFormContainer}>
+              <Text style={styles.labelFormTitle}>Como quer salvar esse endereço?</Text>
+              <Text style={styles.labelFormSubtitle} numberOfLines={2}>
+                {selectedSearchAddress.displayName}
+              </Text>
 
-          {/* Botão de Localização GPS */}
-          <Pressable
-            onPress={handleUseGps}
-            disabled={gpsLoading || locationLoading}
-            style={({ pressed }) => [
-              styles.gpsButton,
-              pressed && { opacity: 0.8 }
-            ]}
-          >
-            {gpsLoading ? (
-              <ActivityIndicator size="small" color="#22C55E" />
-            ) : (
-              <MaterialIcons name="my-location" size={20} color="#22C55E" />
-            )}
-            <View style={styles.gpsTextContainer}>
-              <Text style={styles.gpsTitle}>Usar localização atual</Text>
-              <Text style={styles.gpsSubtitle}>Ativar GPS do celular</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={20} color="#9CA3AF" />
-          </Pressable>
-
-          {/* Resultados de Busca */}
-          <View style={styles.resultsContainer}>
-            {searching ? (
-              <View style={styles.centerSpinner}>
-                <ActivityIndicator size="large" color="#22C55E" />
-                <Text style={styles.spinnerText}>Procurando endereços...</Text>
-              </View>
-            ) : errorMsg ? (
-              <View style={styles.errorContainer}>
-                <MaterialIcons name="error-outline" size={32} color="#EF4444" />
-                <Text style={styles.errorText}>{errorMsg}</Text>
-              </View>
-            ) : (
-              <FlatList
-                data={results}
-                keyExtractor={(item) => item.id}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-                renderItem={({ item }) => (
-                  <Pressable
-                    onPress={() => handleSelectAddress(item)}
-                    style={({ pressed }) => [
-                      styles.resultRow,
-                      pressed && { backgroundColor: "#374151" }
+              {/* Botões rápidos e Custom Label */}
+              <View style={styles.labelSelectorRow}>
+                <Pressable
+                  onPress={() => setActiveLabelType("casa")}
+                  style={[
+                    styles.labelChoiceBtn,
+                    activeLabelType === "casa" && styles.labelChoiceBtnActive,
+                  ]}
+                >
+                  <MaterialIcons
+                    name="home"
+                    size={18}
+                    color={activeLabelType === "casa" ? "#FFFFFF" : "#9CA3AF"}
+                  />
+                  <Text
+                    style={[
+                      styles.labelChoiceText,
+                      activeLabelType === "casa" && styles.labelChoiceTextActive,
                     ]}
                   >
-                    <View style={styles.resultIconBox}>
-                      <MaterialIcons name="location-on" size={20} color="#9CA3AF" />
-                    </View>
-                    <View style={styles.resultInfoBox}>
-                      <Text style={styles.resultTitle} numberOfLines={1}>
-                        {item.displayName.split(",")[0]}
-                      </Text>
-                      <Text style={styles.resultSubtitle} numberOfLines={2}>
-                        {item.displayName}
-                      </Text>
-                    </View>
-                    <MaterialIcons name="chevron-right" size={20} color="#9CA3AF" />
-                  </Pressable>
+                    Casa
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={() => setActiveLabelType("trabalho")}
+                  style={[
+                    styles.labelChoiceBtn,
+                    activeLabelType === "trabalho" && styles.labelChoiceBtnActive,
+                  ]}
+                >
+                  <MaterialIcons
+                    name="work"
+                    size={18}
+                    color={activeLabelType === "trabalho" ? "#FFFFFF" : "#9CA3AF"}
+                  />
+                  <Text
+                    style={[
+                      styles.labelChoiceText,
+                      activeLabelType === "trabalho" && styles.labelChoiceTextActive,
+                    ]}
+                  >
+                    Trabalho
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={() => setActiveLabelType("outro")}
+                  style={[
+                    styles.labelChoiceBtn,
+                    activeLabelType === "outro" && styles.labelChoiceBtnActive,
+                  ]}
+                >
+                  <MaterialIcons
+                    name="place"
+                    size={18}
+                    color={activeLabelType === "outro" ? "#FFFFFF" : "#9CA3AF"}
+                  />
+                  <Text
+                    style={[
+                      styles.labelChoiceText,
+                      activeLabelType === "outro" && styles.labelChoiceTextActive,
+                    ]}
+                  >
+                    Outro
+                  </Text>
+                </Pressable>
+              </View>
+
+              {activeLabelType === "outro" && (
+                <TextInput
+                  style={styles.labelCustomInput}
+                  placeholder="Nome do local (ex: Faculdade, Mãe)"
+                  placeholderTextColor="#9CA3AF"
+                  value={customLabel}
+                  onChangeText={setCustomLabel}
+                  maxLength={20}
+                />
+              )}
+
+              <View style={styles.labelFormButtons}>
+                <Pressable
+                  onPress={() => setSelectedSearchAddress(null)}
+                  style={styles.labelFormCancelBtn}
+                >
+                  <Text style={styles.labelFormCancelBtnText}>Voltar</Text>
+                </Pressable>
+                
+                <Pressable
+                  onPress={handleSaveAndUseAddress}
+                  style={styles.labelFormConfirmBtn}
+                >
+                  <Text style={styles.labelFormConfirmBtnText}>Salvar e Usar</Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            <>
+              {/* Barra de Busca de Endereço */}
+              <View style={styles.searchContainer}>
+                <View style={styles.searchBox}>
+                  <MaterialIcons name="search" size={20} color="#9CA3AF" />
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Adicionar novo endereço (rua, número)..."
+                    placeholderTextColor="#9CA3AF"
+                    value={addressInput}
+                    onChangeText={setAddressInput}
+                    onSubmitEditing={handleSearch}
+                    autoCorrect={false}
+                    returnKeyType="search"
+                  />
+                  {addressInput.length > 0 && (
+                    <Pressable onPress={() => setAddressInput("")}>
+                      <MaterialIcons name="close" size={18} color="#9CA3AF" />
+                    </Pressable>
+                  )}
+                </View>
+                <Pressable onPress={handleSearch} style={styles.searchBtn}>
+                  <Text style={styles.searchBtnText}>Buscar</Text>
+                </Pressable>
+              </View>
+
+              {/* Botão de Localização GPS */}
+              <Pressable
+                onPress={handleUseGps}
+                disabled={gpsLoading || locationLoading}
+                style={styles.gpsButton}
+              >
+                {gpsLoading ? (
+                  <ActivityIndicator size="small" color="#22C55E" />
+                ) : (
+                  <MaterialIcons name="my-location" size={20} color="#22C55E" />
                 )}
-                ListEmptyComponent={
-                  addressInput.trim() && results.length === 0 ? null : (
-                    <View style={styles.emptyResults}>
-                      <MaterialIcons name="map" size={48} color="#374151" />
-                      <Text style={styles.emptyResultsText}>
-                        Digite seu endereço acima para buscar
-                      </Text>
-                    </View>
-                  )
-                }
-              />
-            )}
-          </View>
+                <View style={styles.gpsTextContainer}>
+                  <Text style={styles.gpsTitle}>Usar localização atual</Text>
+                  <Text style={styles.gpsSubtitle}>Ativar GPS do celular</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={20} color="#9CA3AF" />
+              </Pressable>
+
+              {/* Lista Principal de Conteúdo: Resultados da Busca OR Lista de Endereços Salvos */}
+              <View style={styles.resultsContainer}>
+                {searching ? (
+                  <View style={styles.centerSpinner}>
+                    <ActivityIndicator size="large" color="#22C55E" />
+                    <Text style={styles.spinnerText}>Procurando endereços...</Text>
+                  </View>
+                ) : errorMsg ? (
+                  <View style={styles.errorContainer}>
+                    <MaterialIcons name="error-outline" size={32} color="#EF4444" />
+                    <Text style={styles.errorText}>{errorMsg}</Text>
+                  </View>
+                ) : results.length > 0 ? (
+                  /* EXIBE RESULTADOS DA PESQUISA NOMINATIM */
+                  <FlatList
+                    data={results}
+                    keyExtractor={(item) => item.id}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                    renderItem={({ item }) => (
+                      <Pressable
+                        onPress={() => handleSelectSearchAddress(item)}
+                        style={styles.resultRow}
+                      >
+                        <View style={styles.resultIconBox}>
+                          <MaterialIcons name="location-on" size={20} color="#9CA3AF" />
+                        </View>
+                        <View style={styles.resultInfoBox}>
+                          <Text style={styles.resultTitle} numberOfLines={1}>
+                            {item.displayName.split(",")[0]}
+                          </Text>
+                          <Text style={styles.resultSubtitle} numberOfLines={2}>
+                            {item.displayName}
+                          </Text>
+                        </View>
+                        <Text style={styles.saveTagText}>+ Salvar</Text>
+                      </Pressable>
+                    )}
+                  />
+                ) : (
+                  /* EXIBE MEUS ENDEREÇOS SALVOS (ESTILO IFOOD) */
+                  <ScrollView showsVerticalScrollIndicator={false}>
+                    {savedAddresses.length > 0 && (
+                      <Text style={styles.savedSectionTitle}>Meus endereços salvos</Text>
+                    )}
+                    
+                    <FlatList
+                      data={savedAddresses}
+                      keyExtractor={(item) => item.id}
+                      scrollEnabled={false}
+                      renderItem={({ item }) => (
+                        <Pressable
+                          onPress={() => handleSelectSavedAddress(item)}
+                          style={styles.savedRow}
+                        >
+                          <View style={styles.savedIconBox}>
+                            <MaterialIcons
+                              name={getLabelIcon(item.label) as any}
+                              size={20}
+                              color="#22C55E"
+                            />
+                          </View>
+                          <View style={styles.savedInfoBox}>
+                            <Text style={styles.savedLabel}>{item.label}</Text>
+                            <Text style={styles.savedAddressName} numberOfLines={1}>
+                              {item.addressName}
+                            </Text>
+                          </View>
+                          
+                          {/* Botão de Excluir */}
+                          <Pressable
+                            onPress={(e) => handleDeleteSavedAddress(item.id, e)}
+                            style={styles.deleteRowBtn}
+                          >
+                            <MaterialIcons name="delete-outline" size={20} color="#EF4444" />
+                          </Pressable>
+                        </Pressable>
+                      )}
+                      ListEmptyComponent={
+                        <View style={styles.emptyResults}>
+                          <MaterialIcons name="place" size={48} color="#374151" />
+                          <Text style={styles.emptyResultsText}>
+                            Nenhum endereço salvo ainda. Busque e salve um endereço para começar!
+                          </Text>
+                        </View>
+                      }
+                    />
+                  </ScrollView>
+                )}
+              </View>
+            </>
+          )}
         </View>
       </View>
     </Modal>
@@ -392,7 +644,7 @@ const styles = StyleSheet.create({
   resultsContainer: {
     borderTopWidth: 1,
     borderTopColor: "#1F2937",
-    height: 300,
+    height: 350,
     backgroundColor: "#111827",
   },
   centerSpinner: {
@@ -448,11 +700,61 @@ const styles = StyleSheet.create({
     marginTop: 2,
     lineHeight: 16,
   },
+  saveTagText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#22C55E",
+    backgroundColor: "rgba(34, 197, 94, 0.1)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  savedSectionTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  savedRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1F2937",
+    gap: 12,
+  },
+  savedIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "rgba(34, 197, 94, 0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  savedInfoBox: {
+    flex: 1,
+  },
+  savedLabel: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  savedAddressName: {
+    fontSize: 12,
+    color: "#9CA3AF",
+    marginTop: 2,
+  },
+  deleteRowBtn: {
+    padding: 6,
+  },
   emptyResults: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingTop: 60,
+    paddingTop: 80,
     gap: 8,
   },
   emptyResultsText: {
@@ -460,5 +762,91 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: "center",
     paddingHorizontal: 40,
+    lineHeight: 18,
+  },
+  labelFormContainer: {
+    padding: 20,
+    backgroundColor: "#111827",
+    gap: 14,
+  },
+  labelFormTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#FFFFFF",
+  },
+  labelFormSubtitle: {
+    fontSize: 13,
+    color: "#9CA3AF",
+    lineHeight: 18,
+    marginBottom: 4,
+  },
+  labelSelectorRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  labelChoiceBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: "#1F2937",
+    borderWidth: 1.5,
+    borderColor: "transparent",
+    gap: 6,
+  },
+  labelChoiceBtnActive: {
+    borderColor: "#22C55E",
+    backgroundColor: "rgba(34, 197, 94, 0.08)",
+  },
+  labelChoiceText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#9CA3AF",
+  },
+  labelChoiceTextActive: {
+    color: "#FFFFFF",
+  },
+  labelCustomInput: {
+    backgroundColor: "#1F2937",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#374151",
+  },
+  labelFormButtons: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 8,
+  },
+  labelFormCancelBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: "#1F2937",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  labelFormCancelBtnText: {
+    color: "#9CA3AF",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  labelFormConfirmBtn: {
+    flex: 2,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: "#22C55E",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  labelFormConfirmBtnText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700",
   },
 });
