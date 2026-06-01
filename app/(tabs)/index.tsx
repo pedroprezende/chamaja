@@ -849,14 +849,8 @@ export default function HomeScreen() {
 
   // ── Render Bloco de Categoria (Draggable) ──
   const renderCategoryBlock = useCallback(({ item: cat, drag, isActive, index }: any) => {
-    // 1. Filtrar prestadores reais ativos da categoria
-    const catProviders = dbProviders.filter(p => p.categoryId === cat.id && p.isActive);
-    
-    // 2. Fallback para prestadores simulados caso não haja no banco real
-    let displayList = catProviders;
-    if (displayList.length === 0) {
-      displayList = getMockProvidersForCategory(cat.id);
-    }
+    // 1. Filtrar as subcategorias correspondentes a esta categoria
+    const subCats = dbSubcategories.filter((sub: any) => sub.categoryId === cat.id);
     
     const content = (
       <Pressable
@@ -878,18 +872,66 @@ export default function HomeScreen() {
             <Text style={[styles.seeAllText, { color: colors.primary }]}>Ver todos</Text>
           </Pressable>
         </View>
-        {displayList.length > 0 ? (
+        {subCats.length > 0 ? (
           <FlatList
-            data={displayList}
+            data={subCats}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.subCatList}
             keyExtractor={(item) => item.id}
-            renderItem={({ item, index: pIndex }) => renderProviderCard(item, pIndex, false)}
+            renderItem={({ item, index: subIndex }) => {
+              // Calcular a quantidade de prestadores para esta subcategoria
+              const count = dbProviders.filter((p) => {
+                if (!p.subcategoryId) return false;
+                const ids = p.subcategoryId.split(",").map(id => id.trim()).filter(Boolean);
+                return ids.includes(item.id);
+              }).length;
+              
+              const countText = count > 0 ? `${count} por perto` : "Ver profissionais";
+
+              return (
+                <AnimatedCard
+                  style={StyleSheet.flatten([
+                    styles.subCatCard, 
+                    { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }
+                  ])}
+                  onPress={() => {
+                    if (!editMode) {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setHomeSearchQuery(item.name);
+                    }
+                  }}
+                  delay={subIndex * 50}
+                >
+                  <View style={styles.subCatImageWrapper}>
+                    {item.imageUrl ? (
+                      <Image 
+                        source={{ uri: item.imageUrl }} 
+                        style={styles.subCatImage} 
+                        contentFit="cover"
+                        transition={200}
+                      />
+                    ) : (
+                      <View style={[styles.subCatPlaceholder, { backgroundColor: colors.surface }]}>
+                        <MaterialIcons name={(item.icon || "build") as any} size={32} color="#22C55E" />
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.subCatInfo}>
+                    <Text style={[styles.subCatName, { color: colors.foreground }]} numberOfLines={1}>
+                      {item.name}
+                    </Text>
+                    <Text style={{ fontSize: 10, color: colors.discreto, marginTop: 2 }}>
+                      {countText}
+                    </Text>
+                  </View>
+                </AnimatedCard>
+              );
+            }}
           />
         ) : (
           <View style={[styles.emptySubCat, { backgroundColor: colors.background, borderRadius: 12 }]}>
-            <Text style={[styles.emptySubCatText, { color: colors.muted }]}>Nenhum profissional disponível.</Text>
+            <Text style={[styles.emptySubCatText, { color: colors.muted }]}>Nenhum serviço disponível.</Text>
           </View>
         )}
       </Pressable>
@@ -900,7 +942,7 @@ export default function HomeScreen() {
         {drag ? <ScaleDecorator>{content}</ScaleDecorator> : content}
       </Animated.View>
     );
-  }, [dbProviders, editMode, router, colors, colorScheme, coords, renderProviderCard]);
+  }, [dbSubcategories, dbProviders, editMode, router, colors, colorScheme, coords]);
 
   // ── Render card (modo edição: draggable) ──
   const renderDraggableCard = useCallback(
