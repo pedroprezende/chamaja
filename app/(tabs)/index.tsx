@@ -118,6 +118,156 @@ const EMPTY_FORM = {
   showOnHome: true,
 };
 
+// ─── Prestadores de Destaque Simulados para Fallback ──────────────────────────
+const MOCK_PROVIDERS_BY_CAT: Record<string, any[]> = {
+  "reformas-reparos": [
+    {
+      id: "mock-pintor",
+      name: "Pintor Profissional",
+      category: "Reformas e Reparos",
+      subcategoryName: "Pintura",
+      categoryId: "reformas-reparos",
+      avatarUri: "https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=200&q=80",
+      rating: 4.9,
+      ratingCount: 62,
+      distance: "1,1 km",
+      coverUri: "https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=300&q=80"
+    },
+    {
+      id: "mock-gesseiro",
+      name: "Gesseiro Express",
+      category: "Reformas e Reparos",
+      subcategoryName: "Gesso",
+      categoryId: "reformas-reparos",
+      avatarUri: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=200&q=80",
+      rating: 4.8,
+      ratingCount: 45,
+      distance: "2,3 km",
+      coverUri: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=300&q=80"
+    },
+    {
+      id: "mock-vidraceiro",
+      name: "Vidraçaria Silva",
+      category: "Reformas e Reparos",
+      subcategoryName: "Vidraçaria",
+      categoryId: "reformas-reparos",
+      avatarUri: "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=200&q=80",
+      rating: 4.7,
+      ratingCount: 38,
+      distance: "1,7 km",
+      coverUri: "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=300&q=80"
+    }
+  ],
+  "servicos-externos": [
+    {
+      id: "mock-jardineiro",
+      name: "Jardins & Cia",
+      category: "Serviços Externos",
+      subcategoryName: "Jardinagem",
+      categoryId: "servicos-externos",
+      avatarUri: "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=200&q=80",
+      rating: 4.9,
+      ratingCount: 88,
+      distance: "0,9 km",
+      coverUri: "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=300&q=80"
+    },
+    {
+      id: "mock-piscineiro",
+      name: "Limpeza de Piscina Azul",
+      category: "Serviços Externos",
+      subcategoryName: "Piscineiro",
+      categoryId: "servicos-externos",
+      avatarUri: "https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?w=200&q=80",
+      rating: 4.8,
+      ratingCount: 29,
+      distance: "1,5 km",
+      coverUri: "https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?w=300&q=80"
+    }
+  ],
+  "servicos-domesticos": [
+    {
+      id: "mock-diarista",
+      name: "Diarista Brilho Único",
+      category: "Serviços Domésticos",
+      subcategoryName: "Limpeza",
+      categoryId: "servicos-domesticos",
+      avatarUri: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=200&q=80",
+      rating: 5.0,
+      ratingCount: 104,
+      distance: "1,4 km",
+      coverUri: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=300&q=80"
+    },
+    {
+      id: "mock-passadeira",
+      name: "Passadeira Elegante",
+      category: "Serviços Domésticos",
+      subcategoryName: "Passadeira",
+      categoryId: "servicos-domesticos",
+      avatarUri: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=200&q=80",
+      rating: 4.7,
+      ratingCount: 19,
+      distance: "2,0 km",
+      coverUri: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=300&q=80"
+    }
+  ],
+  "assistencia-tecnica": [
+    {
+      id: "mock-celulares",
+      name: "Tech Smart Assistência",
+      category: "Assistência Técnica",
+      subcategoryName: "Celulares",
+      categoryId: "assistencia-tecnica",
+      avatarUri: "https://images.unsplash.com/photo-1546054454-aa26e2b734c7?w=200&q=80",
+      rating: 4.7,
+      ratingCount: 78,
+      distance: "1,5 km",
+      coverUri: "https://images.unsplash.com/photo-1546054454-aa26e2b734c7?w=300&q=80"
+    },
+    {
+      id: "mock-refri",
+      name: "Refrigeração Norte",
+      category: "Assistência Técnica",
+      subcategoryName: "Eletrodomésticos",
+      categoryId: "assistencia-tecnica",
+      avatarUri: "https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=200&q=80",
+      rating: 4.6,
+      ratingCount: 42,
+      distance: "3,1 km",
+      coverUri: "https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=300&q=80"
+    }
+  ],
+  "beleza-estetica": [
+    {
+      id: "mock-manicure",
+      name: "Espaço Unhas de Diva",
+      category: "Beleza e Estética",
+      subcategoryName: "Manicure",
+      categoryId: "beleza-estetica",
+      avatarUri: "https://images.unsplash.com/photo-1604654894610-df63bc536371?w=200&q=80",
+      rating: 4.9,
+      ratingCount: 112,
+      distance: "0,5 km",
+      coverUri: "https://images.unsplash.com/photo-1604654894610-df63bc536371?w=300&q=80"
+    },
+    {
+      id: "mock-sobrancelhas",
+      name: "Cílios & Sobrancelhas",
+      category: "Beleza e Estética",
+      subcategoryName: "Estética",
+      categoryId: "beleza-estetica",
+      avatarUri: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=200&q=80",
+      rating: 4.8,
+      ratingCount: 56,
+      distance: "1,2 km",
+      coverUri: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=300&q=80"
+    }
+  ]
+};
+
+function getMockProvidersForCategory(categoryId: string): any[] {
+  return MOCK_PROVIDERS_BY_CAT[categoryId] || [];
+}
+
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function HomeScreen() {
   const colors = useColors();
@@ -192,6 +342,91 @@ export default function HomeScreen() {
     if (list.length > 0) return list.slice(0, 6);
     return dbSubcategories.slice(0, 6);
   }, [dbSubcategories]);
+
+  const nearbyCount = React.useMemo(() => {
+    return dbProviders.filter(p => p.isActive).length || 247;
+  }, [dbProviders]);
+
+  const renderProviderCard = useCallback((item: any, index: number, isFeatured: boolean = false) => {
+    let distanceText = "";
+    if (coords && item.latitude !== null && item.longitude !== null && item.latitude !== undefined && item.longitude !== undefined) {
+      const distKm = calculateHaversineDistance(
+        coords.latitude,
+        coords.longitude,
+        Number(item.latitude),
+        Number(item.longitude)
+      );
+      distanceText = formatDistancePtBr(distKm).replace(" de você", "");
+    } else {
+      distanceText = item.distance || `${(1.0 + (index * 0.4)).toFixed(1).replace(".", ",")} km`;
+    }
+
+    const isMock = String(item.id).startsWith("mock-");
+
+    return (
+      <Pressable
+        key={item.id}
+        style={[
+          styles.featuredCard,
+          { backgroundColor: colors.surface, borderColor: colors.border }
+        ]}
+        onPress={() => {
+          if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          if (isMock) {
+            router.push({
+              pathname: "/categories/[section]",
+              params: { section: item.categoryId || "reformas-reparos", title: item.category }
+            } as any);
+          } else {
+            router.push(`/professional/${item.id}` as any);
+          }
+        }}
+      >
+        <View style={styles.featuredImageWrapper}>
+          <Image
+            source={{ uri: item.coverUri || item.avatarUri || "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=300&q=80" }}
+            style={styles.featuredImage}
+          />
+          {isFeatured && (
+            <View style={styles.sponsoredBadge}>
+              <Text style={styles.sponsoredText}>Patrocinado</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.featuredInfo}>
+          <View style={styles.featuredTitleRow}>
+            <Text style={[styles.featuredName, { color: colors.foreground }]} numberOfLines={1}>
+              {item.name}
+            </Text>
+            {(item.isVerified || isMock) && (
+              <MaterialIcons name="verified" size={14} color="#22C55E" />
+            )}
+          </View>
+
+          <Text style={[styles.featuredSub, { color: colors.discreto }]} numberOfLines={1}>
+            {item.subcategoryName || item.category || "Profissional"} • {distanceText}
+          </Text>
+
+          <View style={styles.featuredBottom}>
+            <View style={styles.ratingRow}>
+              <MaterialIcons name="star" size={14} color="#FBBF24" />
+              <Text style={[styles.ratingText, { color: colors.foreground }]}>
+                {Number(item.rating || 5.0).toFixed(1)} ({item.ratingCount || 0})
+              </Text>
+            </View>
+            <View style={[styles.abertoBadge, { 
+              backgroundColor: colorScheme === "dark" ? "rgba(34, 197, 94, 0.15)" : "#DCFCE7" 
+            }]}>
+              <Text style={[styles.abertoText, { 
+                color: colorScheme === "dark" ? "#22C55E" : "#15803D" 
+              }]}>Aberto</Text>
+            </View>
+          </View>
+        </View>
+      </Pressable>
+    );
+  }, [coords, colors, colorScheme, router]);
 
   // Debug Logs
   useEffect(() => {
@@ -614,8 +849,14 @@ export default function HomeScreen() {
 
   // ── Render Bloco de Categoria (Draggable) ──
   const renderCategoryBlock = useCallback(({ item: cat, drag, isActive, index }: any) => {
-    const subCats = dbSubcategories.filter((sub: any) => sub.categoryId === cat.id);
-    const catServiceCount = services.filter(s => s.categoryId === cat.id && s.isActive).length;
+    // 1. Filtrar prestadores reais ativos da categoria
+    const catProviders = dbProviders.filter(p => p.categoryId === cat.id && p.isActive);
+    
+    // 2. Fallback para prestadores simulados caso não haja no banco real
+    let displayList = catProviders;
+    if (displayList.length === 0) {
+      displayList = getMockProvidersForCategory(cat.id);
+    }
     
     const content = (
       <Pressable
@@ -634,50 +875,21 @@ export default function HomeScreen() {
             </View>
           </View>
           <Pressable onPress={() => !editMode && router.push(`/categories/${cat.id}` as any)}>
-            <Text style={[styles.seeAllText, { color: colors.primary }]}>Ver tudo</Text>
+            <Text style={[styles.seeAllText, { color: colors.primary }]}>Ver todos</Text>
           </Pressable>
         </View>
-        {subCats.length > 0 ? (
+        {displayList.length > 0 ? (
           <FlatList
-            data={subCats}
+            data={displayList}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.subCatList}
             keyExtractor={(item) => item.id}
-            renderItem={({ item, index: subIndex }) => (
-              <AnimatedCard
-                style={StyleSheet.flatten([styles.subCatCard, { backgroundColor: colors.background, borderColor: colors.border, borderWidth: 1 }])}
-                onPress={() => {
-                  if (!editMode) {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    router.push(`/categories/${cat.id}` as any);
-                  }
-                }}
-                delay={subIndex * 50}
-              >
-                <View style={styles.subCatImageWrapper}>
-                  {item.imageUrl ? (
-                    <Image 
-                      source={{ uri: item.imageUrl }} 
-                      style={styles.subCatImage} 
-                      contentFit="cover"
-                      transition={200}
-                    />
-                  ) : (
-                    <View style={[styles.subCatPlaceholder, { backgroundColor: colors.surface }]}>
-                      <MaterialIcons name={(item.icon || "build") as any} size={32} color={colors.primary} />
-                    </View>
-                  )}
-                </View>
-                <View style={styles.subCatInfo}>
-                  <Text style={[styles.subCatName, { color: colors.foreground }]} numberOfLines={2}>{item.name}</Text>
-                </View>
-              </AnimatedCard>
-            )}
+            renderItem={({ item, index: pIndex }) => renderProviderCard(item, pIndex, false)}
           />
         ) : (
           <View style={[styles.emptySubCat, { backgroundColor: colors.background, borderRadius: 12 }]}>
-            <Text style={[styles.emptySubCatText, { color: colors.muted }]}>Nenhum serviço cadastrado.</Text>
+            <Text style={[styles.emptySubCatText, { color: colors.muted }]}>Nenhum profissional disponível.</Text>
           </View>
         )}
       </Pressable>
@@ -688,7 +900,7 @@ export default function HomeScreen() {
         {drag ? <ScaleDecorator>{content}</ScaleDecorator> : content}
       </Animated.View>
     );
-  }, [dbSubcategories, services, editMode, router, colors]);
+  }, [dbProviders, editMode, router, colors, colorScheme, coords, renderProviderCard]);
 
   // ── Render card (modo edição: draggable) ──
   const renderDraggableCard = useCallback(
@@ -856,10 +1068,28 @@ export default function HomeScreen() {
       {/* <MigrationManager /> */}
         
         {/* Header Fixo */}
-        <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border, borderBottomWidth: 1 }]}>
-          <View>
-            <Text style={[styles.greeting, { color: colors.foreground }]}>Olá, {firstName}</Text>
-            <Text style={{ fontSize: 13, color: colors.muted, fontWeight: "500" }}>Encontre o profissional ideal</Text>
+        <View style={[styles.header, { backgroundColor: colors.background, borderBottomWidth: 0, paddingBottom: 8 }]}>
+          <View style={styles.headerLeftContainer}>
+            {/* Avatar do Usuário */}
+            <View style={[styles.avatarHeaderWrapper, { borderColor: "#22C55E", borderWidth: 2 }]}>
+              <Image
+                source={{ uri: (user as any)?.avatarUri || "https://images.unsplash.com/photo-1552728089-57bdde30ebd3?w=100&q=80" }}
+                style={styles.avatarHeader}
+              />
+            </View>
+            <View style={styles.headerTitleContainer}>
+              <Text style={[styles.greeting, { color: colors.foreground }]} numberOfLines={1}>Olá, {firstName}!</Text>
+              <View style={styles.locationContainer}>
+                <MaterialIcons name="location-on" size={14} color="#22C55E" />
+                <Text style={[styles.locationText, { color: colors.foreground }]} numberOfLines={1}>
+                  Bragança Paulista - SP
+                </Text>
+                <MaterialIcons name="keyboard-arrow-down" size={14} color={colors.foreground} />
+              </View>
+              <Text style={[styles.nearbySummaryText, { color: colors.discreto }]}>
+                Encontramos <Text style={{ color: "#22C55E", fontWeight: "700" }}>{nearbyCount}</Text> profissionais próximos
+              </Text>
+            </View>
           </View>
           <View style={styles.headerRight}>
             {/* Botão de Chaveamento de Tema */}
@@ -874,7 +1104,7 @@ export default function HomeScreen() {
             >
               <MaterialIcons
                 name={colorScheme === "dark" ? "wb-sunny" : "brightness-2"}
-                size={24}
+                size={22}
                 color={colors.foreground}
               />
             </Pressable>
@@ -884,9 +1114,9 @@ export default function HomeScreen() {
               onPress={() => router.push("/notifications" as any)}
             >
               <View style={styles.bellWrapper}>
-                <MaterialIcons name="notifications-none" size={26} color={colors.foreground} />
+                <MaterialIcons name="notifications-none" size={24} color={colors.foreground} />
                 {unreadCount > 0 && (
-                  <View style={styles.badge}>
+                  <View style={[styles.badge, { backgroundColor: "#EF4444" }]}>
                     <Text style={styles.badgeText}>{unreadCount}</Text>
                   </View>
                 )}
@@ -906,13 +1136,13 @@ export default function HomeScreen() {
         )}
 
         {/* Busca e Filtros */}
-        <View style={[styles.searchRow, { backgroundColor: colors.surface, paddingBottom: 12 }]}>
-          <View style={[styles.searchContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
-            <MaterialIcons name="search" size={20} color={colors.muted} />
+        <View style={[styles.searchRow, { backgroundColor: colors.background, paddingBottom: 12 }]}>
+          <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <MaterialIcons name="search" size={20} color={colors.discreto} />
             <TextInput
               style={[styles.searchTextInput, { color: colors.foreground }]}
               placeholder="Buscar serviços ou profissionais..."
-              placeholderTextColor={colors.muted + "80"}
+              placeholderTextColor={colors.discreto + "80"}
               value={homeSearchQuery}
               onChangeText={setHomeSearchQuery}
             />
@@ -924,12 +1154,12 @@ export default function HomeScreen() {
             {searching && <ActivityIndicator size="small" color={colors.primary} />}
           </View>
           <Pressable
-            style={[styles.filterBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
+            style={[styles.filterBtn, { backgroundColor: "transparent", borderColor: "#22C55E", borderWidth: 1 }]}
             onPress={() => setFilterModalVisible(true)}
           >
-            <MaterialIcons name="tune" size={20} color={colors.primary} />
-            <Text style={[styles.filterBtnText, { color: colors.primary }]}>Filtros</Text>
-            {activeFilter !== "none" && <View style={styles.filterActiveDot} />}
+            <MaterialIcons name="tune" size={20} color="#22C55E" />
+            <Text style={[styles.filterBtnText, { color: "#22C55E" }]}>Filtros</Text>
+            {activeFilter !== "none" && <View style={[styles.filterActiveDot, { backgroundColor: "#22C55E" }]} />}
           </Pressable>
         </View>
 
@@ -1020,7 +1250,7 @@ export default function HomeScreen() {
                   <AdsCarousel ads={ads} />
                 </View>
 
-                {/* 2. Categorias Rápidas */}
+                 {/* 2. Categorias Rápidas */}
                 <View style={{ marginTop: 8 }}>
                   <View style={styles.sectionWrapper}>
                     <View style={styles.sectionHeader}>
@@ -1035,7 +1265,7 @@ export default function HomeScreen() {
                     showsHorizontalScrollIndicator={false} 
                     contentContainerStyle={styles.horizontalCatsContent}
                   >
-                    {allCategories?.map((cat) => (
+                    {allCategories?.slice(0, 5).map((cat) => (
                       <Pressable
                         key={cat.id}
                         style={styles.quickCatBtn}
@@ -1048,13 +1278,28 @@ export default function HomeScreen() {
                         }}
                       >
                         <View style={[styles.quickCatIconBg, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                          <MaterialIcons name={CATEGORY_ICONS[cat.id] as any || "build"} size={28} color={colors.foreground} />
+                          <MaterialIcons name={CATEGORY_ICONS[cat.id] as any || "build"} size={28} color="#22C55E" />
                         </View>
                         <Text style={[styles.quickCatLabel, { color: colors.foreground }]} numberOfLines={2}>
                           {cat.name.replace("\n", " ")}
                         </Text>
                       </Pressable>
                     ))}
+                    {/* Botão extra Mais Categorias */}
+                    <Pressable
+                      style={styles.quickCatBtn}
+                      onPress={() => {
+                        if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        router.push("/search" as any);
+                      }}
+                    >
+                      <View style={[styles.quickCatIconBg, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                        <MaterialIcons name="more-horiz" size={28} color="#22C55E" />
+                      </View>
+                      <Text style={[styles.quickCatLabel, { color: colors.foreground }]} numberOfLines={2}>
+                        Mais Categorias
+                      </Text>
+                    </Pressable>
                   </ScrollView>
                 </View>
 
@@ -1063,7 +1308,7 @@ export default function HomeScreen() {
                   <View style={styles.sectionWrapper}>
                     <View style={styles.sectionHeader}>
                       <View style={styles.sectionTitleRow}>
-                        <MaterialIcons name="star" size={20} color="#FFB800" />
+                        <MaterialIcons name="star" size={20} color="#FBBF24" />
                         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Destaques para você</Text>
                       </View>
                       <Pressable onPress={() => router.push("/search" as any)}>
@@ -1080,70 +1325,7 @@ export default function HomeScreen() {
                       showsHorizontalScrollIndicator={false}
                       contentContainerStyle={{ paddingHorizontal: 16, gap: 12, paddingBottom: 10 }}
                       keyExtractor={(item) => item.id}
-                      renderItem={({ item, index }) => {
-                        let distanceText = "";
-                        if (coords && item.latitude !== null && item.longitude !== null) {
-                          const distKm = calculateHaversineDistance(
-                            coords.latitude,
-                            coords.longitude,
-                            Number(item.latitude),
-                            Number(item.longitude)
-                          );
-                          distanceText = formatDistancePtBr(distKm).replace(" de você", "");
-                        } else {
-                          distanceText = `${(1.0 + (index * 0.4)).toFixed(1).replace(".", ",")} km`;
-                        }
-
-                        return (
-                          <Pressable
-                            style={[
-                              styles.featuredCard,
-                              { backgroundColor: colors.surface, borderColor: colors.border }
-                            ]}
-                            onPress={() => {
-                              if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                              router.push(`/professional/${item.id}` as any);
-                            }}
-                          >
-                            <View style={styles.featuredImageWrapper}>
-                              <Image
-                                source={{ uri: item.coverUri || item.avatarUri || "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=300&q=80" }}
-                                style={styles.featuredImage}
-                              />
-                              <View style={styles.sponsoredBadge}>
-                                <Text style={styles.sponsoredText}>Patrocinado</Text>
-                              </View>
-                            </View>
-
-                            <View style={styles.featuredInfo}>
-                              <View style={styles.featuredTitleRow}>
-                                <Text style={[styles.featuredName, { color: colors.foreground }]} numberOfLines={1}>
-                                  {item.name}
-                                </Text>
-                                {item.isVerified && (
-                                  <MaterialIcons name="verified" size={14} color="#15803D" />
-                                )}
-                              </View>
-
-                              <Text style={styles.featuredSub} numberOfLines={1}>
-                                {item.category || "Profissional"} • {distanceText}
-                              </Text>
-
-                              <View style={styles.featuredBottom}>
-                                <View style={styles.ratingRow}>
-                                  <MaterialIcons name="star" size={14} color="#FBBF24" />
-                                  <Text style={[styles.ratingText, { color: colors.foreground }]}>
-                                    {Number(item.rating || 5.0).toFixed(1)} ({item.ratingCount || 0})
-                                  </Text>
-                                </View>
-                                <View style={[styles.abertoBadge, { backgroundColor: "#DCFCE7" }]}>
-                                  <Text style={styles.abertoText}>Aberto</Text>
-                                </View>
-                              </View>
-                            </View>
-                          </Pressable>
-                        );
-                      }}
+                      renderItem={({ item, index }) => renderProviderCard(item, index, true)}
                     />
                   )}
                 </View>
@@ -1625,12 +1807,50 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 12,
     backgroundColor: "#FFFFFF",
   },
-  greeting: { fontSize: 22, fontWeight: "700", color: "#111827" },
+  headerLeftContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+  },
+  avatarHeaderWrapper: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarHeader: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 22,
+  },
+  headerTitleContainer: {
+    flex: 1,
+    gap: 1,
+  },
+  locationContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    marginTop: 1,
+  },
+  locationText: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  nearbySummaryText: {
+    fontSize: 11,
+    fontWeight: "500",
+    marginTop: 2,
+  },
+  greeting: { fontSize: 18, fontWeight: "800", color: "#111827" },
   headerRight: { flexDirection: "row", alignItems: "center", gap: 8 },
   editModeBtn: {
     flexDirection: "row",

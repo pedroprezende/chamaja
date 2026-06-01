@@ -4,6 +4,7 @@ export const themeColors: {
   surface: { light: string; dark: string };
   foreground: { light: string; dark: string };
   muted: { light: string; dark: string };
+  discreto: { light: string; dark: string };
   border: { light: string; dark: string };
   success: { light: string; dark: string };
   warning: { light: string; dark: string };
