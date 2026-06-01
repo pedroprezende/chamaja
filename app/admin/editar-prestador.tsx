@@ -119,58 +119,88 @@ export default function EditarPrestador() {
 
   useEffect(() => {
     if (dbProvider && !hasInitialized.current) {
-      setName(dbProvider.name || "");
-      setCategory(dbProvider.category || "");
-      setCategoryId(dbProvider.categoryId || "");
-      setSubcategoryName(dbProvider.subcategoryName || "");
-      setSubcategoryId(dbProvider.subcategoryId || "");
-      setDescription(dbProvider.description || "");
-      setAddress(dbProvider.address || "");
-      setCity(dbProvider.city || "Bragança Paulista");
-      setNeighborhood(dbProvider.neighborhood || "");
-      setIsActive(dbProvider.isActive);
-      setDestaque(dbProvider.destaque ?? false);
-      setWhatsapp(dbProvider.whatsapp || dbProvider.phone || "");
-      setAvatarUri(dbProvider.avatarUri || "");
-      setCoverUri(dbProvider.coverUri || "");
+      setName(dbProvider.name ? String(dbProvider.name) : "");
+      setCategory(dbProvider.category ? String(dbProvider.category) : "");
+      setCategoryId(dbProvider.categoryId ? String(dbProvider.categoryId) : "");
+      setSubcategoryName(dbProvider.subcategoryName ? String(dbProvider.subcategoryName) : "");
+      setSubcategoryId(dbProvider.subcategoryId ? String(dbProvider.subcategoryId) : "");
+      setDescription(dbProvider.description ? String(dbProvider.description) : "");
+      setAddress(dbProvider.address ? String(dbProvider.address) : "");
+      setCity(dbProvider.city ? String(dbProvider.city) : "Bragança Paulista");
+      setNeighborhood(dbProvider.neighborhood ? String(dbProvider.neighborhood) : "");
+      setIsActive(!!dbProvider.isActive);
+      setDestaque(!!dbProvider.destaque);
+      setWhatsapp(dbProvider.whatsapp ? String(dbProvider.whatsapp) : (dbProvider.phone ? String(dbProvider.phone) : ""));
+      setAvatarUri(dbProvider.avatarUri ? String(dbProvider.avatarUri) : "");
+      setCoverUri(dbProvider.coverUri ? String(dbProvider.coverUri) : "");
       setFoundedYear(dbProvider.foundedYear ? String(dbProvider.foundedYear) : "");
-      setGallery(dbProvider.gallery || []);
 
-      let specNames: string[] = [];
+      // Safe Gallery recovery
+      let initialGallery: string[] = [];
+      const rawGallery: any = dbProvider.gallery;
+      if (Array.isArray(rawGallery)) {
+        initialGallery = rawGallery.map(g => String(g));
+      } else if (typeof rawGallery === "string") {
+        try {
+          const parsed = JSON.parse(rawGallery);
+          if (Array.isArray(parsed)) {
+            initialGallery = parsed.map(g => String(g));
+          } else {
+            initialGallery = [rawGallery];
+          }
+        } catch {
+          if (rawGallery.startsWith("{") && rawGallery.endsWith("}")) {
+            initialGallery = rawGallery.slice(1, -1).split(",").map((s: string) => s.trim()).filter(Boolean);
+          } else {
+            initialGallery = [rawGallery];
+          }
+        }
+      }
+      setGallery(initialGallery);
+
+      // Safe Services / Specialties restoration
+      let specNames: any[] = [];
       try {
         if (dbProvider.services) {
-          specNames = JSON.parse(dbProvider.services);
+          const parsed = JSON.parse(dbProvider.services);
+          specNames = Array.isArray(parsed) ? parsed : [parsed];
         } else if (dbProvider.subcategoryName) {
-          specNames = dbProvider.subcategoryName.split(",").map(s => s.trim()).filter(Boolean);
+          specNames = String(dbProvider.subcategoryName).split(",").map(s => s.trim()).filter(Boolean);
         }
       } catch (e) {
         if (dbProvider.subcategoryName) {
-          specNames = dbProvider.subcategoryName.split(",").map(s => s.trim()).filter(Boolean);
+          specNames = String(dbProvider.subcategoryName).split(",").map(s => s.trim()).filter(Boolean);
         }
       }
 
+      // Convert any objects {"name": "...", "price": ...} into strings
+      const specNamesCleaned = specNames.map(item => {
+        if (typeof item === "string") return item;
+        if (item && typeof item === "object" && typeof item.name === "string") return item.name;
+        return "";
+      }).filter(Boolean);
+
       // Restaurar múltiplas especialidades no mapa de seleção
-      // Usamos allSubServices para garantir que encontramos os IDs mesmo antes da categoria carregar
       const newSelected: Record<string, boolean> = {};
       
       // Também tentamos restaurar pelos IDs se estiverem salvos no subcategoryId
-      if (dbProvider.subcategoryId) {
+      if (dbProvider.subcategoryId && typeof dbProvider.subcategoryId === "string") {
         const ids = dbProvider.subcategoryId.split(",").map(id => id.trim()).filter(Boolean);
         ids.forEach(id => { newSelected[id] = true; });
       }
 
-      // Se não tivermos IDs ou para garantir nomes consistentes, usamos specNames
-      specNames.forEach(name => {
-        // Procurar tanto em sub-serviços quanto em serviços administrativos
-        const found = allSubServices.find(m => typeof m.name === "string" && typeof name === "string" && m.name.toLowerCase() === name.toLowerCase()) ||
-                      dbServices.find(m => typeof m.name === "string" && typeof name === "string" && m.name.toLowerCase() === name.toLowerCase());
-        if (found) {
-          newSelected[found.id] = true;
+      specNamesCleaned.forEach(name => {
+        if (typeof name === "string") {
+          const found = allSubServices.find(m => typeof m.name === "string" && m.name.toLowerCase() === name.toLowerCase()) ||
+                        dbServices.find(m => typeof m.name === "string" && m.name.toLowerCase() === name.toLowerCase());
+          if (found) {
+            newSelected[found.id] = true;
+          }
         }
       });
       
       setSelectedSpecialties(newSelected);
-      setSubcategoryName(specNames.join(", "));
+      setSubcategoryName(specNamesCleaned.join(", "));
       hasInitialized.current = true;
     }
   }, [dbProvider, allSubServices, dbServices]);

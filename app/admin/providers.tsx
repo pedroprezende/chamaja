@@ -276,16 +276,16 @@ export default function AdminProvidersScreen() {
     const q = searchText.toLowerCase();
     return providers.filter(
       (p) =>
-        p.name.toLowerCase().includes(q) ||
-        (p.serviceName || "").toLowerCase().includes(q) ||
-        (p.address ?? "").toLowerCase().includes(q)
+        (typeof p.name === "string" && p.name.toLowerCase().includes(q)) ||
+        (typeof p.serviceName === "string" && p.serviceName.toLowerCase().includes(q)) ||
+        (typeof p.address === "string" && p.address.toLowerCase().includes(q))
     );
   }, [providers, searchText]);
 
   const filteredServices = useMemo(() => {
     if (!serviceSearchQuery.trim()) return services;
     const q = serviceSearchQuery.toLowerCase();
-    return services.filter((s) => s.name.toLowerCase().includes(q));
+    return services.filter((s) => typeof s.name === "string" && s.name.toLowerCase().includes(q));
   }, [services, serviceSearchQuery]);
 
   const openCreate = () => {

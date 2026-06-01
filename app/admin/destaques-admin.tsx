@@ -148,8 +148,8 @@ export default function DestaquesAdmin() {
     if (!searchQuery.trim()) return providers;
     const q = searchQuery.toLowerCase();
     return providers.filter(p => 
-      p.name.toLowerCase().includes(q) || 
-      (p.category && p.category.toLowerCase().includes(q))
+      (typeof p.name === "string" && p.name.toLowerCase().includes(q)) || 
+      (typeof p.category === "string" && p.category.toLowerCase().includes(q))
     );
   }, [providers, searchQuery]);
 
