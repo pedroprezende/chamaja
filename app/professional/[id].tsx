@@ -210,7 +210,7 @@ export default function ProfessionalDetailScreen() {
             avatar: prof.avatarUri || getAvatarUrl(prof.name),
             rating: Number(prof.rating) || 0,
             phone: prof.phone || "",
-            type: (prof.plan?.toLowerCase() as "free" | "premium") ?? "free",
+            type: (typeof prof.plan === "string" ? (prof.plan.toLowerCase() as "free" | "premium") : "free"),
             latitude: prof.latitude ? Number(prof.latitude) : null,
             longitude: prof.longitude ? Number(prof.longitude) : null,
           })}

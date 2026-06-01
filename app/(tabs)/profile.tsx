@@ -266,7 +266,7 @@ export default function ProfileScreen() {
     <ScreenContainer edges={["left", "right"]} className="">
       {/* Header */}
       <LinearGradient
-        colors={["#FFFFFF", "#F8F9FA"]}
+        colors={colors.background === "#F8F9FA" ? ["#FFFFFF", "#F8F9FA"] : ["#1E293B", "#0F172A"]}
         style={[styles.header, { borderBottomColor: colors.border }]}
       >
         <Text style={[styles.headerTitle, { color: colors.foreground }]}>Perfil</Text>

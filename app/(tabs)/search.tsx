@@ -529,7 +529,7 @@ export default function SearchScreen() {
                             avatar: item.avatarUri || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}`,
                             rating: Number(item.rating) || 0,
                             phone: item.phone || item.whatsapp || "",
-                            type: ((item.plan?.toLowerCase() === "premium" || item.plan?.toLowerCase() === "annual" || item.plan?.toLowerCase() === "monthly") ? "premium" : "free") as "free" | "premium",
+                            type: (typeof item.plan === "string" && (item.plan.toLowerCase() === "premium" || item.plan.toLowerCase() === "annual" || item.plan.toLowerCase() === "monthly")) ? "premium" : "free",
                             latitude: item.latitude ? Number(item.latitude) : null,
                             longitude: item.longitude ? Number(item.longitude) : null,
                           });
