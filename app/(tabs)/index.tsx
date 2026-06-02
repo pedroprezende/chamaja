@@ -347,8 +347,9 @@ export default function HomeScreen() {
   }, [dbSubcategories]);
 
   const nearbyCount = React.useMemo(() => {
-    return dbProviders.filter(p => p.isActive).length || 247;
-  }, [dbProviders]);
+    if (loadingProviders) return "...";
+    return dbProviders.filter(p => p.isActive).length;
+  }, [dbProviders, loadingProviders]);
 
   const renderProviderCard = useCallback((item: any, index: number, isFeatured: boolean = false) => {
     let distanceText = "";
