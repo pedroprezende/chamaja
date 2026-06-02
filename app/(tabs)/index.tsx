@@ -820,23 +820,12 @@ export default function HomeScreen() {
         rating: p.rating || 0,
         latitude: p.latitude,
         longitude: p.longitude,
+        categoryId: p.categoryId || "",
       };
     });
 
-    // Mapear serviços
-    const svcs = filteredServices.map(s => ({
-      id: s.id,
-      name: s.name,
-      category: s.category,
-      description: s.description || "",
-      imageUri: s.imageUri || undefined,
-      type: "SERVICE" as const,
-      rating: 5, // Serviços do admin são considerados "premium/nota máxima"
-      latitude: undefined,
-      longitude: undefined,
-    }));
-
-    let results = [...svcs, ...providers];
+    // Apenas prestadores e comércios (providers), sem duplicar como serviços administrativos
+    let results = [...providers];
 
     // Calcular distâncias
     const mapped = results.map((r) => {
@@ -865,7 +854,7 @@ export default function HomeScreen() {
     }
 
     return mapped;
-  }, [searchResults, filteredServices, homeSearchQuery, dbSubcategories, activeFilter, coords, showDistance]);
+  }, [searchResults, homeSearchQuery, dbSubcategories, activeFilter, coords, showDistance]);
 
   // ── Drag-and-drop Categorias ──
   const handleCategoryDragEnd = useCallback(async ({ data }: { data: any[] }) => {
@@ -1265,7 +1254,7 @@ export default function HomeScreen() {
                   ) : (
                     <View style={[styles.verticalCardIconBg, { backgroundColor: colors.background }]}>
                       <MaterialIcons 
-                        name={(item.type === "SERVICE" ? getAdminIcon(item.category) : "person") as any} 
+                        name={(item.categoryId === "comercios" || String(item.category).toLowerCase().includes("comercio") ? "storefront" : "person") as any} 
                         size={24} 
                         color={colors.primary} 
                       />
@@ -1277,7 +1266,9 @@ export default function HomeScreen() {
                       <Text style={[styles.verticalCardCategory, { color: colors.primary }]}>{item.category}</Text>
                       <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.border }} />
                       <Text style={{ fontSize: 11, color: colors.muted }}>
-                        {item.type === "SERVICE" ? "Serviço" : "Profissional"}
+                        {item.categoryId === "comercios" || String(item.category).toLowerCase().includes("comercio")
+                          ? "Comércio" 
+                          : "Profissional"}
                       </Text>
                       {showDistance && item.distanceKm && item.distanceKm < 9000 ? (
                         <>
