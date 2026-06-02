@@ -160,6 +160,21 @@ const SearchMapNative = forwardRef<any, SearchMapProps>((props, ref) => {
     }
   }, [selectedProviderId, providers]);
 
+  // Pan to user location if it changes
+  useEffect(() => {
+    if (userCoords) {
+      mapRef.current?.animateToRegion(
+        {
+          latitude: userCoords.latitude,
+          longitude: userCoords.longitude,
+          latitudeDelta: 0.015,
+          longitudeDelta: 0.015,
+        },
+        1000
+      );
+    }
+  }, [userCoords?.latitude, userCoords?.longitude]);
+
   return (
     <View style={styles.container}>
       <MapView
