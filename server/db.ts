@@ -1,4 +1,4 @@
-import { eq, desc, asc, and } from "drizzle-orm";
+import { eq, desc, asc, and, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import {
@@ -68,6 +68,28 @@ export async function getUserByOpenId(openId: string) {
   if (!db) { console.warn("[Database] Cannot get user: database not available"); return undefined; }
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
   return result.length > 0 ? result[0] : undefined;
+}
+
+export async function deleteUserFully(openId: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    // 1. Delete provider associated with the user if they are a provider
+    await db.delete(providers).where(eq(providers.userId, openId));
+
+    // 2. Delete favorites
+    await db.delete(favorites).where(eq(favorites.userId, openId));
+
+    // 3. Delete user from public.users
+    await db.delete(users).where(eq(users.openId, openId));
+
+    // 4. Delete from auth.users (Supabase Auth)
+    await db.execute(sql`DELETE FROM auth.users WHERE id = ${openId}::uuid`);
+  } catch (error) {
+    console.error("[Database] Failed to delete user fully:", error);
+    throw error;
+  }
 }
 
 // ── Categories ────────────────────────────────────────────────────────────────

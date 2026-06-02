@@ -19,11 +19,53 @@ import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 import { useAuth } from "@/lib/auth-context";
 import { storage } from "@/lib/storage";
+import { trpc } from "@/lib/trpc";
 
 export default function EditProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user, updateProfile } = useAuth();
+  const auth = useAuth();
+
+  const deleteAccountMutation = trpc.auth.deleteAccount.useMutation({
+    onSuccess: async () => {
+      try {
+        await auth.signOut();
+        router.replace("/auth/login");
+      } catch (err) {
+        Alert.alert("Erro", "Sua conta foi excluída, mas não conseguimos fazer o logout automático. Por favor, reinicie o aplicativo.");
+      }
+    },
+    onError: (err) => {
+      Alert.alert("Erro", err.message || "Não foi possível excluir a sua conta.");
+    }
+  });
+
+  const handleDeleteAccount = () => {
+    if (Platform.OS === "web") {
+      const confirmed = window.confirm(
+        "Tem certeza que deseja excluir sua conta permanentemente? Esta ação é irreversível e todos os seus dados serão deletados para sempre."
+      );
+      if (confirmed) {
+        deleteAccountMutation.mutate();
+      }
+    } else {
+      Alert.alert(
+        "Excluir conta",
+        "Tem certeza que deseja excluir sua conta permanentemente? Esta ação é irreversível e todos os seus dados (incluindo serviços e favoritos) serão deletados para sempre.",
+        [
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: "Excluir permanentemente",
+            style: "destructive",
+            onPress: () => {
+              deleteAccountMutation.mutate();
+            }
+          }
+        ]
+      );
+    }
+  };
 
   const [name, setName] = useState(user?.name || "");
   const [avatarUri, setAvatarUri] = useState(user?.avatar || "");
@@ -184,6 +226,31 @@ export default function EditProfileScreen() {
               </>
             )}
           </Pressable>
+          {/* Zona de Perigo */}
+          <View style={styles.dangerZone}>
+            <Text style={styles.dangerTitle}>Zona de Perigo</Text>
+            <Pressable
+              style={({ pressed }) => [
+                styles.deleteBtn,
+                pressed && { opacity: 0.8 },
+                deleteAccountMutation.isPending && { opacity: 0.6 }
+              ]}
+              onPress={handleDeleteAccount}
+              disabled={deleteAccountMutation.isPending}
+            >
+              {deleteAccountMutation.isPending ? (
+                <ActivityIndicator size="small" color="#EF4444" />
+              ) : (
+                <>
+                  <MaterialIcons name="delete-forever" size={20} color="#EF4444" />
+                  <Text style={styles.deleteBtnText}>Excluir minha conta</Text>
+                </>
+              )}
+            </Pressable>
+            <Text style={styles.dangerText}>
+              A exclusão da conta é permanente e apagará todos os seus dados cadastrados, incluindo serviços e favoritos.
+            </Text>
+          </View>
 
           <View style={{ height: 40 }} />
         </ScrollView>
@@ -272,4 +339,50 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   saveBtnText: { fontSize: 16, fontWeight: "700", color: "#FFFFFF" },
+  dangerZone: {
+    backgroundColor: "#FFFFFF",
+    marginHorizontal: 16,
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 24,
+    marginBottom: 16,
+    borderWidth: 1.5,
+    borderColor: "#FEE2E2",
+    shadowColor: "#EF4444",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  dangerTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#EF4444",
+    marginBottom: 14,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  deleteBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderWidth: 1.5,
+    borderColor: "#FCA5A5",
+    borderRadius: 12,
+    paddingVertical: 12,
+    backgroundColor: "#FEF2F2",
+  },
+  deleteBtnText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#EF4444",
+  },
+  dangerText: {
+    fontSize: 11,
+    color: "#9CA3AF",
+    textAlign: "center",
+    marginTop: 10,
+    lineHeight: 16,
+  },
 });

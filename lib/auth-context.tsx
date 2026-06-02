@@ -6,6 +6,8 @@ import { supabase } from "./supabase";
 import { Platform } from "react-native";
 import { setSessionToken, removeSessionToken } from "./_core/auth";
 import { logger } from "./logger";
+import * as AppleAuthentication from "expo-apple-authentication";
+import * as Crypto from "expo-crypto";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -211,7 +213,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const performOAuth = async (provider: "google" | "azure") => {
+  const performOAuth = async (provider: "google" | "azure" | "apple") => {
     logger.info("AUTH", `Iniciando login OAuth com: ${provider}`);
     try {
       const redirectTo = Platform.OS === "web"
@@ -256,8 +258,74 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = async () => performOAuth("google");
   const signInWithMicrosoft = async () => performOAuth("azure");
   const signInWithApple = async () => { 
-    logger.warn("AUTH", "Login com Apple solicitado, mas não implementado");
-    throw new Error("Apple login not implemented"); 
+    logger.info("AUTH", "Iniciando login com Apple...");
+    try {
+      const isAvailable = await AppleAuthentication.isAvailableAsync();
+      if (!isAvailable) {
+        logger.warn("AUTH", "Apple Authentication não está disponível neste dispositivo");
+        // Fallback para o fluxo Web/OAuth normal
+        await performOAuth("apple");
+        return;
+      }
+
+      const rawNonce = Crypto.randomUUID();
+      const hashedNonce = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        rawNonce
+      );
+
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+        nonce: hashedNonce,
+      });
+
+      if (!credential.identityToken) {
+        throw new Error("Token de identidade da Apple não recebido");
+      }
+
+      logger.info("AUTH", "Autenticando no Supabase com token da Apple...");
+      const { data, error } = await supabase.auth.signInWithIdToken({
+        provider: "apple",
+        token: credential.identityToken,
+        nonce: rawNonce,
+      });
+
+      if (error) throw error;
+
+      if (data?.session) {
+        // Se for o primeiro login, a Apple retorna o nome do usuário no credential.fullName
+        const nameObj = credential.fullName;
+        if (nameObj && (nameObj.givenName || nameObj.familyName)) {
+          const fullName = [nameObj.givenName, nameObj.familyName].filter(Boolean).join(" ");
+          if (fullName) {
+            logger.info("AUTH", `Salvando nome recebido da Apple: ${fullName}`);
+            await supabase.auth.updateUser({
+              data: { full_name: fullName }
+            });
+            
+            const updatedSession = {
+              ...data.session,
+              user: {
+                ...data.session.user,
+                user_metadata: {
+                  ...data.session.user.user_metadata,
+                  full_name: fullName
+                }
+              }
+            };
+            await syncUserSession(updatedSession);
+            return;
+          }
+        }
+        await syncUserSession(data.session);
+      }
+    } catch (error) {
+      logger.error("AUTH", "Falha no login com Apple", error);
+      throw error;
+    }
   };
 
   const signUpWithEmail = async (email: string, password: string, name: string) => {

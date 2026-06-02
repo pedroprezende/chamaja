@@ -8,9 +8,9 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "expo-router";
-import { MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcons, FontAwesome } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { ScreenContainer } from "@/components/screen-container";
@@ -37,6 +37,27 @@ export default function LoginScreen() {
       await auth.signInWithGoogle();
     } catch (error) {
       Alert.alert("Erro", "Não foi possível fazer login com Google");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const [isAppleAvailable, setIsAppleAvailable] = useState(false);
+
+  useEffect(() => {
+    import("expo-apple-authentication")
+      .then((m) => m.isAvailableAsync())
+      .then((avail) => setIsAppleAvailable(avail))
+      .catch(() => setIsAppleAvailable(false));
+  }, []);
+
+  const handleAppleLogin = async () => {
+    try {
+      setErrorMsg("");
+      setIsLoading(true);
+      await auth.signInWithApple();
+    } catch (error) {
+      console.warn("Apple login error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -168,8 +189,37 @@ export default function LoginScreen() {
           <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
         </View>
 
-        {/* Google OAuth Button */}
+        {/* OAuth Buttons Section */}
         <View style={styles.oauthSection}>
+          {isAppleAvailable && (
+            <Pressable
+              style={({ pressed }) => [
+                styles.oauthButton,
+                { 
+                  backgroundColor: colors.background === "#F8F9FA" ? "#000000" : "#FFFFFF", 
+                  borderColor: colors.border,
+                  marginBottom: 12
+                },
+                pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] },
+                isLoading && { opacity: 0.6 },
+              ]}
+              onPress={handleAppleLogin}
+              disabled={isLoading}
+            >
+              <FontAwesome 
+                name="apple" 
+                size={22} 
+                color={colors.background === "#F8F9FA" ? "#FFFFFF" : "#000000"} 
+              />
+              <Text style={[
+                styles.oauthText, 
+                { color: colors.background === "#F8F9FA" ? "#FFFFFF" : "#000000" }
+              ]}>
+                Continuar com a Apple
+              </Text>
+            </Pressable>
+          )}
+
           <Pressable
             style={({ pressed }) => [
               styles.oauthButton,
