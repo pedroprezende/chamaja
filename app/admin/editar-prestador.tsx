@@ -385,12 +385,16 @@ export default function EditarPrestador() {
   return (
     <View style={styles.screen}>
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-        <Pressable style={styles.backBtn} onPress={() => router.back()}>
+        <Pressable style={styles.backBtn} onPress={() => router.back()} hitSlop={15}>
           <MaterialIcons name="arrow-back" size={22} color="#111827" />
         </Pressable>
         <Text style={styles.headerTitle}>{isEditing ? "Editar Prestador" : "Novo Prestador"}</Text>
         {isEditing && (
-          <Pressable style={styles.deleteBtn} onPress={handleDelete}>
+          <Pressable 
+            style={({ pressed }) => [styles.deleteBtn, pressed && { opacity: 0.7 }]} 
+            onPress={handleDelete}
+            hitSlop={15}
+          >
             <MaterialIcons name="delete-outline" size={22} color="#EF4444" />
           </Pressable>
         )}
@@ -714,11 +718,12 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF",
     paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: "#F3F4F6",
+    zIndex: 10, elevation: 10,
   },
   backBtn: { padding: 4, marginRight: 8 },
   headerTitle: { flex: 1, fontSize: 18, fontWeight: "800", color: "#111827" },
   deleteBtn: {
-    width: 36, height: 36, borderRadius: 18, backgroundColor: "#FEF2F2",
+    width: 44, height: 44, borderRadius: 22, backgroundColor: "#FEF2F2",
     alignItems: "center", justifyContent: "center",
   },
   content: { padding: 16, gap: 0 },
