@@ -62,6 +62,7 @@ export default function ProfileScreen() {
   const [selectedAddressToAdd, setSelectedAddressToAdd] = useState<GeocodedAddress | null>(null);
   const [activeLabelType, setActiveLabelType] = useState<"casa" | "trabalho" | "outro">("casa");
   const [customLabel, setCustomLabel] = useState("");
+  const [savingAddress, setSavingAddress] = useState(false);
 
   const loadSavedAddresses = async () => {
     try {
@@ -84,6 +85,7 @@ export default function ProfileScreen() {
       setSearchResults([]);
       setSearchError(null);
       setSelectedAddressToAdd(null);
+      setSavingAddress(false);
     }
   }, [addressesModalVisible]);
 
@@ -151,6 +153,41 @@ export default function ProfileScreen() {
   const handleSaveAddress = async () => {
     if (!selectedAddressToAdd) return;
 
+    setSavingAddress(true);
+    let finalCoords = {
+      latitude: selectedAddressToAdd.latitude,
+      longitude: selectedAddressToAdd.longitude,
+    };
+
+    // If manual address, geocode it before saving
+    if (selectedAddressToAdd.id.startsWith("manual-")) {
+      try {
+        let queryStr = selectedAddressToAdd.displayName;
+        if (!queryStr.toLowerCase().includes("bragança")) {
+          queryStr += ", Bragança Paulista";
+        }
+        queryStr += ", Brasil";
+
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+            queryStr
+          )}&format=json&limit=1`,
+          {
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            },
+          }
+        );
+        const data = await response.json();
+        if (Array.isArray(data) && data.length > 0) {
+          finalCoords.latitude = parseFloat(data[0].lat);
+          finalCoords.longitude = parseFloat(data[0].lon);
+        }
+      } catch (err) {
+        console.warn("Geocoding manual address in profile failed:", err);
+      }
+    }
+
     let finalLabel = "Casa";
     if (activeLabelType === "trabalho") {
       finalLabel = "Trabalho";
@@ -162,8 +199,8 @@ export default function ProfileScreen() {
       id: `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       label: finalLabel,
       addressName: selectedAddressToAdd.displayName,
-      latitude: selectedAddressToAdd.latitude,
-      longitude: selectedAddressToAdd.longitude,
+      latitude: finalCoords.latitude,
+      longitude: finalCoords.longitude,
       neighborhood: selectedAddressToAdd.neighborhood,
       city: selectedAddressToAdd.city,
     };
@@ -185,6 +222,8 @@ export default function ProfileScreen() {
     } catch (e) {
       console.warn("Failed to save address:", e);
       Alert.alert("Erro", "Não foi possível salvar o endereço.");
+    } finally {
+      setSavingAddress(false);
     }
   };
 
@@ -469,9 +508,14 @@ export default function ProfileScreen() {
                       </Pressable>
                       <Pressable
                         onPress={handleSaveAddress}
-                        style={[styles.actionButtonConfirm, { backgroundColor: colors.primary }]}
+                        style={[styles.actionButtonConfirm, { backgroundColor: colors.primary }, savingAddress && { opacity: 0.7 }]}
+                        disabled={savingAddress}
                       >
-                        <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>Salvar Endereço</Text>
+                        {savingAddress ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                          <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>Salvar Endereço</Text>
+                        )}
                       </Pressable>
                     </View>
                   </View>

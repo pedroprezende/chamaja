@@ -51,10 +51,10 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
   // Saved Addresses State
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   
-  // Label Flow State
   const [selectedSearchAddress, setSelectedSearchAddress] = useState<GeocodedAddress | null>(null);
   const [customLabel, setCustomLabel] = useState("");
   const [activeLabelType, setActiveLabelType] = useState<"casa" | "trabalho" | "outro">("casa");
+  const [saving, setSaving] = useState(false);
 
   // Load saved addresses on open/mount
   const loadSavedAddresses = async () => {
@@ -77,6 +77,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
       setResults([]);
       setSelectedSearchAddress(null);
       setErrorMsg(null);
+      setSaving(false);
     }
   }, [visible]);
 
@@ -167,6 +168,41 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
   const handleSaveAndUseAddress = async () => {
     if (!selectedSearchAddress) return;
 
+    setSaving(true);
+    let finalCoords = {
+      latitude: selectedSearchAddress.latitude,
+      longitude: selectedSearchAddress.longitude,
+    };
+
+    // If manually entered address, geocode it before saving to ensure coordinates are real
+    if (selectedSearchAddress.id.startsWith("manual-")) {
+      try {
+        let queryStr = selectedSearchAddress.displayName;
+        if (!queryStr.toLowerCase().includes("bragança")) {
+          queryStr += ", Bragança Paulista";
+        }
+        queryStr += ", Brasil";
+
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+            queryStr
+          )}&format=json&limit=1`,
+          {
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            },
+          }
+        );
+        const data = await response.json();
+        if (Array.isArray(data) && data.length > 0) {
+          finalCoords.latitude = parseFloat(data[0].lat);
+          finalCoords.longitude = parseFloat(data[0].lon);
+        }
+      } catch (err) {
+        console.warn("Geocoding manual address failed, falling back to current location:", err);
+      }
+    }
+
     let finalLabel = "Casa";
     if (activeLabelType === "trabalho") {
       finalLabel = "Trabalho";
@@ -178,8 +214,8 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
       id: `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       label: finalLabel,
       addressName: selectedSearchAddress.displayName,
-      latitude: selectedSearchAddress.latitude,
-      longitude: selectedSearchAddress.longitude,
+      latitude: finalCoords.latitude,
+      longitude: finalCoords.longitude,
       neighborhood: selectedSearchAddress.neighborhood,
       city: selectedSearchAddress.city,
     };
@@ -200,6 +236,8 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
       onClose();
     } catch (e) {
       console.warn("Failed to save address:", e);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -358,9 +396,14 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
                 
                 <Pressable
                   onPress={handleSaveAndUseAddress}
-                  style={styles.labelFormConfirmBtn}
+                  style={[styles.labelFormConfirmBtn, saving && { opacity: 0.7 }]}
+                  disabled={saving}
                 >
-                  <Text style={styles.labelFormConfirmBtnText}>Salvar e Usar</Text>
+                  {saving ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.labelFormConfirmBtnText}>Salvar e Usar</Text>
+                  )}
                 </Pressable>
               </View>
             </View>
