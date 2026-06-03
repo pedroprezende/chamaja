@@ -641,22 +641,22 @@ export default function ProfileScreen() {
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalBody}>
               <Text style={[styles.policyIntro, { color: colors.foreground }]}>
-                Bem-vindo ao ChamaJá. Sua privacidade é importante para nós. Esta Política de Privacidade explica como coletamos, utilizamos e protegemos suas informações ao utilizar nosso aplicativo.
+                Bem-vindo ao ChamaJá. Sua privacidade é importante para nós. Esta Política de Privacidade explica como coletamos, utilizamos, armazenamos e protegemos suas informações ao utilizar nosso aplicativo.
               </Text>
 
-              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>1. Informações coletadas</Text>
+              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>1. INFORMAÇÕES COLETADAS</Text>
               <Text style={[styles.policyText, { color: colors.foreground }]}>
-                O ChamaJá pode coletar as seguintes informações:
+                O ChamaJá pode coletar as seguintes informações fornecidas pelo usuário:
               </Text>
               <View style={styles.bulletList}>
                 {[
                   "Nome completo",
                   "E-mail",
                   "Número de telefone",
-                  "Localização aproximada",
                   "Foto de perfil",
-                  "Informações de agendamentos e serviços",
-                  "Conversas realizadas dentro do aplicativo"
+                  "Endereços cadastrados",
+                  "Informações relacionadas a serviços e agendamentos",
+                  "Avaliações realizadas dentro da plataforma"
                 ].map((item, idx) => (
                   <View key={idx} style={styles.bulletRow}>
                     <Text style={[styles.bulletDot, { color: colors.primary }]}>•</Text>
@@ -665,15 +665,16 @@ export default function ProfileScreen() {
                 ))}
               </View>
 
-              <Text style={[styles.policyText, { color: colors.foreground, marginTop: 8 }]}>
-                Também podemos coletar informações automáticas do dispositivo, como:
+              <Text style={[styles.policyText, { color: colors.foreground, marginTop: 12 }]}>
+                Também podemos coletar automaticamente algumas informações do dispositivo e uso do aplicativo:
               </Text>
               <View style={styles.bulletList}>
                 {[
                   "Modelo do aparelho",
                   "Sistema operacional",
                   "Endereço IP",
-                  "Dados de uso do aplicativo"
+                  "Dados de navegação e utilização do aplicativo",
+                  "Informações de desempenho e diagnóstico"
                 ].map((item, idx) => (
                   <View key={idx} style={styles.bulletRow}>
                     <Text style={[styles.bulletDot, { color: colors.primary }]}>•</Text>
@@ -682,18 +683,20 @@ export default function ProfileScreen() {
                 ))}
               </View>
 
-              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>2. Como usamos suas informações</Text>
+              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>2. COMO UTILIZAMOS SUAS INFORMAÇÕES</Text>
               <Text style={[styles.policyText, { color: colors.foreground }]}>
                 Utilizamos seus dados para:
               </Text>
               <View style={styles.bulletList}>
                 {[
-                  "Permitir o funcionamento do aplicativo",
-                  "Conectar clientes e prestadores de serviço",
-                  "Melhorar a experiência do usuário",
-                  "Exibir anúncios e conteúdos relevantes",
+                  "Permitir o funcionamento correto do aplicativo",
+                  "Conectar clientes e prestadores de serviços",
+                  "Exibir profissionais e estabelecimentos próximos ao usuário",
+                  "Melhorar a experiência de navegação",
+                  "Personalizar recomendações and conteúdos",
                   "Enviar notificações importantes",
-                  "Garantir segurança e prevenção contra fraudes"
+                  "Garantir segurança, autenticação e prevenção contra fraudes",
+                  "Cumprir obrigações legais e regulatórias"
                 ].map((item, idx) => (
                   <View key={idx} style={styles.bulletRow}>
                     <Text style={[styles.bulletDot, { color: colors.primary }]}>•</Text>
@@ -702,18 +705,19 @@ export default function ProfileScreen() {
                 ))}
               </View>
 
-              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>3. Compartilhamento de informações</Text>
+              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>3. COMPARTILHAMENTO DE INFORMAÇÕES</Text>
               <Text style={[styles.policyText, { color: colors.foreground }]}>
                 O ChamaJá não vende informações pessoais dos usuários.
               </Text>
-              <Text style={[styles.policyText, { color: colors.foreground, marginTop: 6 }]}>
-                Algumas informações podem ser compartilhadas apenas quando necessário para:
+              <Text style={[styles.policyText, { color: colors.foreground, marginTop: 8 }]}>
+                As informações poderão ser compartilhadas apenas quando necessário para:
               </Text>
               <View style={styles.bulletList}>
                 {[
-                  "realização de serviços",
-                  "processamento de pagamentos",
-                  "cumprimento de obrigações legais"
+                  "Permitir a prestação dos serviços oferecidos na plataforma",
+                  "Atender determinações legais ou judiciais",
+                  "Proteger direitos, segurança e integridade dos usuários e da plataforma",
+                  "Operação de serviços essenciais para funcionamento do aplicativo"
                 ].map((item, idx) => (
                   <View key={idx} style={styles.bulletRow}>
                     <Text style={[styles.bulletDot, { color: colors.primary }]}>•</Text>
@@ -722,32 +726,69 @@ export default function ProfileScreen() {
                 ))}
               </View>
 
-              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>4. Localização</Text>
+              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>4. USO DA LOCALIZAÇÃO</Text>
               <Text style={[styles.policyText, { color: colors.foreground }]}>
-                Podemos utilizar sua localização para mostrar profissionais e serviços próximos de você.
+                O ChamaJá poderá utilizar a localização do usuário, mediante autorização, para:
               </Text>
-              <Text style={[styles.policyText, { color: colors.foreground, marginTop: 6 }]}>
-                Você pode desativar essa permissão nas configurações do seu dispositivo.
-              </Text>
-
-              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>5. Segurança</Text>
-              <Text style={[styles.policyText, { color: colors.foreground }]}>
-                Adotamos medidas de segurança para proteger seus dados, porém nenhum sistema é totalmente seguro.
-              </Text>
-
-              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>6. Exclusão da conta</Text>
-              <Text style={[styles.policyText, { color: colors.foreground }]}>
-                O usuário pode solicitar a exclusão da conta e dos dados através do suporte do aplicativo.
-              </Text>
-
-              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>7. Alterações nesta política</Text>
-              <Text style={[styles.policyText, { color: colors.foreground }]}>
-                Esta Política de Privacidade poderá ser atualizada periodicamente.
+              <View style={styles.bulletList}>
+                {[
+                  "Exibir profissionais e estabelecimentos próximos",
+                  "Calcular a distância entre usuários e prestadores de serviço",
+                  "Melhorar a relevância dos resultados exibidos"
+                ].map((item, idx) => (
+                  <View key={idx} style={styles.bulletRow}>
+                    <Text style={[styles.bulletDot, { color: colors.primary }]}>•</Text>
+                    <Text style={[styles.bulletText, { color: colors.foreground }]}>{item}</Text>
+                  </View>
+                ))}
+              </View>
+              <Text style={[styles.policyText, { color: colors.foreground, marginTop: 8 }]}>
+                O usuário pode revogar essa permissão a qualquer momento nas configurações do dispositivo.
               </Text>
 
-              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>8. Contato</Text>
+              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>5. SEGURANÇA DOS DADOS</Text>
               <Text style={[styles.policyText, { color: colors.foreground }]}>
-                Em caso de dúvidas:
+                Adotamos medidas técnicas e organizacionais adequadas para proteger as informações dos usuários contra acessos não autorizados, perda, alteração, divulgação ou destruição indevida.
+              </Text>
+              <Text style={[styles.policyText, { color: colors.foreground, marginTop: 8 }]}>
+                Apesar dos esforços empregados, nenhum sistema de armazenamento ou transmissão de dados é totalmente seguro.
+              </Text>
+
+              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>6. EXCLUSÃO DE CONTA E DADOS</Text>
+              <Text style={[styles.policyText, { color: colors.foreground }]}>
+                O usuário poderá excluir sua conta diretamente pelo aplicativo através da área de configurações.
+              </Text>
+              <Text style={[styles.policyText, { color: colors.foreground, marginTop: 8 }]}>
+                Após a solicitação de exclusão, os dados pessoais serão removidos ou anonimizados, exceto quando houver necessidade legal de retenção ou cumprimento de obrigações regulatórias.
+              </Text>
+
+              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>7. RESPONSABILIDADE SOBRE OS SERVIÇOS</Text>
+              <Text style={[styles.policyText, { color: colors.foreground }]}>
+                O ChamaJá atua exclusivamente como uma plataforma de conexão entre usuários, profissionais autônomos, prestadores de serviços e estabelecimentos comerciais.
+              </Text>
+              <Text style={[styles.policyText, { color: colors.foreground, marginTop: 8 }]}>
+                A execução dos serviços contratados, qualidade do atendimento, preços praticados, prazos e demais condições são de responsabilidade exclusiva das partes envolvidas na contratação.
+              </Text>
+
+              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>8. LGPD</Text>
+              <Text style={[styles.policyText, { color: colors.foreground }]}>
+                O tratamento dos dados pessoais é realizado em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018), observando os princípios da finalidade, necessidade, transparência, segurança e boa-fé.
+              </Text>
+              <Text style={[styles.policyText, { color: colors.foreground, marginTop: 8 }]}>
+                O usuário poderá exercer seus direitos previstos na LGPD mediante contato pelos canais de atendimento informados nesta política.
+              </Text>
+
+              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>9. ALTERAÇÕES NESTA POLÍTICA</Text>
+              <Text style={[styles.policyText, { color: colors.foreground }]}>
+                Esta Política de Privacidade poderá ser atualizada periodicamente para refletir melhorias no aplicativo, alterações legais ou mudanças em nossos serviços.
+              </Text>
+              <Text style={[styles.policyText, { color: colors.foreground, marginTop: 8 }]}>
+                Recomendamos a consulta periódica deste documento.
+              </Text>
+
+              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>10. CONTATO</Text>
+              <Text style={[styles.policyText, { color: colors.foreground, marginBottom: 12 }]}>
+                Em caso de dúvidas, solicitações ou assuntos relacionados à privacidade e proteção de dados, entre em contato conosco:
               </Text>
               <Pressable
                 onPress={() => Linking.openURL("mailto:chamajasuporte@gmail.com")}
@@ -756,6 +797,10 @@ export default function ProfileScreen() {
                 <MaterialIcons name="email" size={16} color="#FFFFFF" />
                 <Text style={styles.emailButtonText}>chamajasuporte@gmail.com</Text>
               </Pressable>
+
+              <Text style={[styles.policyText, { color: colors.muted, marginTop: 24, fontSize: 12, fontStyle: "italic", textAlign: "center" }]}>
+                Ao utilizar o ChamaJá, você declara estar ciente e concordar com os termos desta Política de Privacidade.
+              </Text>
               
               <View style={{ height: 24 }} />
             </ScrollView>
