@@ -67,7 +67,7 @@ const COMERCIOS_MORE = [
 export default function SearchScreen() {
   const colors = useColors();
   const router = useRouter();
-  const { coords, gpsCoords, addressName, permissionGranted } = useLocation();
+  const { coords, addressName, permissionGranted } = useLocation();
   const { isFavorite, toggleFavorite } = useFavorites();
   const mapComponentRef = useRef<any>(null);
   const [mapCenter, setMapCenter] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -226,23 +226,6 @@ export default function SearchScreen() {
 
   return (
     <ScreenContainer edges={["left", "right"]} style={styles.container}>
-      {/* PAINEL DE DEBUG TEMPORÁRIO */}
-      <View style={styles.debugPanel}>
-        <Text style={styles.debugTitle}>📍 DEBUG LOCALIZAÇÃO</Text>
-        <Text style={styles.debugText}>
-          <Text style={styles.debugLabel}>GPS Real:</Text>{"\n"}
-          {gpsCoords ? `Lat: ${gpsCoords.latitude.toFixed(6)}\nLng: ${gpsCoords.longitude.toFixed(6)}` : "Não disponível"}
-        </Text>
-        <Text style={styles.debugText}>
-          <Text style={styles.debugLabel}>Endereço:</Text>{"\n"}
-          {coords ? `Lat: ${coords.latitude.toFixed(6)}\nLng: ${coords.longitude.toFixed(6)}` : "Usando Fallback"}
-        </Text>
-        <Text style={styles.debugText}>
-          <Text style={styles.debugLabel}>Mapa:</Text>{"\n"}
-          {mapCenter ? `Lat: ${mapCenter.latitude.toFixed(6)}\nLng: ${mapCenter.longitude.toFixed(6)}` : `Lat: ${userCoords.latitude.toFixed(6)}\nLng: ${userCoords.longitude.toFixed(6)} (Est.)`}
-        </Text>
-      </View>
-
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerRow}>
@@ -1369,39 +1352,5 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "700",
-  },
-  debugPanel: {
-    position: "absolute",
-    top: 155,
-    right: 16,
-    zIndex: 9999,
-    backgroundColor: "rgba(17, 24, 39, 0.95)",
-    padding: 10,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: "#EF4444",
-    width: 200,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
-  },
-  debugTitle: {
-    color: "#EF4444",
-    fontSize: 9,
-    fontWeight: "bold",
-    marginBottom: 6,
-    textAlign: "center",
-  },
-  debugText: {
-    color: "#D1D5DB",
-    fontSize: 9,
-    marginBottom: 4,
-    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
-  },
-  debugLabel: {
-    color: "#22C55E",
-    fontWeight: "bold",
   },
 });
