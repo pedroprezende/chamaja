@@ -66,6 +66,12 @@ export default function ProfileScreen() {
   const [activeLabelType, setActiveLabelType] = useState<"casa" | "trabalho" | "outro">("casa");
   const [customLabel, setCustomLabel] = useState("");
   const [savingAddress, setSavingAddress] = useState(false);
+  const [customStreet, setCustomStreet] = useState("");
+  const [customNeighborhood, setCustomNeighborhood] = useState("");
+  const [customCity, setCustomCity] = useState("Bragança Paulista");
+  const [customCep, setCustomCep] = useState("");
+  const [customNumber, setCustomNumber] = useState("");
+  const [customComplement, setCustomComplement] = useState("");
 
   const loadSavedAddresses = async () => {
     try {
@@ -88,6 +94,12 @@ export default function ProfileScreen() {
       setSearchResults([]);
       setSearchError(null);
       setSelectedAddressToAdd(null);
+      setCustomStreet("");
+      setCustomNeighborhood("");
+      setCustomCity("Bragança Paulista");
+      setCustomCep("");
+      setCustomNumber("");
+      setCustomComplement("");
       setSavingAddress(false);
     }
   }, [addressesModalVisible]);
@@ -98,6 +110,67 @@ export default function ProfileScreen() {
     setSearchError(null);
     setSelectedAddressToAdd(null);
     try {
+      // Check if input is a Brazilian CEP (e.g. 12914-380 or 12914380)
+      const cleanInput = addressInput.trim().replace(/\D/g, "");
+      if (cleanInput.length === 8) {
+        try {
+          const res = await fetch(`https://viacep.com.br/ws/${cleanInput}/json/`);
+          const viaCepData = await res.json();
+          if (viaCepData && !viaCepData.erro) {
+            const street = viaCepData.logradouro;
+            const neighborhood = viaCepData.bairro;
+            const city = viaCepData.localidade;
+            const uf = viaCepData.uf;
+            const displayName = `${street}, ${neighborhood}, ${city} - ${uf}`;
+
+            setCustomStreet(street);
+            setCustomNeighborhood(neighborhood);
+            setCustomCity(city);
+            setCustomCep(viaCepData.cep);
+
+            // Fetch coordinates for the street as fallback
+            let lat = coords?.latitude ?? -22.9520;
+            let lon = coords?.longitude ?? -46.5420;
+            try {
+              const nomRes = await fetch(
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+                  `${street}, ${neighborhood}, ${city}, Brasil`
+                )}&format=json&limit=1`,
+                {
+                  headers: {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                  },
+                }
+              );
+              const nomData = await nomRes.json();
+              if (Array.isArray(nomData) && nomData.length > 0) {
+                lat = parseFloat(nomData[0].lat);
+                lon = parseFloat(nomData[0].lon);
+              }
+            } catch (nomErr) {
+              console.warn("Geocoding CEP street in profile failed:", nomErr);
+            }
+
+            const cepAddressItem: GeocodedAddress = {
+              id: `cep-${Date.now()}`,
+              displayName,
+              latitude: lat,
+              longitude: lon,
+              neighborhood,
+              city,
+            };
+
+            setSelectedAddressToAdd(cepAddressItem);
+            setCustomNumber("");
+            setCustomComplement("");
+            setSearching(false);
+            return;
+          }
+        } catch (cepErr) {
+          console.warn("ViaCEP request failed in profile:", cepErr);
+        }
+      }
+
       let queryStr = addressInput;
       if (!addressInput.toLowerCase().includes("bragança")) {
         queryStr += ", Bragança Paulista";
@@ -162,46 +235,101 @@ export default function ProfileScreen() {
       longitude: selectedAddressToAdd.longitude,
     };
 
-    // If manual address, geocode it before saving
-    if (selectedAddressToAdd.id.startsWith("manual-")) {
-      try {
-        let queryStr = selectedAddressToAdd.displayName;
-        if (!queryStr.toLowerCase().includes("bragança")) {
-          queryStr += ", Bragança Paulista";
+    // Geocode precise custom address details entered by the user
+    try {
+      const fetchNominatimOne = async (q: string) => {
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+              q
+            )}&format=json&limit=1&addressdetails=1&countrycodes=br`,
+            {
+              headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+              },
+            }
+          );
+          const data = await res.json();
+          return Array.isArray(data) && data.length > 0 ? data[0] : null;
+        } catch (e) {
+          return null;
         }
-        queryStr += ", Brasil";
+      };
 
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
-            queryStr
-          )}&format=json&limit=1&addressdetails=1`,
-          {
-            headers: {
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            },
-          }
-        );
-        const data = await response.json();
-        if (Array.isArray(data) && data.length > 0) {
-          finalCoords.latitude = parseFloat(data[0].lat);
-          finalCoords.longitude = parseFloat(data[0].lon);
-          
-          // Enrich manual address with geocoded suburb/city details
-          const { suburb, city, town, village } = data[0].address || {};
-          selectedAddressToAdd.neighborhood = suburb || undefined;
-          selectedAddressToAdd.city = city || town || village || undefined;
-        } else {
-          setSearchError("Não conseguimos localizar o endereço no mapa. Verifique a ortografia, nome da rua e número.");
-          setSavingAddress(false);
-          setSelectedAddressToAdd(null); // return to input to let user correct it
-          return;
-        }
-      } catch (err) {
-        console.warn("Geocoding manual address in profile failed:", err);
-        setSearchError("Não foi possível geocodificar o endereço. Verifique sua conexão.");
-        setSavingAddress(false);
-        return;
+      let result = null;
+
+      // 1. Precise query: Rua + Número + Bairro + Cidade + CEP + Brasil
+      let q1 = `${customStreet}`;
+      if (customNumber.trim()) q1 += `, ${customNumber.trim()}`;
+      if (customNeighborhood.trim()) q1 += `, ${customNeighborhood.trim()}`;
+      if (customCity.trim()) q1 += `, ${customCity.trim()}`;
+      if (customCep.trim()) q1 += `, ${customCep.trim()}`;
+      q1 += `, Brasil`;
+
+      result = await fetchNominatimOne(q1);
+
+      // Fallback 1.1: Try fuzzy spelling replacement for sabela -> sabella
+      if (!result && q1.toLowerCase().includes("sabela")) {
+        const fuzzyQ = q1.replace(/sabela/gi, "sabella");
+        result = await fetchNominatimOne(fuzzyQ);
       }
+
+      // Fallback 2: Without CEP
+      if (!result) {
+        let q2 = `${customStreet}`;
+        if (customNumber.trim()) q2 += `, ${customNumber.trim()}`;
+        if (customNeighborhood.trim()) q2 += `, ${customNeighborhood.trim()}`;
+        if (customCity.trim()) q2 += `, ${customCity.trim()}`;
+        q2 += `, Brasil`;
+
+        result = await fetchNominatimOne(q2);
+
+        if (!result && q2.toLowerCase().includes("sabela")) {
+          const fuzzyQ2 = q2.replace(/sabela/gi, "sabella");
+          result = await fetchNominatimOne(fuzzyQ2);
+        }
+      }
+
+      // Fallback 3: Street + Neighborhood + City (without number)
+      if (!result) {
+        let q3 = `${customStreet}`;
+        if (customNeighborhood.trim()) q3 += `, ${customNeighborhood.trim()}`;
+        if (customCity.trim()) q3 += `, ${customCity.trim()}`;
+        q3 += `, Brasil`;
+
+        result = await fetchNominatimOne(q3);
+
+        if (!result && q3.toLowerCase().includes("sabela")) {
+          const fuzzyQ3 = q3.replace(/sabela/gi, "sabella");
+          result = await fetchNominatimOne(fuzzyQ3);
+        }
+      }
+
+      // Fallback 4: Street + City (without neighborhood)
+      if (!result) {
+        let q4 = `${customStreet}, ${customCity.trim()}, Brasil`;
+        result = await fetchNominatimOne(q4);
+
+        if (!result && q4.toLowerCase().includes("sabela")) {
+          const fuzzyQ4 = q4.replace(/sabela/gi, "sabella");
+          result = await fetchNominatimOne(fuzzyQ4);
+        }
+      }
+
+      if (result) {
+        finalCoords.latitude = parseFloat(result.lat);
+        finalCoords.longitude = parseFloat(result.lon);
+        
+        const { suburb, city, town, village } = result.address || {};
+        if (suburb && !customNeighborhood.trim()) {
+          setCustomNeighborhood(suburb);
+        }
+        if ((city || town || village) && !customCity.trim()) {
+          setCustomCity(city || town || village);
+        }
+      }
+    } catch (err) {
+      console.warn("Geocoding address details on save in profile failed:", err);
     }
 
     let finalLabel = "Casa";
@@ -211,14 +339,35 @@ export default function ProfileScreen() {
       finalLabel = customLabel.trim() || "Outro";
     }
 
+    // Build the final display name from inputs
+    let finalAddressName = customStreet.trim();
+    if (customNumber.trim()) {
+      finalAddressName += `, ${customNumber.trim()}`;
+    }
+    if (customComplement.trim()) {
+      finalAddressName += `, ${customComplement.trim()}`;
+    }
+    if (customNeighborhood.trim()) {
+      finalAddressName += ` - ${customNeighborhood.trim()}`;
+    }
+    if (customCity.trim()) {
+      finalAddressName += `, ${customCity.trim()}`;
+      if (!customCity.toLowerCase().includes("sp") && !customCity.toLowerCase().includes("estado")) {
+        finalAddressName += ` - SP`;
+      }
+    }
+    if (customCep.trim()) {
+      finalAddressName += `, ${customCep.trim()}`;
+    }
+
     const newAddress: SavedAddress = {
       id: `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       label: finalLabel,
-      addressName: selectedAddressToAdd.displayName,
+      addressName: finalAddressName,
       latitude: finalCoords.latitude,
       longitude: finalCoords.longitude,
-      neighborhood: selectedAddressToAdd.neighborhood,
-      city: selectedAddressToAdd.city,
+      neighborhood: customNeighborhood.trim() || undefined,
+      city: customCity.trim() || undefined,
     };
 
     const updatedAddresses = [newAddress, ...savedAddresses];
@@ -478,6 +627,75 @@ export default function ProfileScreen() {
                       {selectedAddressToAdd.displayName}
                     </Text>
 
+                    {/* Inputs para Rua, Bairro, CEP, Número e Complemento */}
+                    <View style={{ gap: 12, marginBottom: 16 }}>
+                      <View style={{ gap: 6 }}>
+                        <Text style={{ fontSize: 12, fontWeight: "700", color: colors.muted }}>Rua</Text>
+                        <TextInput
+                          style={[styles.inputField, { backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground, marginBottom: 0 }]}
+                          placeholder="Rua..."
+                          placeholderTextColor={colors.muted}
+                          value={customStreet}
+                          onChangeText={setCustomStreet}
+                        />
+                      </View>
+                      
+                      <View style={{ flexDirection: "row", gap: 12 }}>
+                        <View style={{ flex: 1, gap: 6 }}>
+                          <Text style={{ fontSize: 12, fontWeight: "700", color: colors.muted }}>Bairro</Text>
+                          <TextInput
+                            style={[styles.inputField, { backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground, marginBottom: 0 }]}
+                            placeholder="Bairro..."
+                            placeholderTextColor={colors.muted}
+                            value={customNeighborhood}
+                            onChangeText={setCustomNeighborhood}
+                          />
+                        </View>
+                        <View style={{ flex: 1, gap: 6 }}>
+                          <Text style={{ fontSize: 12, fontWeight: "700", color: colors.muted }}>CEP</Text>
+                          <TextInput
+                            style={[styles.inputField, { backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground, marginBottom: 0 }]}
+                            placeholder="Ex: 12900-000"
+                            placeholderTextColor={colors.muted}
+                            value={customCep}
+                            onChangeText={(text) => {
+                              const cleaned = text.replace(/\D/g, "");
+                              let formatted = cleaned;
+                              if (cleaned.length > 5) {
+                                formatted = `${cleaned.substring(0, 5)}-${cleaned.substring(5, 8)}`;
+                              }
+                              setCustomCep(formatted);
+                            }}
+                            keyboardType="numeric"
+                          />
+                        </View>
+                      </View>
+
+                      <View style={{ flexDirection: "row", gap: 12 }}>
+                        <View style={{ flex: 1, gap: 6 }}>
+                          <Text style={{ fontSize: 12, fontWeight: "700", color: colors.muted }}>Número *</Text>
+                          <TextInput
+                            style={[styles.inputField, { backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground, marginBottom: 0 }]}
+                            placeholder="Ex: 997"
+                            placeholderTextColor={colors.muted}
+                            value={customNumber}
+                            onChangeText={setCustomNumber}
+                            keyboardType="numeric"
+                          />
+                        </View>
+                        <View style={{ flex: 1, gap: 6 }}>
+                          <Text style={{ fontSize: 12, fontWeight: "700", color: colors.muted }}>Complemento</Text>
+                          <TextInput
+                            style={[styles.inputField, { backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground, marginBottom: 0 }]}
+                            placeholder="Ex: Apto 12 (Opcional)"
+                            placeholderTextColor={colors.muted}
+                            value={customComplement}
+                            onChangeText={setCustomComplement}
+                          />
+                        </View>
+                      </View>
+                    </View>
+
                     {/* Chips de seleção de rótulo */}
                     <View style={styles.chipContainer}>
                       {[
@@ -575,6 +793,14 @@ export default function ProfileScreen() {
                             longitude: coords?.longitude ?? -46.5420,
                           };
                           setSelectedAddressToAdd(manualItem);
+                          setCustomStreet(addressInput.trim());
+                          setCustomNeighborhood("");
+                          setCustomCity("Bragança Paulista");
+                          setCustomCep("");
+                          setCustomNumber("");
+                          setCustomComplement("");
+                          setCustomLabel("");
+                          setActiveLabelType("casa");
                         }}
                         style={[styles.manualAddRow, { borderColor: colors.primary + "40", backgroundColor: colors.background }]}
                       >
@@ -596,6 +822,17 @@ export default function ProfileScreen() {
                             key={item.id}
                             onPress={() => {
                               setSelectedAddressToAdd(item);
+                              const parts = item.displayName.split(", ");
+                              const street = parts[0] || "";
+                              const neighborhood = item.neighborhood || parts[1] || "";
+                              const city = item.city || (parts[2] ? parts[2].split(" - ")[0] : "Bragança Paulista");
+
+                              setCustomStreet(street);
+                              setCustomNeighborhood(neighborhood);
+                              setCustomCity(city);
+                              setCustomCep("");
+                              setCustomNumber("");
+                              setCustomComplement("");
                               setCustomLabel("");
                               setActiveLabelType("casa");
                             }}

@@ -62,6 +62,10 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
   const [saving, setSaving] = useState(false);
   const [customNumber, setCustomNumber] = useState("");
   const [customComplement, setCustomComplement] = useState("");
+  const [customStreet, setCustomStreet] = useState("");
+  const [customNeighborhood, setCustomNeighborhood] = useState("");
+  const [customCity, setCustomCity] = useState("Bragança Paulista");
+  const [customCep, setCustomCep] = useState("");
 
   // Load saved addresses on open/mount
   const loadSavedAddresses = async () => {
@@ -85,6 +89,10 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
       setSelectedSearchAddress(null);
       setCustomNumber("");
       setCustomComplement("");
+      setCustomStreet("");
+      setCustomNeighborhood("");
+      setCustomCity("Bragança Paulista");
+      setCustomCep("");
       setErrorMsg(null);
       setSaving(false);
     }
@@ -97,6 +105,67 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
     setErrorMsg(null);
     setSelectedSearchAddress(null);
     try {
+      // Check if input is a Brazilian CEP (e.g. 12914-380 or 12914380)
+      const cleanInput = addressInput.trim().replace(/\D/g, "");
+      if (cleanInput.length === 8) {
+        try {
+          const res = await fetch(`https://viacep.com.br/ws/${cleanInput}/json/`);
+          const viaCepData = await res.json();
+          if (viaCepData && !viaCepData.erro) {
+            const street = viaCepData.logradouro;
+            const neighborhood = viaCepData.bairro;
+            const city = viaCepData.localidade;
+            const uf = viaCepData.uf;
+            const displayName = `${street}, ${neighborhood}, ${city} - ${uf}`;
+
+            setCustomStreet(street);
+            setCustomNeighborhood(neighborhood);
+            setCustomCity(city);
+            setCustomCep(viaCepData.cep);
+
+            // Fetch coordinates for the street as fallback
+            let lat = coords?.latitude ?? -22.9520;
+            let lon = coords?.longitude ?? -46.5420;
+            try {
+              const nomRes = await fetch(
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+                  `${street}, ${neighborhood}, ${city}, Brasil`
+                )}&format=json&limit=1`,
+                {
+                  headers: {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                  },
+                }
+              );
+              const nomData = await nomRes.json();
+              if (Array.isArray(nomData) && nomData.length > 0) {
+                lat = parseFloat(nomData[0].lat);
+                lon = parseFloat(nomData[0].lon);
+              }
+            } catch (nomErr) {
+              console.warn("Geocoding CEP street failed:", nomErr);
+            }
+
+            const cepAddressItem: GeocodedAddress = {
+              id: `cep-${Date.now()}`,
+              displayName,
+              latitude: lat,
+              longitude: lon,
+              neighborhood,
+              city,
+            };
+
+            setSelectedSearchAddress(cepAddressItem);
+            setCustomNumber("");
+            setCustomComplement("");
+            setSearching(false);
+            return;
+          }
+        } catch (cepErr) {
+          console.warn("ViaCEP request failed:", cepErr);
+        }
+      }
+
       let queryStr = addressInput;
       if (!addressInput.toLowerCase().includes("bragança")) {
         queryStr += ", Bragança Paulista";
@@ -196,6 +265,18 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
   // Triggers selection of searched result and prompts for custom label
   const handleSelectSearchAddress = (item: GeocodedAddress) => {
     setSelectedSearchAddress(item);
+    
+    const parts = item.displayName.split(", ");
+    const street = parts[0] || "";
+    const neighborhood = item.neighborhood || parts[1] || "";
+    const city = item.city || (parts[2] ? parts[2].split(" - ")[0] : "Bragança Paulista");
+    
+    setCustomStreet(street);
+    setCustomNeighborhood(neighborhood);
+    setCustomCity(city);
+    setCustomCep("");
+    setCustomNumber("");
+    setCustomComplement("");
     setCustomLabel("");
     setActiveLabelType("casa");
   };
@@ -210,74 +291,101 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
       longitude: selectedSearchAddress.longitude,
     };
 
-    // If manually entered address, geocode it before saving to ensure coordinates are real
-    if (selectedSearchAddress.id.startsWith("manual-")) {
-      try {
-        let queryStr = selectedSearchAddress.displayName;
-        if (!queryStr.toLowerCase().includes("bragança")) {
-          queryStr += ", Bragança Paulista";
-        }
-        queryStr += ", Brasil";
-
-        const fetchNominatimOne = async (q: string) => {
-          try {
-            const res = await fetch(
-              `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
-                q
-              )}&format=json&limit=1&addressdetails=1`,
-              {
-                headers: {
-                  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                },
-              }
-            );
-            const data = await res.json();
-            return Array.isArray(data) && data.length > 0 ? data[0] : null;
-          } catch (e) {
-            return null;
-          }
-        };
-
-        let result = await fetchNominatimOne(queryStr);
-
-        // Fallback 1: Try fuzzy spelling replacement for sabela -> sabella
-        if (!result && queryStr.toLowerCase().includes("sabela")) {
-          const fuzzyQuery = queryStr.replace(/sabela/gi, "sabella");
-          result = await fetchNominatimOne(fuzzyQuery);
-        }
-
-        // Fallback 2: Try stripping the house number (e.g. "rua vicente sabela 997" -> "rua vicente sabela")
-        if (!result) {
-          const queryWithoutNumber = queryStr.replace(/\b\d+\b/g, "").replace(/\s+,/g, ",").trim();
-          if (queryWithoutNumber !== queryStr) {
-            result = await fetchNominatimOne(queryWithoutNumber);
-            if (!result && queryWithoutNumber.toLowerCase().includes("sabela")) {
-              const fuzzyQueryWithoutNumber = queryWithoutNumber.replace(/sabela/gi, "sabella");
-              result = await fetchNominatimOne(fuzzyQueryWithoutNumber);
+    // Geocode precise custom address details entered by the user
+    try {
+      const fetchNominatimOne = async (q: string) => {
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+              q
+            )}&format=json&limit=1&addressdetails=1&countrycodes=br`,
+            {
+              headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+              },
             }
-          }
+          );
+          const data = await res.json();
+          return Array.isArray(data) && data.length > 0 ? data[0] : null;
+        } catch (e) {
+          return null;
         }
+      };
 
-        if (result) {
-          finalCoords.latitude = parseFloat(result.lat);
-          finalCoords.longitude = parseFloat(result.lon);
-          
-          // Enrich manual address with geocoded suburb/city details
-          const { suburb, city, town, village } = result.address || {};
-          selectedSearchAddress.neighborhood = suburb || undefined;
-          selectedSearchAddress.city = city || town || village || undefined;
-        } else {
-          setErrorMsg("Não conseguimos localizar o endereço no mapa. Verifique a ortografia, nome da rua e número.");
-          setSaving(false);
-          setSelectedSearchAddress(null); // return to input to let user correct it
-          return;
-        }
-      } catch (err) {
-        console.warn("Geocoding manual address failed:", err);
-        setErrorMsg("Não foi possível geocodificar o endereço. Verifique sua conexão.");
-        setSaving(false);
-        return;
+      let result = null;
+
+      // 1. Precise query: Rua + Número + Bairro + Cidade + CEP + Brasil
+      let q1 = `${customStreet}`;
+      if (customNumber.trim()) q1 += `, ${customNumber.trim()}`;
+      if (customNeighborhood.trim()) q1 += `, ${customNeighborhood.trim()}`;
+      if (customCity.trim()) q1 += `, ${customCity.trim()}`;
+      if (customCep.trim()) q1 += `, ${customCep.trim()}`;
+      q1 += `, Brasil`;
+
+      result = await fetchNominatimOne(q1);
+
+      // Fallback 1.1: Try fuzzy spelling replacement for sabela -> sabella
+      if (!result && q1.toLowerCase().includes("sabela")) {
+        const fuzzyQ = q1.replace(/sabela/gi, "sabella");
+        result = await fetchNominatimOne(fuzzyQ);
       }
+
+      // Fallback 2: Without CEP (CEP is sometimes mismapped in Nominatim)
+      if (!result) {
+        let q2 = `${customStreet}`;
+        if (customNumber.trim()) q2 += `, ${customNumber.trim()}`;
+        if (customNeighborhood.trim()) q2 += `, ${customNeighborhood.trim()}`;
+        if (customCity.trim()) q2 += `, ${customCity.trim()}`;
+        q2 += `, Brasil`;
+
+        result = await fetchNominatimOne(q2);
+
+        if (!result && q2.toLowerCase().includes("sabela")) {
+          const fuzzyQ2 = q2.replace(/sabela/gi, "sabella");
+          result = await fetchNominatimOne(fuzzyQ2);
+        }
+      }
+
+      // Fallback 3: Street + Neighborhood + City (without number)
+      if (!result) {
+        let q3 = `${customStreet}`;
+        if (customNeighborhood.trim()) q3 += `, ${customNeighborhood.trim()}`;
+        if (customCity.trim()) q3 += `, ${customCity.trim()}`;
+        q3 += `, Brasil`;
+
+        result = await fetchNominatimOne(q3);
+
+        if (!result && q3.toLowerCase().includes("sabela")) {
+          const fuzzyQ3 = q3.replace(/sabela/gi, "sabella");
+          result = await fetchNominatimOne(fuzzyQ3);
+        }
+      }
+
+      // Fallback 4: Street + City (without neighborhood)
+      if (!result) {
+        let q4 = `${customStreet}, ${customCity.trim()}, Brasil`;
+        result = await fetchNominatimOne(q4);
+
+        if (!result && q4.toLowerCase().includes("sabela")) {
+          const fuzzyQ4 = q4.replace(/sabela/gi, "sabella");
+          result = await fetchNominatimOne(fuzzyQ4);
+        }
+      }
+
+      if (result) {
+        finalCoords.latitude = parseFloat(result.lat);
+        finalCoords.longitude = parseFloat(result.lon);
+        
+        const { suburb, city, town, village } = result.address || {};
+        if (suburb && !customNeighborhood.trim()) {
+          setCustomNeighborhood(suburb);
+        }
+        if ((city || town || village) && !customCity.trim()) {
+          setCustomCity(city || town || village);
+        }
+      }
+    } catch (err) {
+      console.warn("Geocoding address details on save failed:", err);
     }
 
     let finalLabel = "Casa";
@@ -287,15 +395,26 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
       finalLabel = customLabel.trim() || "Outro";
     }
 
-    let finalAddressName = selectedSearchAddress.displayName;
-    const parts = finalAddressName.split(", ");
-    if (parts.length > 0 && customNumber.trim()) {
-      parts[0] = `${parts[0]}, ${customNumber.trim()}`;
+    // Build the final display name from inputs
+    let finalAddressName = customStreet.trim();
+    if (customNumber.trim()) {
+      finalAddressName += `, ${customNumber.trim()}`;
     }
     if (customComplement.trim()) {
-      parts.splice(1, 0, customComplement.trim());
+      finalAddressName += `, ${customComplement.trim()}`;
     }
-    finalAddressName = parts.join(", ");
+    if (customNeighborhood.trim()) {
+      finalAddressName += ` - ${customNeighborhood.trim()}`;
+    }
+    if (customCity.trim()) {
+      finalAddressName += `, ${customCity.trim()}`;
+      if (!customCity.toLowerCase().includes("sp") && !customCity.toLowerCase().includes("estado")) {
+        finalAddressName += ` - SP`;
+      }
+    }
+    if (customCep.trim()) {
+      finalAddressName += `, ${customCep.trim()}`;
+    }
 
     const newAddress: SavedAddress = {
       id: `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
@@ -303,8 +422,8 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
       addressName: finalAddressName,
       latitude: finalCoords.latitude,
       longitude: finalCoords.longitude,
-      neighborhood: selectedSearchAddress.neighborhood,
-      city: selectedSearchAddress.city,
+      neighborhood: customNeighborhood.trim() || undefined,
+      city: customCity.trim() || undefined,
     };
 
     const updatedAddresses = [newAddress, ...savedAddresses];
@@ -393,27 +512,72 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
                 {selectedSearchAddress.displayName}
               </Text>
 
-              {/* Inputs para Número e Complemento */}
-              <View style={styles.addressDetailsForm}>
-                <View style={styles.inputHalf}>
-                  <Text style={styles.inputLabel}>Número</Text>
+              {/* Inputs para Rua, Bairro, CEP, Número e Complemento */}
+              <View style={styles.addressDetailsFormVertical}>
+                <View style={styles.inputFull}>
+                  <Text style={styles.inputLabel}>Rua</Text>
                   <TextInput
                     style={styles.detailInput}
-                    placeholder="Ex: 997"
+                    placeholder="Rua..."
                     placeholderTextColor="#9CA3AF"
-                    value={customNumber}
-                    onChangeText={setCustomNumber}
+                    value={customStreet}
+                    onChangeText={setCustomStreet}
                   />
                 </View>
-                <View style={styles.inputHalf}>
-                  <Text style={styles.inputLabel}>Complemento</Text>
-                  <TextInput
-                    style={styles.detailInput}
-                    placeholder="Ex: Apto 12 (Opcional)"
-                    placeholderTextColor="#9CA3AF"
-                    value={customComplement}
-                    onChangeText={setCustomComplement}
-                  />
+                
+                <View style={styles.inputRow}>
+                  <View style={styles.inputHalf}>
+                    <Text style={styles.inputLabel}>Bairro</Text>
+                    <TextInput
+                      style={styles.detailInput}
+                      placeholder="Bairro..."
+                      placeholderTextColor="#9CA3AF"
+                      value={customNeighborhood}
+                      onChangeText={setCustomNeighborhood}
+                    />
+                  </View>
+                  <View style={styles.inputHalf}>
+                    <Text style={styles.inputLabel}>CEP</Text>
+                    <TextInput
+                      style={styles.detailInput}
+                      placeholder="Ex: 12900-000"
+                      placeholderTextColor="#9CA3AF"
+                      value={customCep}
+                      onChangeText={(text) => {
+                        const cleaned = text.replace(/\D/g, "");
+                        let formatted = cleaned;
+                        if (cleaned.length > 5) {
+                          formatted = `${cleaned.substring(0, 5)}-${cleaned.substring(5, 8)}`;
+                        }
+                        setCustomCep(formatted);
+                      }}
+                      keyboardType="numeric"
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.inputRow}>
+                  <View style={styles.inputHalf}>
+                    <Text style={styles.inputLabel}>Número *</Text>
+                    <TextInput
+                      style={styles.detailInput}
+                      placeholder="Ex: 997"
+                      placeholderTextColor="#9CA3AF"
+                      value={customNumber}
+                      onChangeText={setCustomNumber}
+                      keyboardType="numeric"
+                    />
+                  </View>
+                  <View style={styles.inputHalf}>
+                    <Text style={styles.inputLabel}>Complemento</Text>
+                    <TextInput
+                      style={styles.detailInput}
+                      placeholder="Ex: Apto 12 (Opcional)"
+                      placeholderTextColor="#9CA3AF"
+                      value={customComplement}
+                      onChangeText={setCustomComplement}
+                    />
+                  </View>
                 </View>
               </View>
 
@@ -555,6 +719,14 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
                       longitude: coords?.longitude ?? -46.5420,
                     };
                     setSelectedSearchAddress(manualItem);
+                    setCustomStreet(addressInput.trim());
+                    setCustomNeighborhood("");
+                    setCustomCity("Bragança Paulista");
+                    setCustomCep("");
+                    setCustomNumber("");
+                    setCustomComplement("");
+                    setCustomLabel("");
+                    setActiveLabelType("casa");
                   }}
                   style={styles.manualAddRow}
                 >
@@ -1047,6 +1219,18 @@ const styles = StyleSheet.create({
     gap: 12,
     marginHorizontal: 16,
     marginBottom: 16,
+  },
+  addressDetailsFormVertical: {
+    gap: 12,
+    marginBottom: 12,
+  },
+  inputFull: {
+    width: "100%",
+    gap: 6,
+  },
+  inputRow: {
+    flexDirection: "row",
+    gap: 12,
   },
   inputHalf: {
     flex: 1,
