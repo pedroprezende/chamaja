@@ -121,11 +121,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(JSON.parse(cachedUser));
         }
 
-        // Recupera sessão do Supabase com timeout de segurança de 5 segundos
+        // Recupera sessão do Supabase com timeout de segurança de 15 segundos
         const sessionResult = await Promise.race([
           supabase.auth.getSession(),
           new Promise<{ data: { session: null } }>((_, reject) =>
-            setTimeout(() => reject(new Error("Supabase getSession timeout")), 5000)
+            setTimeout(() => reject(new Error("Supabase getSession timeout")), 15000)
           )
         ]).catch(err => {
           logger.warn("AUTH", "Timeout ou falha ao obter sessão do Supabase", err);
@@ -135,11 +135,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const session = sessionResult.data?.session;
         if (session) {
           logger.info("AUTH", "Sessão válida encontrada no Supabase");
-          // Sincroniza a sessão mas protege contra travamentos com timeout de 5 segundos
+          // Sincroniza a sessão mas protege contra travamentos com timeout de 15 segundos
           await Promise.race([
             syncUserSession(session),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error("Sync user session timeout")), 5000)
+              setTimeout(() => reject(new Error("Sync user session timeout")), 15000)
             )
           ]).catch(err => {
             logger.warn("AUTH", "Sincronização lenta ou falhou durante inicialização", err);
@@ -163,10 +163,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logger.info("AUTH", `Evento Auth detectado: ${event}`);
         try {
           if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
-            // Sincroniza sessão mas não deixa travar o app se demorar
+            // Sincroniza sessão mas não deixa travar o app se demorar (timeout de 15 segundos)
             await Promise.race([
               syncUserSession(session),
-              new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 5000))
+              new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 15000))
             ]).catch(err => logger.warn("AUTH", "Sincronização lenta ou falhou", err));
           } else if (event === "SIGNED_OUT") {
             setUser(null);
