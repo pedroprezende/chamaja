@@ -22,7 +22,7 @@ export default function FavoritesScreen() {
   const { favorites, toggleFavorite } = useFavorites();
   const { coords, addressName, permissionGranted } = useLocation();
   const isDefaultCity = addressName === "Bragança Paulista - SP";
-  const showDistance = permissionGranted || !isDefaultCity;
+  const showDistance = coords !== null;
 
   const handleWhatsApp = (phone: string, name: string) => {
     const cleaned = phone.replace(/\D/g, "");

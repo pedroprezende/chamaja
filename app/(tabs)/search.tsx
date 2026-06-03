@@ -71,7 +71,7 @@ export default function SearchScreen() {
   const mapComponentRef = useRef<any>(null);
 
   const isDefaultCity = addressName === "Bragança Paulista - SP";
-  const showDistance = permissionGranted || !isDefaultCity;
+  const showDistance = coords !== null;
 
   // Estados principais
   const [query, setQuery] = useState("");

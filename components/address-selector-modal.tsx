@@ -191,7 +191,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
         const response = await fetch(
           `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
             queryStr
-          )}&format=json&limit=1`,
+          )}&format=json&limit=1&addressdetails=1`,
           {
             headers: {
               "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -202,6 +202,11 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
         if (Array.isArray(data) && data.length > 0) {
           finalCoords.latitude = parseFloat(data[0].lat);
           finalCoords.longitude = parseFloat(data[0].lon);
+          
+          // Enrich manual address with geocoded suburb/city details
+          const { suburb, city, town, village } = data[0].address || {};
+          selectedSearchAddress.neighborhood = suburb || undefined;
+          selectedSearchAddress.city = city || town || village || undefined;
         }
       } catch (err) {
         console.warn("Geocoding manual address failed, falling back to current location:", err);

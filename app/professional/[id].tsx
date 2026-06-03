@@ -71,7 +71,7 @@ export default function ProfessionalDetailScreen() {
   const trackWhatsapp = trpc.analytics.trackWhatsappClick.useMutation();
   const { coords, addressName, permissionGranted } = useLocation();
   const isDefaultCity = addressName === "Bragança Paulista - SP";
-  const showDistance = permissionGranted || !isDefaultCity;
+  const showDistance = coords !== null;
 
   const { user } = useAuth();
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
@@ -300,13 +300,20 @@ export default function ProfessionalDetailScreen() {
               {prof.subcategoryName || prof.category}
             </Text>
 
-            <View style={styles.locationContainer}>
-              <Text style={[styles.locationText, { color: colors.foreground }]}>
-                📍 {prof.neighborhood || "Bairro não informado"} • {prof.city || "Cidade não informada"}
+            <View style={[styles.locationContainer, { marginTop: 8, gap: 4 }]}>
+              <Text style={{ fontSize: 14, color: colors.foreground, textAlign: "center" }}>
+                📍 Bairro: <Text style={{ fontWeight: "700" }}>{prof.neighborhood || "Não informado"}</Text>
               </Text>
-              {showDistance && distanceInfo && (
-                <Text style={[styles.distanceGreenText, { color: "#15803D", marginTop: 2 }]}>
-                  🚗 {distanceInfo.distanceText}
+              <Text style={{ fontSize: 14, color: colors.foreground, textAlign: "center" }}>
+                📍 Cidade: <Text style={{ fontWeight: "700" }}>{prof.city || "Não informada"}</Text>
+              </Text>
+              {distanceInfo ? (
+                <Text style={{ fontSize: 14, color: "#15803D", fontWeight: "700", textAlign: "center" }}>
+                  🚗 Distância até você: {distanceInfo.distanceText}
+                </Text>
+              ) : (
+                <Text style={{ fontSize: 13, color: colors.muted, fontStyle: "italic", textAlign: "center" }}>
+                  🚗 Distância até você: Indisponível (defina seu endereço)
                 </Text>
               )}
             </View>

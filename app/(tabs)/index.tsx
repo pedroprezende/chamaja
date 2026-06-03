@@ -278,10 +278,10 @@ export default function HomeScreen() {
   const { ads, isLoading: adsLoading } = useAds(true);
 
   const { colorScheme, setColorScheme } = useThemeContext();
-  const { coords, addressName, permissionGranted } = useLocation();
+  const { coords, addressName, permissionGranted, loading: locationLoading } = useLocation();
   
   const isDefaultCity = addressName === "Bragança Paulista - SP";
-  const showDistance = permissionGranted || !isDefaultCity;
+  const showDistance = coords !== null;
 
   const [regionModalVisible, setRegionModalVisible] = useState(false);
 
@@ -334,8 +334,21 @@ export default function HomeScreen() {
   const { data: dbSubcategories = [] } = trpc.categories.subServices.listAll.useQuery();
 
   const featuredProviders = React.useMemo(() => {
-    return dbProviders.filter((p) => p.destaque && p.isActive);
-  }, [dbProviders]);
+    const list = dbProviders.filter((p) => p.destaque && p.isActive).map(p => {
+      let distanceKm = 9999;
+      if (coords && p.latitude !== null && p.latitude !== undefined && p.longitude !== null && p.longitude !== undefined) {
+        distanceKm = calculateHaversineDistance(
+          coords.latitude,
+          coords.longitude,
+          Number(p.latitude),
+          Number(p.longitude)
+        );
+      }
+      return { ...p, distanceKm };
+    });
+    // Sort by distance (closest first)
+    return list.sort((a, b) => a.distanceKm - b.distanceKm);
+  }, [dbProviders, coords]);
 
   const popularSubcategories = React.useMemo(() => {
     const popularNames = ["encanador", "eletricista", "chaveiro", "motoboy", "ar condicionado", "pintor", "diarista"];
@@ -449,6 +462,15 @@ export default function HomeScreen() {
   const [homeSearchQuery, setHomeSearchQuery] = useState("");
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'rating' | 'name' | 'none' | 'distance'>('none');
+  const [hasPromptedAddress, setHasPromptedAddress] = useState(false);
+
+  // Automatically prompt for manual address selection if GPS location is denied and no location is set
+  useEffect(() => {
+    if (!locationLoading && !permissionGranted && isDefaultCity && !hasPromptedAddress) {
+      setRegionModalVisible(true);
+      setHasPromptedAddress(true);
+    }
+  }, [locationLoading, permissionGranted, isDefaultCity, hasPromptedAddress]);
   const [suggestionInput, setSuggestionInput] = useState("");
   const [suggestionOffset, setSuggestionOffset] = useState(0);
   const [localRecentSearches, setLocalRecentSearches] = useState<string[]>([]);
@@ -1225,6 +1247,25 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
+        {/* Visual warning banner when location cannot be determined */}
+        {(!permissionGranted && isDefaultCity) && (
+          <View style={[styles.locationWarningBanner, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={styles.locationWarningHeader}>
+              <MaterialIcons name="location-off" size={22} color="#EF4444" />
+              <Text style={[styles.locationWarningTitle, { color: colors.foreground }]}>Localização não ativada</Text>
+            </View>
+            <Text style={[styles.locationWarningText, { color: colors.muted }]}>
+              Não conseguimos obter sua localização via GPS. Defina um endereço manualmente para calcular as distâncias e encontrar profissionais mais próximos.
+            </Text>
+            <Pressable
+              onPress={() => setRegionModalVisible(true)}
+              style={[styles.locationWarningBtn, { backgroundColor: colors.primary }]}
+            >
+              <Text style={styles.locationWarningBtnText}>Definir Endereço Manualmente</Text>
+            </Pressable>
+          </View>
+        )}
+
         {/* Conteúdo Principal Virtualizado */}
         {homeSearchQuery.length > 0 ? (
           /* Lista de Resultados da Busca */
@@ -1960,6 +2001,39 @@ const styles = StyleSheet.create({
   },
   editModeBtnLabel: { fontSize: 12, fontWeight: "700", color: "#FFFFFF" },
   bellBtn: { padding: 4 },
+  locationWarningBanner: {
+    marginHorizontal: 16,
+    marginVertical: 8,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 8,
+  },
+  locationWarningHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  locationWarningTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  locationWarningText: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  locationWarningBtn: {
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 4,
+  },
+  locationWarningBtnText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "700",
+  },
   bellWrapper: { position: "relative" },
   badge: {
     position: "absolute",

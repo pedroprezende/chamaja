@@ -66,6 +66,36 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const fetchCoords = async () => {
     try {
+      if (Platform.OS === "web") {
+        if (typeof window === "undefined" || !navigator.geolocation) {
+          setCoords({ latitude: -22.9520, longitude: -46.5420 });
+          setAddressName("Bragança Paulista - SP");
+          setLoading(false);
+          return;
+        }
+        return new Promise<void>((resolve) => {
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              const lat = position.coords.latitude;
+              const lon = position.coords.longitude;
+              setCoords({ latitude: lat, longitude: lon });
+              const friendlyName = await reverseGeocode(lat, lon);
+              setAddressName(friendlyName);
+              setLoading(false);
+              resolve();
+            },
+            (error) => {
+              console.warn("Web fetchCoords failed:", error);
+              setCoords({ latitude: -22.9520, longitude: -46.5420 });
+              setAddressName("Bragança Paulista - SP");
+              setLoading(false);
+              resolve();
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+          );
+        });
+      }
+
       if (!Location) {
         // Fallback for web without geolocation API
         setCoords({ latitude: -22.9520, longitude: -46.5420 });
@@ -109,6 +139,38 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const requestPermission = async (): Promise<boolean> => {
     setLoading(true);
+    if (Platform.OS === "web") {
+      if (typeof window === "undefined" || !navigator.geolocation) {
+        setCoords({ latitude: -22.9520, longitude: -46.5420 });
+        setAddressName("Bragança Paulista - SP");
+        setLoading(false);
+        return false;
+      }
+      return new Promise<boolean>((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            setCoords({ latitude: lat, longitude: lon });
+            setPermissionGranted(true);
+            const friendlyName = await reverseGeocode(lat, lon);
+            setAddressName(friendlyName);
+            setLoading(false);
+            resolve(true);
+          },
+          (error) => {
+            console.warn("Web Geolocation permission denied or failed:", error);
+            setPermissionGranted(false);
+            setCoords({ latitude: -22.9520, longitude: -46.5420 });
+            setAddressName("Bragança Paulista - SP");
+            setLoading(false);
+            resolve(false);
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+      });
+    }
+
     if (!Location) {
       setCoords({ latitude: -22.9520, longitude: -46.5420 });
       setAddressName("Bragança Paulista - SP");
@@ -140,6 +202,14 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const refreshLocation = async () => {
     setLoading(true);
+    if (Platform.OS === "web") {
+      if (typeof window !== "undefined" && navigator.geolocation) {
+        await fetchCoords();
+      } else {
+        setLoading(false);
+      }
+      return;
+    }
     if (!Location) {
       setLoading(false);
       return;
@@ -176,6 +246,37 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Expose function to force GPS coordinates fetch and reverse geocoding
   const useGpsLocation = async () => {
     setLoading(true);
+    if (Platform.OS === "web") {
+      if (typeof window === "undefined" || !navigator.geolocation) {
+        setErrorMsg("Location services not available on this browser");
+        await updateLocation({ latitude: -22.9520, longitude: -46.5420 }, "Bragança Paulista - SP");
+        setLoading(false);
+        return;
+      }
+      return new Promise<void>((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            const friendlyName = await reverseGeocode(lat, lon);
+            await updateLocation({ latitude: lat, longitude: lon }, friendlyName);
+            setPermissionGranted(true);
+            setLoading(false);
+            resolve();
+          },
+          async (error) => {
+            console.warn("Web GPS request failed:", error);
+            setErrorMsg("GPS request failed: " + error.message);
+            await updateLocation({ latitude: -22.9520, longitude: -46.5420 }, "Bragança Paulista - SP");
+            setPermissionGranted(false);
+            setLoading(false);
+            resolve();
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+      });
+    }
+
     try {
       if (Location) {
         const { status } = await Location.requestForegroundPermissionsAsync();
