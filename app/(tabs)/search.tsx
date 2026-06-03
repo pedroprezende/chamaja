@@ -438,6 +438,13 @@ export default function SearchScreen() {
             {/* Card de Detalhes no Rodapé */}
             {selectedProvider && (
               <View style={styles.detailCard}>
+                <Pressable
+                  onPress={() => setSelectedProviderId(null)}
+                  style={styles.cardCloseBtn}
+                >
+                  <MaterialIcons name="close" size={20} color="#9CA3AF" />
+                </Pressable>
+
                 <View style={styles.cardHeader}>
                   <Image
                     source={{
@@ -1164,6 +1171,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#374151",
     zIndex: 10,
+  },
+  cardCloseBtn: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    zIndex: 20,
+    padding: 4,
   },
   cardHeader: {
     flexDirection: "row",

@@ -60,6 +60,8 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
   const [customLabel, setCustomLabel] = useState("");
   const [activeLabelType, setActiveLabelType] = useState<"casa" | "trabalho" | "outro">("casa");
   const [saving, setSaving] = useState(false);
+  const [customNumber, setCustomNumber] = useState("");
+  const [customComplement, setCustomComplement] = useState("");
 
   // Load saved addresses on open/mount
   const loadSavedAddresses = async () => {
@@ -81,6 +83,8 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
       setAddressInput("");
       setResults([]);
       setSelectedSearchAddress(null);
+      setCustomNumber("");
+      setCustomComplement("");
       setErrorMsg(null);
       setSaving(false);
     }
@@ -283,10 +287,20 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
       finalLabel = customLabel.trim() || "Outro";
     }
 
+    let finalAddressName = selectedSearchAddress.displayName;
+    const parts = finalAddressName.split(", ");
+    if (parts.length > 0 && customNumber.trim()) {
+      parts[0] = `${parts[0]}, ${customNumber.trim()}`;
+    }
+    if (customComplement.trim()) {
+      parts.splice(1, 0, customComplement.trim());
+    }
+    finalAddressName = parts.join(", ");
+
     const newAddress: SavedAddress = {
       id: `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       label: finalLabel,
-      addressName: selectedSearchAddress.displayName,
+      addressName: finalAddressName,
       latitude: finalCoords.latitude,
       longitude: finalCoords.longitude,
       neighborhood: selectedSearchAddress.neighborhood,
@@ -378,6 +392,30 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
               <Text style={styles.labelFormSubtitle} numberOfLines={2}>
                 {selectedSearchAddress.displayName}
               </Text>
+
+              {/* Inputs para Número e Complemento */}
+              <View style={styles.addressDetailsForm}>
+                <View style={styles.inputHalf}>
+                  <Text style={styles.inputLabel}>Número</Text>
+                  <TextInput
+                    style={styles.detailInput}
+                    placeholder="Ex: 997"
+                    placeholderTextColor="#9CA3AF"
+                    value={customNumber}
+                    onChangeText={setCustomNumber}
+                  />
+                </View>
+                <View style={styles.inputHalf}>
+                  <Text style={styles.inputLabel}>Complemento</Text>
+                  <TextInput
+                    style={styles.detailInput}
+                    placeholder="Ex: Apto 12 (Opcional)"
+                    placeholderTextColor="#9CA3AF"
+                    value={customComplement}
+                    onChangeText={setCustomComplement}
+                  />
+                </View>
+              </View>
 
               {/* Botões rápidos e Custom Label */}
               <View style={styles.labelSelectorRow}>
@@ -1003,5 +1041,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     flex: 1,
+  },
+  addressDetailsForm: {
+    flexDirection: "row",
+    gap: 12,
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  inputHalf: {
+    flex: 1,
+    gap: 6,
+  },
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#9CA3AF",
+  },
+  detailInput: {
+    backgroundColor: "#1F2937",
+    color: "#FFFFFF",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    borderWidth: 1,
+    borderColor: "#374151",
   },
 });
