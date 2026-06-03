@@ -180,6 +180,19 @@ export default function SearchScreen() {
     return providersList.find((p) => p.id === selectedProviderId) || null;
   }, [selectedProviderId, providersList]);
 
+  // Adiciona logs detalhados de localização do usuário, endereço selecionado e prestadores
+  useEffect(() => {
+    console.log("=== [DIAGNÓSTICO LOCALIZAÇÃO] ===");
+    console.log(`- Endereço Selecionado: "${addressName}"`);
+    console.log(`- Coordenadas do Endereço/Usuário: Lat ${userCoords.latitude}, Lng ${userCoords.longitude}`);
+    console.log(`- Coordenadas do Fallback/GPS Ativo: ${coords ? `Lat ${coords.latitude}, Lng ${coords.longitude}` : "Nenhuma (Usando Fallback Padrão -22.9520, -46.5420)"}`);
+    console.log(`- Total de Prestadores Mapeados: ${providersList.length}`);
+    providersList.forEach((p, idx) => {
+      console.log(`  [Prestador #${idx + 1}] Nome: "${p.name}" | Cat: "${p.category || p.subcategoryName}" | Bairro: "${p.neighborhood}" | Coordenadas: Lat ${p.latitude}, Lng ${p.longitude} | Distância: ${p.distanceStr || 'N/A'}`);
+    });
+    console.log("=================================");
+  }, [userCoords, addressName, coords, providersList]);
+
   // Ao trocar de aba, resetamos o filtro de subcategoria e o selecionado no mapa
   const handleTabChange = (tab: "prestadores" | "comercios") => {
     setActiveTab(tab);

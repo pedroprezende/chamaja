@@ -207,9 +207,17 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
           const { suburb, city, town, village } = data[0].address || {};
           selectedSearchAddress.neighborhood = suburb || undefined;
           selectedSearchAddress.city = city || town || village || undefined;
+        } else {
+          setErrorMsg("Não conseguimos localizar o endereço no mapa. Verifique a ortografia, nome da rua e número.");
+          setSaving(false);
+          setSelectedSearchAddress(null); // return to input to let user correct it
+          return;
         }
       } catch (err) {
-        console.warn("Geocoding manual address failed, falling back to current location:", err);
+        console.warn("Geocoding manual address failed:", err);
+        setErrorMsg("Não foi possível geocodificar o endereço. Verifique sua conexão.");
+        setSaving(false);
+        return;
       }
     }
 

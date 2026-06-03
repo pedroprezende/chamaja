@@ -211,19 +211,27 @@ const MAP_HTML = `
       if (!data) return;
 
       if (data.type === 'INIT') {
+        console.log("=== Leaflet Map Init ===");
+        console.log("User Coords:", data.userCoords?.latitude, data.userCoords?.longitude);
+        console.log("Providers count:", data.providers?.length);
         initMap(data.userCoords?.latitude, data.userCoords?.longitude);
         updateUserLocation(data.userCoords?.latitude, data.userCoords?.longitude, false);
         activeSelectedId = data.selectedProviderId;
         updateProviders(data.providers);
       } else if (data.type === 'RECENTER') {
+        console.log("Leaflet Map Recenter:", data.lat, data.lng);
         map.setView([data.lat, data.lng], 14, { animate: true });
       } else if (data.type === 'PAN_TO_PROVIDER') {
+        console.log("Leaflet Map Pan to provider:", data.lat, data.lng);
         map.setView([data.lat, data.lng], 14.5, { animate: true });
       } else if (data.type === 'UPDATE_USER_LOCATION') {
+        console.log("Leaflet Map Update User Location:", data.lat, data.lng);
         updateUserLocation(data.lat, data.lng, true);
       } else if (data.type === 'UPDATE_PROVIDERS') {
+        console.log("Leaflet Map Update Providers. New count:", data.providers?.length);
         updateProviders(data.providers);
       } else if (data.type === 'SELECT_PROVIDER') {
+        console.log("Leaflet Map Select Provider:", data.providerId);
         selectProvider(data.providerId);
       }
     });

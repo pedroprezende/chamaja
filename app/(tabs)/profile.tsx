@@ -190,9 +190,17 @@ export default function ProfileScreen() {
           const { suburb, city, town, village } = data[0].address || {};
           selectedAddressToAdd.neighborhood = suburb || undefined;
           selectedAddressToAdd.city = city || town || village || undefined;
+        } else {
+          setSearchError("Não conseguimos localizar o endereço no mapa. Verifique a ortografia, nome da rua e número.");
+          setSavingAddress(false);
+          setSelectedAddressToAdd(null); // return to input to let user correct it
+          return;
         }
       } catch (err) {
         console.warn("Geocoding manual address in profile failed:", err);
+        setSearchError("Não foi possível geocodificar o endereço. Verifique sua conexão.");
+        setSavingAddress(false);
+        return;
       }
     }
 
