@@ -29,6 +29,10 @@ export interface SavedAddress {
   longitude: number;
   neighborhood?: string;
   city?: string;
+  street?: string;
+  number?: string;
+  complement?: string;
+  cep?: string;
 }
 
 interface GeocodedAddress {
@@ -66,6 +70,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
   const [customNeighborhood, setCustomNeighborhood] = useState("");
   const [customCity, setCustomCity] = useState("Bragança Paulista");
   const [customCep, setCustomCep] = useState("");
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
 
   // Load saved addresses on open/mount
   const loadSavedAddresses = async () => {
@@ -93,6 +98,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
       setCustomNeighborhood("");
       setCustomCity("Bragança Paulista");
       setCustomCep("");
+      setEditingAddressId(null);
       setErrorMsg(null);
       setSaving(false);
     }
@@ -271,14 +277,45 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
     const neighborhood = item.neighborhood || parts[1] || "";
     const city = item.city || (parts[2] ? parts[2].split(" - ")[0] : "Bragança Paulista");
     
+    // Parse house number from search input if present
+    let parsedNumber = "";
+    const numberMatch = addressInput.match(/\b\d+\b/);
+    if (numberMatch) {
+      parsedNumber = numberMatch[0];
+    }
+
     setCustomStreet(street);
     setCustomNeighborhood(neighborhood);
     setCustomCity(city);
     setCustomCep("");
-    setCustomNumber("");
+    setCustomNumber(parsedNumber);
     setCustomComplement("");
     setCustomLabel("");
     setActiveLabelType("casa");
+  };
+
+  // Switch modal view to edit details of a saved address
+  const handleEditSavedAddress = (item: SavedAddress, e: any) => {
+    e.stopPropagation();
+    setEditingAddressId(item.id);
+    setCustomStreet(item.street || "");
+    setCustomNumber(item.number || "");
+    setCustomComplement(item.complement || "");
+    setCustomNeighborhood(item.neighborhood || "");
+    setCustomCity(item.city || "Bragança Paulista");
+    setCustomCep(item.cep || "");
+    
+    setSelectedSearchAddress({
+      id: `edit-${item.id}`,
+      displayName: item.addressName,
+      latitude: item.latitude,
+      longitude: item.longitude,
+      neighborhood: item.neighborhood,
+      city: item.city,
+    });
+
+    setCustomLabel(item.label === "Casa" || item.label === "Trabalho" ? "" : item.label);
+    setActiveLabelType(item.label === "Casa" ? "casa" : item.label === "Trabalho" ? "trabalho" : "outro");
   };
 
   // Saves a new address to the saved addresses list and updates location
@@ -417,16 +454,25 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
     }
 
     const newAddress: SavedAddress = {
-      id: `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      id: editingAddressId || `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       label: finalLabel,
       addressName: finalAddressName,
       latitude: finalCoords.latitude,
       longitude: finalCoords.longitude,
       neighborhood: customNeighborhood.trim() || undefined,
       city: customCity.trim() || undefined,
+      street: customStreet.trim(),
+      number: customNumber.trim(),
+      complement: customComplement.trim(),
+      cep: customCep.trim() || undefined,
     };
 
-    const updatedAddresses = [newAddress, ...savedAddresses];
+    let updatedAddresses;
+    if (editingAddressId) {
+      updatedAddresses = savedAddresses.map((addr) => addr.id === editingAddressId ? newAddress : addr);
+    } else {
+      updatedAddresses = [newAddress, ...savedAddresses];
+    }
     setSavedAddresses(updatedAddresses);
 
     try {
@@ -824,6 +870,14 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
                             </Text>
                           </View>
                           
+                          {/* Botão de Editar */}
+                          <Pressable
+                            onPress={(e) => handleEditSavedAddress(item, e)}
+                            style={styles.editRowBtn}
+                          >
+                            <MaterialIcons name="edit" size={20} color="#22C55E" />
+                          </Pressable>
+
                           {/* Botão de Excluir */}
                           <Pressable
                             onPress={(e) => handleDeleteSavedAddress(item.id, e)}
@@ -1095,6 +1149,10 @@ const styles = StyleSheet.create({
   },
   deleteRowBtn: {
     padding: 6,
+  },
+  editRowBtn: {
+    padding: 6,
+    marginRight: 8,
   },
   emptyResults: {
     flex: 1,

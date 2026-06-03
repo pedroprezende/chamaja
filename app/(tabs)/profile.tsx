@@ -72,6 +72,7 @@ export default function ProfileScreen() {
   const [customCep, setCustomCep] = useState("");
   const [customNumber, setCustomNumber] = useState("");
   const [customComplement, setCustomComplement] = useState("");
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
 
   const loadSavedAddresses = async () => {
     try {
@@ -100,6 +101,7 @@ export default function ProfileScreen() {
       setCustomCep("");
       setCustomNumber("");
       setCustomComplement("");
+      setEditingAddressId(null);
       setSavingAddress(false);
     }
   }, [addressesModalVisible]);
@@ -224,6 +226,30 @@ export default function ProfileScreen() {
     } finally {
       setSearching(false);
     }
+  };
+
+  const handleEditSavedAddress = (item: SavedAddress, e: any) => {
+    e.stopPropagation();
+    setEditingAddressId(item.id);
+    setCustomStreet(item.street || "");
+    setCustomNumber(item.number || "");
+    setCustomComplement(item.complement || "");
+    setCustomNeighborhood(item.neighborhood || "");
+    setCustomCity(item.city || "Bragança Paulista");
+    setCustomCep(item.cep || "");
+    
+    setSelectedAddressToAdd({
+      id: `edit-${item.id}`,
+      displayName: item.addressName,
+      latitude: item.latitude,
+      longitude: item.longitude,
+      neighborhood: item.neighborhood,
+      city: item.city,
+    });
+
+    setCustomLabel(item.label === "Casa" || item.label === "Trabalho" ? "" : item.label);
+    setActiveLabelType(item.label === "Casa" ? "casa" : item.label === "Trabalho" ? "trabalho" : "outro");
+    setIsAddingNew(true);
   };
 
   const handleSaveAddress = async () => {
@@ -361,16 +387,25 @@ export default function ProfileScreen() {
     }
 
     const newAddress: SavedAddress = {
-      id: `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      id: editingAddressId || `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       label: finalLabel,
       addressName: finalAddressName,
       latitude: finalCoords.latitude,
       longitude: finalCoords.longitude,
       neighborhood: customNeighborhood.trim() || undefined,
       city: customCity.trim() || undefined,
+      street: customStreet.trim(),
+      number: customNumber.trim(),
+      complement: customComplement.trim(),
+      cep: customCep.trim() || undefined,
     };
 
-    const updatedAddresses = [newAddress, ...savedAddresses];
+    let updatedAddresses;
+    if (editingAddressId) {
+      updatedAddresses = savedAddresses.map((addr) => addr.id === editingAddressId ? newAddress : addr);
+    } else {
+      updatedAddresses = [newAddress, ...savedAddresses];
+    }
     setSavedAddresses(updatedAddresses);
 
     try {
@@ -383,6 +418,7 @@ export default function ProfileScreen() {
       setAddressInput("");
       setSearchResults([]);
       setSelectedAddressToAdd(null);
+      setEditingAddressId(null);
       loadSavedAddresses();
     } catch (e) {
       console.warn("Failed to save address:", e);
@@ -792,12 +828,20 @@ export default function ProfileScreen() {
                             latitude: coords?.latitude ?? -22.9520,
                             longitude: coords?.longitude ?? -46.5420,
                           };
+                          
+                          let parsedNumber = "";
+                          const numberMatch = addressInput.match(/\b\d+\b/);
+                          if (numberMatch) {
+                            parsedNumber = numberMatch[0];
+                          }
+
                           setSelectedAddressToAdd(manualItem);
-                          setCustomStreet(addressInput.trim());
+                          const streetNameWithoutNumber = addressInput.replace(/\b\d+\b/g, "").replace(/\s+,/g, ",").trim();
+                          setCustomStreet(streetNameWithoutNumber || addressInput.trim());
                           setCustomNeighborhood("");
                           setCustomCity("Bragança Paulista");
                           setCustomCep("");
-                          setCustomNumber("");
+                          setCustomNumber(parsedNumber);
                           setCustomComplement("");
                           setCustomLabel("");
                           setActiveLabelType("casa");
@@ -827,11 +871,18 @@ export default function ProfileScreen() {
                               const neighborhood = item.neighborhood || parts[1] || "";
                               const city = item.city || (parts[2] ? parts[2].split(" - ")[0] : "Bragança Paulista");
 
+                              // Parse number from addressInput
+                              let parsedNumber = "";
+                              const numberMatch = addressInput.match(/\b\d+\b/);
+                              if (numberMatch) {
+                                parsedNumber = numberMatch[0];
+                              }
+
                               setCustomStreet(street);
                               setCustomNeighborhood(neighborhood);
                               setCustomCity(city);
                               setCustomCep("");
-                              setCustomNumber("");
+                              setCustomNumber(parsedNumber);
                               setCustomComplement("");
                               setCustomLabel("");
                               setActiveLabelType("casa");
@@ -882,6 +933,15 @@ export default function ProfileScreen() {
                           </Text>
                         </View>
 
+                        {/* Botão de Editar */}
+                        <Pressable
+                          onPress={(e) => handleEditSavedAddress(item, e)}
+                          style={({ pressed }) => [{ padding: 8, marginRight: 4 }, pressed && { opacity: 0.6 }]}
+                        >
+                          <MaterialIcons name="edit" size={20} color={colors.primary} />
+                        </Pressable>
+
+                        {/* Botão de Excluir */}
                         <Pressable
                           onPress={() => handleDeleteAddress(item.id)}
                           style={({ pressed }) => [styles.deleteBtnRow, pressed && { opacity: 0.6 }]}
