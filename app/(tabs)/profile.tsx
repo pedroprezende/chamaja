@@ -47,6 +47,9 @@ export default function ProfileScreen() {
   const { favorites } = useFavorites();
   const { unreadCount } = useNotifications();
   const { coords } = useLocation();
+  
+  const userId = user?.id || "guest";
+  const storageKey = `@chamaja_saved_user_addresses_${userId}`;
   const [privacyModalVisible, setPrivacyModalVisible] = useState(false);
   const [termsModalVisible, setTermsModalVisible] = useState(false);
   const [helpModalVisible, setHelpModalVisible] = useState(false);
@@ -66,7 +69,7 @@ export default function ProfileScreen() {
 
   const loadSavedAddresses = async () => {
     try {
-      const raw = await AsyncStorage.getItem("@chamaja_saved_user_addresses");
+      const raw = await AsyncStorage.getItem(storageKey);
       if (raw) {
         setSavedAddresses(JSON.parse(raw));
       } else {
@@ -210,7 +213,7 @@ export default function ProfileScreen() {
 
     try {
       await AsyncStorage.setItem(
-        "@chamaja_saved_user_addresses",
+        storageKey,
         JSON.stringify(updatedAddresses)
       );
       // Reset view to saved addresses list
@@ -232,7 +235,7 @@ export default function ProfileScreen() {
       const updated = savedAddresses.filter((a) => a.id !== id);
       setSavedAddresses(updated);
       try {
-        await AsyncStorage.setItem("@chamaja_saved_user_addresses", JSON.stringify(updated));
+        await AsyncStorage.setItem(storageKey, JSON.stringify(updated));
       } catch (err) {
         console.warn("Failed to delete address:", err);
         Alert.alert("Erro", "Não foi possível excluir o endereço.");

@@ -14,6 +14,7 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import { useLocation } from "@/lib/location-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuth } from "@/lib/auth-context";
 
 interface AddressSelectorModalProps {
   visible: boolean;
@@ -41,7 +42,11 @@ interface GeocodedAddress {
 
 export default function AddressSelectorModal({ visible, onClose }: AddressSelectorModalProps) {
   const { coords, addressName, updateLocation, useGpsLocation, loading: locationLoading } = useLocation();
+  const { user } = useAuth();
   
+  const userId = user?.id || "guest";
+  const storageKey = `@chamaja_saved_user_addresses_${userId}`;
+
   const [addressInput, setAddressInput] = useState("");
   const [results, setResults] = useState<GeocodedAddress[]>([]);
   const [searching, setSearching] = useState(false);
@@ -59,7 +64,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
   // Load saved addresses on open/mount
   const loadSavedAddresses = async () => {
     try {
-      const raw = await AsyncStorage.getItem("@chamaja_saved_user_addresses");
+      const raw = await AsyncStorage.getItem(storageKey);
       if (raw) {
         setSavedAddresses(JSON.parse(raw));
       } else {
@@ -225,7 +230,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
 
     try {
       await AsyncStorage.setItem(
-        "@chamaja_saved_user_addresses",
+        storageKey,
         JSON.stringify(updatedAddresses)
       );
       // Set active
@@ -256,7 +261,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
     const updated = savedAddresses.filter((a) => a.id !== id);
     setSavedAddresses(updated);
     try {
-      await AsyncStorage.setItem("@chamaja_saved_user_addresses", JSON.stringify(updated));
+      await AsyncStorage.setItem(storageKey, JSON.stringify(updated));
     } catch (err) {
       console.warn("Failed to delete address:", err);
     }

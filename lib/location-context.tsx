@@ -181,13 +181,48 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status === "granted") {
           setPermissionGranted(true);
-          const current = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Balanced,
-          });
-          const lat = current.coords.latitude;
-          const lon = current.coords.longitude;
-          const friendlyName = await reverseGeocode(lat, lon);
-          await updateLocation({ latitude: lat, longitude: lon }, friendlyName);
+
+          let lat: number | null = null;
+          let lon: number | null = null;
+
+          // 1. Try last known position first (fast, works indoors)
+          try {
+            const lastKnown = await Location.getLastKnownPositionAsync({});
+            if (lastKnown) {
+              lat = lastKnown.coords.latitude;
+              lon = lastKnown.coords.longitude;
+            }
+          } catch (lkErr) {
+            console.warn("getLastKnownPositionAsync failed, continuing to current position query", lkErr);
+          }
+
+          // 2. Try current position with timeout race
+          try {
+            const current = await Promise.race([
+              Location.getCurrentPositionAsync({
+                accuracy: Location.Accuracy.Balanced,
+              }),
+              new Promise<null>((_, reject) =>
+                setTimeout(() => reject(new Error("Timeout getting current position")), 8000)
+              )
+            ]);
+            if (current) {
+              lat = current.coords.latitude;
+              lon = current.coords.longitude;
+            }
+          } catch (currErr) {
+            console.warn("getCurrentPositionAsync failed or timed out:", currErr);
+            if (lat === null || lon === null) {
+              throw currErr;
+            }
+          }
+
+          if (lat !== null && lon !== null) {
+            const friendlyName = await reverseGeocode(lat, lon);
+            await updateLocation({ latitude: lat, longitude: lon }, friendlyName);
+          } else {
+            throw new Error("Could not determine GPS coordinates");
+          }
         } else {
           throw new Error("GPS permission not granted");
         }
