@@ -99,17 +99,44 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
       }
       queryStr += ", Brasil";
 
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
-          queryStr
-        )}&format=json&limit=5&addressdetails=1&countrycodes=br`,
-        {
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          },
+      const fetchNominatim = async (q: string) => {
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+              q
+            )}&format=json&limit=5&addressdetails=1&countrycodes=br`,
+            {
+              headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+              },
+            }
+          );
+          return await res.json();
+        } catch (e) {
+          console.warn("fetchNominatim failed for query:", q, e);
+          return [];
         }
-      );
-      const data = await response.json();
+      };
+
+      let data = await fetchNominatim(queryStr);
+
+      // Fallback 1: Try fuzzy spelling replacement for common typos like sabela -> sabella
+      if ((!Array.isArray(data) || data.length === 0) && queryStr.toLowerCase().includes("sabela")) {
+        const fuzzyQuery = queryStr.replace(/sabela/gi, "sabella");
+        data = await fetchNominatim(fuzzyQuery);
+      }
+
+      // Fallback 2: Try stripping the house number (e.g. "rua vicente sabela 997" -> "rua vicente sabela")
+      if (!Array.isArray(data) || data.length === 0) {
+        const queryWithoutNumber = queryStr.replace(/\b\d+\b/g, "").replace(/\s+,/g, ",").trim();
+        if (queryWithoutNumber !== queryStr) {
+          data = await fetchNominatim(queryWithoutNumber);
+          if ((!Array.isArray(data) || data.length === 0) && queryWithoutNumber.toLowerCase().includes("sabela")) {
+            const fuzzyQueryWithoutNumber = queryWithoutNumber.replace(/sabela/gi, "sabella");
+            data = await fetchNominatim(fuzzyQueryWithoutNumber);
+          }
+        }
+      }
       
       if (Array.isArray(data) && data.length > 0) {
         const formatted: GeocodedAddress[] = data.map((item: any, idx: number) => {
@@ -188,23 +215,51 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
         }
         queryStr += ", Brasil";
 
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
-            queryStr
-          )}&format=json&limit=1&addressdetails=1`,
-          {
-            headers: {
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            },
+        const fetchNominatimOne = async (q: string) => {
+          try {
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+                q
+              )}&format=json&limit=1&addressdetails=1`,
+              {
+                headers: {
+                  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                },
+              }
+            );
+            const data = await res.json();
+            return Array.isArray(data) && data.length > 0 ? data[0] : null;
+          } catch (e) {
+            return null;
           }
-        );
-        const data = await response.json();
-        if (Array.isArray(data) && data.length > 0) {
-          finalCoords.latitude = parseFloat(data[0].lat);
-          finalCoords.longitude = parseFloat(data[0].lon);
+        };
+
+        let result = await fetchNominatimOne(queryStr);
+
+        // Fallback 1: Try fuzzy spelling replacement for sabela -> sabella
+        if (!result && queryStr.toLowerCase().includes("sabela")) {
+          const fuzzyQuery = queryStr.replace(/sabela/gi, "sabella");
+          result = await fetchNominatimOne(fuzzyQuery);
+        }
+
+        // Fallback 2: Try stripping the house number (e.g. "rua vicente sabela 997" -> "rua vicente sabela")
+        if (!result) {
+          const queryWithoutNumber = queryStr.replace(/\b\d+\b/g, "").replace(/\s+,/g, ",").trim();
+          if (queryWithoutNumber !== queryStr) {
+            result = await fetchNominatimOne(queryWithoutNumber);
+            if (!result && queryWithoutNumber.toLowerCase().includes("sabela")) {
+              const fuzzyQueryWithoutNumber = queryWithoutNumber.replace(/sabela/gi, "sabella");
+              result = await fetchNominatimOne(fuzzyQueryWithoutNumber);
+            }
+          }
+        }
+
+        if (result) {
+          finalCoords.latitude = parseFloat(result.lat);
+          finalCoords.longitude = parseFloat(result.lon);
           
           // Enrich manual address with geocoded suburb/city details
-          const { suburb, city, town, village } = data[0].address || {};
+          const { suburb, city, town, village } = result.address || {};
           selectedSearchAddress.neighborhood = suburb || undefined;
           selectedSearchAddress.city = city || town || village || undefined;
         } else {
