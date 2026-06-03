@@ -113,6 +113,19 @@ const MAP_HTML = `
       L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         maxZoom: 20
       }).addTo(map);
+
+      postCenter();
+      map.on('moveend', postCenter);
+    }
+
+    function postCenter() {
+      if (!map) return;
+      const center = map.getCenter();
+      window.parent.postMessage({
+        type: 'MAP_CENTER_CHANGED',
+        lat: center.lat,
+        lng: center.lng
+      }, '*');
     }
 
     function updateUserLocation(lat, lng, centerMap) {
@@ -243,7 +256,7 @@ const MAP_HTML = `
 `;
 
 const SearchMapWeb = forwardRef<any, SearchMapProps>((props, ref) => {
-  const { providers, userCoords, selectedProviderId, onSelectProvider } = props;
+  const { providers, userCoords, selectedProviderId, onSelectProvider, onMapCenterChange } = props;
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const isReadyRef = useRef(false);
 
@@ -280,11 +293,18 @@ const SearchMapWeb = forwardRef<any, SearchMapProps>((props, ref) => {
           type: "SELECT_PROVIDER",
           providerId: event.data.providerId,
         });
+      } else if (event.data?.type === "MAP_CENTER_CHANGED") {
+        if (onMapCenterChange) {
+          onMapCenterChange({
+            latitude: event.data.lat,
+            longitude: event.data.lng,
+          });
+        }
       }
     };
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [centerLat, centerLng, providers, selectedProviderId, onSelectProvider]);
+  }, [centerLat, centerLng, providers, selectedProviderId, onSelectProvider, onMapCenterChange]);
 
   useEffect(() => {
     if (isReadyRef.current && userCoords) {

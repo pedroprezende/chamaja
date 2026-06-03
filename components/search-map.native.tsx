@@ -122,7 +122,7 @@ const DARK_MAP_STYLE = [
 ];
 
 const SearchMapNative = forwardRef<any, SearchMapProps>((props, ref) => {
-  const { providers, userCoords, selectedProviderId, onSelectProvider } = props;
+  const { providers, userCoords, selectedProviderId, onSelectProvider, onMapCenterChange } = props;
   const mapRef = useRef<MapView>(null);
 
   const centerLat = userCoords?.latitude ?? -22.9519;
@@ -190,6 +190,14 @@ const SearchMapNative = forwardRef<any, SearchMapProps>((props, ref) => {
         showsUserLocation={false}
         showsMyLocationButton={false}
         onPress={() => onSelectProvider(null)}
+        onRegionChangeComplete={(region) => {
+          if (onMapCenterChange) {
+            onMapCenterChange({
+              latitude: region.latitude,
+              longitude: region.longitude,
+            });
+          }
+        }}
       >
         {/* User Location Marker (Blue Dot) */}
         {userCoords && (

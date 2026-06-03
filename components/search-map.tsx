@@ -25,6 +25,7 @@ export interface SearchMapProps {
   userCoords: { latitude: number; longitude: number } | null;
   selectedProviderId: string | null;
   onSelectProvider: (id: string | null) => void;
+  onMapCenterChange?: (coords: { latitude: number; longitude: number }) => void;
   mapRef?: any;
 }
 

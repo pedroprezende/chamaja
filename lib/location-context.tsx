@@ -13,6 +13,7 @@ export interface Coordinates {
 
 interface LocationContextType {
   coords: Coordinates | null;
+  gpsCoords: Coordinates | null;
   addressName: string;
   permissionGranted: boolean;
   loading: boolean;
@@ -27,6 +28,7 @@ const LocationContext = createContext<LocationContextType | undefined>(undefined
 
 export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [coords, setCoords] = useState<Coordinates | null>(null);
+  const [gpsCoords, setGpsCoords] = useState<Coordinates | null>(null);
   const [addressName, setAddressName] = useState<string>("Bragança Paulista - SP");
   const [permissionGranted, setPermissionGranted] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
@@ -79,6 +81,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               const lat = position.coords.latitude;
               const lon = position.coords.longitude;
               setCoords({ latitude: lat, longitude: lon });
+              setGpsCoords({ latitude: lat, longitude: lon });
               const friendlyName = await reverseGeocode(lat, lon);
               setAddressName(friendlyName);
               setLoading(false);
@@ -110,6 +113,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           const lat = lastKnown.coords.latitude;
           const lon = lastKnown.coords.longitude;
           setCoords({ latitude: lat, longitude: lon });
+          setGpsCoords({ latitude: lat, longitude: lon });
           const friendlyName = await reverseGeocode(lat, lon);
           setAddressName(friendlyName);
         }
@@ -123,6 +127,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const lat = current.coords.latitude;
       const lon = current.coords.longitude;
       setCoords({ latitude: lat, longitude: lon });
+      setGpsCoords({ latitude: lat, longitude: lon });
       const friendlyName = await reverseGeocode(lat, lon);
       setAddressName(friendlyName);
       setErrorMsg(null);
@@ -152,6 +157,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
             setCoords({ latitude: lat, longitude: lon });
+            setGpsCoords({ latitude: lat, longitude: lon });
             setPermissionGranted(true);
             const friendlyName = await reverseGeocode(lat, lon);
             setAddressName(friendlyName);
@@ -258,6 +264,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           async (position) => {
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
+            setGpsCoords({ latitude: lat, longitude: lon });
             const friendlyName = await reverseGeocode(lat, lon);
             await updateLocation({ latitude: lat, longitude: lon }, friendlyName);
             setPermissionGranted(true);
@@ -319,6 +326,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           }
 
           if (lat !== null && lon !== null) {
+            setGpsCoords({ latitude: lat, longitude: lon });
             const friendlyName = await reverseGeocode(lat, lon);
             await updateLocation({ latitude: lat, longitude: lon }, friendlyName);
           } else {
@@ -364,6 +372,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     <LocationContext.Provider
       value={{
         coords,
+        gpsCoords,
         addressName,
         permissionGranted,
         loading,
