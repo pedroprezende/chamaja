@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Dimensions,
   ScrollView,
+  Alert,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useLocation } from "@/lib/location-context";
@@ -42,6 +43,7 @@ interface GeocodedAddress {
   longitude: number;
   neighborhood?: string;
   city?: string;
+  cep?: string;
 }
 
 export default function AddressSelectorModal({ visible, onClose }: AddressSelectorModalProps) {
@@ -129,13 +131,13 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
             setCustomCity(city);
             setCustomCep(viaCepData.cep);
 
-            // Fetch coordinates for the street as fallback
+            // Fetch coordinates for the street as fallback, including CEP
             let lat = coords?.latitude ?? -22.9520;
             let lon = coords?.longitude ?? -46.5420;
             try {
               const nomRes = await fetch(
                 `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
-                  `${street}, ${neighborhood}, ${city}, Brasil`
+                  `${street}, ${neighborhood}, ${city}, ${viaCepData.cep}, Brasil`
                 )}&format=json&limit=1`,
                 {
                   headers: {
@@ -159,6 +161,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
               longitude: lon,
               neighborhood,
               city,
+              cep: viaCepData.cep,
             };
 
             setSelectedSearchAddress(cepAddressItem);
@@ -219,7 +222,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
       
       if (Array.isArray(data) && data.length > 0) {
         const formatted: GeocodedAddress[] = data.map((item: any, idx: number) => {
-          const { road, house_number, suburb, city, town, village, state } = item.address || {};
+          const { road, house_number, suburb, city, town, village, state, postcode } = item.address || {};
           const streetPart = road ? (house_number ? `${road}, ${house_number}` : road) : "";
           const neighborhoodPart = suburb || "";
           const cityPart = city || town || village || "";
@@ -239,6 +242,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
             longitude: parseFloat(item.lon),
             neighborhood: neighborhoodPart || undefined,
             city: cityPart || undefined,
+            cep: postcode || undefined,
           };
         });
         setResults(formatted);
@@ -287,7 +291,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
     setCustomStreet(street);
     setCustomNeighborhood(neighborhood);
     setCustomCity(city);
-    setCustomCep("");
+    setCustomCep(item.cep || "");
     setCustomNumber(parsedNumber);
     setCustomComplement("");
     setCustomLabel("");
@@ -321,6 +325,27 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
   // Saves a new address to the saved addresses list and updates location
   const handleSaveAndUseAddress = async () => {
     if (!selectedSearchAddress) return;
+
+    if (!customStreet.trim()) {
+      Alert.alert("Campo obrigatório", "Por favor, informe a Rua.");
+      return;
+    }
+    if (!customNumber.trim()) {
+      Alert.alert("Campo obrigatório", "Por favor, informe o Número.");
+      return;
+    }
+    if (!customNeighborhood.trim()) {
+      Alert.alert("Campo obrigatório", "Por favor, informe o Bairro.");
+      return;
+    }
+    if (!customCity.trim()) {
+      Alert.alert("Campo obrigatório", "Por favor, informe a Cidade.");
+      return;
+    }
+    if (!customCep.trim()) {
+      Alert.alert("Campo obrigatório", "Por favor, informe o CEP.");
+      return;
+    }
 
     setSaving(true);
     let finalCoords = {
