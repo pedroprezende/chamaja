@@ -248,9 +248,24 @@ export default function AdminProvidersScreen() {
   const { data: dbProvidersData, isLoading: providersLoading } = trpc.providers.list.useQuery();
   const { data: dbServices } = trpc.services.all.useQuery();
 
-  const createMutation = trpc.providers.create.useMutation();
-  const updateMutation = trpc.providers.update.useMutation();
-  const deleteMutation = trpc.providers.delete.useMutation();
+  const createMutation = trpc.providers.create.useMutation({
+    onSuccess: () => {
+      utils.providers.all.invalidate();
+      utils.providers.list.invalidate();
+    }
+  });
+  const updateMutation = trpc.providers.update.useMutation({
+    onSuccess: () => {
+      utils.providers.all.invalidate();
+      utils.providers.list.invalidate();
+    }
+  });
+  const deleteMutation = trpc.providers.delete.useMutation({
+    onSuccess: () => {
+      utils.providers.all.invalidate();
+      utils.providers.list.invalidate();
+    }
+  });
 
   const providers = useMemo(() => dbProvidersData || [], [dbProvidersData]);
   const services = useMemo(() => dbServices || [], [dbServices]);

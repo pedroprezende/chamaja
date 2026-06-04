@@ -35,9 +35,27 @@ export default function EditarPrestador() {
     console.log("[EditarPrestador] Categorias carregadas:", categories.length);
   }, [categories, catError]);
 
-  const createMutation = trpc.providers.create.useMutation({ onSuccess: () => router.back() });
-  const updateMutation = trpc.providers.update.useMutation({ onSuccess: () => router.back() });
-  const deleteMutation = trpc.providers.delete.useMutation({ onSuccess: () => router.back() });
+  const createMutation = trpc.providers.create.useMutation({
+    onSuccess: () => {
+      utils.providers.all.invalidate();
+      utils.providers.list.invalidate();
+    }
+  });
+  const updateMutation = trpc.providers.update.useMutation({
+    onSuccess: () => {
+      utils.providers.all.invalidate();
+      utils.providers.list.invalidate();
+      if (id) {
+        utils.providers.getById.invalidate(id as string);
+      }
+    }
+  });
+  const deleteMutation = trpc.providers.delete.useMutation({
+    onSuccess: () => {
+      utils.providers.all.invalidate();
+      utils.providers.list.invalidate();
+    }
+  });
 
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
