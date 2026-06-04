@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import LocationConfirmationMap from "@/components/location-confirmation-map";
 import {
   View,
   Text,
@@ -75,6 +76,11 @@ export default function ProfileScreen() {
   const [customComplement, setCustomComplement] = useState("");
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
 
+  // Confirmation Map States
+  const [showConfirmationMap, setShowConfirmationMap] = useState(false);
+  const [tempGeocodedCoords, setTempGeocodedCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [initialGeocodedCoords, setInitialGeocodedCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+
   const loadSavedAddresses = async () => {
     try {
       const raw = await AsyncStorage.getItem(storageKey);
@@ -104,6 +110,9 @@ export default function ProfileScreen() {
       setCustomComplement("");
       setEditingAddressId(null);
       setSavingAddress(false);
+      setShowConfirmationMap(false);
+      setTempGeocodedCoords(null);
+      setInitialGeocodedCoords(null);
     }
   }, [addressesModalVisible]);
 
@@ -279,7 +288,7 @@ export default function ProfileScreen() {
     }
 
     setSavingAddress(true);
-    let finalCoords = {
+    let resolvedCoords = {
       latitude: selectedAddressToAdd.latitude,
       longitude: selectedAddressToAdd.longitude,
     };
@@ -366,8 +375,8 @@ export default function ProfileScreen() {
       }
 
       if (result) {
-        finalCoords.latitude = parseFloat(result.lat);
-        finalCoords.longitude = parseFloat(result.lon);
+        resolvedCoords.latitude = parseFloat(result.lat);
+        resolvedCoords.longitude = parseFloat(result.lon);
         
         const { suburb, city, town, village } = result.address || {};
         if (suburb && !customNeighborhood.trim()) {
@@ -379,6 +388,33 @@ export default function ProfileScreen() {
       }
     } catch (err) {
       console.warn("Geocoding address details on save in profile failed:", err);
+    } finally {
+      setSavingAddress(false);
+    }
+
+    setInitialGeocodedCoords(resolvedCoords);
+    setTempGeocodedCoords(resolvedCoords);
+    setShowConfirmationMap(true);
+  };
+
+  const handleConfirmLocationProfile = async (finalCoords: { latitude: number; longitude: number }) => {
+    setShowConfirmationMap(false);
+    setSavingAddress(true);
+
+    // Save debug info
+    const fullAddressInput = `${customStreet}, ${customNumber}, ${customNeighborhood}, ${customCity}, ${customCep}`;
+    const debugInfo = {
+      inputtedAddress: fullAddressInput,
+      geocodedLat: initialGeocodedCoords?.latitude ?? 0,
+      geocodedLng: initialGeocodedCoords?.longitude ?? 0,
+      finalSavedLat: finalCoords.latitude,
+      finalSavedLng: finalCoords.longitude,
+      timestamp: new Date().toISOString(),
+    };
+    try {
+      await AsyncStorage.setItem("@chamaja_last_geocoded_debug_info", JSON.stringify(debugInfo));
+    } catch (e) {
+      console.warn("Failed to save debug info:", e);
     }
 
     let finalLabel = "Casa";
@@ -506,6 +542,7 @@ export default function ProfileScreen() {
     { id: "about", label: "Sobre o ChamaJá", icon: "info-outline" },
     { id: "privacy", label: "Política de Privacidade", icon: "security" },
     { id: "terms", label: "Termos de Uso", icon: "gavel" },
+    { id: "debug_location", label: "Debug de Localização", icon: "bug-report" },
     ...(isAdmin ? [{ id: "admin", label: "Painel Admin", icon: "admin-panel-settings", isAdmin: true }] : []),
   ] as const;
 
@@ -520,6 +557,7 @@ export default function ProfileScreen() {
       case "about": setAboutModalVisible(true); break;
       case "privacy": setPrivacyModalVisible(true); break;
       case "terms": setTermsModalVisible(true); break;
+      case "debug_location": router.push("/dev/location-debug" as any); break;
     }
   };
 
@@ -673,7 +711,15 @@ export default function ProfileScreen() {
               </Pressable>
             </View>
 
-            {isAddingNew ? (
+            {showConfirmationMap && tempGeocodedCoords ? (
+              <View style={{ flex: 1, minHeight: 350, width: "100%", borderRadius: 14, overflow: "hidden" }}>
+                <LocationConfirmationMap
+                  initialCoords={tempGeocodedCoords}
+                  onConfirm={handleConfirmLocationProfile}
+                  onCancel={() => setShowConfirmationMap(false)}
+                />
+              </View>
+            ) : isAddingNew ? (
               // TELA DE ADICIONAR NOVO ENDEREÇO
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalBody} keyboardShouldPersistTaps="handled">
                 {selectedAddressToAdd ? (

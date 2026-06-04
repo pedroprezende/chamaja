@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import LocationConfirmationMap from "./location-confirmation-map";
 import {
   Modal,
   View,
@@ -74,6 +75,11 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
   const [customCep, setCustomCep] = useState("");
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
 
+  // Confirmation Map States
+  const [showConfirmationMap, setShowConfirmationMap] = useState(false);
+  const [tempGeocodedCoords, setTempGeocodedCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [initialGeocodedCoords, setInitialGeocodedCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+
   // Load saved addresses on open/mount
   const loadSavedAddresses = async () => {
     try {
@@ -103,6 +109,9 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
       setEditingAddressId(null);
       setErrorMsg(null);
       setSaving(false);
+      setShowConfirmationMap(false);
+      setTempGeocodedCoords(null);
+      setInitialGeocodedCoords(null);
     }
   }, [visible]);
 
@@ -348,7 +357,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
     }
 
     setSaving(true);
-    let finalCoords = {
+    let resolvedCoords = {
       latitude: selectedSearchAddress.latitude,
       longitude: selectedSearchAddress.longitude,
     };
@@ -435,8 +444,8 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
       }
 
       if (result) {
-        finalCoords.latitude = parseFloat(result.lat);
-        finalCoords.longitude = parseFloat(result.lon);
+        resolvedCoords.latitude = parseFloat(result.lat);
+        resolvedCoords.longitude = parseFloat(result.lon);
         
         const { suburb, city, town, village } = result.address || {};
         if (suburb && !customNeighborhood.trim()) {
@@ -448,6 +457,33 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
       }
     } catch (err) {
       console.warn("Geocoding address details on save failed:", err);
+    } finally {
+      setSaving(false);
+    }
+
+    setInitialGeocodedCoords(resolvedCoords);
+    setTempGeocodedCoords(resolvedCoords);
+    setShowConfirmationMap(true);
+  };
+
+  const handleConfirmLocation = async (finalCoords: { latitude: number; longitude: number }) => {
+    setShowConfirmationMap(false);
+    setSaving(true);
+
+    // Save debug info
+    const fullAddressInput = `${customStreet}, ${customNumber}, ${customNeighborhood}, ${customCity}, ${customCep}`;
+    const debugInfo = {
+      inputtedAddress: fullAddressInput,
+      geocodedLat: initialGeocodedCoords?.latitude ?? 0,
+      geocodedLng: initialGeocodedCoords?.longitude ?? 0,
+      finalSavedLat: finalCoords.latitude,
+      finalSavedLng: finalCoords.longitude,
+      timestamp: new Date().toISOString(),
+    };
+    try {
+      await AsyncStorage.setItem("@chamaja_last_geocoded_debug_info", JSON.stringify(debugInfo));
+    } catch (e) {
+      console.warn("Failed to save debug info:", e);
     }
 
     let finalLabel = "Casa";
@@ -576,7 +612,15 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
           </View>
 
           {/* Fluxo de Formulário de Rótulo / Rótulo de Endereço */}
-          {selectedSearchAddress ? (
+          {showConfirmationMap && tempGeocodedCoords ? (
+            <View style={{ flex: 1, minHeight: 350, width: "100%", borderRadius: 14, overflow: "hidden" }}>
+              <LocationConfirmationMap
+                initialCoords={tempGeocodedCoords}
+                onConfirm={handleConfirmLocation}
+                onCancel={() => setShowConfirmationMap(false)}
+              />
+            </View>
+          ) : selectedSearchAddress ? (
             <View style={styles.labelFormContainer}>
               <Text style={styles.labelFormTitle}>Como quer salvar esse endereço?</Text>
               <Text style={styles.labelFormSubtitle} numberOfLines={2}>
