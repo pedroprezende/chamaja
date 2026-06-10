@@ -11,6 +11,7 @@ import {
   Platform,
   ActivityIndicator,
   Modal,
+  TextInput,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -25,6 +26,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/lib/auth-context";
 import { addReview } from "@/data/mock";
 import { useLocation } from "@/lib/location-context";
+import { supabase } from "@/lib/supabase";
 import {
   calculateHaversineDistance,
   formatDistancePtBr,
@@ -78,6 +80,10 @@ export default function ProfessionalDetailScreen() {
   const submitReview = trpc.providers.submitReview.useMutation();
 
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState<"perfil_falso" | "golpe" | "informacoes_incorretas" | "comportamento_inadequado" | "outro">("perfil_falso");
+  const [reportDetails, setReportDetails] = useState("");
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
   const { data: professional, isLoading: loading, refetch } = trpc.providers.getById.useQuery(id as string, {
     enabled: !!id,
   });
@@ -144,6 +150,48 @@ export default function ProfessionalDetailScreen() {
     Linking.openURL(url).catch(() =>
       Alert.alert("Erro", "Não foi possível abrir o WhatsApp.")
     );
+  };
+
+  const handleOpenReportModal = () => {
+    if (!user) {
+      Alert.alert("Acesso Necessário", "Você precisa estar conectado em uma conta para enviar uma denúncia.");
+      router.push("/auth/login" as any);
+      return;
+    }
+    setReportReason("perfil_falso");
+    setReportDetails("");
+    setShowReportModal(true);
+  };
+
+  const handleSubmitReport = async () => {
+    if (!professional || !user) return;
+    setIsSubmittingReport(true);
+
+    try {
+      const isCommerce = professional.categoryId === "comercios" || professional.category === "Comércios" || professional.category === "comercios";
+      const reportedType = isCommerce ? "comércio" : "prestador";
+
+      const { error } = await supabase
+        .from("denuncias")
+        .insert({
+          reporter_id: user.id,
+          reported_id: professional.id,
+          reported_type: reportedType,
+          reason: reportReason,
+          details: reportDetails.trim() || null,
+          status: "pendente",
+        });
+
+      if (error) throw error;
+
+      Alert.alert("Denúncia Enviada", "Agradecemos o seu envio. A equipe administrativa analisará a denúncia em breve.");
+      setShowReportModal(false);
+    } catch (err: any) {
+      console.error("Erro ao enviar denúncia:", err);
+      Alert.alert("Erro", "Não foi possível enviar a denúncia. Tente novamente mais tarde.");
+    } finally {
+      setIsSubmittingReport(false);
+    }
   };
 
   if (loading) {
@@ -216,6 +264,12 @@ export default function ProfessionalDetailScreen() {
           })}
         >
           <MaterialIcons name={favored ? "favorite" : "favorite-border"} size={22} color={favored ? "#EF4444" : "#FFF"} />
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.floatingBackBtn, { marginRight: 8 }, pressed && { opacity: 0.6 }]}
+          onPress={handleOpenReportModal}
+        >
+          <MaterialIcons name="report" size={22} color="#FFF" />
         </Pressable>
         <Pressable
           style={({ pressed }) => [styles.floatingBackBtn, pressed && { opacity: 0.6 }]}
@@ -569,6 +623,15 @@ export default function ProfessionalDetailScreen() {
             </View>
           )}
         </View>
+
+        {/* Report Link */}
+        <Pressable 
+          style={({ pressed }) => [styles.reportBtn, pressed && { opacity: 0.7 }]}
+          onPress={handleOpenReportModal}
+        >
+          <MaterialIcons name="outlined-flag" size={18} color="#EF4444" />
+          <Text style={styles.reportBtnText}>Denunciar este prestador</Text>
+        </Pressable>
       </ScrollView>
 
       {/* Footer / Call to Action */}
@@ -700,6 +763,111 @@ export default function ProfessionalDetailScreen() {
         }}
         professionalName={prof.name}
       />
+
+      {/* Leave Report Modal */}
+      <Modal
+        visible={showReportModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowReportModal(false)}
+      >
+        <View style={styles.modalOverlayBackground}>
+          <View style={[styles.reportModalContent, { backgroundColor: colors.surface }]}>
+            <View style={styles.reportModalHeader}>
+              <Text style={[styles.reportModalTitle, { color: colors.foreground }]}>Denunciar Perfil</Text>
+              <Pressable onPress={() => setShowReportModal(false)} style={styles.closeReportBtn}>
+                <MaterialIcons name="close" size={24} color={colors.foreground} />
+              </Pressable>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
+              <Text style={[styles.reportModalSubtitle, { color: colors.muted }]}>
+                Selecione o motivo mais adequado para a denúncia contra o perfil de <Text style={{ fontWeight: "700" }}>{prof.name}</Text>:
+              </Text>
+
+              {/* Reasons selector */}
+              {(
+                [
+                  { key: "perfil_falso", label: "Perfil falso / Clone" },
+                  { key: "golpe", label: "Golpe / Tentativa de Fraude" },
+                  { key: "informacoes_incorretas", label: "Informações incorretas / Desatualizadas" },
+                  { key: "comportamento_inadequado", label: "Comportamento inadequado / Ofensivo" },
+                  { key: "outro", label: "Outro motivo" },
+                ] as const
+              ).map((item) => {
+                const isSelected = reportReason === item.key;
+                return (
+                  <Pressable
+                    key={item.key}
+                    onPress={() => setReportReason(item.key)}
+                    style={[
+                      styles.reasonOption,
+                      { borderColor: isSelected ? colors.primary : colors.border },
+                      isSelected && { backgroundColor: colors.primary + "09" }
+                    ]}
+                  >
+                    <View style={[
+                      styles.radioButton,
+                      { borderColor: isSelected ? colors.primary : colors.muted }
+                    ]}>
+                      {isSelected && <View style={[styles.radioButtonInner, { backgroundColor: colors.primary }]} />}
+                    </View>
+                    <Text style={[styles.reasonLabelText, { color: colors.foreground, fontWeight: isSelected ? "600" : "400" }]}>
+                      {item.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+
+              <Text style={[styles.detailsLabelText, { color: colors.foreground, marginTop: 16 }]}>
+                Mais detalhes (Opcional)
+              </Text>
+              <TextInput
+                style={[
+                  styles.detailsInput, 
+                  { 
+                    color: colors.foreground, 
+                    borderColor: colors.border,
+                    backgroundColor: colors.background 
+                  }
+                ]}
+                placeholder="Explique detalhadamente o motivo da denúncia para nos ajudar a analisar o caso..."
+                placeholderTextColor={colors.muted}
+                multiline={true}
+                numberOfLines={4}
+                value={reportDetails}
+                onChangeText={setReportDetails}
+              />
+            </ScrollView>
+
+            <View style={[styles.reportModalFooter, { borderTopColor: colors.border }]}>
+              <Pressable
+                style={[styles.reportModalCancelBtn, { borderColor: colors.border }]}
+                onPress={() => setShowReportModal(false)}
+                disabled={isSubmittingReport}
+              >
+                <Text style={[styles.reportCancelBtnText, { color: colors.foreground }]}>Cancelar</Text>
+              </Pressable>
+              
+              <Pressable
+                style={[
+                  styles.reportModalSubmitBtn, 
+                  { backgroundColor: "#EF4444" },
+                  isSubmittingReport && { opacity: 0.7 }
+                ]}
+                onPress={handleSubmitReport}
+                disabled={isSubmittingReport}
+              >
+                {isSubmittingReport ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <Text style={styles.reportSubmitBtnText}>Enviar Denúncia</Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1239,5 +1407,123 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontSize: 14,
     fontWeight: "600",
+  },
+  reportBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 12,
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(239, 68, 68, 0.2)",
+    backgroundColor: "rgba(239, 68, 68, 0.05)",
+  },
+  reportBtnText: {
+    color: "#EF4444",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  modalOverlayBackground: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  reportModalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 40,
+    maxHeight: "85%",
+  },
+  reportModalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  reportModalTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+  },
+  closeReportBtn: {
+    padding: 4,
+  },
+  reportModalSubtitle: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  reasonOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 10,
+    gap: 12,
+  },
+  radioButton: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  radioButtonInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  reasonLabelText: {
+    fontSize: 14,
+  },
+  detailsLabelText: {
+    fontSize: 14,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  detailsInput: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    height: 90,
+    textAlignVertical: "top",
+    fontSize: 14,
+  },
+  reportModalFooter: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 20,
+    borderTopWidth: 1,
+    paddingTop: 16,
+  },
+  reportModalCancelBtn: {
+    flex: 1,
+    borderRadius: 12,
+    borderWidth: 1,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  reportCancelBtnText: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  reportModalSubmitBtn: {
+    flex: 2,
+    borderRadius: 12,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  reportSubmitBtnText: {
+    color: "#FFF",
+    fontSize: 14,
+    fontWeight: "700",
   },
 });
