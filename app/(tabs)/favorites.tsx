@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, FlatList, Pressable, Image, Linking, Alert } from "react-native";
+import { View, Text, StyleSheet, FlatList, Pressable, Linking, Alert } from "react-native";
+import { Image } from "expo-image";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -67,7 +68,12 @@ export default function FavoritesScreen() {
               ]}
               onPress={() => router.push(`/professional/${item.id}` as any)}
             >
-              <Image source={{ uri: item.avatar }} style={styles.avatar} />
+              <Image 
+                source={{ uri: item.avatar }} 
+                style={styles.avatar} 
+                contentFit="cover"
+                transition={150}
+              />
               <View style={styles.info}>
                 <Text style={[styles.name, { color: colors.foreground }]}>{item.name}</Text>
                 <Text style={[styles.service, { color: colors.muted }]}>{item.category}</Text>

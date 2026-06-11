@@ -267,6 +267,42 @@ export async function getProviders(activeOnly = true) {
   return result;
 }
 
+export async function getProvidersLightweight(activeOnly = true) {
+  const db = await getDb();
+  if (!db) return [];
+  const q = db.select({
+    id: providers.id,
+    userId: providers.userId,
+    name: providers.name,
+    category: providers.category,
+    categoryId: providers.categoryId,
+    city: providers.city,
+    neighborhood: providers.neighborhood,
+    plan: providers.plan,
+    subcategoryId: providers.subcategoryId,
+    subcategoryName: providers.subcategoryName,
+    avatarUri: providers.avatarUri,
+    rating: providers.rating,
+    ratingCount: providers.ratingCount,
+    latitude: providers.latitude,
+    longitude: providers.longitude,
+    coverUri: providers.coverUri,
+    isVerified: providers.isVerified,
+    onlineStatus: providers.onlineStatus,
+    responseTime: providers.responseTime,
+    topBadge: providers.topBadge,
+    isActive: providers.isActive,
+    displayOrder: providers.displayOrder,
+    destaque: providers.destaque,
+  }).from(providers);
+  
+  if (activeOnly) {
+    return q.where(eq(providers.isActive, true)).orderBy(asc(providers.displayOrder));
+  } else {
+    return q.orderBy(asc(providers.displayOrder));
+  }
+}
+
 export async function createProvider(data: InsertProvider) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

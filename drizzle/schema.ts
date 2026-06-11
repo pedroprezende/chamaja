@@ -8,6 +8,7 @@ import {
   integer,
   timestamp,
   real,
+  index,
 } from "drizzle-orm/pg-core";
 
 // ── Enums ─────────────────────────────────────────────────────────────────────
@@ -83,7 +84,11 @@ export const services = pgTable("services", {
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("services_category_id_idx").on(table.categoryId),
+  index("services_subcategory_id_idx").on(table.subcategoryId),
+  index("services_is_active_idx").on(table.isActive),
+]);
 
 // ── Providers (prestadores cadastrados pelo admin e usuários) ─────────────────
 export const providers = pgTable("providers", {
@@ -126,7 +131,13 @@ export const providers = pgTable("providers", {
   destaque: boolean("destaque").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("providers_category_id_idx").on(table.categoryId),
+  index("providers_subcategory_id_idx").on(table.subcategoryId),
+  index("providers_is_active_idx").on(table.isActive),
+  index("providers_destaque_idx").on(table.destaque),
+  index("providers_user_id_idx").on(table.userId),
+]);
 
 // ── Featured Ads (destaques) ───────────────────────────────────────────────────
 export const featuredAds = pgTable("featured_ads", {
@@ -213,7 +224,9 @@ export const reviews = pgTable("reviews", {
   rating: real("rating").notNull(),
   comment: text("comment"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("reviews_professional_id_idx").on(table.professionalId),
+]);
 
 export type Review = typeof reviews.$inferSelect;
 export type InsertReview = typeof reviews.$inferInsert;
@@ -223,7 +236,10 @@ export const favorites = pgTable("favorites", {
   userId: varchar("user_id", { length: 64 }).notNull().references(() => users.openId, { onDelete: "cascade" }),
   providerId: varchar("provider_id", { length: 64 }).notNull().references(() => providers.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("favorites_user_id_idx").on(table.userId),
+  index("favorites_provider_id_idx").on(table.providerId),
+]);
 
 export type Favorite = typeof favorites.$inferSelect;
 export type InsertFavorite = typeof favorites.$inferInsert;
@@ -237,7 +253,10 @@ export const appEvents = pgTable("app_events", {
   usuarioId: varchar("usuario_id", { length: 64 }),
   utmSource: varchar("utm_source", { length: 255 }),
   criadoEm: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("app_events_prestador_id_idx").on(table.prestadorId),
+  index("app_events_usuario_id_idx").on(table.usuarioId),
+]);
 
 export type AppEvent = typeof appEvents.$inferSelect;
 export type InsertAppEvent = typeof appEvents.$inferInsert;

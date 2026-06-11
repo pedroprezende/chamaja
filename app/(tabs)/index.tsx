@@ -290,9 +290,53 @@ export default function HomeScreen() {
   const isAdmin = user?.role === "admin";
   const firstName = user?.name?.split(" ")[0] || "você";
 
+  // ── Estados para Cache Local ──
+  const [cachedServices, setCachedServices] = useState<any[]>([]);
+  const [cachedProviders, setCachedProviders] = useState<any[]>([]);
+  const [cachedCategories, setCachedCategories] = useState<any[]>([]);
+  const [cachedSubcategories, setCachedSubcategories] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadCache = async () => {
+      try {
+        const [svcs, provs, cats, subs] = await Promise.all([
+          AsyncStorage.getItem("@chamaja_cached_services"),
+          AsyncStorage.getItem("@chamaja_cached_providers"),
+          AsyncStorage.getItem("@chamaja_cached_categories"),
+          AsyncStorage.getItem("@chamaja_cached_subcategories"),
+        ]);
+        if (svcs) setCachedServices(JSON.parse(svcs));
+        if (provs) setCachedProviders(JSON.parse(provs));
+        if (cats) setCachedCategories(JSON.parse(cats));
+        if (subs) setCachedSubcategories(JSON.parse(subs));
+      } catch (e) {
+        console.error("Failed to load home screen cache:", e);
+      }
+    };
+    loadCache();
+  }, []);
+
   // ── Serviços via tRPC (banco real) ──
-  const { data: dbServices = [], isLoading: loadingServices, refetch: refetchServices } = trpc.services.list.useQuery(undefined, { refetchOnMount: true });
-  const { data: dbProviders = [], isLoading: loadingProviders } = trpc.providers.list.useQuery(undefined, { refetchOnMount: true });
+  const { data: dbServices = cachedServices, isLoading: loadingServices, refetch: refetchServices } = trpc.services.list.useQuery(undefined, { 
+    refetchOnMount: true,
+    placeholderData: cachedServices.length > 0 ? cachedServices : undefined,
+  });
+  const { data: dbProviders = cachedProviders, isLoading: loadingProviders } = trpc.providers.listLightweight.useQuery(undefined, { 
+    refetchOnMount: true,
+    placeholderData: cachedProviders.length > 0 ? cachedProviders : undefined,
+  });
+
+  useEffect(() => {
+    if (dbServices && dbServices.length > 0 && dbServices !== cachedServices) {
+      AsyncStorage.setItem("@chamaja_cached_services", JSON.stringify(dbServices)).catch(console.error);
+    }
+  }, [dbServices, cachedServices]);
+
+  useEffect(() => {
+    if (dbProviders && dbProviders.length > 0 && dbProviders !== cachedProviders) {
+      AsyncStorage.setItem("@chamaja_cached_providers", JSON.stringify(dbProviders)).catch(console.error);
+    }
+  }, [dbProviders, cachedProviders]);
 
   const services = React.useMemo<Service[]>(() =>
     dbServices.map((s: any) => ({
@@ -330,8 +374,24 @@ export default function HomeScreen() {
   });
 
   // ── Categorias via tRPC ──
-  const { data: dbCategories = [], isLoading: loadingCats } = trpc.categories.list.useQuery();
-  const { data: dbSubcategories = [] } = trpc.categories.subServices.listAll.useQuery();
+  const { data: dbCategories = cachedCategories, isLoading: loadingCats } = trpc.categories.list.useQuery(undefined, {
+    placeholderData: cachedCategories.length > 0 ? cachedCategories : undefined,
+  });
+  const { data: dbSubcategories = cachedSubcategories } = trpc.categories.subServices.listAll.useQuery(undefined, {
+    placeholderData: cachedSubcategories.length > 0 ? cachedSubcategories : undefined,
+  });
+
+  useEffect(() => {
+    if (dbCategories && dbCategories.length > 0 && dbCategories !== cachedCategories) {
+      AsyncStorage.setItem("@chamaja_cached_categories", JSON.stringify(dbCategories)).catch(console.error);
+    }
+  }, [dbCategories, cachedCategories]);
+
+  useEffect(() => {
+    if (dbSubcategories && dbSubcategories.length > 0 && dbSubcategories !== cachedSubcategories) {
+      AsyncStorage.setItem("@chamaja_cached_subcategories", JSON.stringify(dbSubcategories)).catch(console.error);
+    }
+  }, [dbSubcategories, cachedSubcategories]);
 
   const featuredProviders = React.useMemo(() => {
     const list = dbProviders.filter((p) => p.destaque && p.isActive).map(p => {
@@ -697,7 +757,7 @@ export default function HomeScreen() {
 
       return dbProviders.some((prov) => {
         if (!prov.subcategoryId) return false;
-        const ids = prov.subcategoryId.split(",").map(id => id.trim()).filter(Boolean);
+        const ids = prov.subcategoryId.split(",").map((id: string) => id.trim()).filter(Boolean);
         return ids.includes(sub.id);
       });
     });
@@ -728,7 +788,7 @@ export default function HomeScreen() {
       // Notas e avaliações realistas
       const subProviders = dbProviders.filter(prov => {
         if (!prov.subcategoryId) return false;
-        const ids = prov.subcategoryId.split(",").map(id => id.trim()).filter(Boolean);
+        const ids = prov.subcategoryId.split(",").map((id: string) => id.trim()).filter(Boolean);
         return ids.includes(sub.id);
       });
 
@@ -919,7 +979,7 @@ export default function HomeScreen() {
               // Calcular a quantidade de prestadores para esta subcategoria
               const count = dbProviders.filter((p) => {
                 if (!p.subcategoryId) return false;
-                const ids = p.subcategoryId.split(",").map(id => id.trim()).filter(Boolean);
+                const ids = p.subcategoryId.split(",").map((id: string) => id.trim()).filter(Boolean);
                 return ids.includes(item.id);
               }).length;
               
@@ -1467,7 +1527,7 @@ export default function HomeScreen() {
                     renderItem={({ item }) => {
                       const count = dbProviders.filter((p) => {
                         if (!p.subcategoryId) return false;
-                        const ids = p.subcategoryId.split(",").map(id => id.trim()).filter(Boolean);
+                        const ids = p.subcategoryId.split(",").map((id: string) => id.trim()).filter(Boolean);
                         return ids.includes(item.id);
                       }).length;
                       

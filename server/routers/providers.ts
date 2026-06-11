@@ -86,6 +86,11 @@ export const providersRouter = router({
       return db.getProviders(true);
     }),
 
+  listLightweight: publicProcedure
+    .query(async () => {
+      return db.getProvidersLightweight(true);
+    }),
+
   all: adminProcedure.query(async () => {
     return db.getProviders(false);
   }),

@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { Image } from "expo-image";
 import { useState, useEffect, useMemo, useRef } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useLocation } from "@/lib/location-context";
@@ -88,8 +89,28 @@ export default function SearchScreen() {
   const [activeProximityFilter, setActiveProximityFilter] = useState<"all" | "1" | "3" | "5" | "10">("all");
   const [activeSort, setActiveSort] = useState<"distance" | "rating" | "none">("distance");
 
-  // tRPC query para pegar prestadores e comércios ativos
-  const { data: dbProviders = [], isLoading: loadingProviders, refetch } = trpc.providers.list.useQuery();
+  const [cachedProviders, setCachedProviders] = useState<any[]>([]);
+
+  useEffect(() => {
+    AsyncStorage.getItem("@chamaja_cached_providers")
+      .then((val) => {
+        if (val) {
+          setCachedProviders(JSON.parse(val));
+        }
+      })
+      .catch((err) => console.warn("Failed to load cached providers in search:", err));
+  }, []);
+
+  // tRPC query para pegar prestadores e comércios ativos de forma leve
+  const { data: dbProviders = cachedProviders, isLoading: loadingProviders, refetch } = trpc.providers.listLightweight.useQuery(undefined, {
+    placeholderData: cachedProviders.length > 0 ? cachedProviders : undefined,
+  });
+
+  useEffect(() => {
+    if (dbProviders && dbProviders.length > 0 && dbProviders !== cachedProviders) {
+      AsyncStorage.setItem("@chamaja_cached_providers", JSON.stringify(dbProviders)).catch(console.error);
+    }
+  }, [dbProviders, cachedProviders]);
 
   // Coordenadas padrão de Bragança Paulista - SP
   const defaultCoords = { latitude: -22.9520, longitude: -46.5420 };

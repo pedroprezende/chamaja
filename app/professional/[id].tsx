@@ -2,7 +2,6 @@ import {
   View,
   Text,
   ScrollView,
-  Image,
   StyleSheet,
   Pressable,
   Linking,
@@ -13,6 +12,7 @@ import {
   Modal,
   TextInput,
 } from "react-native";
+import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -292,7 +292,8 @@ export default function ProfessionalDetailScreen() {
           <Image
             source={{ uri: prof.coverUri || DEFAULT_COVER }}
             style={styles.coverImage}
-            resizeMode="cover"
+            contentFit="cover"
+            transition={200}
           />
           <LinearGradient
             colors={["rgba(0,0,0,0.5)", "transparent", "rgba(0,0,0,0.7)"]}
@@ -685,7 +686,7 @@ export default function ProfessionalDetailScreen() {
               <Image 
                 source={{ uri: selectedImage }} 
                 style={styles.fullImage} 
-                resizeMode="contain" 
+                contentFit="contain" 
               />
             )}
             
