@@ -13,6 +13,9 @@ export interface ProviderProfile {
   neighborhood: string;
   phone: string;
   avatar: string;
+  avatarThumbnailUri?: string;
+  coverUri?: string;
+  coverThumbnailUri?: string;
   description: string;
   plan: PlanType;
   planExpiresAt: string | null;
@@ -87,16 +90,30 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
       expiresAt = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString();
     }
 
-    // Upload do avatar se for local
+    // Upload do avatar se for local com otimização
     let finalAvatar = data.avatar;
+    let finalAvatarThumbnail = data.avatarThumbnailUri || undefined;
     if (data.avatar && !data.avatar.startsWith("http")) {
-      const uploadedUrl = await storage.uploadImage(data.avatar);
-      if (uploadedUrl) finalAvatar = uploadedUrl;
+      const { imageUrl, thumbnailUrl } = await storage.uploadOptimizedImage(data.avatar);
+      if (imageUrl) finalAvatar = imageUrl;
+      if (thumbnailUrl) finalAvatarThumbnail = thumbnailUrl || undefined;
+    }
+
+    // Upload da capa se houver e for local
+    let finalCover = data.coverUri || undefined;
+    let finalCoverThumbnail = data.coverThumbnailUri || undefined;
+    if (data.coverUri && !data.coverUri.startsWith("http")) {
+      const { imageUrl, thumbnailUrl } = await storage.uploadOptimizedImage(data.coverUri);
+      if (imageUrl) finalCover = imageUrl;
+      if (thumbnailUrl) finalCoverThumbnail = thumbnailUrl || undefined;
     }
 
     const newProvider: ProviderProfile = {
       ...data,
       avatar: finalAvatar,
+      avatarThumbnailUri: finalAvatarThumbnail,
+      coverUri: finalCover,
+      coverThumbnailUri: finalCoverThumbnail,
       userId,
       plan,
       planExpiresAt: expiresAt,
@@ -114,6 +131,9 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
       neighborhood: data.neighborhood,
       phone: data.phone,
       avatar: finalAvatar,
+      avatarThumbnailUri: finalAvatarThumbnail,
+      coverUri: finalCover,
+      coverThumbnailUri: finalCoverThumbnail,
       description: data.description,
       address: "",
       gallery: [],
@@ -133,8 +153,16 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
 
     // Upload do avatar se houver alteração
     if (data.avatar && !data.avatar.startsWith("http")) {
-      const uploadedUrl = await storage.uploadImage(data.avatar);
-      if (uploadedUrl) updated.avatar = uploadedUrl;
+      const { imageUrl, thumbnailUrl } = await storage.uploadOptimizedImage(data.avatar);
+      if (imageUrl) updated.avatar = imageUrl;
+      if (thumbnailUrl) updated.avatarThumbnailUri = thumbnailUrl;
+    }
+
+    // Upload da capa se houver alteração
+    if (data.coverUri && !data.coverUri.startsWith("http")) {
+      const { imageUrl, thumbnailUrl } = await storage.uploadOptimizedImage(data.coverUri);
+      if (imageUrl) updated.coverUri = imageUrl;
+      if (thumbnailUrl) updated.coverThumbnailUri = thumbnailUrl;
     }
 
     await save(updated);
@@ -146,6 +174,9 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
       neighborhood: updated.neighborhood,
       phone: updated.phone,
       avatar: updated.avatar,
+      avatarThumbnailUri: updated.avatarThumbnailUri,
+      coverUri: updated.coverUri,
+      coverThumbnailUri: updated.coverThumbnailUri,
       description: updated.description,
       plan: updated.plan,
       planExpiresAt: updated.planExpiresAt,
@@ -156,21 +187,25 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
   const addService = async (service: Omit<ProviderService, "id" | "createdAt">) => {
     if (!provider) return;
 
-    // Upload da imagem principal do serviço
+    // Upload da imagem principal do serviço com otimização
     let finalImageUri = service.imageUri;
     if (service.imageUri && !service.imageUri.startsWith("http")) {
-      const uploadedUrl = await storage.uploadImage(service.imageUri);
+      const { optimizeImage } = await import("./image-optimizer");
+      const optimized = await optimizeImage(service.imageUri, 800, 0.8);
+      const uploadedUrl = await storage.uploadImage(optimized);
       if (uploadedUrl) finalImageUri = uploadedUrl;
     }
 
-    // Upload da galeria do serviço
+    // Upload da galeria do serviço com otimização
     let finalGallery: string[] = [];
     if (service.gallery && service.gallery.length > 0) {
+      const { optimizeImage } = await import("./image-optimizer");
       for (const uri of service.gallery) {
         if (uri.startsWith("http")) {
           finalGallery.push(uri);
         } else {
-          const uploadedUrl = await storage.uploadImage(uri);
+          const optimized = await optimizeImage(uri, 800, 0.8);
+          const uploadedUrl = await storage.uploadImage(optimized);
           if (uploadedUrl) finalGallery.push(uploadedUrl);
         }
       }
@@ -194,20 +229,24 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
 
     const updates = { ...data };
 
-    // Upload da imagem se mudou
+    // Upload da imagem se mudou (com otimização)
     if (data.imageUri && !data.imageUri.startsWith("http")) {
-      const uploadedUrl = await storage.uploadImage(data.imageUri);
+      const { optimizeImage } = await import("./image-optimizer");
+      const optimized = await optimizeImage(data.imageUri, 800, 0.8);
+      const uploadedUrl = await storage.uploadImage(optimized);
       if (uploadedUrl) updates.imageUri = uploadedUrl;
     }
 
-    // Upload da galeria se mudou
+    // Upload da galeria se mudou (com otimização)
     if (data.gallery && data.gallery.length > 0) {
       const finalGallery: string[] = [];
+      const { optimizeImage } = await import("./image-optimizer");
       for (const uri of data.gallery) {
         if (uri.startsWith("http")) {
           finalGallery.push(uri);
         } else {
-          const uploadedUrl = await storage.uploadImage(uri);
+          const optimized = await optimizeImage(uri, 800, 0.8);
+          const uploadedUrl = await storage.uploadImage(optimized);
           if (uploadedUrl) finalGallery.push(uploadedUrl);
         }
       }

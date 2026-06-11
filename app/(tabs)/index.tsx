@@ -459,7 +459,7 @@ export default function HomeScreen() {
       >
         <View style={styles.featuredImageWrapper}>
           <Image
-            source={{ uri: item.coverUri || item.avatarUri || "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=300&q=80" }}
+            source={{ uri: item.coverThumbnailUri || item.avatarThumbnailUri || item.coverUri || item.avatarUri || "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=300&q=80" }}
             style={styles.featuredImage}
           />
           {isFeatured && (
@@ -793,13 +793,13 @@ export default function HomeScreen() {
       });
 
       // 1. Encontrar prestador real com foto nesta subcategoria
-      const providerWithAvatar = subProviders.find(p => p.avatarUri && p.avatarUri.startsWith("http"));
+      const providerWithAvatar = subProviders.find(p => (p.avatarThumbnailUri || p.avatarUri) && (p.avatarThumbnailUri || p.avatarUri).startsWith("http"));
       
       // 2. Definir imagem:
-      //   - Prioridade 1: avatar do prestador real
+      //   - Prioridade 1: avatar do prestador real (preferir miniatura)
       //   - Prioridade 2: imagem oficial da subcategoria/serviço
       //   - Prioridade 3: Imagem linda e contextualizada de fallback
-      let finalImageUrl = providerWithAvatar?.avatarUri || sub.imageUrl || "";
+      let finalImageUrl = providerWithAvatar?.avatarThumbnailUri || providerWithAvatar?.avatarUri || sub.imageUrl || "";
 
       if (!finalImageUrl) {
         const name = sub.name.toLowerCase();
@@ -897,7 +897,7 @@ export default function HomeScreen() {
         name: p.name,
         category: p.category || "Profissional",
         description: p.description || "",
-        imageUri: p.avatarUri || specialty?.imageUrl || undefined,
+        imageUri: p.avatarThumbnailUri || p.avatarUri || specialty?.imageUrl || undefined,
         type: "PROVIDER" as const,
         rating: p.rating || 0,
         latitude: p.latitude,

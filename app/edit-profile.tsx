@@ -107,9 +107,19 @@ export default function EditProfileScreen() {
     try {
       let finalAvatar = avatarUri;
       if (avatarUri && !avatarUri.startsWith("http")) {
-        const uploadedUrl = await storage.uploadImage(avatarUri);
-        if (uploadedUrl) {
-          finalAvatar = uploadedUrl;
+        try {
+          const { optimizeImage } = await import("@/lib/image-optimizer");
+          const optimized = await optimizeImage(avatarUri, 200, 0.75);
+          const uploadedUrl = await storage.uploadImage(optimized);
+          if (uploadedUrl) {
+            finalAvatar = uploadedUrl;
+          }
+        } catch (optimizeErr) {
+          console.warn("[EditProfile] Failed to optimize avatar:", optimizeErr);
+          const uploadedUrl = await storage.uploadImage(avatarUri);
+          if (uploadedUrl) {
+            finalAvatar = uploadedUrl;
+          }
         }
       }
       await updateProfile(name.trim(), finalAvatar || undefined);

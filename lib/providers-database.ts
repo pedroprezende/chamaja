@@ -11,6 +11,9 @@ export interface StoredProvider {
   neighborhood: string;
   phone: string;
   avatar: string;
+  avatarThumbnailUri?: string;
+  coverUri?: string;
+  coverThumbnailUri?: string;
   description: string;
   address: string;
   gallery: string[];
@@ -51,6 +54,9 @@ function mapToStoredProvider(dbProvider: any): StoredProvider {
     neighborhood: dbProvider.neighborhood || "",
     phone: dbProvider.phone || dbProvider.whatsapp || "",
     avatar: dbProvider.avatarUri || "",
+    avatarThumbnailUri: dbProvider.avatarThumbnailUri || null,
+    coverUri: dbProvider.coverUri || null,
+    coverThumbnailUri: dbProvider.coverThumbnailUri || null,
     description: dbProvider.description || "",
     address: dbProvider.address || "",
     gallery: dbProvider.gallery || [],

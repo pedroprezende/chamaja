@@ -255,7 +255,7 @@ export default function ProfessionalDetailScreen() {
             name: prof.name,
             category: prof.category || "",
             city: prof.city || "",
-            avatar: prof.avatarUri || getAvatarUrl(prof.name),
+            avatar: prof.avatarThumbnailUri || prof.avatarUri || getAvatarUrl(prof.name),
             rating: Number(prof.rating) || 0,
             phone: prof.phone || "",
             type: (typeof prof.plan === "string" ? (prof.plan.toLowerCase() as "free" | "premium") : "free"),

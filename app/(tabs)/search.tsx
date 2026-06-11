@@ -452,7 +452,7 @@ export default function SearchScreen() {
                 <View style={styles.cardHeader}>
                   <Image
                     source={{
-                      uri: selectedProvider.avatarUri || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
+                      uri: selectedProvider.avatarThumbnailUri || selectedProvider.avatarUri || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
                     }}
                     style={styles.cardAvatar}
                   />
@@ -525,7 +525,7 @@ export default function SearchScreen() {
                   <View style={styles.avatarSection}>
                     <Image
                       source={{
-                        uri: item.avatarUri || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
+                        uri: item.avatarThumbnailUri || item.avatarUri || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
                       }}
                       style={styles.providerAvatar}
                       contentFit="cover"
@@ -570,7 +570,7 @@ export default function SearchScreen() {
                             name: item.name,
                             category: item.category || "",
                             city: item.city || "",
-                            avatar: item.avatarUri || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}`,
+                            avatar: item.avatarThumbnailUri || item.avatarUri || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}`,
                             rating: Number(item.rating) || 0,
                             phone: item.phone || item.whatsapp || "",
                             type: (typeof item.plan === "string" && (item.plan.toLowerCase() === "premium" || item.plan.toLowerCase() === "annual" || item.plan.toLowerCase() === "monthly")) ? "premium" : "free",

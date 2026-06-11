@@ -28,6 +28,7 @@ const ProviderUpsertSchema = z.object({
   services: z.any().optional(), // Can be string or array
   description: z.string().nullable().optional(),
   avatar: z.string().nullable().optional(),
+  avatarThumbnailUri: z.string().nullable().optional(),
   gallery: z.array(z.string()).nullable().optional(),
   address: z.string().nullable().optional(),
   rating: z.number().optional(),
@@ -35,6 +36,7 @@ const ProviderUpsertSchema = z.object({
   latitude: z.number().nullable().optional(),
   longitude: z.number().nullable().optional(),
   coverUri: z.string().nullable().optional(),
+  coverThumbnailUri: z.string().nullable().optional(),
   isVerified: z.boolean().optional(),
   onlineStatus: z.boolean().optional(),
   responseTime: z.string().nullable().optional(),
@@ -52,6 +54,7 @@ const ProviderUpdateSchema = z.object({
   updates: z.object({
     name: z.string().optional(),
     avatar: z.string().optional(),
+    avatarThumbnailUri: z.string().optional(),
     category: z.string().optional(),
     city: z.string().optional(),
     neighborhood: z.string().optional(),
@@ -65,6 +68,7 @@ const ProviderUpdateSchema = z.object({
     latitude: z.number().nullable().optional(),
     longitude: z.number().nullable().optional(),
     coverUri: z.string().nullable().optional(),
+    coverThumbnailUri: z.string().nullable().optional(),
     isVerified: z.boolean().optional(),
     onlineStatus: z.boolean().optional(),
     responseTime: z.string().nullable().optional(),
@@ -137,13 +141,15 @@ export const providersRouter = router({
           plan: input.plan,
           planExpiresAt: input.planExpiresAt ? new Date(input.planExpiresAt) : null,
           services: JSON.stringify(input.services || []),
-          description: input.description,
+           description: input.description,
           avatarUri: input.avatar,
+          avatarThumbnailUri: input.avatarThumbnailUri,
           gallery: input.gallery || [],
           address: input.address,
           latitude,
           longitude,
           coverUri: input.coverUri,
+          coverThumbnailUri: input.coverThumbnailUri,
           isVerified: input.isVerified ?? false,
           onlineStatus: input.onlineStatus ?? false,
           responseTime: input.responseTime,
@@ -174,8 +180,9 @@ export const providersRouter = router({
           plan: input.plan,
           planExpiresAt: input.planExpiresAt ? new Date(input.planExpiresAt) : null,
           services: JSON.stringify(input.services || []),
-          description: input.description,
+           description: input.description,
           avatarUri: input.avatar,
+          avatarThumbnailUri: input.avatarThumbnailUri,
           gallery: input.gallery || [],
           address: input.address,
           rating: input.rating || 0,
@@ -183,6 +190,7 @@ export const providersRouter = router({
           latitude,
           longitude,
           coverUri: input.coverUri || null,
+          coverThumbnailUri: input.coverThumbnailUri || null,
           isVerified: input.isVerified ?? false,
           onlineStatus: input.onlineStatus ?? false,
           responseTime: input.responseTime || null,
@@ -222,7 +230,8 @@ export const providersRouter = router({
       
       const mappedUpdates: any = {};
       if (input.updates.name !== undefined) mappedUpdates.name = input.updates.name;
-      if (input.updates.avatar !== undefined) mappedUpdates.avatarUri = input.updates.avatar;
+       if (input.updates.avatar !== undefined) mappedUpdates.avatarUri = input.updates.avatar;
+      if (input.updates.avatarThumbnailUri !== undefined) mappedUpdates.avatarThumbnailUri = input.updates.avatarThumbnailUri;
       if (input.updates.category !== undefined) mappedUpdates.category = input.updates.category;
       if (input.updates.city !== undefined) mappedUpdates.city = input.updates.city;
       if (input.updates.neighborhood !== undefined) mappedUpdates.neighborhood = input.updates.neighborhood;
@@ -238,6 +247,7 @@ export const providersRouter = router({
       if (input.updates.latitude !== undefined) mappedUpdates.latitude = input.updates.latitude;
       if (input.updates.longitude !== undefined) mappedUpdates.longitude = input.updates.longitude;
       if (input.updates.coverUri !== undefined) mappedUpdates.coverUri = input.updates.coverUri;
+      if (input.updates.coverThumbnailUri !== undefined) mappedUpdates.coverThumbnailUri = input.updates.coverThumbnailUri;
       if (input.updates.isVerified !== undefined) mappedUpdates.isVerified = input.updates.isVerified;
       if (input.updates.onlineStatus !== undefined) mappedUpdates.onlineStatus = input.updates.onlineStatus;
       if (input.updates.responseTime !== undefined) mappedUpdates.responseTime = input.updates.responseTime;
@@ -450,6 +460,7 @@ export const providersRouter = router({
         description: input.description || null,
         address: input.address || null,
         avatarUri: input.avatarUri || null,
+        avatarThumbnailUri: input.avatarThumbnailUri || null,
         gallery: input.gallery || null,
         rating: 0,
         ratingCount: 0,
@@ -459,6 +470,7 @@ export const providersRouter = router({
         latitude,
         longitude,
         coverUri: input.coverUri || null,
+        coverThumbnailUri: input.coverThumbnailUri || null,
         isVerified: input.isVerified ?? false,
         onlineStatus: input.onlineStatus ?? false,
         responseTime: input.responseTime || null,

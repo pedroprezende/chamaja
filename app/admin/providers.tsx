@@ -27,12 +27,13 @@ import { trpc } from "@/lib/trpc";
 import { type AdminProvider, type CreateAdminProviderInput } from "@/lib/admin-providers-db";
 import { storage } from "@/lib/storage";
 
-// ─── Formulário vazio ─────────────────────────────────────────────────────────
 interface ProviderForm extends CreateAdminProviderInput {
   serviceIds: string[];
   serviceNames: string[];
   workingHoursWeekday?: string;
   workingHoursSaturday?: string;
+  avatarThumbnailUri?: string;
+  coverThumbnailUri?: string;
 }
 
 const EMPTY_FORM: ProviderForm = {
@@ -47,11 +48,13 @@ const EMPTY_FORM: ProviderForm = {
   description: "",
   address: "",
   avatarUri: "",
+  avatarThumbnailUri: "",
   gallery: [],
   rating: undefined,
   ratingCount: undefined,
   isActive: true,
   coverUri: "",
+  coverThumbnailUri: "",
   isVerified: false,
   onlineStatus: false,
   responseTime: "",
@@ -365,11 +368,13 @@ export default function AdminProvidersScreen() {
       description: p.description || "",
       address: p.address || "",
       avatarUri: p.avatarUri || "",
+      avatarThumbnailUri: p.avatarThumbnailUri || "",
       gallery: p.gallery || [],
       rating: p.rating,
       ratingCount: p.ratingCount,
       isActive: p.isActive,
       coverUri: p.coverUri || "",
+      coverThumbnailUri: p.coverThumbnailUri || "",
       isVerified: p.isVerified || false,
       onlineStatus: p.onlineStatus || false,
       responseTime: p.responseTime || "",
@@ -430,10 +435,12 @@ export default function AdminProvidersScreen() {
 
       // 1. Upload Avatar
       let finalAvatar = form.avatarUri;
+      let finalAvatarThumbnail = form.avatarThumbnailUri;
       if (finalAvatar && !finalAvatar.startsWith("http")) {
-        const uploadedUrl = await storage.uploadImage(finalAvatar);
-        if (uploadedUrl) {
-          finalAvatar = uploadedUrl;
+        const result = await storage.uploadOptimizedImage(finalAvatar);
+        if (result.imageUrl) {
+          finalAvatar = result.imageUrl;
+          finalAvatarThumbnail = result.thumbnailUrl || undefined;
         } else {
           throw new Error("Erro no upload do avatar");
         }
@@ -441,10 +448,12 @@ export default function AdminProvidersScreen() {
 
       // 2. Upload Capa
       let finalCover = form.coverUri;
+      let finalCoverThumbnail = form.coverThumbnailUri;
       if (finalCover && !finalCover.startsWith("http")) {
-        const uploadedUrl = await storage.uploadImage(finalCover);
-        if (uploadedUrl) {
-          finalCover = uploadedUrl;
+        const result = await storage.uploadOptimizedImage(finalCover);
+        if (result.imageUrl) {
+          finalCover = result.imageUrl;
+          finalCoverThumbnail = result.thumbnailUrl || undefined;
         } else {
           throw new Error("Erro no upload da imagem de capa");
         }
@@ -456,9 +465,19 @@ export default function AdminProvidersScreen() {
         if (img.startsWith("http")) {
           finalGallery.push(img);
         } else {
-          const uploadedUrl = await storage.uploadImage(img);
-          if (uploadedUrl) {
-            finalGallery.push(uploadedUrl);
+          try {
+            const { optimizeImage } = await import("@/lib/image-optimizer");
+            const optimized = await optimizeImage(img, 800, 0.8);
+            const uploadedUrl = await storage.uploadImage(optimized);
+            if (uploadedUrl) {
+              finalGallery.push(uploadedUrl);
+            }
+          } catch (optimizeErr) {
+            console.warn("[AdminProviders] Failed to optimize gallery image:", optimizeErr);
+            const uploadedUrl = await storage.uploadImage(img);
+            if (uploadedUrl) {
+              finalGallery.push(uploadedUrl);
+            }
           }
         }
       }
@@ -475,6 +494,7 @@ export default function AdminProvidersScreen() {
         description: form.description,
         address: form.address,
         avatarUri: finalAvatar,
+        avatarThumbnailUri: finalAvatarThumbnail || null,
         gallery: finalGallery,
         isActive: form.isActive,
         rating: form.rating ? String(form.rating) : "0",
@@ -484,6 +504,7 @@ export default function AdminProvidersScreen() {
         latitude: latitude,
         longitude: longitude,
         coverUri: finalCover || null,
+        coverThumbnailUri: finalCoverThumbnail || null,
         isVerified: form.isVerified,
         onlineStatus: form.onlineStatus,
         responseTime: form.responseTime || null,

@@ -76,4 +76,31 @@ export const storage = {
       throw e;
     }
   },
+
+  async uploadOptimizedImage(uri: string, bucket: string = "providers"): Promise<{ imageUrl: string | null, thumbnailUrl: string | null }> {
+    if (!uri) return { imageUrl: null, thumbnailUrl: null };
+    if (uri.startsWith("http")) return { imageUrl: uri, thumbnailUrl: uri };
+
+    try {
+      const { optimizeImage, generateThumbnail } = await import("./image-optimizer");
+      
+      logger.info("STORAGE", "Iniciando otimização de imagem e geração de miniatura...");
+      const [optimizedUri, thumbnailUri] = await Promise.all([
+        optimizeImage(uri, 1000, 0.8),
+        generateThumbnail(uri)
+      ]);
+
+      logger.info("STORAGE", "Fazendo upload das imagens otimizadas para o Supabase...");
+      const [imageUrl, thumbnailUrl] = await Promise.all([
+        this.uploadImage(optimizedUri, bucket),
+        this.uploadImage(thumbnailUri, bucket)
+      ]);
+
+      return { imageUrl, thumbnailUrl };
+    } catch (err) {
+      logger.error("STORAGE", "Erro no upload otimizado, usando fallback de upload normal:", err);
+      const imageUrl = await this.uploadImage(uri, bucket);
+      return { imageUrl, thumbnailUrl: imageUrl };
+    }
+  },
 };

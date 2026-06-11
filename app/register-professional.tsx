@@ -88,13 +88,23 @@ export default function RegisterProfessionalScreen() {
         .map(c => c.name.replace("\n", " "))
         .join(", ");
 
+      let finalAvatar = formData.avatar;
+      if (formData.avatar && !formData.avatar.startsWith("http")) {
+        try {
+          const { optimizeImage } = await import("@/lib/image-optimizer");
+          finalAvatar = await optimizeImage(formData.avatar, 200, 0.75);
+        } catch (optimizeErr) {
+          console.warn("[RegisterProfessional] Image optimization failed, using original uri:", optimizeErr);
+        }
+      }
+
       const newProfessional = createProfessional({
         name: formData.name,
         category: categoryNames,
         city: formData.city,
         neighborhood: formData.neighborhood,
         phone: formData.phone,
-        avatar: formData.avatar,
+        avatar: finalAvatar,
         description: formData.description,
       });
 
