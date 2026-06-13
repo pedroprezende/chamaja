@@ -279,8 +279,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   logoImage: {
-    width: 170,
-    height: 170 / 2.68,
+    width: 200,
+    height: 200 / 3.32,
     resizeMode: "contain",
   },
   parrotContainer: {
@@ -289,8 +289,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   parrotImage: {
-    width: 250,
-    height: 250 / 2.29,
+    width: 260,
+    height: 260 / 1.86,
     resizeMode: "contain",
   },
   card: {
