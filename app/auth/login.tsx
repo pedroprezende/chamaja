@@ -95,19 +95,11 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Logo */}
-          <View style={styles.logoContainer}>
+          {/* App Preview Collage */}
+          <View style={styles.previewContainer}>
             <Image
-              source={require("@/assets/images/logo_custom.png")}
-              style={styles.logoImage}
-            />
-          </View>
-
-          {/* Parrot Mascot */}
-          <View style={styles.parrotContainer}>
-            <Image
-              source={require("@/assets/images/parrot_custom.png")}
-              style={styles.parrotImage}
+              source={require("@/assets/images/login_preview.png")}
+              style={styles.previewImage}
             />
           </View>
 
@@ -272,25 +264,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#000000",
   },
-  logoContainer: {
-    marginTop: 10,
-    marginBottom: 8,
+  previewContainer: {
+    width: "100%",
     alignItems: "center",
     justifyContent: "center",
-  },
-  logoImage: {
-    width: 220,
-    height: 220 / 3.53,
-    resizeMode: "contain",
-  },
-  parrotContainer: {
+    marginTop: 0,
     marginBottom: 16,
-    alignItems: "center",
-    justifyContent: "center",
   },
-  parrotImage: {
-    width: 340,
-    height: 340 / 2.43,
+  previewImage: {
+    width: "100%",
+    aspectRatio: 1024 / 740,
     resizeMode: "contain",
   },
   card: {
