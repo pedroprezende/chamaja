@@ -95,11 +95,48 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* App Preview Collage */}
-          <View style={styles.previewContainer}>
+          {/* Logo */}
+          <View style={styles.logoContainer}>
             <Image
-              source={require("@/assets/images/login_preview.png")}
-              style={styles.previewImage}
+              source={require("@/assets/images/logo-xamaja.png")}
+              style={styles.logoImage}
+            />
+          </View>
+
+          {/* Mascot Container (Parrot + 6 Neon Icons) */}
+          <View style={styles.mascotContainer}>
+            {/* Mascot (Parrot on pin) */}
+            <Image
+              source={require("@/assets/images/mascote-xara.png")}
+              style={styles.mascoteImage}
+            />
+
+            {/* Left Icons */}
+            <Image
+              source={require("@/assets/images/icon_wrench.png")}
+              style={[styles.neonIcon, styles.iconTopLeft]}
+            />
+            <Image
+              source={require("@/assets/images/icon_lightning.png")}
+              style={[styles.neonIcon, styles.iconMidLeft]}
+            />
+            <Image
+              source={require("@/assets/images/icon_user.png")}
+              style={[styles.neonIcon, styles.iconBotLeft]}
+            />
+
+            {/* Right Icons */}
+            <Image
+              source={require("@/assets/images/icon_store.png")}
+              style={[styles.neonIcon, styles.iconTopRight]}
+            />
+            <Image
+              source={require("@/assets/images/icon_pin1.png")}
+              style={[styles.neonIcon, styles.iconMidRight]}
+            />
+            <Image
+              source={require("@/assets/images/icon_pin2.png")}
+              style={[styles.neonIcon, styles.iconBotRight]}
             />
           </View>
 
@@ -264,17 +301,60 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#000000",
   },
-  previewContainer: {
-    width: "100%",
+  logoContainer: {
+    marginTop: 20,
+    marginBottom: 10,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 0,
-    marginBottom: 16,
   },
-  previewImage: {
-    width: "100%",
-    aspectRatio: 1024 / 740,
+  logoImage: {
+    width: 180,
+    height: 180 / 3.17,
     resizeMode: "contain",
+  },
+  mascotContainer: {
+    width: 320,
+    height: 210,
+    alignSelf: "center",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 20,
+    position: "relative",
+  },
+  mascoteImage: {
+    width: 140,
+    height: 207,
+    resizeMode: "contain",
+  },
+  neonIcon: {
+    position: "absolute",
+    width: 44,
+    height: 44,
+    resizeMode: "contain",
+  },
+  iconTopLeft: {
+    top: 10,
+    left: 35,
+  },
+  iconMidLeft: {
+    top: 80,
+    left: 10,
+  },
+  iconBotLeft: {
+    top: 150,
+    left: 35,
+  },
+  iconTopRight: {
+    top: 10,
+    right: 35,
+  },
+  iconMidRight: {
+    top: 80,
+    right: 10,
+  },
+  iconBotRight: {
+    top: 150,
+    right: 35,
   },
   card: {
     width: "100%",
