@@ -123,6 +123,15 @@ export default function SearchScreen() {
 
   const [cachedProviders, setCachedProviders] = useState<any[]>([]);
 
+  // Estados para Busca Inteligente
+  const [smartMatch, setSmartMatch] = useState<{ id: string; name: string; type: "category" | "subcategory"; categoryId?: string; subcategoryId?: string } | null>(null);
+  const [smartSearching, setSmartSearching] = useState(false);
+
+  // Estados do Chatbot Xará
+  const [chatModalVisible, setChatModalVisible] = useState(false);
+  const [chatStep, setChatStep] = useState(0);
+  const [chatMessages, setChatMessages] = useState<Array<{ sender: "bot" | "user"; text: string }>>([]);
+
   useEffect(() => {
     AsyncStorage.getItem("@chamaja_cached_providers_filtered")
       .then((val) => {
@@ -216,6 +225,95 @@ export default function SearchScreen() {
       AsyncStorage.setItem("@chamaja_cached_providers_filtered", JSON.stringify(dbProviders)).catch(console.error);
     }
   }, [dbProviders, cachedProviders]);
+
+  // Busca Inteligente tRPC Query
+  const { refetch: fetchSmartSearch } = trpc.providers.smartSearch.useQuery(
+    { query },
+    { enabled: false }
+  );
+
+  const startChatbot = () => {
+    setChatStep(0);
+    setChatMessages([
+      {
+        sender: "bot",
+        text: "Olá! Sou o Xará, o assistente virtual do XamaJá. 🦜\n\nNão entendi muito bem sua busca. Pode me dizer em qual área você precisa de ajuda?"
+      }
+    ]);
+    setChatModalVisible(true);
+  };
+
+  const handleChatOption = (option: { label: string; nextStep: number; mapCategory?: string; mapQuery?: string }) => {
+    setChatMessages(prev => [...prev, { sender: "user", text: option.label }]);
+    const next = option.nextStep;
+    setChatStep(next);
+
+    setTimeout(() => {
+      let botText = "";
+      if (next === 1) {
+        botText = "Excelente! É algo relacionado à parte elétrica, encanamento, pintura, pedreiro ou móveis?";
+      } else if (next === 2) {
+        botText = "Perfeito! Qual serviço doméstico você precisa no momento?";
+      } else if (next === 3) {
+        botText = "Entendido! Qual equipamento ou aparelho está apresentando problemas?";
+      } else if (next === 4) {
+        botText = "Com certeza! Que tipo de serviço de beleza/estética você procura?";
+      } else if (next === 5) {
+        botText = "Legal! É conserto mecânico ou limpeza/lavagem de carro?";
+      } else if (next === 99) {
+        botText = `Perfeito! Entendi que você precisa de um ${option.mapQuery || "profissional"}. Clique no botão abaixo para ver as opções na sua região!`;
+      }
+
+      setChatMessages(prev => [...prev, { sender: "bot", text: botText }]);
+    }, 600);
+  };
+
+  const completeChatbot = (category: string, queryStr: string) => {
+    setSelectedPill(category);
+    setQuery(queryStr);
+    setActiveProfileType("professional");
+    setSmartMatch({
+      id: category,
+      name: queryStr,
+      type: "subcategory",
+      categoryId: category,
+      subcategoryId: category
+    });
+    setChatModalVisible(false);
+  };
+
+  const handleSmartSearch = async () => {
+    if (!query.trim()) return;
+    setSmartSearching(true);
+    try {
+      const { data: res } = await fetchSmartSearch();
+      if (res && "id" in res) {
+        setSmartMatch({
+          id: res.id,
+          name: res.name,
+          type: res.type as "category" | "subcategory",
+          categoryId: res.categoryId,
+          subcategoryId: res.subcategoryId
+        });
+        
+        if (res.categoryId) {
+          setSelectedPill(res.categoryId);
+        }
+        if (res.type === "subcategory" && res.name) {
+          setQuery(res.name);
+        }
+        setActiveProfileType("professional");
+      } else {
+        setSmartMatch(null);
+        startChatbot();
+      }
+    } catch (err) {
+      console.warn("Smart Search error:", err);
+      startChatbot();
+    } finally {
+      setSmartSearching(false);
+    }
+  };
 
   const openFilterModal = () => {
     setTempSort(activeSort);
@@ -432,11 +530,15 @@ export default function SearchScreen() {
             onChangeText={(t) => {
               setQuery(t);
               setSelectedProviderId(null);
+              if (smartMatch) setSmartMatch(null);
             }}
             autoCorrect={false}
+            onSubmitEditing={handleSmartSearch}
+            returnKeyType="search"
           />
-          {query.length > 0 && (
-            <Pressable onPress={() => setQuery("")}>
+          {smartSearching && <ActivityIndicator size="small" color="#22C55E" style={{ marginRight: 6 }} />}
+          {query.length > 0 && !smartSearching && (
+            <Pressable onPress={() => { setQuery(""); setSmartMatch(null); }}>
               <MaterialIcons name="close" size={18} color="#9CA3AF" />
             </Pressable>
           )}
@@ -640,6 +742,31 @@ export default function SearchScreen() {
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContainer}
             showsVerticalScrollIndicator={false}
+            ListHeaderComponent={
+              smartMatch ? (
+                <View style={[styles.smartMatchBanner, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  <View style={styles.smartMatchHeader}>
+                    <Image source={require("@/assets/images/mascote-xara.png")} style={styles.smartMatchMascot} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.smartMatchTitle, { color: colors.foreground }]}>Busca Inteligente Xará</Text>
+                      <Text style={[styles.smartMatchSub, { color: colors.muted }]}>
+                        Mapeado para: <Text style={{ color: "#22C55E", fontWeight: "700" }}>{smartMatch.name}</Text>
+                      </Text>
+                    </View>
+                    <Pressable
+                      onPress={() => {
+                        setSmartMatch(null);
+                        setQuery("");
+                        setSelectedPill("todos");
+                      }}
+                      style={styles.smartMatchClearBtn}
+                    >
+                      <MaterialIcons name="close" size={16} color={colors.muted} />
+                    </Pressable>
+                  </View>
+                </View>
+              ) : null
+            }
             renderItem={({ item }) => {
               const isFav = isFavorite(item.id);
 
@@ -1138,6 +1265,177 @@ export default function SearchScreen() {
         visible={addressModalVisible}
         onClose={() => setAddressModalVisible(false)}
       />
+
+      {/* Modal do Chatbot Xará */}
+      <Modal
+        visible={chatModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setChatModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable style={StyleSheet.absoluteFillObject} onPress={() => setChatModalVisible(false)} />
+          <View style={[styles.chatSheet, { backgroundColor: colors.surface }]}>
+            {/* Header do Chat */}
+            <View style={[styles.chatHeader, { borderBottomColor: colors.border }]}>
+              <Image source={require("@/assets/images/mascote-xara.png")} style={styles.chatHeaderMascot} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.chatHeaderTitle, { color: colors.foreground }]}>Assistente Xará</Text>
+                <Text style={styles.chatHeaderSubtitle}>Estou aqui para ajudar!</Text>
+              </View>
+              <Pressable onPress={() => setChatModalVisible(false)} style={styles.chatCloseBtn}>
+                <MaterialIcons name="close" size={24} color={colors.foreground} />
+              </Pressable>
+            </View>
+
+            {/* Mensagens do Chat */}
+            <ScrollView
+              style={styles.chatMessagesContainer}
+              contentContainerStyle={{ gap: 12, paddingVertical: 16 }}
+              ref={(ref) => ref?.scrollToEnd({ animated: true })}
+            >
+              {chatMessages.map((msg, idx) => (
+                <View
+                  key={idx}
+                  style={[
+                    styles.chatMessageBubble,
+                    msg.sender === "user" ? styles.chatBubbleUser : [styles.chatBubbleBot, { backgroundColor: colors.background, borderColor: colors.border }]
+                  ]}
+                >
+                  <Text style={[
+                    styles.chatMessageText,
+                    msg.sender === "user" ? styles.chatTextUser : { color: colors.foreground }
+                  ]}>
+                    {msg.text}
+                  </Text>
+                </View>
+              ))}
+            </ScrollView>
+
+            {/* Opções de Resposta Rápida (Quick Replies) */}
+            <View style={[styles.chatOptionsContainer, { borderTopColor: colors.border }]}>
+              {chatStep === 0 && (
+                <View style={styles.chatOptionsGrid}>
+                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "🏠 Reformas ou Consertos", nextStep: 1 })}>
+                    <Text style={styles.chatOptionBtnText}>🏠 Reformas e Consertos</Text>
+                  </Pressable>
+                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "🧹 Serviços Domésticos", nextStep: 2 })}>
+                    <Text style={styles.chatOptionBtnText}>🧹 Serviços Domésticos</Text>
+                  </Pressable>
+                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "💻 Assistência Técnica", nextStep: 3 })}>
+                    <Text style={styles.chatOptionBtnText}>💻 Assistência Técnica</Text>
+                  </Pressable>
+                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "✂️ Beleza ou Bem-estar", nextStep: 4 })}>
+                    <Text style={styles.chatOptionBtnText}>✂️ Beleza ou Bem-estar</Text>
+                  </Pressable>
+                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "🚗 Serviços para Veículos", nextStep: 5 })}>
+                    <Text style={styles.chatOptionBtnText}>🚗 Serviços para Veículos</Text>
+                  </Pressable>
+                </View>
+              )}
+
+              {chatStep === 1 && (
+                <View style={styles.chatOptionsList}>
+                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "⚡ Elétrica", nextStep: 99, mapCategory: "reformas-reparos", mapQuery: "Eletricista" })}>
+                    <Text style={styles.chatOptionBtnText}>⚡ Elétrica (chuveiro, fiação, tomadas)</Text>
+                  </Pressable>
+                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "💧 Encanamento", nextStep: 99, mapCategory: "reformas-reparos", mapQuery: "Encanador" })}>
+                    <Text style={styles.chatOptionBtnText}>💧 Encanamento (pias, canos, vazamento)</Text>
+                  </Pressable>
+                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "🎨 Pintura", nextStep: 99, mapCategory: "reformas-reparos", mapQuery: "Pintor" })}>
+                    <Text style={styles.chatOptionBtnText}>🎨 Pintura (paredes, portões)</Text>
+                  </Pressable>
+                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "🧱 Pedreiro / Construção", nextStep: 99, mapCategory: "reformas-reparos", mapQuery: "Pedreiro" })}>
+                    <Text style={styles.chatOptionBtnText}>🧱 Pedreiro / Construção geral</Text>
+                  </Pressable>
+                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "🔨 Montagem de móveis", nextStep: 99, mapCategory: "reformas-reparos", mapQuery: "Montador" })}>
+                    <Text style={styles.chatOptionBtnText}>🔨 Montagem/Desmontagem de móveis</Text>
+                  </Pressable>
+                </View>
+              )}
+
+              {chatStep === 2 && (
+                <View style={styles.chatOptionsList}>
+                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "🧹 Diarista", nextStep: 99, mapCategory: "servicos-domesticos", mapQuery: "Diarista" })}>
+                    <Text style={styles.chatOptionBtnText}>🧹 Diarista (limpeza geral)</Text>
+                  </Pressable>
+                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "🧼 Faxineira", nextStep: 99, mapCategory: "servicos-domesticos", mapQuery: "Faxineira" })}>
+                    <Text style={styles.chatOptionBtnText}>🧼 Faxineira</Text>
+                  </Pressable>
+                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "👶 Babá / Cuidado infantil", nextStep: 99, mapCategory: "servicos-domesticos", mapQuery: "Babá" })}>
+                    <Text style={styles.chatOptionBtnText}>👶 Babá / Cuidado infantil</Text>
+                  </Pressable>
+                </View>
+              )}
+
+              {chatStep === 3 && (
+                <View style={styles.chatOptionsList}>
+                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "📱 Conserto de Celular", nextStep: 99, mapCategory: "assistencia-tecnica", mapQuery: "Celular" })}>
+                    <Text style={styles.chatOptionBtnText}>📱 Conserto de Celular</Text>
+                  </Pressable>
+                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "💻 Técnico de Notebook / PC", nextStep: 99, mapCategory: "assistencia-tecnica", mapQuery: "Notebook" })}>
+                    <Text style={styles.chatOptionBtnText}>💻 Técnico de Notebook / PC</Text>
+                  </Pressable>
+                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "❄️ Ar-condicionado", nextStep: 99, mapCategory: "assistencia-tecnica", mapQuery: "Ar-condicionado" })}>
+                    <Text style={styles.chatOptionBtnText}>❄️ Ar-condicionado</Text>
+                  </Pressable>
+                </View>
+              )}
+
+              {chatStep === 4 && (
+                <View style={styles.chatOptionsList}>
+                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "✂️ Barbeiro ou Cabeleireiro", nextStep: 99, mapCategory: "beleza-estetica", mapQuery: "Barbeiro" })}>
+                    <Text style={styles.chatOptionBtnText}>✂️ Barbeiro ou Cabeleireiro</Text>
+                  </Pressable>
+                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "💅 Manicure ou Pedicure", nextStep: 99, mapCategory: "beleza-estetica", mapQuery: "Manicure" })}>
+                    <Text style={styles.chatOptionBtnText}>💅 Manicure ou Pedicure</Text>
+                  </Pressable>
+                </View>
+              )}
+
+              {chatStep === 5 && (
+                <View style={styles.chatOptionsList}>
+                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "🔧 Mecânico", nextStep: 99, mapCategory: "automotivo", mapQuery: "Mecânico" })}>
+                    <Text style={styles.chatOptionBtnText}>🔧 Mecânico / Oficina</Text>
+                  </Pressable>
+                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "🚗 Lava Rápido", nextStep: 99, mapCategory: "automotivo", mapQuery: "Lava Rápido" })}>
+                    <Text style={styles.chatOptionBtnText}>🚗 Lava Rápido</Text>
+                  </Pressable>
+                </View>
+              )}
+
+              {chatStep === 99 && (
+                <Pressable
+                  style={[styles.chatFinalBtn, { backgroundColor: colors.primary }]}
+                  onPress={() => {
+                    let matchedCat = "todos";
+                    let matchedQ = "";
+                    if (chatMessages.some(m => m.text.includes("Elétrica"))) { matchedCat = "reformas-reparos"; matchedQ = "Eletricista"; }
+                    else if (chatMessages.some(m => m.text.includes("Encanamento"))) { matchedCat = "reformas-reparos"; matchedQ = "Encanador"; }
+                    else if (chatMessages.some(m => m.text.includes("Pintura"))) { matchedCat = "reformas-reparos"; matchedQ = "Pintor"; }
+                    else if (chatMessages.some(m => m.text.includes("Pedreiro"))) { matchedCat = "reformas-reparos"; matchedQ = "Pedreiro"; }
+                    else if (chatMessages.some(m => m.text.includes("Montagem de móveis"))) { matchedCat = "reformas-reparos"; matchedQ = "Montador"; }
+                    else if (chatMessages.some(m => m.text.includes("Diarista"))) { matchedCat = "servicos-domesticos"; matchedQ = "Diarista"; }
+                    else if (chatMessages.some(m => m.text.includes("Faxineira"))) { matchedCat = "servicos-domesticos"; matchedQ = "Faxineira"; }
+                    else if (chatMessages.some(m => m.text.includes("Babá"))) { matchedCat = "servicos-domesticos"; matchedQ = "Babá"; }
+                    else if (chatMessages.some(m => m.text.includes("Celular"))) { matchedCat = "assistencia-tecnica"; matchedQ = "Celular"; }
+                    else if (chatMessages.some(m => m.text.includes("Notebook"))) { matchedCat = "assistencia-tecnica"; matchedQ = "Notebook"; }
+                    else if (chatMessages.some(m => m.text.includes("Ar-condicionado"))) { matchedCat = "assistencia-tecnica"; matchedQ = "Ar-condicionado"; }
+                    else if (chatMessages.some(m => m.text.includes("Barbeiro"))) { matchedCat = "beleza-estetica"; matchedQ = "Barbeiro"; }
+                    else if (chatMessages.some(m => m.text.includes("Manicure"))) { matchedCat = "beleza-estetica"; matchedQ = "Manicure"; }
+                    else if (chatMessages.some(m => m.text.includes("Mecânico"))) { matchedCat = "automotivo"; matchedQ = "Mecânico"; }
+                    else if (chatMessages.some(m => m.text.includes("Lava Rápido"))) { matchedCat = "automotivo"; matchedQ = "Lava Rápido"; }
+
+                    completeChatbot(matchedCat, matchedQ);
+                  }}
+                >
+                  <Text style={styles.chatFinalBtnText}>Ver Profissionais Próximos!</Text>
+                </Pressable>
+              )}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScreenContainer>
   );
 }
@@ -2062,5 +2360,138 @@ const styles = StyleSheet.create({
     color: "#22C55E",
     fontSize: 13,
     fontWeight: "700",
+  },
+  smartMatchBanner: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 12,
+    padding: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  smartMatchHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  smartMatchMascot: {
+    width: 36,
+    height: 48,
+    resizeMode: "contain",
+  },
+  smartMatchTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  smartMatchSub: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  smartMatchClearBtn: {
+    padding: 6,
+    borderRadius: 10,
+    backgroundColor: "rgba(0,0,0,0.05)",
+  },
+  chatSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+    height: "80%",
+    width: "100%",
+  },
+  chatHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    gap: 12,
+  },
+  chatHeaderMascot: {
+    width: 32,
+    height: 44,
+    resizeMode: "contain",
+  },
+  chatHeaderTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  chatHeaderSubtitle: {
+    fontSize: 12,
+    color: "#22C55E",
+    fontWeight: "600",
+    marginTop: 1,
+  },
+  chatCloseBtn: {
+    padding: 6,
+  },
+  chatMessagesContainer: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  chatMessageBubble: {
+    maxWidth: "80%",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 20,
+  },
+  chatBubbleUser: {
+    alignSelf: "flex-end",
+    backgroundColor: "#22C55E",
+    borderBottomRightRadius: 4,
+  },
+  chatBubbleBot: {
+    alignSelf: "flex-start",
+    borderBottomLeftRadius: 4,
+    borderWidth: 1,
+  },
+  chatMessageText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  chatTextUser: {
+    color: "#FFFFFF",
+    fontWeight: "500",
+  },
+  chatOptionsContainer: {
+    padding: 20,
+    borderTopWidth: 1,
+  },
+  chatOptionsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  chatOptionsList: {
+    gap: 8,
+  },
+  chatOptionBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: "#22C55E",
+    backgroundColor: "transparent",
+  },
+  chatOptionBtnText: {
+    color: "#22C55E",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  chatFinalBtn: {
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#22C55E",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  chatFinalBtnText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "800",
   },
 });
