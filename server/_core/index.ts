@@ -9,6 +9,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
+import { getPrivacyPolicyHtml } from "./privacy";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -65,6 +66,16 @@ async function startServer() {
 
   registerStorageProxy(app);
   // registerOAuthRoutes(app); // Legacy OAuth removed in favor of Supabase Auth
+
+  app.get("/politica-de-privacidade", (_req, res) => {
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(getPrivacyPolicyHtml());
+  });
+
+  app.get("/privacy-policy", (_req, res) => {
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(getPrivacyPolicyHtml());
+  });
 
   app.get("/api/health", (_req, res) => {
     res.json({ ok: true, timestamp: Date.now() });
