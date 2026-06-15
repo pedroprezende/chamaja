@@ -719,10 +719,13 @@ export default function HomeScreen() {
   const debouncedSearch = useDebounce(homeSearchQuery, 500);
 
   // Busca global via tRPC (Real-time DB)
-  const { data: searchResults = [], isLoading: searching } = trpc.providers.search.useQuery(
+  const { data: searchResults = [], isLoading: queryLoading } = trpc.providers.search.useQuery(
     debouncedSearch,
     { enabled: debouncedSearch.length > 1 }
   );
+
+  const isDebouncing = homeSearchQuery.trim() !== debouncedSearch.trim();
+  const searching = (queryLoading || isDebouncing) && homeSearchQuery.trim().length > 0;
 
   const trackSearchMutation = trpc.analytics.trackSearch.useMutation();
 
@@ -1255,6 +1258,12 @@ export default function HomeScreen() {
             ListEmptyComponent={
               searching ? (
                 <View style={{ padding: 20 }}>{[1, 2, 3].map(i => <Skeleton key={i} style={{ height: 80, marginBottom: 12, borderRadius: 16 }} />)}</View>
+              ) : homeSearchQuery.trim().length <= 1 ? (
+                <View style={styles.emptySearchLarge}>
+                  <MaterialIcons name="search" size={48} color={colors.muted} />
+                  <Text style={[styles.emptySearchTitle, { color: colors.foreground }]}>Digite para buscar</Text>
+                  <Text style={[styles.emptySearchSub, { color: colors.muted }]}>Digite pelo menos 2 caracteres para buscar profissionais.</Text>
+                </View>
               ) : (
                 <View style={styles.emptySearchLarge}>
                   <MaterialIcons name="search-off" size={48} color={colors.muted} />
