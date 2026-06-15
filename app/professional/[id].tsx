@@ -475,22 +475,29 @@ export default function ProfessionalDetailScreen() {
           <Pressable 
             style={[styles.infoItem, { borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 16 }]}
             onPress={async () => {
-              if (prof.address && prof.address.startsWith("http")) {
-                Linking.openURL(prof.address);
-              } else if (prof.address) {
-                const query = encodeURIComponent(prof.address);
-                const url = Platform.select({
-                  ios: `http://maps.apple.com/?q=${query}`,
-                  android: `geo:0,0?q=${query}`,
-                  web: `https://www.google.com/maps/search/?api=1&query=${query}`,
-                });
-                
-                if (url) {
-                  const supported = await Linking.canOpenURL(url);
-                  if (supported) {
-                    await Linking.openURL(url);
-                  } else {
-                    Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`);
+              const locationQuery = prof.latitude && prof.longitude
+                ? `${prof.latitude},${prof.longitude}`
+                : (prof.address || `${prof.neighborhood || ""}, ${prof.city || ""}`).trim();
+
+              if (locationQuery) {
+                if (prof.address && prof.address.startsWith("http")) {
+                  Linking.openURL(prof.address);
+                } else {
+                  const encodedQuery = encodeURIComponent(locationQuery);
+                  const url = Platform.select({
+                    ios: `http://maps.apple.com/?q=${encodedQuery}`,
+                    android: `geo:0,0?q=${encodedQuery}`,
+                    web: `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`,
+                  });
+
+                  try {
+                    if (url) {
+                      await Linking.openURL(url);
+                    } else {
+                      Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${encodedQuery}`);
+                    }
+                  } catch (err) {
+                    Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${encodedQuery}`);
                   }
                 }
               }
