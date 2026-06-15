@@ -9,8 +9,8 @@ import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
-import { getPrivacyPolicyHtml } from "./privacy";
-
+import { getPrivacyPolicyHtml, getDeletionPolicyHtml } from "./privacy";
+ 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
     const server = net.createServer();
@@ -75,6 +75,16 @@ async function startServer() {
   app.get("/privacy-policy", (_req, res) => {
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.send(getPrivacyPolicyHtml());
+  });
+
+  app.get("/exclusao-conta", (_req, res) => {
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(getDeletionPolicyHtml());
+  });
+
+  app.get("/delete-account", (_req, res) => {
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(getDeletionPolicyHtml());
   });
 
   app.get("/api/health", (_req, res) => {

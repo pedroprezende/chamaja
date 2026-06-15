@@ -101,3 +101,135 @@ export function getPrivacyPolicyHtml(): string {
 </body>
 </html>`;
 }
+
+export function getDeletionPolicyHtml(): string {
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exclusão de Conta - XamaJá</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      color: #D1D5DB;
+      background-color: #080808;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+    h1 {
+      color: #FFFFFF;
+      font-size: 2rem;
+      border-bottom: 2px solid #1C1C1E;
+      padding-bottom: 10px;
+      margin-bottom: 30px;
+    }
+    h2 {
+      color: #22C55E;
+      font-size: 1.4rem;
+      margin-top: 30px;
+      margin-bottom: 15px;
+    }
+    p, li {
+      color: #9CA3AF;
+      font-size: 1rem;
+    }
+    ol, ul {
+      padding-left: 20px;
+      margin-bottom: 20px;
+    }
+    li {
+      margin-bottom: 8px;
+    }
+    .footer {
+      margin-top: 50px;
+      padding-top: 20px;
+      border-top: 1px solid #1C1C1E;
+      font-size: 0.85rem;
+      color: #6B7280;
+      text-align: center;
+    }
+    .highlight {
+      color: #FFFFFF;
+      font-weight: 600;
+    }
+    .warning-box {
+      background-color: rgba(239, 68, 68, 0.1);
+      border-left: 4px solid #EF4444;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 25px;
+    }
+    .warning-box p {
+      color: #FCA5A5;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Solicitação de Exclusão de Conta e Dados - XamaJá</h1>
+  <p>Última atualização: 15 de junho de 2026</p>
+
+  <p>No aplicativo <span class="highlight">XamaJá</span>, valorizamos o controle dos seus próprios dados. Esta página explica detalhadamente como você pode solicitar a exclusão de sua conta de usuário e todas as suas informações pessoais associadas.</p>
+
+  <div class="warning-box">
+    <p><strong style="color: #FFFFFF;">Atenção:</strong> A exclusão de sua conta é permanente e irreversível. Todos os dados associados a ela serão deletados de forma definitiva dos nossos servidores ativos.</p>
+  </div>
+
+  <h2>1. Como solicitar a exclusão da sua conta e dados</h2>
+  <p>Você pode excluir sua conta de duas maneiras:</p>
+  
+  <h3>Opção A: Diretamente pelo Aplicativo (Exclusão Imediata)</h3>
+  <ol>
+    <li>Abra o aplicativo <span class="highlight">XamaJá</span> e acesse sua conta.</li>
+    <li>Navegue até a aba <span class="highlight">Perfil</span> (no menu inferior).</li>
+    <li>Toque no botão <span class="highlight">Editar Perfil</span>.</li>
+    <li>Role a página até o fim e toque na opção vermelha <span class="highlight">Excluir minha conta</span>.</li>
+    <li>Confirme a ação no alerta de segurança. Sua conta e dados serão apagados instantaneamente do banco de dados.</li>
+  </ol>
+
+  <h3>Opção B: Por E-mail (Suporte Técnico)</h3>
+  <ol>
+    <li>Envie uma mensagem eletrônica para o e-mail: <a href="mailto:suporte.xamaja@gmail.com" style="color: #22C55E;">suporte.xamaja@gmail.com</a>.</li>
+    <li>Insira como assunto: <span class="highlight">Exclusão de Conta - XamaJá</span>.</li>
+    <li>Informe o endereço de e-mail ou identificador de login utilizado na sua conta do app.</li>
+    <li>Nossa equipe de suporte processará a exclusão dos seus dados em até <span class="highlight">5 dias úteis</span> e retornará com a confirmação de exclusão.</li>
+  </ol>
+
+  <h2>2. Quais dados são excluídos?</h2>
+  <p>Ao solicitar a exclusão da conta, apagamos permanentemente do nosso banco de dados principal:</p>
+  <ul>
+    <li>Nome do usuário e endereço de e-mail de cadastro.</li>
+    <li>Foto de perfil e fotos cadastradas.</li>
+    <li>Lista de prestadores de serviços marcados como Favoritos.</li>
+    <li>Histórico de endereços de localização salvos.</li>
+    <li>Cadastro de prestador de serviços (caso possua), incluindo telefone de contato público, descrição do negócio e fotos do portfólio.</li>
+    <li>Registro de conta no sistema de autenticação Supabase/Firebase Auth.</li>
+  </ul>
+
+  <h2>3. Quais dados são retidos e por quanto tempo?</h2>
+  <p>Para cumprir exigências legais de contabilidade e combate à fraude, retemos as seguintes informações:</p>
+  <ul>
+    <li><span class="highlight">Histórico de Transações Financeiras:</span> Os registros de pagamentos efetuados por prestadores de serviços para contratação de planos Premium (mensal ou anual) são armazenados no banco de dados com fins fiscais em conformidade com as leis tributárias locais pelo período de retenção legal exigido, sendo eliminados de forma definitiva após esse prazo.</li>
+    <li>Não coletamos ou retemos quaisquer dados confidenciais de cartões de crédito, pois todas as transações são efetuadas e protegidas diretamente pelo gateway externo do <span class="highlight">Mercado Pago</span>.</li>
+  </ul>
+
+  <h2>4. Exclusão parcial de dados (Sem exclusão de conta)</h2>
+  <p>Se você deseja excluir apenas parte de suas informações sem excluir sua conta:</p>
+  <ul>
+    <li>Você pode gerenciar e excluir endereços salvos diretamente na seção de endereços em seu perfil.</li>
+    <li>Você pode remover prestadores de serviços favoritos a qualquer momento clicando no ícone de coração nos perfis dos profissionais.</li>
+  </ul>
+
+  <h2>5. Contato de Suporte</h2>
+  <p>Caso tenha qualquer dúvida técnica ou de privacidade, entre em contato:</p>
+  <p>E-mail: <a href="mailto:suporte.xamaja@gmail.com" style="color: #22C55E;">suporte.xamaja@gmail.com</a></p>
+
+  <div class="footer">
+    &copy; 2026 XamaJá - Todos os direitos reservados.
+  </div>
+</body>
+</html>`;
+}
