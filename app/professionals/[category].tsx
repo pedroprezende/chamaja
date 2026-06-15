@@ -53,7 +53,7 @@ export interface Professional {
 
 function openWhatsApp(phone: string) {
   const message = encodeURIComponent(
-    "Olá, encontrei seu contato no app ChamaJá e gostaria de um serviço."
+    "Olá, encontrei seu contato no app XamaJá e gostaria de um serviço."
   );
   const url = `https://wa.me/${phone}?text=${message}`;
   Linking.openURL(url).catch(() =>

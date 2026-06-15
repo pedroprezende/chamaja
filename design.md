@@ -1,4 +1,4 @@
-# ChamaJá — Plano de Design Mobile
+# XamaJá — Plano de Design Mobile
 
 ## Visão Geral
 

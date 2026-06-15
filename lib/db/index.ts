@@ -1,5 +1,5 @@
 /**
- * Ponto de entrada do banco de dados ChamaJá
+ * Ponto de entrada do banco de dados XamaJá
  *
  * ADAPTADOR ATUAL: local (AsyncStorage)
  *

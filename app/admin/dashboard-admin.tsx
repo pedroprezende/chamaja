@@ -104,7 +104,7 @@ export default function DashboardAdmin() {
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <View style={styles.headerLeft}>
           <MaterialIcons name="local-fire-department" size={22} color="#25D366" />
-          <Text style={styles.headerTitle}>ChamaJá</Text>
+          <Text style={styles.headerTitle}>XamaJá</Text>
           <View style={styles.adminBadge}>
             <Text style={styles.adminBadgeText}>Admin</Text>
           </View>

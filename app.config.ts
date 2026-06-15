@@ -8,7 +8,7 @@ const bundleId = rawBundleId;
 const schemeFromBundleId = "chamaja";
 
 const env = {
-  appName: "ChamaJá",
+  appName: "XamaJá",
   appSlug: "chamaja",
   logoUrl: "https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/ewPQX5Hdn85qUpsT3fJo4T/chamaja-icon-3vFAMQS6WicwcQNCYQranh.png",
   scheme: schemeFromBundleId,
@@ -32,9 +32,9 @@ const config: ExpoConfig = {
     usesAppleSignIn: true,
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
-      NSPhotoLibraryUsageDescription: "O ChamaJá precisa acessar sua galeria para você poder enviar fotos para o perfil do seu serviço.",
-      NSCameraUsageDescription: "O ChamaJá precisa acessar sua câmera para que você possa tirar fotos dos serviços que realiza.",
-      NSLocationWhenInUseUsageDescription: "O ChamaJá usa sua localização para encontrar profissionais e serviços próximos a você.",
+      NSPhotoLibraryUsageDescription: "O XamaJá precisa acessar sua galeria para você poder enviar fotos para o perfil do seu serviço.",
+      NSCameraUsageDescription: "O XamaJá precisa acessar sua câmera para que você possa tirar fotos dos serviços que realiza.",
+      NSLocationWhenInUseUsageDescription: "O XamaJá usa sua localização para encontrar profissionais e serviços próximos a você.",
     }
   },
   android: {
@@ -85,8 +85,8 @@ const config: ExpoConfig = {
     bundler: "metro",
     output: "static",
     favicon: "./assets/images/favicon.png",
-    name: "ChamaJá",
-    shortName: "ChamaJá",
+    name: "XamaJá",
+    shortName: "XamaJá",
     themeColor: "#25D366",
     backgroundColor: "#F8F9FA",
     display: "standalone",
@@ -101,14 +101,14 @@ const config: ExpoConfig = {
     [
       "expo-image-picker",
       {
-        photosPermission: "O ChamaJá precisa acessar suas fotos para você escolher a foto do perfil e dos serviços.",
-        cameraPermission: "O ChamaJá precisa acessar sua câmera para tirar fotos dos serviços."
+        photosPermission: "O XamaJá precisa acessar suas fotos para você escolher a foto do perfil e dos serviços.",
+        cameraPermission: "O XamaJá precisa acessar sua câmera para tirar fotos dos serviços."
       }
     ],
     [
       "expo-audio",
       {
-        microphonePermission: "O ChamaJá precisa de acesso ao microfone para mensagens de áudio.",
+        microphonePermission: "O XamaJá precisa de acesso ao microfone para mensagens de áudio.",
       },
     ],
     [

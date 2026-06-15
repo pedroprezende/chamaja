@@ -16,7 +16,7 @@ export default function Root({ children }: PropsWithChildren) {
         {/* PWA iOS e Safari Support */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="ChamaJá" />
+        <meta name="apple-mobile-web-app-title" content="XamaJá" />
         <meta name="theme-color" content="#25D366" />
         
         {/* Ícone para iPhone */}

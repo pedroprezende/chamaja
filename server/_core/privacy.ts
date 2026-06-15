@@ -4,7 +4,7 @@ export function getPrivacyPolicyHtml(): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Política de Privacidade - ChamaJá</title>
+  <title>Política de Privacidade - XamaJá</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -54,10 +54,10 @@ export function getPrivacyPolicyHtml(): string {
   </style>
 </head>
 <body>
-  <h1>Política de Privacidade do ChamaJá</h1>
+  <h1>Política de Privacidade do XamaJá</h1>
   <p>Última atualização: 15 de junho de 2026</p>
 
-  <p>Esta Política de Privacidade descreve como o aplicativo <span class="highlight">ChamaJá</span> coleta, usa e compartilha suas informações pessoais quando você utiliza nossos serviços.</p>
+  <p>Esta Política de Privacidade descreve como o aplicativo <span class="highlight">XamaJá</span> coleta, usa e compartilha suas informações pessoais quando você utiliza nossos serviços.</p>
 
   <h2>1. Coleta de Informações e Permissões</h2>
   <p>Para fornecer e melhorar nossos serviços de busca e contratação de prestadores locais, o aplicativo requer as seguintes informações e permissões:</p>
@@ -78,7 +78,7 @@ export function getPrivacyPolicyHtml(): string {
   </ul>
 
   <h2>3. Compartilhamento de Informações</h2>
-  <p>O ChamaJá valoriza a sua privacidade. Nós <span class="highlight">não vendemos ou alugamos</span> seus dados pessoais para terceiros.</p>
+  <p>O XamaJá valoriza a sua privacidade. Nós <span class="highlight">não vendemos ou alugamos</span> seus dados pessoais para terceiros.</p>
   <p>Os únicos dados expostos publicamente no aplicativo são as informações profissionais que o próprio Prestador de Serviço insere em seu perfil (como nome comercial, telefone de contato, fotos do serviço e descrição) para que potenciais clientes possam encontrá-lo e contatá-lo.</p>
 
   <h2>4. Segurança e Armazenamento</h2>
@@ -93,10 +93,10 @@ export function getPrivacyPolicyHtml(): string {
 
   <h2>6. Contato</h2>
   <p>Se tiver dúvidas ou solicitações sobre esta Política de Privacidade, entre em contato conosco:</p>
-  <p>E-mail de suporte: <a href="mailto:suporte.chamaja@gmail.com" style="color: #22C55E;">suporte.chamaja@gmail.com</a></p>
+  <p>E-mail de suporte: <a href="mailto:suporte.xamaja@gmail.com" style="color: #22C55E;">suporte.xamaja@gmail.com</a></p>
 
   <div class="footer">
-    &copy; 2026 ChamaJá - Todos os direitos reservados.
+    &copy; 2026 XamaJá - Todos os direitos reservados.
   </div>
 </body>
 </html>`;

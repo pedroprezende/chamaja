@@ -1,7 +1,7 @@
-# ChamaJá - Services Marketplace
+# XamaJá - Services Marketplace
 
 ## Overview
-ChamaJá is a Brazilian services marketplace app built with Expo (React Native) + Express + tRPC. It connects users with local service providers across categories like repairs, automotive, beauty, health, and more.
+XamaJá is a Brazilian services marketplace app built with Expo (React Native) + Express + tRPC. It connects users with local service providers across categories like repairs, automotive, beauty, health, and more.
 
 ## Architecture
 

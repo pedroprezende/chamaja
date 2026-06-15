@@ -22,7 +22,7 @@ export default function FavoritesScreen() {
     const cleaned = phone.replace(/\D/g, "");
     const number = cleaned.startsWith("55") ? cleaned : `55${cleaned}`;
     const msg = encodeURIComponent(
-      `Olá ${name}, vi seu perfil no ChamaJá e gostaria de um orçamento.`
+      `Olá ${name}, vi seu perfil no XamaJá e gostaria de um orçamento.`
     );
     Linking.openURL(`https://wa.me/${number}?text=${msg}`).catch(() =>
       Alert.alert("Erro", "Não foi possível abrir o WhatsApp.")

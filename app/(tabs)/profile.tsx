@@ -539,7 +539,7 @@ export default function ProfileScreen() {
     { id: "notifications", label: "Notificações", icon: "notifications-none", badge: unreadCount > 0 ? String(unreadCount) : undefined },
     { id: "provider", label: isProvider ? "Minha área de prestador" : "Seja um prestador", icon: isProvider ? "work" : "add-business", highlight: !isProvider },
     { id: "help", label: "Ajuda e suporte", icon: "help-outline" },
-    { id: "about", label: "Sobre o ChamaJá", icon: "info-outline" },
+    { id: "about", label: "Sobre o XamaJá", icon: "info-outline" },
     { id: "privacy", label: "Política de Privacidade", icon: "security" },
     { id: "terms", label: "Termos de Uso", icon: "gavel" },
     { id: "debug_location", label: "Debug de Localização", icon: "bug-report" },
@@ -1067,12 +1067,12 @@ export default function ProfileScreen() {
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalBody}>
               <Text style={[styles.policyIntro, { color: colors.foreground }]}>
-                Bem-vindo ao ChamaJá. Sua privacidade é importante para nós. Esta Política de Privacidade explica como coletamos, utilizamos, armazenamos e protegemos suas informações ao utilizar nosso aplicativo.
+                Bem-vindo ao XamaJá. Sua privacidade é importante para nós. Esta Política de Privacidade explica como coletamos, utilizamos, armazenamos e protegemos suas informações ao utilizar nosso aplicativo.
               </Text>
 
               <Text style={[styles.policySectionTitle, { color: colors.primary }]}>1. INFORMAÇÕES COLETADAS</Text>
               <Text style={[styles.policyText, { color: colors.foreground }]}>
-                O ChamaJá pode coletar as seguintes informações fornecidas pelo usuário:
+                O XamaJá pode coletar as seguintes informações fornecidas pelo usuário:
               </Text>
               <View style={styles.bulletList}>
                 {[
@@ -1133,7 +1133,7 @@ export default function ProfileScreen() {
 
               <Text style={[styles.policySectionTitle, { color: colors.primary }]}>3. COMPARTILHAMENTO DE INFORMAÇÕES</Text>
               <Text style={[styles.policyText, { color: colors.foreground }]}>
-                O ChamaJá não vende informações pessoais dos usuários.
+                O XamaJá não vende informações pessoais dos usuários.
               </Text>
               <Text style={[styles.policyText, { color: colors.foreground, marginTop: 8 }]}>
                 As informações poderão ser compartilhadas apenas quando necessário para:
@@ -1154,7 +1154,7 @@ export default function ProfileScreen() {
 
               <Text style={[styles.policySectionTitle, { color: colors.primary }]}>4. USO DA LOCALIZAÇÃO</Text>
               <Text style={[styles.policyText, { color: colors.foreground }]}>
-                O ChamaJá poderá utilizar a localização do usuário, mediante autorização, para:
+                O XamaJá poderá utilizar a localização do usuário, mediante autorização, para:
               </Text>
               <View style={styles.bulletList}>
                 {[
@@ -1190,7 +1190,7 @@ export default function ProfileScreen() {
 
               <Text style={[styles.policySectionTitle, { color: colors.primary }]}>7. RESPONSABILIDADE SOBRE OS SERVIÇOS</Text>
               <Text style={[styles.policyText, { color: colors.foreground }]}>
-                O ChamaJá atua exclusivamente como uma plataforma de conexão entre usuários, profissionais autônomos, prestadores de serviços e estabelecimentos comerciais.
+                O XamaJá atua exclusivamente como uma plataforma de conexão entre usuários, profissionais autônomos, prestadores de serviços e estabelecimentos comerciais.
               </Text>
               <Text style={[styles.policyText, { color: colors.foreground, marginTop: 8 }]}>
                 A execução dos serviços contratados, qualidade do atendimento, preços praticados, prazos e demais condições são de responsabilidade exclusiva das partes envolvidas na contratação.
@@ -1225,7 +1225,7 @@ export default function ProfileScreen() {
               </Pressable>
 
               <Text style={[styles.policyText, { color: colors.muted, marginTop: 24, fontSize: 12, fontStyle: "italic", textAlign: "center" }]}>
-                Ao utilizar o ChamaJá, você declara estar ciente e concordar com os termos desta Política de Privacidade.
+                Ao utilizar o XamaJá, você declara estar ciente e concordar com os termos desta Política de Privacidade.
               </Text>
               
               <View style={{ height: 24 }} />
@@ -1255,12 +1255,12 @@ export default function ProfileScreen() {
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalBody}>
               <Text style={[styles.policyIntro, { color: colors.foreground }]}>
-                Ao utilizar o ChamaJá, você concorda com os seguintes termos:
+                Ao utilizar o XamaJá, você concorda com os seguintes termos:
               </Text>
 
               <Text style={[styles.policySectionTitle, { color: colors.primary }]}>1. Sobre o aplicativo</Text>
               <Text style={[styles.policyText, { color: colors.foreground }]}>
-                O ChamaJá é uma plataforma que conecta clientes a prestadores de serviços e empresas locais.
+                O XamaJá é uma plataforma que conecta clientes a prestadores de serviços e empresas locais.
               </Text>
 
               <Text style={[styles.policySectionTitle, { color: colors.primary }]}>2. Cadastro</Text>
@@ -1288,7 +1288,7 @@ export default function ProfileScreen() {
                 Os prestadores são responsáveis pelos serviços oferecidos dentro da plataforma.
               </Text>
               <Text style={[styles.policyText, { color: colors.foreground, marginTop: 6 }]}>
-                O ChamaJá atua apenas como intermediador entre cliente e profissional.
+                O XamaJá atua apenas como intermediador entre cliente e profissional.
               </Text>
 
               <Text style={[styles.policySectionTitle, { color: colors.primary }]}>4. Pagamentos</Text>
@@ -1296,7 +1296,7 @@ export default function ProfileScreen() {
                 Alguns serviços podem envolver pagamentos dentro ou fora da plataforma.
               </Text>
               <Text style={[styles.policyText, { color: colors.foreground, marginTop: 6 }]}>
-                O ChamaJá poderá cobrar taxas, comissões ou valores promocionais.
+                O XamaJá poderá cobrar taxas, comissões ou valores promocionais.
               </Text>
 
               <Text style={[styles.policySectionTitle, { color: colors.primary }]}>5. Avaliações</Text>
@@ -1309,7 +1309,7 @@ export default function ProfileScreen() {
 
               <Text style={[styles.policySectionTitle, { color: colors.primary }]}>6. Suspensão de contas</Text>
               <Text style={[styles.policyText, { color: colors.foreground }]}>
-                O ChamaJá poderá suspender contas que:
+                O XamaJá poderá suspender contas que:
               </Text>
               <View style={styles.bulletList}>
                 {[
@@ -1326,7 +1326,7 @@ export default function ProfileScreen() {
 
               <Text style={[styles.policySectionTitle, { color: colors.primary }]}>7. Limitação de responsabilidade</Text>
               <Text style={[styles.policyText, { color: colors.foreground }]}>
-                O ChamaJá não se responsabiliza diretamente pela execução dos serviços realizados pelos prestadores.
+                O XamaJá não se responsabiliza diretamente pela execução dos serviços realizados pelos prestadores.
               </Text>
 
               <Text style={[styles.policySectionTitle, { color: colors.primary }]}>8. Alterações</Text>
@@ -1422,7 +1422,7 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
-      {/* Modal Sobre o ChamaJá */}
+      {/* Modal Sobre o XamaJá */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -1432,7 +1432,7 @@ export default function ProfileScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.foreground }]}>Sobre o ChamaJá</Text>
+              <Text style={[styles.modalTitle, { color: colors.foreground }]}>Sobre o XamaJá</Text>
               <Pressable
                 onPress={() => setAboutModalVisible(false)}
                 style={({ pressed }) => [styles.closeButton, pressed && { opacity: 0.7 }]}
@@ -1443,7 +1443,7 @@ export default function ProfileScreen() {
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalBody}>
               <Text style={[styles.policyIntro, { color: colors.foreground, fontSize: 16, fontWeight: "600" }]}>
-                O ChamaJá é uma plataforma criada para conectar pessoas a profissionais e empresas locais de forma rápida, prática e segura.
+                O XamaJá é uma plataforma criada para conectar pessoas a profissionais e empresas locais de forma rápida, prática e segura.
               </Text>
 
               <Text style={[styles.policyText, { color: colors.foreground, marginTop: 12 }]}>
@@ -1451,7 +1451,7 @@ export default function ProfileScreen() {
               </Text>
 
               <Text style={[styles.policySectionTitle, { color: colors.primary, marginTop: 24 }]}>
-                Com o ChamaJá você pode:
+                Com o XamaJá você pode:
               </Text>
               <View style={styles.bulletList}>
                 {[
@@ -1486,7 +1486,7 @@ export default function ProfileScreen() {
                 borderWidth: 1,
                 borderColor: colors.border
               }}>
-                <Text style={{ fontSize: 20, fontWeight: "800", color: colors.primary, marginBottom: 4 }}>ChamaJá</Text>
+                <Text style={{ fontSize: 20, fontWeight: "800", color: colors.primary, marginBottom: 4 }}>XamaJá</Text>
                 <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, fontStyle: "italic", textAlign: "center" }}>
                   “O que você precisa, perto de você.” 🚀
                 </Text>

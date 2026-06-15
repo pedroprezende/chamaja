@@ -41,7 +41,7 @@ function getWhatsAppUrl(phone: string, name: string) {
   const cleaned = phone.replace(/\D/g, "");
   const number = cleaned.startsWith("55") ? cleaned : `55${cleaned}`;
   const message = encodeURIComponent(
-    `Olá ${name}, encontrei seu perfil no ChamaJá e gostaria de solicitar um orçamento.`
+    `Olá ${name}, encontrei seu perfil no XamaJá e gostaria de solicitar um orçamento.`
   );
   return `https://wa.me/${number}?text=${message}`;
 }
@@ -275,7 +275,7 @@ export default function ProfessionalDetailScreen() {
           style={({ pressed }) => [styles.floatingBackBtn, pressed && { opacity: 0.6 }]}
           onPress={() =>
             Share.share({
-              message: `Confira ${prof.name} no app ChamaJá!`,
+              message: `Confira ${prof.name} no app XamaJá!`,
             })
           }
         >

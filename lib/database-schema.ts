@@ -1,5 +1,5 @@
 /**
- * Database Schema para ChamaJá
+ * Database Schema para XamaJá
  * Define estrutura de dados para usuários, comércios, prestadores e pagamentos
  */
 

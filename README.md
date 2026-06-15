@@ -1,4 +1,4 @@
-# ChamaJá 📱
+# XamaJá 📱
 
 Aplicativo mobile de marketplace de serviços locais — conecta clientes a prestadores de serviço da região (eletricistas, encanadores, tatuadores, diaristas, etc.).
 

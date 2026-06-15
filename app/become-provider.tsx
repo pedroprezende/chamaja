@@ -18,7 +18,7 @@ export default function BecomeProviderScreen() {
 
   const handleWhatsAppContact = () => {
     const phone = "5511973909447";
-    const message = encodeURIComponent("Olá! Gostaria de saber mais sobre como me tornar um prestador no ChamaJá.");
+    const message = encodeURIComponent("Olá! Gostaria de saber mais sobre como me tornar um prestador no XamaJá.");
     const url = `https://wa.me/${phone}?text=${message}`;
     
     Linking.canOpenURL(url).then(supported => {

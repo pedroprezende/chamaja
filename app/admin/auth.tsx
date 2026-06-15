@@ -62,7 +62,7 @@ export default function AdminAuthScreen() {
             <View className="bg-white rounded-full p-4">
               <MaterialIcons name="admin-panel-settings" size={48} color="#2563EB" />
             </View>
-            <Text className="text-3xl font-bold text-white">ChamaJá Admin</Text>
+            <Text className="text-3xl font-bold text-white">XamaJá Admin</Text>
             <Text className="text-blue-100 text-center">
               {isLoginMode ? "Faça login em sua conta" : "Crie sua conta de admin"}
             </Text>

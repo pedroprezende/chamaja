@@ -99,7 +99,7 @@ function openWhatsApp(phone: string, serviceName: string) {
   let number = phone.replace(/\D/g, "");
   if (!number.startsWith("55")) number = "55" + number;
   const msg = encodeURIComponent(
-    `Olá! Vi o serviço "${serviceName}" no ChamaJá e gostaria de mais informações. 😊`
+    `Olá! Vi o serviço "${serviceName}" no XamaJá e gostaria de mais informações. 😊`
   );
   Linking.openURL(`https://wa.me/${number}?text=${msg}`).catch(() =>
     Alert.alert("WhatsApp não encontrado", "Verifique se o WhatsApp está instalado.")

@@ -1,4 +1,4 @@
-# ChamaJá — TODO
+# XamaJá — TODO
 
 - [x] Configurar tema de cores (verde WhatsApp, fundo cinza claro, cards brancos)
 - [x] Configurar tab bar inferior (Início, Buscar, Pedidos, Perfil)
@@ -17,7 +17,7 @@
 - [x] Implementar tela Buscar
 - [x] Implementar tela Pedidos
 - [x] Implementar tela Perfil
-- [x] Gerar logo do app ChamaJá
+- [x] Gerar logo do app XamaJá
 - [x] Configurar branding (nome, ícone, splash)
 - [x] Salvar checkpoint final
 
