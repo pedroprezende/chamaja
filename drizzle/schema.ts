@@ -139,6 +139,10 @@ export const providers = pgTable("providers", {
   index("providers_is_active_idx").on(table.isActive),
   index("providers_destaque_idx").on(table.destaque),
   index("providers_user_id_idx").on(table.userId),
+  index("providers_latitude_idx").on(table.latitude),
+  index("providers_longitude_idx").on(table.longitude),
+  index("providers_rating_idx").on(table.rating),
+  index("providers_online_status_idx").on(table.onlineStatus),
 ]);
 
 // ── Featured Ads (destaques) ───────────────────────────────────────────────────

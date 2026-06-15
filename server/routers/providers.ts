@@ -2,7 +2,7 @@ import { z } from "zod";
 import { publicProcedure, adminProcedure, protectedProcedure, router } from "../_core/trpc";
 import * as db from "../db";
 import { providers, appEvents } from "../../drizzle/schema";
-import { eq, or, ilike } from "drizzle-orm";
+import { eq, or, ilike, and, gte, lte, ne, desc, asc, sql } from "drizzle-orm";
 import { getReviewsByProfessional as getMockReviewsByProfessional } from "../../data/mock";
 import { geocodeAddress } from "../geocoding";
 
@@ -331,6 +331,186 @@ export const providersRouter = router({
           ilike(providers.description, lower)
         )
       );
+    }),
+
+  searchFiltered: publicProcedure
+    .input(z.object({
+      query: z.string().optional(),
+      profileType: z.enum(["all", "professional", "comercio"]).optional(),
+      categoryId: z.string().optional(),
+      subcategoryId: z.string().optional(),
+      userLatitude: z.number().optional(),
+      userLongitude: z.number().optional(),
+      maxDistanceKm: z.number().optional(),
+      minRating: z.number().optional(),
+      onlyOnline: z.boolean().optional(),
+      sortBy: z.enum(["relevance", "distance", "rating", "name"]).optional(),
+    }))
+    .query(async ({ input }) => {
+      const dbInstance = await db.getDb();
+      if (!dbInstance) return [];
+
+      const {
+        query,
+        profileType,
+        categoryId,
+        subcategoryId,
+        userLatitude,
+        userLongitude,
+        maxDistanceKm,
+        minRating,
+        onlyOnline,
+        sortBy,
+      } = input;
+
+      const conditions = [];
+
+      // 1. Sempre filtrar prestadores ativos
+      conditions.push(eq(providers.isActive, true));
+
+      // 2. Tipo de Perfil (Comércio vs Profissional)
+      if (profileType === "comercio") {
+        conditions.push(eq(providers.categoryId, "comercios"));
+      } else if (profileType === "professional") {
+        conditions.push(ne(providers.categoryId, "comercios"));
+      }
+
+      // 3. Busca por texto
+      if (query && query.trim()) {
+        const lower = `%${query.trim().toLowerCase()}%`;
+        conditions.push(
+          or(
+            ilike(providers.name, lower),
+            ilike(providers.category, lower),
+            ilike(providers.subcategoryName, lower),
+            ilike(providers.city, lower),
+            ilike(providers.neighborhood, lower),
+            ilike(providers.description, lower)
+          )
+        );
+      }
+
+      // 4. Categoria
+      if (categoryId && categoryId !== "todos") {
+        conditions.push(eq(providers.categoryId, categoryId));
+      }
+
+      // 5. Subcategoria
+      if (subcategoryId && subcategoryId !== "todos") {
+        conditions.push(
+          or(
+            eq(providers.subcategoryId, subcategoryId),
+            ilike(providers.subcategoryId, `%${subcategoryId}%`)
+          )
+        );
+      }
+
+      // 6. Avaliação Mínima
+      if (minRating !== undefined && minRating > 0) {
+        conditions.push(gte(providers.rating, minRating));
+      }
+
+      // 7. Apenas Online/Disponível
+      if (onlyOnline) {
+        conditions.push(eq(providers.onlineStatus, true));
+      }
+
+      // 8. Bounding Box para filtro geográfico rápido utilizando índices
+      const hasCoords = userLatitude !== undefined && userLongitude !== undefined;
+      const limitDistance = maxDistanceKm !== undefined && maxDistanceKm > 0;
+      
+      if (hasCoords && limitDistance) {
+        const deltaLat = maxDistanceKm / 111.0;
+        const deltaLng = maxDistanceKm / (111.0 * Math.cos(userLatitude * Math.PI / 180.0));
+        conditions.push(
+          gte(providers.latitude, userLatitude - deltaLat),
+          lte(providers.latitude, userLatitude + deltaLat),
+          gte(providers.longitude, userLongitude - deltaLng),
+          lte(providers.longitude, userLongitude + deltaLng)
+        );
+      }
+
+      // 9. Seleção de campos leves (incluindo cálculo de distância em SQL se houver coordenadas)
+      let selectFields: any = {
+        id: providers.id,
+        userId: providers.userId,
+        name: providers.name,
+        category: providers.category,
+        categoryId: providers.categoryId,
+        city: providers.city,
+        neighborhood: providers.neighborhood,
+        plan: providers.plan,
+        subcategoryId: providers.subcategoryId,
+        subcategoryName: providers.subcategoryName,
+        avatarUri: providers.avatarUri,
+        avatarThumbnailUri: providers.avatarThumbnailUri,
+        rating: providers.rating,
+        ratingCount: providers.ratingCount,
+        latitude: providers.latitude,
+        longitude: providers.longitude,
+        coverUri: providers.coverUri,
+        coverThumbnailUri: providers.coverThumbnailUri,
+        isVerified: providers.isVerified,
+        onlineStatus: providers.onlineStatus,
+        responseTime: providers.responseTime,
+        topBadge: providers.topBadge,
+        isActive: providers.isActive,
+        displayOrder: providers.displayOrder,
+        destaque: providers.destaque,
+      };
+
+      let distanceSqlExpr = sql<number>`NULL`;
+      if (hasCoords) {
+        distanceSqlExpr = sql<number>`6371 * acos(
+          least(1.0, greatest(-1.0, 
+            cos(radians(${userLatitude})) * cos(radians(${providers.latitude})) *
+            cos(radians(${providers.longitude}) - radians(${userLongitude})) +
+            sin(radians(${userLatitude})) * sin(radians(${providers.latitude}))
+          ))
+        )`;
+        selectFields.distanceKm = distanceSqlExpr;
+      }
+
+      let queryBuilder = dbInstance.select(selectFields).from(providers).where(and(...conditions));
+
+      // 10. Ordenação
+      const orderByExprs = [];
+      if (sortBy === "rating") {
+        orderByExprs.push(desc(providers.rating), desc(providers.ratingCount));
+      } else if (sortBy === "distance" && hasCoords) {
+        orderByExprs.push(asc(distanceSqlExpr));
+      } else if (sortBy === "name") {
+        orderByExprs.push(asc(providers.name));
+      } else {
+        // relevance: Destaques/Premium primeiro, depois displayOrder/distância
+        orderByExprs.push(
+          desc(sql`CASE WHEN ${providers.plan} IN ('premium', 'annual') THEN 1 ELSE 0 END`),
+          asc(providers.displayOrder)
+        );
+        if (hasCoords) {
+          orderByExprs.push(asc(distanceSqlExpr));
+        }
+      }
+
+      queryBuilder.orderBy(...orderByExprs);
+      const results = await queryBuilder;
+
+      return results.map(r => {
+        let distanceStr = "";
+        let distanceKm = (r as any).distanceKm;
+        if (distanceKm !== undefined && distanceKm !== null) {
+          if (distanceKm < 1) {
+            distanceStr = `${Math.round(distanceKm * 1000)}m`;
+          } else {
+            distanceStr = `${distanceKm.toFixed(1)} km`;
+          }
+        }
+        return {
+          ...r,
+          distanceKm,
+          distanceStr,
+        };
+      });
     }),
 
   getById: publicProcedure
