@@ -1161,14 +1161,6 @@ export default function HomeScreen() {
             )}
             {searching && <ActivityIndicator size="small" color={colors.primary} />}
           </View>
-          <Pressable
-            style={[styles.filterBtn, { backgroundColor: "transparent", borderColor: "#22C55E", borderWidth: 1 }]}
-            onPress={() => setFilterModalVisible(true)}
-          >
-            <MaterialIcons name="tune" size={20} color="#22C55E" />
-            <Text style={[styles.filterBtnText, { color: "#22C55E" }]}>Filtros</Text>
-            {activeFilter !== "none" && <View style={[styles.filterActiveDot, { backgroundColor: "#22C55E" }]} />}
-          </Pressable>
         </View>
 
         {/* Visual warning banner when location cannot be determined */}
