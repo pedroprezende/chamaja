@@ -21,8 +21,9 @@ async function run() {
     console.log("Conectando ao banco de dados...");
 
     const statements = [
-      `ALTER TABLE providers ADD COLUMN IF NOT EXISTS avatar_thumbnail_uri text;`,
-      `ALTER TABLE providers ADD COLUMN IF NOT EXISTS cover_thumbnail_uri text;`
+      `ALTER TABLE providers ADD COLUMN IF NOT EXISTS price_level integer DEFAULT 2 NOT NULL;`,
+      `CREATE INDEX IF NOT EXISTS "providers_price_level_idx" ON "providers" ("price_level");`,
+      `UPDATE providers SET price_level = FLOOR(RANDOM() * 4) + 1;`
     ];
 
     for (const stmt of statements) {

@@ -128,6 +128,7 @@ export const providers = pgTable("providers", {
   popularServices: text("popular_services"),
   tags: text("tags"),
   workingHours: text("working_hours"),
+  priceLevel: integer("price_level").default(2).notNull(),
   isActive: boolean("is_active").notNull().default(true),
   displayOrder: integer("display_order").notNull().default(0),
   destaque: boolean("destaque").default(false).notNull(),
@@ -143,6 +144,7 @@ export const providers = pgTable("providers", {
   index("providers_longitude_idx").on(table.longitude),
   index("providers_rating_idx").on(table.rating),
   index("providers_online_status_idx").on(table.onlineStatus),
+  index("providers_price_level_idx").on(table.priceLevel),
 ]);
 
 // ── Featured Ads (destaques) ───────────────────────────────────────────────────

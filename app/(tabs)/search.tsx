@@ -65,6 +65,22 @@ const COMERCIOS_MORE = [
   { id: "loja-celular", name: "Celulares", icon: "phone-android" },
 ];
 
+const DISTANCE_STEPS = [
+  { id: "1", label: "1 km", value: 1 },
+  { id: "3", label: "3 km", value: 3 },
+  { id: "5", label: "5 km", value: 5 },
+  { id: "10", label: "10 km", value: 10 },
+  { id: "all", label: "+10 km", value: 50 },
+];
+
+const CATEGORY_ITEMS = [
+  { id: "todos", name: "Todos", icon: "all-inclusive" },
+  { id: "reformas-reparos", name: "Reformas", icon: "build" },
+  { id: "beleza-estetica", name: "Beleza", icon: "content-cut" },
+  { id: "servicos-domesticos", name: "Domésticos", icon: "home" },
+  { id: "automotivo", name: "Automotivo", icon: "directions-car" },
+];
+
 export default function SearchScreen() {
   const colors = useColors();
   const router = useRouter();
@@ -80,7 +96,6 @@ export default function SearchScreen() {
   const [query, setQuery] = useState("");
   const [isMapView, setIsMapView] = useState(false);
   const [addressModalVisible, setAddressModalVisible] = useState(false);
-  const [activeTab, setActiveTab] = useState<"prestadores" | "comercios">("prestadores");
   const [selectedPill, setSelectedPill] = useState("todos");
   const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
   const [showMoreModal, setShowMoreModal] = useState(false);
@@ -88,15 +103,22 @@ export default function SearchScreen() {
   const [filterModalVisible, setFilterModalVisible] = useState(false);
 
   // Filtros ativos
-  const [activeProximityFilter, setActiveProximityFilter] = useState<"all" | "1" | "3" | "5" | "10" | "20">("all");
-  const [activeSort, setActiveSort] = useState<"relevance" | "distance" | "rating">("relevance");
-  const [activeRatingFilter, setActiveRatingFilter] = useState<"all" | "4.0" | "4.5">("all");
-  const [onlyOnlineFilter, setOnlyOnlineFilter] = useState(false);
+  const [activeSort, setActiveSort] = useState<"relevance" | "distance" | "rating" | "popularity" | "recent">("relevance");
+  const [activeProximityFilter, setActiveProximityFilter] = useState<"all" | "1" | "3" | "5" | "10" | "50">("all");
+  const [activeProfileType, setActiveProfileType] = useState<"all" | "professional" | "comercio">("professional");
+  const [activeRatingFilter, setActiveRatingFilter] = useState<"all" | "2" | "3" | "4" | "5">("all");
+  const [activeAvailability, setActiveAvailability] = useState<"any" | "now" | "today" | "scheduled">("any");
+  const [activePriceLevel, setActivePriceLevel] = useState<"all" | "1" | "2" | "3" | "4">("all");
+  const [onlyOnlineFilter, setOnlyOnlineFilter] = useState(false); // keep for toggle option backward compatibility
 
   // Estados temporários do modal de filtros
-  const [tempProximity, setTempProximity] = useState<"all" | "1" | "3" | "5" | "10" | "20">("all");
-  const [tempSort, setTempSort] = useState<"relevance" | "distance" | "rating">("relevance");
-  const [tempRating, setTempRating] = useState<"all" | "4.0" | "4.5">("all");
+  const [tempSort, setTempSort] = useState<"relevance" | "distance" | "rating" | "popularity" | "recent">("relevance");
+  const [tempProximity, setTempProximity] = useState<"all" | "1" | "3" | "5" | "10" | "50">("all");
+  const [tempProfileType, setTempProfileType] = useState<"all" | "professional" | "comercio">("professional");
+  const [tempRating, setTempRating] = useState<"all" | "2" | "3" | "4" | "5">("all");
+  const [tempAvailability, setTempAvailability] = useState<"any" | "now" | "today" | "scheduled">("any");
+  const [tempPriceLevel, setTempPriceLevel] = useState<"all" | "1" | "2" | "3" | "4">("all");
+  const [tempCategory, setTempCategory] = useState<string>("todos");
   const [tempOnlyOnline, setTempOnlyOnline] = useState(false);
 
   const [cachedProviders, setCachedProviders] = useState<any[]>([]);
@@ -115,22 +137,77 @@ export default function SearchScreen() {
   const defaultCoords = { latitude: -22.9520, longitude: -46.5420 };
   const userCoords = coords || defaultCoords;
 
-  const maxDistanceKm = activeProximityFilter === "all" ? undefined : Number(activeProximityFilter);
-  const minRating = activeRatingFilter === "all" ? undefined : Number(activeRatingFilter);
+  // Helper functions para categorias
+  const isPrestadorCategory = (pillId: string) => {
+    return PRESTADORES_PILLS.some(p => p.id === pillId) || PRESTADORES_MORE.some(p => p.id === pillId);
+  };
+
+  const isComercioCategory = (pillId: string) => {
+    return COMERCIOS_PILLS.some(p => p.id === pillId) || COMERCIOS_MORE.some(p => p.id === pillId);
+  };
+
+  // Listas de Pills Combinadas para quando o perfil for 'all'
+  const combinedPills = useMemo(() => {
+    const all = [
+      { id: "todos", name: "Todos", icon: "all-inclusive" },
+      ...PRESTADORES_PILLS.filter(p => p.id !== "todos"),
+      ...COMERCIOS_PILLS.filter(p => p.id !== "todos")
+    ];
+    const seen = new Set();
+    return all.filter(p => {
+      if (seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
+    });
+  }, []);
+
+  const combinedMorePills = useMemo(() => {
+    const all = [
+      ...PRESTADORES_MORE,
+      ...COMERCIOS_MORE
+    ];
+    const seen = new Set();
+    return all.filter(p => {
+      if (seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
+    });
+  }, []);
 
   // tRPC query para busca filtrada otimizada no servidor
   const { data: dbProviders = cachedProviders, isLoading: loadingProviders, refetch } = trpc.providers.searchFiltered.useQuery({
     query: query.trim() || undefined,
-    profileType: activeTab === "prestadores" ? "professional" : "comercio",
-    categoryId: (activeTab === "prestadores" && selectedPill !== "todos") ? selectedPill : undefined,
-    subcategoryId: (activeTab === "comercios" && selectedPill !== "todos") ? selectedPill : undefined,
+    profileType: activeProfileType === "all" ? undefined : activeProfileType,
+    categoryId: (selectedPill !== "todos" && isPrestadorCategory(selectedPill)) ? selectedPill : undefined,
+    subcategoryId: (selectedPill !== "todos" && isComercioCategory(selectedPill)) ? selectedPill : undefined,
     userLatitude: userCoords.latitude,
     userLongitude: userCoords.longitude,
-    maxDistanceKm,
-    minRating,
-    onlyOnline: onlyOnlineFilter,
+    maxDistanceKm: activeProximityFilter === "all" ? undefined : Number(activeProximityFilter),
+    minRating: activeRatingFilter === "all" ? undefined : Number(activeRatingFilter),
+    onlyOnline: activeAvailability === "now" || onlyOnlineFilter,
+    priceLevel: activePriceLevel === "all" ? undefined : Number(activePriceLevel),
+    availability: activeAvailability,
     sortBy: activeSort,
   }, {
+    placeholderData: (prev) => prev,
+  });
+
+  // Preview query executada em tempo real enquanto o modal de filtros está aberto
+  const { data: previewProviders = [], isLoading: loadingPreview } = trpc.providers.searchFiltered.useQuery({
+    query: query.trim() || undefined,
+    profileType: tempProfileType === "all" ? undefined : tempProfileType,
+    categoryId: (tempCategory !== "todos" && isPrestadorCategory(tempCategory)) ? tempCategory : undefined,
+    subcategoryId: (tempCategory !== "todos" && isComercioCategory(tempCategory)) ? tempCategory : undefined,
+    userLatitude: userCoords.latitude,
+    userLongitude: userCoords.longitude,
+    maxDistanceKm: tempProximity === "all" ? undefined : Number(tempProximity),
+    minRating: tempRating === "all" ? undefined : Number(tempRating),
+    onlyOnline: tempAvailability === "now" || tempOnlyOnline,
+    priceLevel: tempPriceLevel === "all" ? undefined : Number(tempPriceLevel),
+    availability: tempAvailability,
+    sortBy: tempSort,
+  }, {
+    enabled: filterModalVisible,
     placeholderData: (prev) => prev,
   });
 
@@ -141,36 +218,61 @@ export default function SearchScreen() {
   }, [dbProviders, cachedProviders]);
 
   const openFilterModal = () => {
-    setTempProximity(activeProximityFilter);
     setTempSort(activeSort);
+    setTempProximity(activeProximityFilter);
+    setTempProfileType(activeProfileType);
     setTempRating(activeRatingFilter);
+    setTempAvailability(activeAvailability);
+    setTempPriceLevel(activePriceLevel);
+    setTempCategory(selectedPill);
     setTempOnlyOnline(onlyOnlineFilter);
     setFilterModalVisible(true);
   };
 
   const applyFilters = () => {
-    setActiveProximityFilter(tempProximity);
     setActiveSort(tempSort);
+    setActiveProximityFilter(tempProximity);
+    setActiveProfileType(tempProfileType);
     setActiveRatingFilter(tempRating);
+    setActiveAvailability(tempAvailability);
+    setActivePriceLevel(tempPriceLevel);
+    setSelectedPill(tempCategory);
     setOnlyOnlineFilter(tempOnlyOnline);
     setFilterModalVisible(false);
   };
 
   const clearFilters = () => {
-    setTempProximity("all");
     setTempSort("relevance");
+    setTempProximity("all");
+    setTempProfileType("all");
     setTempRating("all");
+    setTempAvailability("any");
+    setTempPriceLevel("all");
+    setTempCategory("todos");
     setTempOnlyOnline(false);
   };
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
-    if (activeProximityFilter !== "all") count++;
     if (activeSort !== "relevance") count++;
+    if (activeProximityFilter !== "all") count++;
+    if (activeProfileType !== "all") count++;
     if (activeRatingFilter !== "all") count++;
+    if (activeAvailability !== "any") count++;
+    if (activePriceLevel !== "all") count++;
+    if (selectedPill !== "todos") count++;
     if (onlyOnlineFilter) count++;
     return count;
-  }, [activeProximityFilter, activeSort, activeRatingFilter, onlyOnlineFilter]);
+  }, [
+    activeSort,
+    activeProximityFilter,
+    activeProfileType,
+    activeRatingFilter,
+    activeAvailability,
+    activePriceLevel,
+    selectedPill,
+    onlyOnlineFilter,
+  ]);
 
   // A filtragem é totalmente delegada ao backend para performance e escalabilidade
   const providersList = dbProviders;
@@ -194,9 +296,8 @@ export default function SearchScreen() {
     console.log("=================================");
   }, [userCoords, addressName, coords, providersList]);
 
-  // Ao trocar de aba, resetamos o filtro de subcategoria e o selecionado no mapa
-  const handleTabChange = (tab: "prestadores" | "comercios") => {
-    setActiveTab(tab);
+  const handleTabChange = (type: "all" | "professional" | "comercio") => {
+    setActiveProfileType(type);
     setSelectedPill("todos");
     setSelectedProviderId(null);
   };
@@ -215,13 +316,40 @@ export default function SearchScreen() {
     }, 1200);
   };
 
-  const currentPills = activeTab === "prestadores" ? PRESTADORES_PILLS : COMERCIOS_PILLS;
-  const morePills = activeTab === "prestadores" ? PRESTADORES_MORE : COMERCIOS_MORE;
+  const currentPills = activeProfileType === "professional"
+    ? PRESTADORES_PILLS
+    : activeProfileType === "comercio"
+    ? COMERCIOS_PILLS
+    : combinedPills;
+
+  const morePills = activeProfileType === "professional"
+    ? PRESTADORES_MORE
+    : activeProfileType === "comercio"
+    ? COMERCIOS_MORE
+    : combinedMorePills;
+
+  const modalCurrentPills = filterModalVisible
+    ? (tempProfileType === "professional"
+      ? PRESTADORES_PILLS
+      : tempProfileType === "comercio"
+      ? COMERCIOS_PILLS
+      : combinedPills)
+    : currentPills;
+
+  const modalMorePills = filterModalVisible
+    ? (tempProfileType === "professional"
+      ? PRESTADORES_MORE
+      : tempProfileType === "comercio"
+      ? COMERCIOS_MORE
+      : combinedMorePills)
+    : morePills;
 
   const currentCount = providersList.length;
-  const countLabel = activeTab === "prestadores"
+  const countLabel = activeProfileType === "professional"
     ? `${currentCount} profissionais encontrados`
-    : `${currentCount} comércios encontrados`;
+    : activeProfileType === "comercio"
+    ? `${currentCount} comércios encontrados`
+    : `${currentCount} resultados encontrados`;
 
   return (
     <ScreenContainer edges={["left", "right"]} style={styles.container}>
@@ -293,9 +421,11 @@ export default function SearchScreen() {
           <TextInput
             style={styles.searchInput}
             placeholder={
-              activeTab === "prestadores"
+              activeProfileType === "professional"
                 ? "Buscar serviço ou profissional..."
-                : "Buscar comércio ou local..."
+                : activeProfileType === "comercio"
+                ? "Buscar comércio ou local..."
+                : "Buscar profissionais ou comércios..."
             }
             placeholderTextColor="#9CA3AF"
             value={query}
@@ -313,33 +443,47 @@ export default function SearchScreen() {
         </View>
       </View>
 
-      {/* Tabs Segmentadas: Prestadores vs Comércios */}
+      {/* Tabs Segmentadas: Todos vs Prestadores vs Comércios */}
       <View style={styles.tabBarContainer}>
         <View style={styles.tabBar}>
           <Pressable
-            onPress={() => handleTabChange("prestadores")}
-            style={[styles.tabButton, activeTab === "prestadores" && styles.tabButtonActive]}
+            onPress={() => handleTabChange("all")}
+            style={[styles.tabButton, activeProfileType === "all" && styles.tabButtonActive]}
+          >
+            <MaterialIcons
+              name="all-inclusive"
+              size={18}
+              color={activeProfileType === "all" ? "#FFFFFF" : "#9CA3AF"}
+            />
+            <Text style={[styles.tabText, activeProfileType === "all" && styles.tabTextActive]}>
+              Todos
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => handleTabChange("professional")}
+            style={[styles.tabButton, activeProfileType === "professional" && styles.tabButtonActive]}
           >
             <MaterialIcons
               name="person"
               size={18}
-              color={activeTab === "prestadores" ? "#FFFFFF" : "#9CA3AF"}
+              color={activeProfileType === "professional" ? "#FFFFFF" : "#9CA3AF"}
             />
-            <Text style={[styles.tabText, activeTab === "prestadores" && styles.tabTextActive]}>
+            <Text style={[styles.tabText, activeProfileType === "professional" && styles.tabTextActive]}>
               Prestadores
             </Text>
           </Pressable>
 
           <Pressable
-            onPress={() => handleTabChange("comercios")}
-            style={[styles.tabButton, activeTab === "comercios" && styles.tabButtonActive]}
+            onPress={() => handleTabChange("comercio")}
+            style={[styles.tabButton, activeProfileType === "comercio" && styles.tabButtonActive]}
           >
             <MaterialIcons
               name="storefront"
               size={18}
-              color={activeTab === "comercios" ? "#FFFFFF" : "#9CA3AF"}
+              color={activeProfileType === "comercio" ? "#FFFFFF" : "#9CA3AF"}
             />
-            <Text style={[styles.tabText, activeTab === "comercios" && styles.tabTextActive]}>
+            <Text style={[styles.tabText, activeProfileType === "comercio" && styles.tabTextActive]}>
               Comércios
             </Text>
           </Pressable>
@@ -629,11 +773,18 @@ export default function SearchScreen() {
               {/* Opção Todos */}
               <Pressable
                 onPress={() => {
-                  setSelectedPill("todos");
+                  if (filterModalVisible) {
+                    setTempCategory("todos");
+                  } else {
+                    setSelectedPill("todos");
+                  }
                   setShowMoreModal(false);
                   setSelectedProviderId(null);
                 }}
-                style={[styles.gridItem, selectedPill === "todos" && styles.gridItemActive]}
+                style={[
+                  styles.gridItem, 
+                  (filterModalVisible ? tempCategory === "todos" : selectedPill === "todos") && styles.gridItemActive
+                ]}
               >
                 <View style={styles.gridIconContainer}>
                   <MaterialIcons name="all-inclusive" size={24} color="#22C55E" />
@@ -642,50 +793,64 @@ export default function SearchScreen() {
               </Pressable>
 
               {/* Pills padrões */}
-              {currentPills.slice(1).map((pill) => (
-                <Pressable
-                  key={pill.id}
-                  onPress={() => {
-                    setSelectedPill(pill.id);
-                    setShowMoreModal(false);
-                    setSelectedProviderId(null);
-                  }}
-                  style={[styles.gridItem, selectedPill === pill.id && styles.gridItemActive]}
-                >
-                  <View style={styles.gridIconContainer}>
-                    <MaterialIcons name={pill.icon as any} size={24} color="#22C55E" />
-                  </View>
-                  <Text style={styles.gridItemLabel}>{pill.name}</Text>
-                </Pressable>
-              ))}
+              {modalCurrentPills.slice(1).map((pill) => {
+                const isSelected = filterModalVisible ? tempCategory === pill.id : selectedPill === pill.id;
+                return (
+                  <Pressable
+                    key={pill.id}
+                    onPress={() => {
+                      if (filterModalVisible) {
+                        setTempCategory(pill.id);
+                      } else {
+                        setSelectedPill(pill.id);
+                      }
+                      setShowMoreModal(false);
+                      setSelectedProviderId(null);
+                    }}
+                    style={[styles.gridItem, isSelected && styles.gridItemActive]}
+                  >
+                    <View style={styles.gridIconContainer}>
+                      <MaterialIcons name={pill.icon as any} size={24} color="#22C55E" />
+                    </View>
+                    <Text style={styles.gridItemLabel}>{pill.name}</Text>
+                  </Pressable>
+                );
+              })}
 
               {/* Pills adicionais */}
-              {morePills.map((pill) => (
-                <Pressable
-                  key={pill.id}
-                  onPress={() => {
-                    setSelectedPill(pill.id);
-                    setShowMoreModal(false);
-                    setSelectedProviderId(null);
-                  }}
-                  style={[styles.gridItem, selectedPill === pill.id && styles.gridItemActive]}
-                >
-                  <View style={styles.gridIconContainer}>
-                    <MaterialIcons name={pill.icon as any} size={24} color="#22C55E" />
-                  </View>
-                  <Text style={styles.gridItemLabel}>{pill.name}</Text>
-                </Pressable>
-              ))}
+              {modalMorePills.map((pill) => {
+                const isSelected = filterModalVisible ? tempCategory === pill.id : selectedPill === pill.id;
+                return (
+                  <Pressable
+                    key={pill.id}
+                    onPress={() => {
+                      if (filterModalVisible) {
+                        setTempCategory(pill.id);
+                      } else {
+                        setSelectedPill(pill.id);
+                      }
+                      setShowMoreModal(false);
+                      setSelectedProviderId(null);
+                    }}
+                    style={[styles.gridItem, isSelected && styles.gridItemActive]}
+                  >
+                    <View style={styles.gridIconContainer}>
+                      <MaterialIcons name={pill.icon as any} size={24} color="#22C55E" />
+                    </View>
+                    <Text style={styles.gridItemLabel}>{pill.name}</Text>
+                  </Pressable>
+                );
+              })}
             </ScrollView>
           </View>
         </View>
       </Modal>
 
-      {/* Modal de Filtros Avançados */}
+      {/* Modal de Filtros Avançados iFood-Style */}
       <Modal
         visible={filterModalVisible}
         transparent
-        animationType="fade"
+        animationType="slide"
         onRequestClose={() => setFilterModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
@@ -694,20 +859,29 @@ export default function SearchScreen() {
             <View style={[styles.modalHandle, { backgroundColor: "#1C1C1E" }]} />
             
             <View style={styles.filterModalHeader}>
-              <Text style={styles.modalTitle}>Filtrar e Ordenar</Text>
+              <Pressable onPress={() => setFilterModalVisible(false)} style={styles.filterCloseBtn}>
+                <MaterialIcons name="close" size={24} color="#FFFFFF" />
+              </Pressable>
+              
+              <View style={styles.filterHeaderTitleContainer}>
+                <Text style={styles.filterModalTitle}>Filtros</Text>
+                <Text style={styles.filterModalSubtitle}>Refine sua busca no XamaJá</Text>
+              </View>
+              
               <Pressable onPress={clearFilters} style={styles.clearFiltersBtn}>
-                <Text style={styles.clearFiltersText}>Limpar</Text>
+                <Text style={styles.clearFiltersText}>Limpar tudo</Text>
               </Pressable>
             </View>
             
-            <ScrollView showsVerticalScrollIndicator={false} style={{ marginVertical: 12 }}>
-              {/* Seção Ordenação */}
+            <ScrollView showsVerticalScrollIndicator={false} style={styles.filterFormScroll}>
+              {/* Seção Ordenação (Cards) */}
               <Text style={styles.filterSectionTitle}>Ordenar por</Text>
-              <View style={styles.filterOptionsGroup}>
+              <View style={styles.sortGrid}>
                 {[
-                  { id: "relevance", label: "Relevância (Recomendado)", icon: "sort" },
-                  { id: "distance", label: "Mais próximos", icon: "gps-fixed" },
-                  { id: "rating", label: "Melhor Avaliação", icon: "star" }
+                  { id: "distance", label: "Mais próximos", icon: "near-me" },
+                  { id: "rating", label: "Melhor avaliação", icon: "star" },
+                  { id: "popularity", label: "Mais populares", icon: "trending-up" },
+                  { id: "recent", label: "Mais recentes", icon: "schedule" },
                 ].map((opt) => {
                   const isSel = tempSort === opt.id;
                   return (
@@ -715,62 +889,147 @@ export default function SearchScreen() {
                       key={opt.id}
                       onPress={() => setTempSort(opt.id as any)}
                       style={[
-                        styles.filterOption,
-                        { backgroundColor: "#111111", borderColor: "#1C1C1E" },
-                        isSel && styles.filterOptionActive
+                        styles.sortCard,
+                        isSel && styles.sortCardActive
                       ]}
                     >
-                      <MaterialIcons name={opt.icon as any} size={20} color={isSel ? "#22C55E" : "#9CA3AF"} />
-                      <Text style={[styles.filterOptionText, isSel && { color: "#22C55E", fontWeight: "700" }]}>
+                      <MaterialIcons name={opt.icon as any} size={22} color={isSel ? "#22C55E" : "#9CA3AF"} />
+                      <Text style={[styles.sortCardLabel, isSel && styles.sortCardLabelActive]}>
                         {opt.label}
                       </Text>
-                      {isSel && <MaterialIcons name="check" size={20} color="#22C55E" />}
                     </Pressable>
                   );
                 })}
               </View>
 
-              {/* Seção Proximidade */}
+              {/* Seção Distância Máxima (Step Slider Interativo) */}
               {showDistance && (
                 <>
-                  <Text style={[styles.filterSectionTitle, { marginTop: 20 }]}>Distância Máxima</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
-                    {[
-                      { id: "all", label: "Qualquer distância" },
-                      { id: "1", label: "Até 1 km" },
-                      { id: "3", label: "Até 3 km" },
-                      { id: "5", label: "Até 5 km" },
-                      { id: "10", label: "Até 10 km" },
-                      { id: "20", label: "Até 20 km" }
-                    ].map((opt) => {
-                      const isSel = tempProximity === opt.id;
-                      return (
-                        <Pressable
-                          key={opt.id}
-                          onPress={() => setTempProximity(opt.id as any)}
-                          style={[
-                            styles.filterChip,
-                            { backgroundColor: "#111111", borderColor: "#1C1C1E" },
-                            isSel && styles.filterChipActive
-                          ]}
-                        >
-                          <Text style={[styles.filterChipText, isSel && { color: "#FFFFFF", fontWeight: "600" }]}>
-                            {opt.label}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </ScrollView>
+                  <Text style={[styles.filterSectionTitle, { marginTop: 22 }]}>Distância máxima</Text>
+                  <View style={styles.sliderContainer}>
+                    <View style={styles.sliderTrackWrapper}>
+                      <View style={styles.sliderTrackBackground} />
+                      <View 
+                        style={[
+                          styles.sliderTrackActive, 
+                          { width: `${(DISTANCE_STEPS.findIndex(s => s.id === tempProximity)) * 25}%` }
+                        ]} 
+                      />
+                      {DISTANCE_STEPS.map((step, idx) => {
+                        const isPassed = idx <= DISTANCE_STEPS.findIndex(s => s.id === tempProximity);
+                        const isCurrent = step.id === tempProximity;
+                        return (
+                          <Pressable
+                            key={step.id}
+                            onPress={() => setTempProximity(step.id as any)}
+                            style={[
+                              styles.sliderDot,
+                              { left: `${idx * 25}%` },
+                              isPassed && styles.sliderDotPassed,
+                              isCurrent && styles.sliderDotCurrent
+                            ]}
+                          />
+                        );
+                      })}
+                    </View>
+                    
+                    <View style={styles.sliderLabelsRow}>
+                      {DISTANCE_STEPS.map((step, idx) => {
+                        const isCurrent = step.id === tempProximity;
+                        return (
+                          <Pressable
+                            key={step.id}
+                            onPress={() => setTempProximity(step.id as any)}
+                            style={[styles.sliderLabelBtn, { left: `${idx * 25}%` }]}
+                          >
+                            <Text style={[styles.sliderStepLabel, isCurrent && styles.sliderStepLabelActive]}>
+                              {step.label}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </View>
                 </>
               )}
 
-              {/* Seção Avaliação */}
-              <Text style={[styles.filterSectionTitle, { marginTop: 20 }]}>Avaliação Mínima</Text>
-              <View style={{ flexDirection: "row", gap: 8 }}>
+              {/* Seção Categoria (Fila de Categorias Circulares) */}
+              <Text style={[styles.filterSectionTitle, { marginTop: 22 }]}>Categoria</Text>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false} 
+                contentContainerStyle={styles.categoryScroll}
+                style={{ marginBottom: 4 }}
+              >
+                {CATEGORY_ITEMS.map((cat) => {
+                  const isSel = tempCategory === cat.id;
+                  return (
+                    <Pressable
+                      key={cat.id}
+                      onPress={() => setTempCategory(cat.id)}
+                      style={styles.categoryCircleBtn}
+                    >
+                      <View style={[
+                        styles.categoryCircle,
+                        isSel && styles.categoryCircleActive
+                      ]}>
+                        <MaterialIcons name={cat.icon as any} size={24} color={isSel ? "#22C55E" : "#FFFFFF"} />
+                      </View>
+                      <Text style={[styles.categoryCircleLabel, isSel && styles.categoryCircleLabelActive]}>
+                        {cat.name}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+                <Pressable
+                  onPress={() => setShowMoreModal(true)}
+                  style={styles.categoryCircleBtn}
+                >
+                  <View style={styles.categoryCircle}>
+                    <MaterialIcons name="grid-view" size={24} color="#9CA3AF" />
+                  </View>
+                  <Text style={styles.categoryCircleLabel}>Mais</Text>
+                </Pressable>
+              </ScrollView>
+
+              {/* Seção Tipo de Perfil (Segmentador Horizontal) */}
+              <Text style={[styles.filterSectionTitle, { marginTop: 22 }]}>Tipo de perfil</Text>
+              <View style={styles.segmentedContainer}>
                 {[
-                  { id: "all", label: "Qualquer uma" },
-                  { id: "4.0", label: "4.0+ ⭐" },
-                  { id: "4.5", label: "4.5+ ⭐" }
+                  { id: "all", label: "Todos" },
+                  { id: "professional", label: "Prestadores" },
+                  { id: "comercio", label: "Lojas e Empresas" },
+                ].map((opt) => {
+                  const isSel = tempProfileType === opt.id;
+                  return (
+                    <Pressable
+                      key={opt.id}
+                      onPress={() => setTempProfileType(opt.id as any)}
+                      style={[
+                        styles.segmentedButton,
+                        isSel && styles.segmentedButtonActive
+                      ]}
+                    >
+                      <Text style={[
+                        styles.segmentedText,
+                        isSel && styles.segmentedTextActive
+                      ]}>
+                        {opt.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              {/* Seção Avaliação Mínima (Fila de Estrelas) */}
+              <Text style={[styles.filterSectionTitle, { marginTop: 22 }]}>Avaliação mínima</Text>
+              <View style={styles.ratingRowChips}>
+                {[
+                  { id: "all", label: "Qualquer" },
+                  { id: "4", label: "4.0+ ⭐" },
+                  { id: "3", label: "3.0+ ⭐" },
+                  { id: "2", label: "2.0+ ⭐" },
+                  { id: "5", label: "5.0 ⭐" },
                 ].map((opt) => {
                   const isSel = tempRating === opt.id;
                   return (
@@ -778,12 +1037,14 @@ export default function SearchScreen() {
                       key={opt.id}
                       onPress={() => setTempRating(opt.id as any)}
                       style={[
-                        styles.filterChip,
-                        { backgroundColor: "#111111", borderColor: "#1C1C1E" },
-                        isSel && styles.filterChipActive
+                        styles.ratingChip,
+                        isSel && styles.ratingChipActive
                       ]}
                     >
-                      <Text style={[styles.filterChipText, isSel && { color: "#FFFFFF", fontWeight: "600" }]}>
+                      <Text style={[
+                        styles.ratingChipText,
+                        isSel && styles.ratingChipTextActive
+                      ]}>
                         {opt.label}
                       </Text>
                     </Pressable>
@@ -791,30 +1052,84 @@ export default function SearchScreen() {
                 })}
               </View>
 
-              {/* Seção Disponibilidade */}
-              <Text style={[styles.filterSectionTitle, { marginTop: 20 }]}>Disponibilidade</Text>
-              <Pressable
-                onPress={() => setTempOnlyOnline(!tempOnlyOnline)}
-                style={[
-                  styles.filterOption,
-                  { backgroundColor: "#111111", borderColor: "#1C1C1E" },
-                  tempOnlyOnline && styles.filterOptionActive
-                ]}
-              >
-                <MaterialIcons name="offline-bolt" size={20} color={tempOnlyOnline ? "#22C55E" : "#9CA3AF"} />
-                <Text style={[styles.filterOptionText, tempOnlyOnline && { color: "#22C55E", fontWeight: "700" }]}>
-                  Aberto agora / Disponível Online
-                </Text>
-                {tempOnlyOnline && <MaterialIcons name="check" size={20} color="#22C55E" />}
-              </Pressable>
+              {/* Seção Disponibilidade (Ícones clock/lightning/calendar) */}
+              <Text style={[styles.filterSectionTitle, { marginTop: 22 }]}>Disponibilidade</Text>
+              <View style={styles.availabilityRow}>
+                {[
+                  { id: "any", label: "Qualquer", icon: "schedule" },
+                  { id: "now", label: "Disponível agora", icon: "bolt" },
+                  { id: "today", label: "Hoje", icon: "today" },
+                  { id: "scheduled", label: "Agendar", icon: "event" },
+                ].map((opt) => {
+                  const isSel = tempAvailability === opt.id;
+                  return (
+                    <Pressable
+                      key={opt.id}
+                      onPress={() => setTempAvailability(opt.id as any)}
+                      style={[
+                        styles.availabilityCard,
+                        isSel && styles.availabilityCardActive
+                      ]}
+                    >
+                      <MaterialIcons name={opt.icon as any} size={20} color={isSel ? "#22C55E" : "#9CA3AF"} />
+                      <Text style={[
+                        styles.availabilityCardLabel,
+                        isSel && styles.availabilityCardLabelActive
+                      ]}>
+                        {opt.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              {/* Seção Faixa de Preço (Faixa $, $$, $$$, $$$$) */}
+              <Text style={[styles.filterSectionTitle, { marginTop: 22 }]}>Faixa de preço</Text>
+              <View style={styles.priceRow}>
+                {[
+                  { id: "all", label: "Qualquer" },
+                  { id: "1", label: "$" },
+                  { id: "2", label: "$$" },
+                  { id: "3", label: "$$$" },
+                  { id: "4", label: "$$$$" },
+                ].map((opt) => {
+                  const isSel = tempPriceLevel === opt.id;
+                  return (
+                    <Pressable
+                      key={opt.id}
+                      onPress={() => setTempPriceLevel(opt.id as any)}
+                      style={[
+                        styles.priceButton,
+                        isSel && styles.priceButtonActive
+                      ]}
+                    >
+                      <Text style={[
+                        styles.priceButtonText,
+                        isSel && styles.priceButtonTextActive
+                      ]}>
+                        {opt.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
             </ScrollView>
 
-            <Pressable
-              style={[styles.applyFilterBtn, { backgroundColor: "#22C55E" }]}
-              onPress={applyFilters}
-            >
-              <Text style={styles.applyFilterBtnText}>Aplicar Filtros</Text>
-            </Pressable>
+            <View style={styles.filterFooter}>
+              <Pressable
+                style={[styles.applyFilterBtn, { backgroundColor: "#22C55E" }]}
+                onPress={applyFilters}
+                disabled={loadingPreview}
+              >
+                {loadingPreview ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.applyFilterBtnText}>
+                    Aplicar filtros ({previewProviders.length} {previewProviders.length === 1 ? "resultado" : "resultados"})
+                  </Text>
+                )}
+              </Pressable>
+            </View>
           </View>
         </View>
       </Modal>
@@ -830,15 +1145,15 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#111827",
+    backgroundColor: "#080808",
   },
   header: {
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#1F2937",
-    backgroundColor: "#111827",
+    borderBottomColor: "#1C1C1E",
+    backgroundColor: "#080808",
   },
   headerRow: {
     flexDirection: "row",
@@ -851,7 +1166,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#1F2937",
+    backgroundColor: "#111111",
+    borderWidth: 1,
+    borderColor: "#1C1C1E",
   },
   headerTitleContainer: {
     flex: 1,
@@ -859,7 +1176,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "800",
     color: "#FFFFFF",
   },
   locationContainer: {
@@ -870,7 +1187,7 @@ const styles = StyleSheet.create({
   locationText: {
     fontSize: 13,
     color: "#22C55E",
-    fontWeight: "600",
+    fontWeight: "700",
   },
   subtitleCount: {
     fontSize: 11,
@@ -885,12 +1202,12 @@ const styles = StyleSheet.create({
   headerFilterBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1F2937",
+    backgroundColor: "#111111",
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#22C55E",
+    borderColor: "#1C1C1E",
   },
   headerFilterText: {
     color: "#FFFFFF",
@@ -901,10 +1218,12 @@ const styles = StyleSheet.create({
   headerToggleBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1F2937",
+    backgroundColor: "#111111",
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#1C1C1E",
   },
   headerToggleText: {
     color: "#FFFFFF",
@@ -915,16 +1234,18 @@ const styles = StyleSheet.create({
   searchSection: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "#111827",
+    backgroundColor: "#080808",
   },
   searchBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1F2937",
+    backgroundColor: "#111111",
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
     gap: 8,
+    borderWidth: 1,
+    borderColor: "#1C1C1E",
   },
   searchInput: {
     flex: 1,
@@ -935,13 +1256,15 @@ const styles = StyleSheet.create({
   tabBarContainer: {
     paddingHorizontal: 16,
     paddingBottom: 10,
-    backgroundColor: "#111827",
+    backgroundColor: "#080808",
   },
   tabBar: {
     flexDirection: "row",
-    backgroundColor: "#1F2937",
+    backgroundColor: "#111111",
     borderRadius: 10,
     padding: 3,
+    borderWidth: 1,
+    borderColor: "#1C1C1E",
   },
   tabButton: {
     flex: 1,
@@ -956,18 +1279,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#22C55E",
   },
   tabText: {
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: 13,
+    fontWeight: "700",
     color: "#9CA3AF",
   },
   tabTextActive: {
     color: "#FFFFFF",
   },
   pillsWrapper: {
-    backgroundColor: "#111827",
+    backgroundColor: "#080808",
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#1F2937",
+    borderBottomColor: "#1C1C1E",
   },
   pillsScroll: {
     paddingHorizontal: 16,
@@ -977,19 +1300,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: "#1F2937",
+    backgroundColor: "#111111",
+    borderWidth: 1,
+    borderColor: "#1C1C1E",
   },
   pillButtonActive: {
     backgroundColor: "#22C55E",
+    borderColor: "#22C55E",
   },
   pillText: {
     fontSize: 13,
-    fontWeight: "500",
+    fontWeight: "600",
     color: "#D1D5DB",
   },
   pillTextActive: {
     color: "#FFFFFF",
-    fontWeight: "600",
+    fontWeight: "700",
   },
   pillButtonMore: {
     flexDirection: "row",
@@ -997,11 +1323,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: "#374151",
+    backgroundColor: "#1F2937",
+    borderWidth: 1,
+    borderColor: "#374151",
   },
   pillTextMore: {
     fontSize: 13,
-    fontWeight: "500",
+    fontWeight: "600",
     color: "#FFFFFF",
   },
   mainContent: {
@@ -1025,14 +1353,16 @@ const styles = StyleSheet.create({
   },
   providerCard: {
     flexDirection: "row",
-    backgroundColor: "#1F2937",
+    backgroundColor: "#111111",
     borderRadius: 16,
     padding: 12,
     gap: 12,
+    borderWidth: 1,
+    borderColor: "#1C1C1E",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
     elevation: 3,
   },
   avatarSection: {
@@ -1042,7 +1372,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 12,
-    backgroundColor: "#374151",
+    backgroundColor: "#1F2937",
   },
   badgeTag: {
     position: "absolute",
@@ -1064,7 +1394,7 @@ const styles = StyleSheet.create({
   badgeText: {
     color: "#FFFFFF",
     fontSize: 9,
-    fontWeight: "800",
+    fontWeight: "900",
     textTransform: "uppercase",
   },
   providerDetails: {
@@ -1083,7 +1413,7 @@ const styles = StyleSheet.create({
   },
   providerName: {
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "800",
     color: "#FFFFFF",
     maxWidth: "85%",
   },
@@ -1128,7 +1458,7 @@ const styles = StyleSheet.create({
   openText: {
     color: "#22C55E",
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   neighborhoodText: {
     fontSize: 12,
@@ -1142,7 +1472,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "800",
     color: "#FFFFFF",
   },
   emptySubtitle: {
@@ -1163,7 +1493,7 @@ const styles = StyleSheet.create({
   scanAreaButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1F2937",
+    backgroundColor: "#111111",
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 24,
@@ -1173,12 +1503,12 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
     borderWidth: 1,
-    borderColor: "#374151",
+    borderColor: "#1C1C1E",
   },
   scanAreaText: {
     color: "#FFFFFF",
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   recenterButton: {
     position: "absolute",
@@ -1187,7 +1517,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "#1F2937",
+    backgroundColor: "#111111",
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
@@ -1196,7 +1526,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4.65,
     elevation: 8,
     borderWidth: 1,
-    borderColor: "#374151",
+    borderColor: "#1C1C1E",
     zIndex: 10,
   },
   detailCard: {
@@ -1204,7 +1534,7 @@ const styles = StyleSheet.create({
     bottom: 16,
     left: 16,
     right: 16,
-    backgroundColor: "#1F2937",
+    backgroundColor: "#111111",
     borderRadius: 16,
     padding: 16,
     shadowColor: "#000",
@@ -1213,7 +1543,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 10,
     borderWidth: 1,
-    borderColor: "#374151",
+    borderColor: "#1C1C1E",
     zIndex: 10,
   },
   cardCloseBtn: {
@@ -1231,7 +1561,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 12,
-    backgroundColor: "#374151",
+    backgroundColor: "#1F2937",
   },
   cardInfo: {
     flex: 1,
@@ -1242,7 +1572,7 @@ const styles = StyleSheet.create({
   },
   cardName: {
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "800",
     color: "#FFFFFF",
     maxWidth: "80%",
   },
@@ -1278,7 +1608,7 @@ const styles = StyleSheet.create({
   cardOpenStatus: {
     color: "#22C55E",
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "700",
     marginTop: 4,
   },
   cardButton: {
@@ -1292,20 +1622,22 @@ const styles = StyleSheet.create({
   cardButtonText: {
     color: "#FFFFFF",
     fontSize: 15,
-    fontWeight: "700",
+    fontWeight: "800",
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    backgroundColor: "rgba(0, 0, 0, 0.75)",
     justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: "#111827",
+    backgroundColor: "#080808",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 20,
     paddingBottom: 40,
-    maxHeight: Dimensions.get("window").height * 0.7,
+    maxHeight: Dimensions.get("window").height * 0.75,
+    borderWidth: 1,
+    borderColor: "#1C1C1E",
   },
   modalHeader: {
     flexDirection: "row",
@@ -1314,11 +1646,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#1F2937",
+    borderBottomColor: "#1C1C1E",
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "800",
     color: "#FFFFFF",
   },
   modalCloseBtn: {
@@ -1333,13 +1665,13 @@ const styles = StyleSheet.create({
   },
   gridItem: {
     width: "30%",
-    backgroundColor: "#1F2937",
+    backgroundColor: "#111111",
     borderRadius: 16,
     paddingVertical: 16,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "transparent",
+    borderWidth: 1.5,
+    borderColor: "#1C1C1E",
     gap: 8,
   },
   gridItemActive: {
@@ -1350,14 +1682,16 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#111827",
+    backgroundColor: "#080808",
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#1C1C1E",
   },
   gridItemLabel: {
     color: "#D1D5DB",
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "700",
     textAlign: "center",
   },
   modalHandle: {
@@ -1370,37 +1704,332 @@ const styles = StyleSheet.create({
   filterSheet: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    padding: 20,
-    paddingBottom: 40,
-    maxHeight: Dimensions.get("window").height * 0.85,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: Platform.OS === "ios" ? 36 : 24,
+    maxHeight: Dimensions.get("window").height * 0.88,
   },
-  filterSectionTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#FFFFFF",
-    marginBottom: 10,
-  },
-  filterOptionsGroup: {
-    gap: 8,
-  },
-  filterOption: {
+  filterModalHeader: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1F2937",
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "transparent",
-    gap: 12,
+    justifyContent: "space-between",
+    borderBottomWidth: 1,
+    borderBottomColor: "#1C1C1E",
+    paddingBottom: 16,
+    marginBottom: 10,
   },
-  filterOptionActive: {
+  filterCloseBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#111111",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#1C1C1E",
+  },
+  filterHeaderTitleContainer: {
+    flex: 1,
+    alignItems: "center",
+    marginHorizontal: 12,
+  },
+  filterModalTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#FFFFFF",
+  },
+  filterModalSubtitle: {
+    fontSize: 12,
+    color: "#9CA3AF",
+    marginTop: 2,
+  },
+  clearFiltersBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: "rgba(34, 197, 94, 0.08)",
+  },
+  clearFiltersText: {
+    color: "#22C55E",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  filterFormScroll: {
+    marginVertical: 8,
+  },
+  filterSectionTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    marginBottom: 12,
+  },
+  sortGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    justifyContent: "space-between",
+  },
+  sortCard: {
+    width: "48%",
+    backgroundColor: "#111111",
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: "#1C1C1E",
+    gap: 6,
+  },
+  sortCardActive: {
+    borderColor: "#22C55E",
+    backgroundColor: "rgba(34, 197, 94, 0.06)",
+  },
+  sortCardLabel: {
+    color: "#9CA3AF",
+    fontSize: 12,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  sortCardLabelActive: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+  },
+  // Step Slider
+  sliderContainer: {
+    paddingHorizontal: 12,
+    marginVertical: 10,
+    marginBottom: 16,
+  },
+  sliderTrackWrapper: {
+    height: 4,
+    backgroundColor: "#1C1C1E",
+    borderRadius: 2,
+    position: "relative",
+  },
+  sliderTrackBackground: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#1C1C1E",
+  },
+  sliderTrackActive: {
+    position: "absolute",
+    left: 0,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#22C55E",
+  },
+  sliderDot: {
+    position: "absolute",
+    top: -6,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "#111111",
+    borderWidth: 2.5,
+    borderColor: "#374151",
+    transform: [{ translateX: -8 }],
+  },
+  sliderDotPassed: {
+    borderColor: "#22C55E",
+    backgroundColor: "#22C55E",
+  },
+  sliderDotCurrent: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    top: -8,
+    backgroundColor: "#FFFFFF",
+    borderColor: "#22C55E",
+    borderWidth: 5,
+    transform: [{ translateX: -10 }],
+    shadowColor: "#22C55E",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  sliderLabelsRow: {
+    height: 20,
+    position: "relative",
+    marginTop: 12,
+  },
+  sliderLabelBtn: {
+    position: "absolute",
+    width: 60,
+    transform: [{ translateX: -30 }],
+    alignItems: "center",
+  },
+  sliderStepLabel: {
+    fontSize: 11,
+    color: "#9CA3AF",
+    fontWeight: "600",
+  },
+  sliderStepLabelActive: {
+    color: "#22C55E",
+    fontWeight: "800",
+  },
+  // Circular Categories
+  categoryScroll: {
+    gap: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 2,
+  },
+  categoryCircleBtn: {
+    alignItems: "center",
+    width: 70,
+  },
+  categoryCircle: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: "#111111",
+    borderWidth: 1.5,
+    borderColor: "#1C1C1E",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 6,
+  },
+  categoryCircleActive: {
     borderColor: "#22C55E",
     backgroundColor: "rgba(34, 197, 94, 0.08)",
   },
-  filterOptionText: {
+  categoryCircleLabel: {
+    fontSize: 11,
+    color: "#9CA3AF",
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  categoryCircleLabelActive: {
+    color: "#22C55E",
+    fontWeight: "800",
+  },
+  // Segmented control
+  segmentedContainer: {
+    flexDirection: "row",
+    backgroundColor: "#111111",
+    borderRadius: 14,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: "#1C1C1E",
+  },
+  segmentedButton: {
     flex: 1,
-    fontSize: 14,
-    color: "#D1D5DB",
+    paddingVertical: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 10,
+  },
+  segmentedButtonActive: {
+    backgroundColor: "#22C55E",
+  },
+  segmentedText: {
+    fontSize: 13,
+    color: "#9CA3AF",
+    fontWeight: "600",
+  },
+  segmentedTextActive: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+  },
+  // Rating Row Chips
+  ratingRowChips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  ratingChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: "#111111",
+    borderWidth: 1.5,
+    borderColor: "#1C1C1E",
+  },
+  ratingChipActive: {
+    borderColor: "#22C55E",
+    backgroundColor: "rgba(34, 197, 94, 0.08)",
+  },
+  ratingChipText: {
+    color: "#9CA3AF",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  ratingChipTextActive: {
+    color: "#22C55E",
+    fontWeight: "800",
+  },
+  // Availability
+  availabilityRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    justifyContent: "space-between",
+  },
+  availabilityCard: {
+    width: "48%",
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#111111",
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderWidth: 1.5,
+    borderColor: "#1C1C1E",
+    gap: 8,
+  },
+  availabilityCardActive: {
+    borderColor: "#22C55E",
+    backgroundColor: "rgba(34, 197, 94, 0.08)",
+  },
+  availabilityCardLabel: {
+    color: "#9CA3AF",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  availabilityCardLabelActive: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+  },
+  // Price row
+  priceRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 6,
+  },
+  priceButton: {
+    flex: 1,
+    backgroundColor: "#111111",
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: "#1C1C1E",
+  },
+  priceButtonActive: {
+    borderColor: "#22C55E",
+    backgroundColor: "rgba(34, 197, 94, 0.08)",
+  },
+  priceButtonText: {
+    color: "#9CA3AF",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  priceButtonTextActive: {
+    color: "#22C55E",
+    fontWeight: "800",
+  },
+  // Footer apply button
+  filterFooter: {
+    borderTopWidth: 1,
+    borderTopColor: "#1C1C1E",
+    paddingTop: 12,
+    marginTop: 12,
+    backgroundColor: "#080808",
   },
   applyFilterBtn: {
     paddingVertical: 14,
@@ -1429,36 +2058,9 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "bold",
   },
-  filterModalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  clearFiltersBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  clearFiltersText: {
-    color: "#EF4444",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  filterChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 4,
-  },
-  filterChipActive: {
-    backgroundColor: "#22C55E",
-    borderColor: "#22C55E",
-  },
-  filterChipText: {
-    color: "#D1D5DB",
+  clearFiltersBtnText: {
+    color: "#22C55E",
     fontSize: 13,
+    fontWeight: "700",
   },
 });

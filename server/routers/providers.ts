@@ -344,7 +344,9 @@ export const providersRouter = router({
       maxDistanceKm: z.number().optional(),
       minRating: z.number().optional(),
       onlyOnline: z.boolean().optional(),
-      sortBy: z.enum(["relevance", "distance", "rating", "name"]).optional(),
+      priceLevel: z.number().optional(),
+      availability: z.enum(["any", "now", "today", "scheduled"]).optional(),
+      sortBy: z.enum(["relevance", "distance", "rating", "popularity", "recent", "name"]).optional(),
     }))
     .query(async ({ input }) => {
       const dbInstance = await db.getDb();
@@ -360,6 +362,8 @@ export const providersRouter = router({
         maxDistanceKm,
         minRating,
         onlyOnline,
+        priceLevel,
+        availability,
         sortBy,
       } = input;
 
@@ -410,12 +414,17 @@ export const providersRouter = router({
         conditions.push(gte(providers.rating, minRating));
       }
 
-      // 7. Apenas Online/Disponível
-      if (onlyOnline) {
+      // 7. Apenas Online/Disponível/Disponibilidade
+      if (availability === "now" || onlyOnline) {
         conditions.push(eq(providers.onlineStatus, true));
       }
 
-      // 8. Bounding Box para filtro geográfico rápido utilizando índices
+      // 8. Nível de Preço
+      if (priceLevel && priceLevel > 0) {
+        conditions.push(eq(providers.priceLevel, priceLevel));
+      }
+
+      // 9. Bounding Box para filtro geográfico rápido utilizando índices
       const hasCoords = userLatitude !== undefined && userLongitude !== undefined;
       const limitDistance = maxDistanceKm !== undefined && maxDistanceKm > 0;
       
@@ -430,7 +439,7 @@ export const providersRouter = router({
         );
       }
 
-      // 9. Seleção de campos leves (incluindo cálculo de distância em SQL se houver coordenadas)
+      // 10. Seleção de campos leves (incluindo cálculo de distância em SQL se houver coordenadas)
       let selectFields: any = {
         id: providers.id,
         userId: providers.userId,
@@ -457,6 +466,7 @@ export const providersRouter = router({
         isActive: providers.isActive,
         displayOrder: providers.displayOrder,
         destaque: providers.destaque,
+        priceLevel: providers.priceLevel,
       };
 
       let distanceSqlExpr = sql<number>`NULL`;
@@ -473,12 +483,16 @@ export const providersRouter = router({
 
       let queryBuilder = dbInstance.select(selectFields).from(providers).where(and(...conditions));
 
-      // 10. Ordenação
+      // 11. Ordenação
       const orderByExprs = [];
       if (sortBy === "rating") {
         orderByExprs.push(desc(providers.rating), desc(providers.ratingCount));
       } else if (sortBy === "distance" && hasCoords) {
         orderByExprs.push(asc(distanceSqlExpr));
+      } else if (sortBy === "popularity") {
+        orderByExprs.push(desc(providers.clientsServed), desc(providers.ratingCount));
+      } else if (sortBy === "recent") {
+        orderByExprs.push(desc(providers.createdAt));
       } else if (sortBy === "name") {
         orderByExprs.push(asc(providers.name));
       } else {
