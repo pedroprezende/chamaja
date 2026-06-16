@@ -22,9 +22,18 @@ export default function ProviderDashboard() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { provider, isProvider, addService, updateService, deleteService, renewPlan } = useProvider();
+  const isCommerce = provider?.categoryId === "comercios" || provider?.category === "Comércios" || provider?.category === "comercios";
+
   const [showModal, setShowModal] = useState(false);
   const [editingService, setEditingService] = useState<ProviderService | null>(null);
-  const [form, setForm] = useState({ name: "", description: "", imageUri: "", gallery: [] as string[] });
+  const [form, setForm] = useState({ 
+    name: "", 
+    description: "", 
+    imageUri: "", 
+    price: "", 
+    productCategory: "", 
+    gallery: [] as string[] 
+  });
   const [saving, setSaving] = useState(false);
 
   if (!isProvider || !provider) {
@@ -49,7 +58,7 @@ export default function ProviderDashboard() {
 
   const openCreateModal = () => {
     setEditingService(null);
-    setForm({ name: "", description: "", imageUri: "", gallery: [] });
+    setForm({ name: "", description: "", imageUri: "", price: "", productCategory: "", gallery: [] });
     setShowModal(true);
   };
 
@@ -59,6 +68,8 @@ export default function ProviderDashboard() {
       name: service.name,
       description: service.description,
       imageUri: service.imageUri || "",
+      price: service.price !== undefined ? String(service.price) : "",
+      productCategory: service.productCategory || "",
       gallery: service.gallery || [],
     });
     setShowModal(true);
@@ -95,30 +106,32 @@ export default function ProviderDashboard() {
 
   const handleSave = async () => {
     if (!form.name.trim() || !form.description.trim()) {
-      Alert.alert("Erro", "Preencha nome e descrição do serviço.");
+      Alert.alert("Erro", `Preencha nome e descrição do ${isCommerce ? "produto" : "serviço"}.`);
       return;
     }
 
     setSaving(true);
     try {
+      const payload: any = {
+        name: form.name.trim(),
+        description: form.description.trim(),
+        imageUri: form.imageUri || undefined,
+        gallery: form.gallery.length > 0 ? form.gallery : undefined,
+      };
+
+      if (isCommerce) {
+        payload.price = form.price ? Number(form.price) : undefined;
+        payload.productCategory = form.productCategory.trim() || undefined;
+      }
+
       if (editingService) {
-        await updateService(editingService.id, {
-          name: form.name.trim(),
-          description: form.description.trim(),
-          imageUri: form.imageUri || undefined,
-          gallery: form.gallery.length > 0 ? form.gallery : undefined,
-        });
+        await updateService(editingService.id, payload);
       } else {
-        await addService({
-          name: form.name.trim(),
-          description: form.description.trim(),
-          imageUri: form.imageUri || undefined,
-          gallery: form.gallery.length > 0 ? form.gallery : undefined,
-        });
+        await addService(payload);
       }
       setShowModal(false);
     } catch (e: any) {
-      Alert.alert("Erro", "Não foi possível salvar o serviço.");
+      Alert.alert("Erro", `Não foi possível salvar o ${isCommerce ? "produto" : "serviço"}.`);
     } finally {
       setSaving(false);
     }
@@ -199,7 +212,7 @@ export default function ProviderDashboard() {
 
         {/* Services section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Meus Serviços</Text>
+          <Text style={styles.sectionTitle}>{isCommerce ? "Meus Produtos" : "Meus Serviços"}</Text>
           <Pressable
             style={({ pressed }) => [styles.addBtn, pressed && { opacity: 0.8 }]}
             onPress={openCreateModal}
@@ -212,8 +225,8 @@ export default function ProviderDashboard() {
         {provider.services.length === 0 ? (
           <View style={styles.emptyServices}>
             <MaterialIcons name="add-circle-outline" size={48} color="#D1D5DB" />
-            <Text style={styles.emptyTitle}>Nenhum serviço cadastrado</Text>
-            <Text style={styles.emptySubtitle}>Adicione os serviços que você oferece</Text>
+            <Text style={styles.emptyTitle}>Nenhum {isCommerce ? "produto" : "serviço"} cadastrado</Text>
+            <Text style={styles.emptySubtitle}>Adicione os {isCommerce ? "produtos" : "serviços"} que você oferece</Text>
           </View>
         ) : (
           provider.services.map((svc) => (
@@ -254,7 +267,11 @@ export default function ProviderDashboard() {
           <View style={styles.modalSheet}>
             <View style={styles.modalHandle} />
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{editingService ? "Editar Serviço" : "Novo Serviço"}</Text>
+              <Text style={styles.modalTitle}>
+                {editingService 
+                  ? (isCommerce ? "Editar Produto" : "Editar Serviço") 
+                  : (isCommerce ? "Novo Produto" : "Novo Serviço")}
+              </Text>
               <Pressable
                 style={({ pressed }) => [styles.modalCloseBtn, pressed && { opacity: 0.6 }]}
                 onPress={() => setShowModal(false)}
@@ -285,12 +302,12 @@ export default function ProviderDashboard() {
                 )}
               </Pressable>
 
-              <Text style={styles.fieldLabel}>Nome do serviço</Text>
+              <Text style={styles.fieldLabel}>{isCommerce ? "Nome do produto" : "Nome do serviço"}</Text>
               <View style={styles.fieldBox}>
-                <MaterialIcons name="build" size={18} color="#9CA3AF" />
+                <MaterialIcons name={isCommerce ? "shopping-bag" : "build"} size={18} color="#9CA3AF" />
                 <TextInput
                   style={styles.fieldInput}
-                  placeholder="Ex: Instalação elétrica"
+                  placeholder={isCommerce ? "Ex: Pizza de Calabresa" : "Ex: Instalação elétrica"}
                   placeholderTextColor="#9CA3AF"
                   value={form.name}
                   onChangeText={(t) => setForm({ ...form, name: t })}
@@ -301,7 +318,7 @@ export default function ProviderDashboard() {
               <View style={[styles.fieldBox, { alignItems: "flex-start", paddingTop: 12 }]}>
                 <TextInput
                   style={[styles.fieldInput, { minHeight: 80, textAlignVertical: "top" }]}
-                  placeholder="Descreva o serviço..."
+                  placeholder={isCommerce ? "Descreva o produto..." : "Descreva o serviço..."}
                   placeholderTextColor="#9CA3AF"
                   value={form.description}
                   onChangeText={(t) => setForm({ ...form, description: t })}
@@ -309,6 +326,35 @@ export default function ProviderDashboard() {
                   numberOfLines={4}
                 />
               </View>
+
+              {isCommerce && (
+                <>
+                  <Text style={styles.fieldLabel}>Preço (R$)</Text>
+                  <View style={styles.fieldBox}>
+                    <MaterialIcons name="attach-money" size={18} color="#9CA3AF" />
+                    <TextInput
+                      style={styles.fieldInput}
+                      placeholder="Ex: 45.00"
+                      placeholderTextColor="#9CA3AF"
+                      keyboardType="numeric"
+                      value={form.price}
+                      onChangeText={(t) => setForm({ ...form, price: t })}
+                    />
+                  </View>
+
+                  <Text style={styles.fieldLabel}>Categoria do Produto (opcional)</Text>
+                  <View style={styles.fieldBox}>
+                    <MaterialIcons name="label" size={18} color="#9CA3AF" />
+                    <TextInput
+                      style={styles.fieldInput}
+                      placeholder="Ex: Pizzas Salgadas, Bebidas"
+                      placeholderTextColor="#9CA3AF"
+                      value={form.productCategory}
+                      onChangeText={(t) => setForm({ ...form, productCategory: t })}
+                    />
+                  </View>
+                </>
+              )}
 
               {/* Galeria de fotos do local */}
               <Text style={styles.fieldLabel}>Galeria de fotos do local (máx. 8)</Text>

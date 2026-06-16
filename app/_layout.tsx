@@ -13,6 +13,7 @@ import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { ProviderContextProvider } from "@/lib/provider-context";
 import { FavoritesProvider } from "@/lib/favorites-context";
 import { NotificationsProvider } from "@/lib/notifications-context";
+import { CartProvider } from "@/lib/cart-context";
 import {
   SafeAreaFrameContext,
   SafeAreaInsetsContext,
@@ -78,7 +79,10 @@ function RootLayoutNav() {
         <Stack.Screen name="oauth/callback" />
         <Stack.Screen name="professionals/[category]" />
         <Stack.Screen name="categories/[section]" />
-        <Stack.Screen name="professional/[id]" />
+        <Stack.Screen name="professional/[id]/index" />
+        <Stack.Screen name="professional/[id]/menu" />
+        <Stack.Screen name="professional/[id]/cart" />
+        <Stack.Screen name="professional/[id]/whatsapp-order" />
         <Stack.Screen name="become-provider" />
         <Stack.Screen name="provider-dashboard" />
         <Stack.Screen name="favorites" />
@@ -182,9 +186,11 @@ export default function RootLayout() {
                 <ProviderContextProvider>
                   <FavoritesProvider>
                     <NotificationsProvider>
-                      <MainContent>
-                        <RootLayoutNav />
-                      </MainContent>
+                      <CartProvider>
+                        <MainContent>
+                          <RootLayoutNav />
+                        </MainContent>
+                      </CartProvider>
                     </NotificationsProvider>
                   </FavoritesProvider>
                 </ProviderContextProvider>

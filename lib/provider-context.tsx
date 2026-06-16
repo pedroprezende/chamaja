@@ -32,6 +32,8 @@ export interface ProviderService {
   /** Galeria de fotos do local (frente, interior, etc.) */
   gallery?: string[];
   createdAt: string;
+  price?: number;
+  productCategory?: string;
 }
 
 export const PLANS = {

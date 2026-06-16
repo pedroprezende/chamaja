@@ -58,6 +58,18 @@ export type Professional = {
   type: ProfessionalType;
   city: string;
   premiumExpiresAt?: string;
+  isVerified?: boolean;
+  onlineStatus?: boolean;
+  responseTime?: string;
+  foundedYear?: number;
+  topBadge?: string;
+  clientsServed?: number;
+  popularServices?: string;
+  tags?: string;
+  workingHours?: string;
+  services?: string;
+  coverUri?: string;
+  subcategoryId?: string;
 };
 
 export type ProfessionalRegistration = {
@@ -164,6 +176,7 @@ export const subcategoriesByCategory: Record<string, Subcategory[]> = {
     { id: "oficina",           name: "Oficina",             categoryId: "comercios",             icon: "build",                imageUrl: "https://images.unsplash.com/photo-1530046339160-ce3e530c7d2f?w=400&q=80" },
     { id: "loja-moveis",       name: "Loja de Móveis",      categoryId: "comercios",             icon: "chair",                imageUrl: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&q=80" },
     { id: "loja-celular",      name: "Loja de Celular",     categoryId: "comercios",             icon: "phone-android",        imageUrl: "https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=400&q=80" },
+    { id: "pizzaria",          name: "Pizzaria e Restaurante", categoryId: "comercios",          icon: "local-pizza",          imageUrl: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&q=80" },
   ],
   "mobilidade": [
     { id: "motorista-particular",name:"Motorista Particular",categoryId: "mobilidade",           icon: "directions-car",       imageUrl: "https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=400&q=80" },
@@ -303,6 +316,7 @@ export const services: Service[] = [
   { id: "oficina",             name: "Oficina",              categoryId: "comercios",             image: "https://images.unsplash.com/photo-1530046339160-ce3e530c7d2f?w=400&q=80" },
   { id: "loja-moveis",         name: "Loja de móveis",       categoryId: "comercios",             image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&q=80" },
   { id: "loja-celular",        name: "Loja de celular",      categoryId: "comercios",             image: "https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=400&q=80" },
+  { id: "pizzaria",            name: "Pizzaria e Restaurante", categoryId: "comercios",           image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&q=80" },
 
   // Mobilidade (3)
   { id: "motorista-particular",name: "Motorista particular", categoryId: "mobilidade",            image: "https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=400&q=80" },
@@ -532,6 +546,91 @@ export const professionals: Professional[] = [
     type: "PREMIUM",
     city: "São Paulo",
     premiumExpiresAt: "2025-09-30",
+  },
+  {
+    id: "pizzaria-japa",
+    name: "Pizzaria Japa",
+    category: "Pizzaria e Restaurante",
+    categoryId: "comercios",
+    subcategoryId: "pizzaria",
+    rating: 5.0,
+    reviewCount: 128,
+    neighborhood: "matadouro",
+    distance: "2,9 km",
+    phone: "5511999990022",
+    description: "Na Pizzaria Japa, tradição e criatividade se encontram em pizzas incríveis, feitas com ingredientes selecionados e muito amor! 🍕❤️",
+    serviceArea: "Bragança Paulista",
+    schedule: "Terça a Domingo: 18h às 23h",
+    paymentMethods: "Dinheiro, Cartão, PIX",
+    avatar: "https://images.unsplash.com/photo-1579758629938-03607ccdbaba?w=200&q=80",
+    coverUri: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&q=80",
+    type: "PREMIUM",
+    city: "Bragança Paulista",
+    isVerified: true,
+    onlineStatus: true,
+    responseTime: "30-45 min",
+    foundedYear: 2021,
+    topBadge: "Destaque",
+    clientsServed: 1500,
+    popularServices: "[\"Calabresa\",\"Frango com Catupiry\",\"Portuguesa\"]",
+    tags: "[\"Delivery\",\"Retirada\",\"Aceita WhatsApp\"]",
+    workingHours: "{\"weekday\":\"18:00 às 23:00\",\"saturday\":\"18:00 às 23:30\"}",
+    services: JSON.stringify([
+      {
+        id: "prod-calabresa",
+        name: "Calabresa",
+        description: "Molho de tomate, mussarela, calabresa fatiada e cebola.",
+        price: 45.00,
+        imageUri: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300&q=80",
+        productCategory: "Pizzas Salgadas",
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: "prod-frango-catupiry",
+        name: "Frango com Catupiry",
+        description: "Molho de tomate, mussarela, frango desfiado e catupiry.",
+        price: 50.00,
+        imageUri: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300&q=80",
+        productCategory: "Pizzas Salgadas",
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: "prod-portuguesa",
+        name: "Portuguesa",
+        description: "Molho de tomate, mussarela, presunto, ovos, cebola, pimentão e azeitonas.",
+        price: 48.00,
+        imageUri: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300&q=80",
+        productCategory: "Pizzas Salgadas",
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: "prod-coca-2l",
+        name: "Coca-Cola 2L",
+        description: "Refrigerante Coca-Cola Garrafa 2 Litros.",
+        price: 10.00,
+        imageUri: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=300&q=80",
+        productCategory: "Bebidas",
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: "prod-guarana-2l",
+        name: "Guaraná Antarctica 2L",
+        description: "Refrigerante Guaraná Antarctica Garrafa 2 Litros.",
+        price: 9.00,
+        imageUri: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=300&q=80",
+        productCategory: "Bebidas",
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: "prod-agua",
+        name: "Água Mineral",
+        description: "Água mineral sem gás 500ml.",
+        price: 4.00,
+        imageUri: "https://images.unsplash.com/photo-1608885898957-a599fb18de37?w=300&q=80",
+        productCategory: "Bebidas",
+        createdAt: new Date().toISOString()
+      }
+    ])
   },
 ];
 

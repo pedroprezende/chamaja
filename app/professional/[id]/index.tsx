@@ -237,6 +237,15 @@ export default function ProfessionalDetailScreen() {
   // Type-narrowed alias to prevent TS closure warnings
   const prof = professional;
 
+  const isCommerce = useMemo(() => {
+    if (!prof) return false;
+    return (
+      prof.categoryId === "comercios" ||
+      prof.category === "Comércios" ||
+      prof.category === "comercios"
+    );
+  }, [prof]);
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Floating Header */}
@@ -372,6 +381,21 @@ export default function ProfessionalDetailScreen() {
                 </Text>
               )}
             </View>
+
+            {isCommerce && parseJsonArray(prof.tags).length > 0 && (
+              <View style={styles.commerceTagsRow}>
+                {parseJsonArray(prof.tags).map((tag, idx) => (
+                  <View key={idx} style={[styles.commerceTagBadge, { backgroundColor: colors.primary + "15" }]}>
+                    <MaterialIcons 
+                      name={tag.toLowerCase().includes("delivery") ? "motorcycle" : tag.toLowerCase().includes("retirada") ? "store" : "check"} 
+                      size={13} 
+                      color={colors.primary} 
+                    />
+                    <Text style={[styles.commerceTagText, { color: colors.primary }]}>{tag}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
         </View>
 
@@ -420,6 +444,48 @@ export default function ProfessionalDetailScreen() {
                   <Text style={[styles.chipText, { color: colors.primary }]}>{service}</Text>
                 </View>
               ))}
+            </View>
+          </View>
+        )}
+
+        {/* Menu Highlights (for Commerce) */}
+        {isCommerce && prof.services && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={[styles.sectionTitle, { color: colors.foreground, marginBottom: 0 }]}>Destaques do cardápio</Text>
+              <Pressable onPress={() => router.push(`/professional/${prof.id}/menu` as any)}>
+                <Text style={[styles.sectionHeaderLink, { color: colors.primary }]}>Ver cardápio completo</Text>
+              </Pressable>
+            </View>
+            <View style={{ gap: 10, marginTop: 14 }}>
+              {(() => {
+                let products = [];
+                try {
+                  products = typeof prof.services === "string" ? JSON.parse(prof.services) : (prof.services || []);
+                } catch (e) {
+                  products = [];
+                }
+                return products.slice(0, 3).map((prod: any) => (
+                  <Pressable 
+                    key={prod.id} 
+                    style={[styles.highlightProductCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                    onPress={() => router.push(`/professional/${prof.id}/menu` as any)}
+                  >
+                    {prod.imageUri ? (
+                      <Image source={{ uri: prod.imageUri }} style={styles.highlightProductImage} />
+                    ) : (
+                      <View style={[styles.highlightProductImage, { alignItems: "center", justifyContent: "center", backgroundColor: colors.border + "40" }]}>
+                        <MaterialIcons name="restaurant" size={20} color={colors.muted} />
+                      </View>
+                    )}
+                    <View style={styles.highlightProductInfo}>
+                      <Text style={[styles.highlightProductName, { color: colors.foreground }]} numberOfLines={1}>{prod.name}</Text>
+                      <Text style={[styles.highlightProductDesc, { color: colors.muted }]} numberOfLines={2}>{prod.description}</Text>
+                      <Text style={[styles.highlightProductPrice, { color: colors.primary }]}>R$ {Number(prod.price || 0).toFixed(2)}</Text>
+                    </View>
+                  </Pressable>
+                ));
+              })()}
             </View>
           </View>
         )}
@@ -662,10 +728,12 @@ export default function ProfessionalDetailScreen() {
               { backgroundColor: colors.primary },
               pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
             ]}
-            onPress={handleOpenWhatsApp}
+            onPress={isCommerce ? () => router.push(`/professional/${prof.id}/menu` as any) : handleOpenWhatsApp}
           >
-            <MaterialIcons name="chat" size={22} color="#FFFFFF" />
-            <Text style={styles.whatsappButtonText}>Chamar no WhatsApp</Text>
+            <MaterialIcons name={isCommerce ? "restaurant" : "chat"} size={22} color="#FFFFFF" />
+            <Text style={styles.whatsappButtonText}>
+              {isCommerce ? "Ver cardápio / Fazer pedido" : "Chamar no WhatsApp"}
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -1533,5 +1601,55 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontSize: 14,
     fontWeight: "700",
+  },
+  commerceTagsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: 10,
+    width: "100%",
+  },
+  commerceTagBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  commerceTagText: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  highlightProductCard: {
+    flexDirection: "row",
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 12,
+    gap: 12,
+    alignItems: "center",
+  },
+  highlightProductImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 10,
+  },
+  highlightProductInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  highlightProductName: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  highlightProductDesc: {
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  highlightProductPrice: {
+    fontSize: 13,
+    fontWeight: "700",
+    marginTop: 2,
   },
 });
