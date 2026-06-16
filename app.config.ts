@@ -3,7 +3,7 @@ import "./scripts/load-env.js";
 import type { ExpoConfig } from "expo/config";
 
 // Bundle ID para produção nas lojas
-const rawBundleId = "br.com.chamaja.app";
+const rawBundleId = "br.com.xamaja.app";
 const bundleId = rawBundleId;
 const schemeFromBundleId = "chamaja";
 
