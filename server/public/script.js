@@ -13,8 +13,8 @@ document.addEventListener("DOMContentLoaded", () => {
       mobileNav.classList.remove("open");
     });
 
-    // Close mobile menu when a link is clicked
-    const mobileLinks = mobileNav.querySelectorAll(".mobile-link");
+    // Close mobile menu when a link or button is clicked
+    const mobileLinks = mobileNav.querySelectorAll(".mobile-link, .btn-secondary-drawer, .btn-primary-drawer");
     mobileLinks.forEach((link) => {
       link.addEventListener("click", () => {
         mobileNav.classList.remove("open");
@@ -135,11 +135,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (isLoading) {
       btnSubmit.disabled = true;
       formLoader.style.display = "inline-block";
-      btnSubmit.querySelector("span").textContent = "Processando Cadastro...";
+      btnSubmit.querySelector("span").textContent = "Enviando...";
     } else {
       btnSubmit.disabled = false;
       formLoader.style.display = "none";
-      btnSubmit.querySelector("span").textContent = "Cadastrar Meu Serviço";
+      btnSubmit.querySelector("span").textContent = "Enviar Formulário";
     }
   }
 });
