@@ -22,16 +22,16 @@
   <header class="header">
     <div class="container header-container">
       <a href="/" class="logo">
-        <span class="logo-accent">Xama</span>Já
+        <img src="/assets/images/logo-xamaja.png" alt="XamaJá Logo" class="logo-img">
       </a>
       
       <nav class="nav">
-        <a href="#como-funciona" class="nav-link">Como Funciona</a>
-        <a href="#beneficios" class="nav-link">Benefícios</a>
-        <a href="/app" class="nav-link btn-secondary-sm" style="display: flex; align-items: center; gap: 6px;">
-          <i data-lucide="layout"></i> Acessar App Web
-        </a>
-        <a href="#cadastro" class="nav-link btn-secondary-sm">Seja um Prestador</a>
+        <a href="/" class="nav-link active">Início</a>
+        <a href="#como-funciona" class="nav-link">Como funciona</a>
+        <a href="#beneficios" class="nav-link">Vantagens</a>
+        <a href="#depoimentos" class="nav-link">Depoimentos</a>
+        <a href="#blog" class="nav-link">Blog</a>
+        <a href="/app" class="btn-entrar">Entrar</a>
       </nav>
       
       <div class="mobile-menu-btn" id="mobile-menu-btn">
@@ -45,40 +45,87 @@
     <div class="mobile-nav-close" id="mobile-nav-close">
       <i data-lucide="x"></i>
     </div>
-    <a href="#como-funciona" class="mobile-link">Como Funciona</a>
-    <a href="#beneficios" class="mobile-link">Benefícios</a>
+    <a href="/" class="mobile-link">Início</a>
+    <a href="#como-funciona" class="mobile-link">Como funciona</a>
+    <a href="#beneficios" class="mobile-link">Vantagens</a>
     <a href="/app" class="mobile-link btn-secondary" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin: 10px 0;">
-      <i data-lucide="layout"></i> Acessar App Web
+      <i data-lucide="layout"></i> Entrar no App
     </a>
-    <a href="#cadastro" class="mobile-link btn-secondary">Seja um Prestador</a>
+    <a href="#cadastro" class="mobile-link btn-secondary">Cadastre-se</a>
   </div>
 
   <!-- Hero Section -->
   <section class="hero">
     <div class="container hero-container">
       <div class="hero-content">
-        <div class="badge-new">
-          <span class="badge-icon">🚀</span> Novidade na sua região
-        </div>
-        <h1 class="hero-title">O que você precisa, <span class="text-gradient">perto de você.</span></h1>
-        <p class="hero-subtitle">Encontre eletricistas, encanadores, pintores, diaristas, mecânicos e dezenas de outros profissionais locais. Fale direto pelo WhatsApp, sem taxas ou intermediários!</p>
+        <h1 class="hero-title">Aumente<br><span class="text-gradient">seus ganhos</span><br>no XamaJá</h1>
+        <p class="hero-subtitle">Conecte-se com clientes da sua região e cresça seu negócio com praticidade e segurança.</p>
         
-        <div class="hero-actions">
-          <a href="/app" class="btn-primary" style="display: flex; align-items: center; gap: 8px;">
-            <i data-lucide="layout"></i> Entrar no App Web
+        <div class="hero-actions-vertical">
+          <a href="#cadastro" class="btn-primary-mock">
+            Cadastre-se agora
           </a>
-          <a href="#" class="btn-outline" style="display: flex; align-items: center; gap: 8px;">
-            <i data-lucide="play"></i> Google Play (Em breve)
-          </a>
+          <span class="hero-subtext">
+            <span class="check-icon">✓</span> É rápido, fácil e gratuito!
+          </span>
         </div>
       </div>
       
       <div class="hero-image-wrapper">
         <div class="glowing-circle"></div>
-        <img src="/assets/images/play_store_icon.png" alt="Mascote XamaJá" class="hero-mascot">
+        <img src="/assets/images/mascote-xara.png" alt="Mascote XamaJá" class="hero-mascot">
+        
+        <!-- Floating Neon Icons -->
+        <img src="/assets/images/icon_wrench.png" class="floating-icon icon-wrench" alt="Wrench">
+        <img src="/assets/images/icon_store.png" class="floating-icon icon-store" alt="Store">
+        <img src="/assets/images/icon_pin1.png" class="floating-icon icon-pin1" alt="Pin">
+        <img src="/assets/images/icon_pin2.png" class="floating-icon icon-pin2" alt="Pin">
+        <img src="/assets/images/icon_user.png" class="floating-icon icon-user" alt="User">
+        <img src="/assets/images/icon_lightning.png" class="floating-icon icon-lightning" alt="Lightning">
       </div>
     </div>
   </section>
+
+  <!-- Hero Features Bar -->
+  <div class="hero-features-bar">
+    <div class="container features-bar-container">
+      <div class="feature-bar-item">
+        <img src="/assets/images/icon_user.png" class="feature-bar-icon" alt="User icon">
+        <div class="feature-bar-text">
+          <span class="feature-bar-title">Mais clientes</span>
+          <span class="feature-bar-desc">da sua região</span>
+        </div>
+      </div>
+      
+      <div class="feature-bar-item">
+        <img src="/assets/images/icon_lightning.png" class="feature-bar-icon" alt="Lightning icon">
+        <div class="feature-bar-text">
+          <span class="feature-bar-title">Serviços</span>
+          <span class="feature-bar-desc">diversificados</span>
+        </div>
+      </div>
+      
+      <div class="feature-bar-item">
+        <div class="neon-icon-box">
+          <i data-lucide="shield"></i>
+        </div>
+        <div class="feature-bar-text">
+          <span class="feature-bar-title">Pagamentos</span>
+          <span class="feature-bar-desc">seguros</span>
+        </div>
+      </div>
+      
+      <div class="feature-bar-item">
+        <div class="neon-icon-box">
+          <i data-lucide="trending-up"></i>
+        </div>
+        <div class="feature-bar-text">
+          <span class="feature-bar-title">Cresça seu</span>
+          <span class="feature-bar-desc">negócio</span>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- How It Works Section -->
   <section class="section" id="como-funciona">
