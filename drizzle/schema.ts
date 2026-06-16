@@ -130,6 +130,7 @@ export const providers = pgTable("providers", {
   workingHours: text("working_hours"),
   priceLevel: integer("price_level").default(2).notNull(),
   isActive: boolean("is_active").notNull().default(true),
+  status: varchar("status", { length: 50 }).default("ativo"),
   displayOrder: integer("display_order").notNull().default(0),
   destaque: boolean("destaque").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),

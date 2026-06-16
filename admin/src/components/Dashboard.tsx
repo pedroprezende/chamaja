@@ -296,7 +296,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
   
   // Advertiser filter states
   const [filterAdvertiserType, setFilterAdvertiserType] = useState<"all" | "prestador" | "comércio">("all");
-  const [filterAdvertiserStatus, setFilterAdvertiserStatus] = useState<"all" | "ativos" | "suspensos" | "vencidos" | "premium">("all");
+  const [filterAdvertiserStatus, setFilterAdvertiserStatus] = useState<"all" | "ativos" | "pendentes" | "suspensos" | "vencidos" | "premium">("all");
 
   // Report filter states
   const [filterReportStatus, setFilterReportStatus] = useState<"all" | "pendente" | "resolvido">("all");
@@ -1389,10 +1389,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
     // Type filter
     const matchesType = filterAdvertiserType === "all" || type === filterAdvertiserType;
 
-    // Status filter (ativos, suspensos, vencidos, premium)
+    // Status filter (ativos, pendentes, suspensos, vencidos, premium)
     let matchesStatus = true;
     if (filterAdvertiserStatus === "ativos") {
       matchesStatus = p.is_active === true && status === "ativo";
+    } else if (filterAdvertiserStatus === "pendentes") {
+      matchesStatus = status === "pendente";
     } else if (filterAdvertiserStatus === "suspensos") {
       matchesStatus = status === "suspenso";
     } else if (filterAdvertiserStatus === "vencidos") {
@@ -1928,8 +1930,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
                             </td>
                             <td>
                               <div style={{ display: "flex", gap: "0.25rem", flexDirection: "column", alignItems: "flex-start" }}>
-                                <span className={`badge ${p.is_active ? "badge-active" : "badge-inactive"}`}>
-                                  {p.is_active ? "Ativo" : "Inativo"}
+                                <span 
+                                  className={`badge ${
+                                    p.is_active && status === "ativo" ? "badge-active" : 
+                                    status === "pendente" ? "badge-inactive" : "badge-inactive"
+                                  }`}
+                                  style={{
+                                    backgroundColor: 
+                                      status === "suspenso" ? "rgba(245, 158, 11, 0.15)" : 
+                                      status === "pendente" ? "rgba(59, 130, 246, 0.15)" : undefined,
+                                    color: 
+                                      status === "suspenso" ? "var(--accent-orange)" : 
+                                      status === "pendente" ? "var(--accent-blue)" : undefined,
+                                    borderColor: 
+                                      status === "suspenso" ? "rgba(245, 158, 11, 0.2)" : 
+                                      status === "pendente" ? "rgba(59, 130, 246, 0.2)" : undefined
+                                  }}
+                                >
+                                  {status === "suspenso" ? "SUSPENSO" : status === "pendente" ? "PENDENTE" : (p.is_active ? "ATIVO" : "INATIVO")}
                                 </span>
                                 {isPremium && !hasExpired ? (
                                   <span className="badge badge-premium" style={{ display: "inline-flex", gap: "4px" }}>
@@ -2114,6 +2132,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
                 >
                   <option value="all">Todos os Status</option>
                   <option value="ativos">Ativos</option>
+                  <option value="pendentes">Pendentes</option>
                   <option value="suspensos">Suspensos</option>
                   <option value="vencidos">Planos Vencidos</option>
                   <option value="premium">Planos Premium Ativos</option>
@@ -2174,15 +2193,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
                           <td>
                             <span 
                               className={`badge ${
-                                p.is_active && status === "ativo" ? "badge-active" : "badge-inactive"
+                                p.is_active && status === "ativo" ? "badge-active" : 
+                                status === "pendente" ? "badge-inactive" : "badge-inactive"
                               }`}
                               style={{
-                                backgroundColor: status === "suspenso" ? "rgba(245, 158, 11, 0.15)" : undefined,
-                                color: status === "suspenso" ? "var(--accent-orange)" : undefined,
-                                borderColor: status === "suspenso" ? "rgba(245, 158, 11, 0.2)" : undefined
+                                backgroundColor: 
+                                  status === "suspenso" ? "rgba(245, 158, 11, 0.15)" : 
+                                  status === "pendente" ? "rgba(59, 130, 246, 0.15)" : undefined,
+                                color: 
+                                  status === "suspenso" ? "var(--accent-orange)" : 
+                                  status === "pendente" ? "var(--accent-blue)" : undefined,
+                                borderColor: 
+                                  status === "suspenso" ? "rgba(245, 158, 11, 0.2)" : 
+                                  status === "pendente" ? "rgba(59, 130, 246, 0.2)" : undefined
                               }}
                             >
-                              {status === "suspenso" ? "SUSPENSO" : (p.is_active ? "ATIVO" : "INATIVO")}
+                              {status === "suspenso" ? "SUSPENSO" : status === "pendente" ? "PENDENTE" : (p.is_active ? "ATIVO" : "INATIVO")}
                             </span>
                           </td>
                         </tr>
@@ -3338,14 +3364,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
                   <div className="modal-info-label">Status do Anúncio</div>
                   <div className="modal-info-value">
                     <span 
-                      className={`badge ${selectedAdvertiser.is_active && (selectedAdvertiser.status || 'ativo') === 'ativo' ? 'badge-active' : 'badge-inactive'}`}
+                      className={`badge ${
+                        selectedAdvertiser.is_active && (selectedAdvertiser.status || 'ativo') === 'ativo' ? 'badge-active' : 
+                        (selectedAdvertiser.status || 'ativo') === 'pendente' ? 'badge-inactive' : 'badge-inactive'
+                      }`}
                       style={{
-                        backgroundColor: (selectedAdvertiser.status || "ativo") === "suspenso" ? "rgba(245, 158, 11, 0.15)" : undefined,
-                        color: (selectedAdvertiser.status || "ativo") === "suspenso" ? "var(--accent-orange)" : undefined,
-                        borderColor: (selectedAdvertiser.status || "ativo") === "suspenso" ? "rgba(245, 158, 11, 0.2)" : undefined
+                        backgroundColor: 
+                          (selectedAdvertiser.status || "ativo") === "suspenso" ? "rgba(245, 158, 11, 0.15)" : 
+                          (selectedAdvertiser.status || "ativo") === "pendente" ? "rgba(59, 130, 246, 0.15)" : undefined,
+                        color: 
+                          (selectedAdvertiser.status || "ativo") === "suspenso" ? "var(--accent-orange)" : 
+                          (selectedAdvertiser.status || "ativo") === "pendente" ? "var(--accent-blue)" : undefined,
+                        borderColor: 
+                          (selectedAdvertiser.status || "ativo") === "suspenso" ? "rgba(245, 158, 11, 0.2)" : 
+                          (selectedAdvertiser.status || "ativo") === "pendente" ? "rgba(59, 130, 246, 0.2)" : undefined
                       }}
                     >
-                      {(selectedAdvertiser.status || "ativo") === "suspenso" ? "SUSPENSO" : (selectedAdvertiser.is_active ? "ATIVO" : "INATIVO")}
+                      {(selectedAdvertiser.status || "ativo") === "suspenso" ? "SUSPENSO" : 
+                       (selectedAdvertiser.status || "ativo") === "pendente" ? "PENDENTE" : 
+                       (selectedAdvertiser.is_active ? "ATIVO" : "INATIVO")}
                     </span>
                   </div>
                 </div>
