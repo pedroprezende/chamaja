@@ -22,6 +22,24 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Toggle other category input
+  const categoryIdSelect = document.getElementById("categoryId");
+  const otherCategoryGroup = document.getElementById("other-category-group");
+  const otherCategoryInput = document.getElementById("otherCategory");
+
+  if (categoryIdSelect && otherCategoryGroup && otherCategoryInput) {
+    categoryIdSelect.addEventListener("change", (e) => {
+      if (e.target.value === "outro") {
+        otherCategoryGroup.style.display = "block";
+        otherCategoryInput.required = true;
+      } else {
+        otherCategoryGroup.style.display = "none";
+        otherCategoryInput.required = false;
+        otherCategoryInput.value = "";
+      }
+    });
+  }
+
   // Provider Registration Form Handling
   const providerForm = document.getElementById("provider-form");
   const formSuccess = document.getElementById("form-success");
@@ -52,6 +70,15 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
+      let otherCategory = "";
+      if (categoryId === "outro") {
+        otherCategory = otherCategoryInput.value.trim();
+        if (!otherCategory) {
+          showError("Por favor, especifique a sua categoria.");
+          return;
+        }
+      }
+
       // Show loader and disable submit button
       setLoading(true);
 
@@ -66,6 +93,7 @@ document.addEventListener("DOMContentLoaded", () => {
             email,
             phone,
             categoryId,
+            otherCategory,
             city,
             neighborhood,
             description,
@@ -78,6 +106,9 @@ document.addEventListener("DOMContentLoaded", () => {
           // Success
           formSuccess.style.display = "flex";
           providerForm.reset();
+          if (otherCategoryGroup) {
+            otherCategoryGroup.style.display = "none";
+          }
           
           // Smooth scroll to success message
           formSuccess.scrollIntoView({ behavior: "smooth", block: "center" });

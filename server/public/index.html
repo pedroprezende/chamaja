@@ -222,8 +222,8 @@
   <section class="section" id="cadastro">
     <div class="container form-container">
       <div class="form-header">
-        <h2 class="section-title">Seja um Prestador no XamaJá</h2>
-        <p class="section-subtitle">Preencha o formulário abaixo para cadastrar o seu serviço. Seu perfil ficará disponível imediatamente para milhares de clientes locais no aplicativo!</p>
+        <h2 class="section-title">Cadastre seu Negócio ou Serviço no XamaJá</h2>
+        <p class="section-subtitle">Preencha o formulário abaixo para cadastrar seu comércio, loja ou serviço. Seu perfil ficará disponível imediatamente para milhares de clientes locais no aplicativo!</p>
       </div>
       
       <div class="card-form">
@@ -253,8 +253,22 @@
                 <option value="servicos-domesticos">Serviços Domésticos</option>
                 <option value="servicos-externos">Serviços Externos</option>
                 <option value="automotivo">Automotivo</option>
+                <option value="beleza-estetica">Beleza e Estética</option>
+                <option value="servicos-profissionais">Serviços Profissionais</option>
+                <option value="saude">Saúde</option>
+                <option value="eventos">Eventos</option>
+                <option value="logistica">Logística</option>
+                <option value="educacao">Educação</option>
+                <option value="comercios">Comércios / Lojas</option>
+                <option value="mobilidade">Mobilidade</option>
+                <option value="outro">Outro (Especificar)...</option>
               </select>
             </div>
+          </div>
+
+          <div class="form-group" id="other-category-group" style="display: none;">
+            <label for="otherCategory">Especifique a Categoria *</label>
+            <input type="text" id="otherCategory" name="otherCategory" placeholder="Ex: Pet Shop, Consultoria, etc.">
           </div>
           
           <div class="form-row">
@@ -269,15 +283,15 @@
           </div>
           
           <div class="form-group">
-            <label for="description">Descrição dos seus serviços *</label>
-            <textarea id="description" name="description" rows="4" placeholder="Descreva brevemente o seu serviço, sua experiência e diferenciais..." required></textarea>
+            <label for="description">Descrição do seu negócio, produtos ou serviços *</label>
+            <textarea id="description" name="description" rows="4" placeholder="Descreva brevemente o seu comércio, loja, os produtos que vende ou serviços que oferece..." required></textarea>
           </div>
           
           <!-- Mensagens de Alerta -->
           <div id="form-success" class="alert alert-success" style="display: none;">
             <i data-lucide="check-circle"></i>
             <div>
-              <strong>Cadastro realizado com sucesso!</strong> Seu perfil de prestador foi criado e já está disponível no app do XamaJá!
+              <strong>Cadastro realizado com sucesso!</strong> Seu perfil foi criado e já está disponível no app do XamaJá!
             </div>
           </div>
           
@@ -287,7 +301,7 @@
           </div>
           
           <button type="submit" class="btn-submit" id="btn-submit">
-            <span>Cadastrar Meu Serviço</span>
+            <span>Cadastrar Meu Negócio / Serviço</span>
             <div class="loader" id="form-loader" style="display: none;"></div>
           </button>
         </form>

@@ -120,7 +120,7 @@ async function startServer() {
   // Rota de Cadastro de Prestador via Web
   app.post("/api/web-register-provider", async (req, res) => {
     try {
-      const { name, email, phone, categoryId, city, neighborhood, description } = req.body;
+      const { name, email, phone, categoryId, otherCategory, city, neighborhood, description } = req.body;
 
       if (!name || !email || !phone || !categoryId || !city || !neighborhood || !description) {
         return res.status(400).json({ success: false, error: "Preencha todos os campos obrigatórios." });
@@ -131,16 +131,26 @@ async function startServer() {
         "assistencia-tecnica": "Assistência Técnica",
         "servicos-domesticos": "Serviços Domésticos",
         "servicos-externos": "Serviços Externos",
-        "automotivo": "Automotivo"
+        "automotivo": "Automotivo",
+        "beleza-estetica": "Beleza e Estética",
+        "servicos-profissionais": "Serviços Profissionais",
+        "saude": "Saúde",
+        "eventos": "Eventos",
+        "logistica": "Logística",
+        "educacao": "Educação",
+        "comercios": "Comércios",
+        "mobilidade": "Mobilidade",
+        "outro": "Outro"
       };
 
+      const finalCategory = categoryId === "outro" ? (otherCategory || "Outro") : (CATEGORY_MAP[categoryId] || "");
       const providerId = `prov_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
       await db.createProvider({
         id: providerId,
         userId: null,
         name,
-        category: CATEGORY_MAP[categoryId] || "",
+        category: finalCategory,
         categoryId,
         city,
         neighborhood,
@@ -156,7 +166,7 @@ async function startServer() {
         onlineStatus: false,
       });
 
-      console.log(`[Web API] Provider registered successfully: ${name} (${providerId})`);
+      console.log(`[Web API] Provider registered successfully: ${name} (${providerId}) in category: ${finalCategory}`);
       res.json({ success: true });
     } catch (error: any) {
       console.error("[Web API] Failed to register provider:", error);
