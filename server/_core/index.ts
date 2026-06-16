@@ -105,17 +105,16 @@ async function startServer() {
   );
 
   // Servir website institucional
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
+  const rootDir = process.cwd();
   
-  const publicPath = path.resolve(__dirname, "..", "public");
+  const publicPath = path.resolve(rootDir, "server", "public");
   app.use(express.static(publicPath));
 
-  const projectAssetsPath = path.resolve(__dirname, "..", "..", "assets");
+  const projectAssetsPath = path.resolve(rootDir, "assets");
   app.use("/assets", express.static(projectAssetsPath));
 
   // Servir Expo Web do aplicativo
-  const webDistPath = path.resolve(__dirname, "web");
+  const webDistPath = path.resolve(rootDir, "dist", "web");
   app.use("/app", express.static(webDistPath));
 
   // Rota de Cadastro de Prestador via Web
