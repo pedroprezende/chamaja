@@ -125,91 +125,365 @@
     </div>
   </div>
 
-  <!-- How It Works Section -->
+  <!-- Section 1: Como funciona -->
   <section class="section" id="como-funciona">
     <div class="container">
       <div class="section-header">
-        <h2 class="section-title">Como o XamaJá Funciona?</h2>
-        <p class="section-subtitle">Conectar clientes a profissionais locais nunca foi tão fácil e transparente.</p>
+        <h2 class="section-title">Como <span class="text-gradient">funciona</span></h2>
+        <p class="section-subtitle">É simples, rápido e funciona!</p>
       </div>
       
-      <div class="grid-3">
-        <div class="card-step">
-          <div class="step-num">1</div>
-          <div class="step-icon-wrapper">
-            <i data-lucide="map-pin"></i>
+      <div class="steps-flow-container">
+        <!-- Step 1 -->
+        <div class="step-flow-item">
+          <div class="step-phone-wrapper">
+            <span class="step-flow-number">1</span>
+            <div class="mockup-phone">
+              <div class="mockup-screen screen-step1">
+                <div class="step1-header">
+                  <div class="step1-search-box">
+                    <i data-lucide="search" class="search-icon"></i>
+                    <span>Buscar Eletricista...</span>
+                  </div>
+                  <div class="step1-menu-btn">
+                    <i data-lucide="menu"></i>
+                  </div>
+                </div>
+                <div class="step1-body">
+                  <div class="dummy-card-placeholder"></div>
+                  <div class="dummy-card-placeholder"></div>
+                </div>
+              </div>
+            </div>
           </div>
-          <h3 class="step-title">Veja quem está perto</h3>
-          <p class="step-desc">Selecione a categoria de serviço e encontre prestadores de serviço e comércios no seu bairro ou cidade.</p>
+          <div class="step-flow-info">
+            <h3 class="step-flow-title">Você <span class="text-gradient">busca</span></h3>
+            <p class="step-flow-desc">Encontre o serviço ou comércio que precisa perto de você.</p>
+          </div>
         </div>
-        
-        <div class="card-step">
-          <div class="step-num">2</div>
-          <div class="step-icon-wrapper">
-            <i data-lucide="star"></i>
+
+        <div class="step-flow-arrow"><i data-lucide="arrow-right"></i></div>
+
+        <!-- Step 2 -->
+        <div class="step-flow-item">
+          <div class="step-phone-wrapper">
+            <span class="step-flow-number">2</span>
+            <div class="mockup-phone">
+              <div class="mockup-screen screen-step2">
+                <div class="step2-card">
+                  <div class="step2-avatar">
+                    <i data-lucide="user"></i>
+                  </div>
+                  <div class="step2-details">
+                    <span class="step2-name">Eletricista João</span>
+                    <div class="step2-rating">
+                      <span class="star-rating">4.9 ★★★★★</span>
+                    </div>
+                    <span class="step2-distance">📍 1,2 km de você</span>
+                  </div>
+                  <div class="step2-logo-badge">
+                    <span class="badge-text">XamaJá</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <h3 class="step-title">Avalie o portfólio</h3>
-          <p class="step-desc">Veja fotos dos serviços anteriores, confira as avaliações e comentários reais de outros clientes.</p>
+          <div class="step-flow-info">
+            <h3 class="step-flow-title">Encontre e <span class="text-gradient">escolha</span></h3>
+            <p class="step-flow-desc">Veja avaliações, localização e escolha o melhor para você.</p>
+          </div>
         </div>
-        
-        <div class="card-step">
-          <div class="step-num">3</div>
-          <div class="step-icon-wrapper">
-            <i data-lucide="phone-call"></i>
+
+        <div class="step-flow-arrow"><i data-lucide="arrow-right"></i></div>
+
+        <!-- Step 3 -->
+        <div class="step-flow-item">
+          <div class="step-phone-wrapper">
+            <span class="step-flow-number">3</span>
+            <div class="mockup-phone">
+              <div class="mockup-screen screen-step3">
+                <div class="step3-whatsapp-icon-wrapper">
+                  <div class="whatsapp-circle-pulse"></div>
+                  <img src="/assets/images/icon_lightning.png" class="step3-mini-icon" alt="Lightning">
+                  <svg class="whatsapp-svg" viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
+                    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.508 1.45 5.41 1.451 5.378 0 9.754-4.373 9.757-9.752.002-2.605-1.01-5.056-2.85-6.899-1.84-1.842-4.29-2.855-6.896-2.856-5.38 0-9.757 4.376-9.76 9.755-.001 1.887.495 3.73 1.438 5.334l-.995 3.639 3.734-.979zm11.387-7.854c-.3-.15-1.772-.875-2.046-.975-.275-.1-.475-.15-.675.15-.2.3-.775.975-.95 1.175-.175.2-.35.225-.65.075-.3-.15-1.267-.467-2.413-1.488-.892-.796-1.494-1.78-1.67-2.08-.175-.3-.018-.462.13-.61.135-.133.3-.35.45-.525.15-.175.2-.3.3-.5.1-.2.05-.375-.025-.525-.075-.15-.675-1.625-.925-2.225-.244-.588-.492-.51-.675-.52-.172-.007-.37-.01-.568-.01-.2 0-.525.075-.8.375-.275.3-1.05 1.025-1.05 2.5s1.075 2.9 1.225 3.1c.15.2 2.11 3.22 5.11 4.52 1.433.62 2.244.75 3.037.63.882-.134 2.72-.11 2.92-.625.2-.515.2-.955.14-1.04-.06-.088-.22-.138-.52-.288z"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
           </div>
-          <h3 class="step-title">Xame no WhatsApp</h3>
-          <p class="step-desc">Abra a conversa direto no WhatsApp do profissional. Sem comissão sobre o serviço e sem intermediários.</p>
+          <div class="step-flow-info">
+            <h3 class="step-flow-title">Fale direto <span class="text-gradient">no WhatsApp</span></h3>
+            <p class="step-flow-desc">Chame no WhatsApp e resolva tudo de forma rápida.</p>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Benefits Section -->
-  <section class="section section-dark" id="beneficios">
-    <div class="container">
-      <div class="section-header">
-        <h2 class="section-title">Por que anunciar no XamaJá?</h2>
-        <p class="section-subtitle">Para prestadores de serviços que querem aumentar o faturamento e encontrar mais clientes locais.</p>
+  <!-- Section 2: Para prestadores de serviços -->
+  <section class="section section-dark" id="para-prestadores">
+    <div class="container grid-2-align-center">
+      <div class="benefits-text-column">
+        <h2 class="section-title text-left">Para <span class="text-gradient">prestadores</span> de serviços</h2>
+        <p class="section-subtitle text-left margin-bottom-32">Mais visibilidade. Mais clientes. Mais ganhos.</p>
+        
+        <ul class="benefits-bullets-list">
+          <li>
+            <div class="bullet-icon-check"><i data-lucide="check"></i></div>
+            <span>Receba clientes perto de você</span>
+          </li>
+          <li>
+            <div class="bullet-icon-check"><i data-lucide="check"></i></div>
+            <span>Destaque seu perfil e serviços</span>
+          </li>
+          <li>
+            <div class="bullet-icon-check"><i data-lucide="check"></i></div>
+            <span>Seja encontrado mais rápido</span>
+          </li>
+          <li>
+            <div class="bullet-icon-check"><i data-lucide="check"></i></div>
+            <span>Aumente seus ganhos todos os dias</span>
+          </li>
+        </ul>
+        
+        <a href="#cadastro" class="btn-primary-mock margin-top-24">Quero ser encontrado</a>
       </div>
       
-      <div class="grid-2">
-        <div class="benefit-item">
-          <div class="benefit-icon">
-            <i data-lucide="dollar-sign"></i>
+      <div class="benefits-image-column">
+        <div class="glowing-backdrop-green"></div>
+        <div class="mockup-showcase-container">
+          <!-- Phone Mockup João Mendes -->
+          <div class="mockup-phone phone-overlay-left">
+            <div class="mockup-screen screen-provider-detail">
+              <div class="provider-detail-header">
+                <div class="provider-detail-avatar">
+                  <i data-lucide="user"></i>
+                </div>
+                <h4 class="provider-detail-name">João Mendes</h4>
+                <span class="provider-detail-cat">Encanador</span>
+              </div>
+              <div class="provider-detail-body">
+                <div class="detail-row"><span class="detail-label">⭐ 4.9 (128 avaliações)</span></div>
+                <div class="detail-row"><span class="detail-label">📍 2,1 km de você</span></div>
+                <div class="detail-badge-active"><span class="pulse-dot"></span> Disponível agora</div>
+                <button class="btn-detail-whatsapp">
+                  <i data-lucide="message-square"></i> Chamar no WhatsApp
+                </button>
+              </div>
+            </div>
           </div>
-          <div>
-            <h3 class="benefit-title">Zero Comissão</h3>
-            <p class="benefit-desc">Todo o valor combinado com o cliente é 100% seu! Nós não cobramos porcentagem por serviço fechado.</p>
+          <!-- Worker Photo overlay -->
+          <img src="/assets/images/worker_mockup.png" class="worker-image-overlay" alt="Prestador de Serviço">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 3: Para comércios locais -->
+  <section class="section" id="para-comercios">
+    <div class="container grid-2-align-center reverse-mobile">
+      <div class="benefits-image-column">
+        <div class="glowing-backdrop-green"></div>
+        <div class="mockup-showcase-container">
+          <!-- Pizza image overlay -->
+          <img src="/assets/images/pizza_mockup.png" class="pizza-image-overlay" alt="Pizza Deliciosa">
+          
+          <!-- Phone Mockup Pizzaria Japa -->
+          <div class="mockup-phone phone-overlay-right">
+            <div class="mockup-screen screen-store-detail">
+              <div class="store-detail-header">
+                <h4 class="store-detail-name">Pizzaria Japa</h4>
+                <div class="store-detail-status">
+                  <span class="status-open">● Aberto</span>
+                  <span class="status-time">30-45 min</span>
+                </div>
+                <span class="store-detail-dist">📍 5 km de você</span>
+              </div>
+              
+              <div class="store-tabs">
+                <span class="store-tab active">Cardápio</span>
+                <span class="store-tab">Avaliações</span>
+                <span class="store-tab">Info</span>
+              </div>
+              
+              <div class="store-body">
+                <span class="store-section-title">Pizzas Salgadas</span>
+                <div class="store-item">
+                  <div class="store-item-details">
+                    <span class="store-item-name">Calabresa</span>
+                    <span class="store-item-desc">Molho, mussarela, calabresa e cebola</span>
+                    <span class="store-item-price">R$ 45,00</span>
+                  </div>
+                  <div class="store-item-add"><i data-lucide="plus"></i></div>
+                </div>
+                <div class="store-item">
+                  <div class="store-item-details">
+                    <span class="store-item-name">Frango com Catupiry</span>
+                    <span class="store-item-desc">Molho, frango desfiado e catupiry</span>
+                    <span class="store-item-price">R$ 50,00</span>
+                  </div>
+                  <div class="store-item-add"><i data-lucide="plus"></i></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Floating Pedido Overlay -->
+          <div class="pedido-floating-card">
+            <span class="pedido-title">Seu pedido</span>
+            <div class="pedido-item">
+              <span>1x Calabresa</span>
+              <span class="pedido-price">R$ 45,00</span>
+            </div>
+            <div class="pedido-item">
+              <span>1x Coca-Cola 2L</span>
+              <span class="pedido-price">R$ 10,00</span>
+            </div>
+            <div class="pedido-total">
+              <span>Total: R$ 55,00</span>
+            </div>
+            <button class="btn-pedido-whatsapp">
+              <i data-lucide="message-square"></i> Enviar pedido pelo WhatsApp
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="benefits-text-column">
+        <h2 class="section-title text-left">Para <span class="text-gradient">comércios</span> locais</h2>
+        <p class="section-subtitle text-left margin-bottom-32">Seu negócio na palma da mão do cliente.</p>
+        
+        <ul class="benefits-bullets-list">
+          <li>
+            <div class="bullet-icon-check"><i data-lucide="check"></i></div>
+            <span>Divulgue seu cardápio ou produtos</span>
+          </li>
+          <li>
+            <div class="bullet-icon-check"><i data-lucide="check"></i></div>
+            <span>Receba pedidos direto no WhatsApp</span>
+          </li>
+          <li>
+            <div class="bullet-icon-check"><i data-lucide="check"></i></div>
+            <span>Mais pedidos, mais vendas</span>
+          </li>
+          <li>
+            <div class="bullet-icon-check"><i data-lucide="check"></i></div>
+            <span>Sem taxas por pedido</span>
+          </li>
+        </ul>
+        
+        <a href="#cadastro" class="btn-primary-mock margin-top-24">Quero meu comércio no XamaJá</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 4: O app na prática -->
+  <section class="section section-dark" id="app-na-pratica">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">O app na <span class="text-gradient">prática</span></h2>
+        <p class="section-subtitle">Tudo que você precisa, em um só lugar.</p>
+      </div>
+      
+      <div class="pratica-grid">
+        <!-- Screen 1: Map -->
+        <div class="pratica-item">
+          <div class="mockup-phone">
+            <div class="mockup-screen screen-pratica-map">
+              <div class="map-search-bar">
+                <i data-lucide="search"></i>
+                <span>Encontrar...</span>
+              </div>
+              <div class="map-view">
+                <div class="map-pin pin-1"><i data-lucide="map-pin"></i></div>
+                <div class="map-pin pin-2"><i data-lucide="map-pin"></i></div>
+                <div class="map-pin pin-3"><i data-lucide="map-pin"></i></div>
+                <div class="map-pin pin-4"><i data-lucide="map-pin"></i></div>
+              </div>
+            </div>
+          </div>
+          <div class="pratica-info">
+            <h4 class="pratica-title">Encontre perto de você</h4>
+            <p class="pratica-desc">Veja prestadores e comércios no mapa da sua região.</p>
           </div>
         </div>
         
-        <div class="benefit-item">
-          <div class="benefit-icon">
-            <i data-lucide="message-square"></i>
+        <!-- Screen 2: Categories -->
+        <div class="pratica-item">
+          <div class="mockup-phone">
+            <div class="mockup-screen screen-pratica-categories">
+              <div class="pratica-header">Categorias</div>
+              <div class="categories-grid-mini">
+                <div class="cat-box-mini"><i data-lucide="wrench"></i></div>
+                <div class="cat-box-mini"><i data-lucide="shopping-bag"></i></div>
+                <div class="cat-box-mini"><i data-lucide="car"></i></div>
+                <div class="cat-box-mini"><i data-lucide="scissors"></i></div>
+                <div class="cat-box-mini"><i data-lucide="utensils"></i></div>
+                <div class="cat-box-mini"><i data-lucide="stethoscope"></i></div>
+              </div>
+            </div>
           </div>
-          <div>
-            <h3 class="benefit-title">Contato Direto e Rápido</h3>
-            <p class="benefit-desc">Receba solicitações e negocie direto no seu WhatsApp comercial, sem demora e sem complicação.</p>
+          <div class="pratica-info">
+            <h4 class="pratica-title">Categorias</h4>
+            <p class="pratica-desc">Serviços, comércios, delivery e muito mais.</p>
           </div>
         </div>
         
-        <div class="benefit-item">
-          <div class="benefit-icon">
-            <i data-lucide="trending-up"></i>
+        <!-- Screen 3: Choices -->
+        <div class="pratica-item">
+          <div class="mockup-phone">
+            <div class="mockup-screen screen-pratica-choices">
+              <div class="choices-list-mini">
+                <div class="choice-row-mini">
+                  <div class="choice-dot-mini"></div>
+                  <div class="choice-lines-mini">
+                    <span class="choice-name-mini">Chaveiro Silva</span>
+                    <span class="choice-sub-mini">⭐ 4.8 | 1.1 km</span>
+                  </div>
+                </div>
+                <div class="choice-row-mini">
+                  <div class="choice-dot-mini"></div>
+                  <div class="choice-lines-mini">
+                    <span class="choice-name-mini">Mecânica Central</span>
+                    <span class="choice-sub-mini">⭐ 4.9 | 2.5 km</span>
+                  </div>
+                </div>
+                <div class="choice-row-mini">
+                  <div class="choice-dot-mini"></div>
+                  <div class="choice-lines-mini">
+                    <span class="choice-name-mini">Dra. Ana Costa</span>
+                    <span class="choice-sub-mini">⭐ 5.0 | 0.8 km</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div>
-            <h3 class="benefit-title">Destaque sua Marca</h3>
-            <p class="benefit-desc">Apareça no topo da sua categoria para os usuários que estão no seu bairro e aumente seu fluxo de clientes.</p>
+          <div class="pratica-info">
+            <h4 class="pratica-title">Escolha o melhor</h4>
+            <p class="pratica-desc">Veja avaliações, distância e disponibilidade.</p>
           </div>
         </div>
         
-        <div class="benefit-item">
-          <div class="benefit-icon">
-            <i data-lucide="users"></i>
+        <!-- Screen 4: Profile -->
+        <div class="pratica-item">
+          <div class="mockup-phone">
+            <div class="mockup-screen screen-pratica-profile">
+              <div class="pratica-profile-header">
+                <div class="pratica-profile-avatar"></div>
+                <span class="pratica-profile-name">Pizzaria Japa</span>
+              </div>
+              <div class="pratica-profile-body">
+                <div class="pratica-profile-tag">⭐ 4.9 (128 avaliações)</div>
+                <div class="pratica-profile-tag">📍 5 km de você</div>
+                <div class="pratica-profile-tag">💬 Chamar no WhatsApp</div>
+                <button class="btn-profile-chamar">Escolher plano</button>
+              </div>
+            </div>
           </div>
-          <div>
-            <h3 class="benefit-title">Avaliações Positivas</h3>
-            <p class="benefit-desc">Construa reputação na sua cidade recebendo feedbacks e estrelas de clientes satisfeitos no aplicativo.</p>
+          <div class="pratica-info">
+            <h4 class="pratica-title">Perfil do prestador</h4>
+            <p class="pratica-desc">Mostre seus serviços e receive mais clientes.</p>
           </div>
         </div>
       </div>
