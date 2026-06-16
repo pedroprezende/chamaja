@@ -841,6 +841,57 @@ body {
     justify-content: center;
     gap: 20px;
   }
+
+  /* Mascot & Floating Icons overrides for mobile */
+  .hero-image-wrapper {
+    height: 380px;
+  }
+
+  .glowing-circle {
+    width: 280px;
+    height: 280px;
+  }
+
+  .hero-mascot {
+    width: 240px;
+  }
+
+  .floating-icon {
+    width: 48px;
+    height: 48px;
+    filter: drop-shadow(0 0 6px rgba(132, 204, 22, 0.45));
+  }
+
+  /* Adjust placement to avoid mascot overlapping on mobile screens */
+  .icon-lightning {
+    top: 14%;
+    left: 4%;
+  }
+
+  .icon-wrench {
+    top: 6%;
+    right: 2%; /* Pushes the wrench higher and further right, completely off the beak */
+  }
+
+  .icon-store {
+    top: 36%;
+    right: -2%;
+  }
+
+  .icon-pin1 {
+    top: 66%;
+    right: 6%;
+  }
+
+  .icon-pin2 {
+    top: 72%;
+    left: 6%;
+  }
+
+  .icon-user {
+    top: 42%;
+    left: -2%;
+  }
 }
 
 /* Features Bar Styles */
