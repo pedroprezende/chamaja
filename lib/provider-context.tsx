@@ -9,6 +9,7 @@ export interface ProviderProfile {
   userId: string;
   name: string;
   category: string;
+  categoryId?: string;
   city: string;
   neighborhood: string;
   phone: string;

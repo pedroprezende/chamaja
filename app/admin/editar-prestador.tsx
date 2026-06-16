@@ -10,6 +10,7 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Modal,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -78,6 +79,21 @@ export default function EditarPrestador() {
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showSubcategoryPicker, setShowSubcategoryPicker] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // Estados para gerenciamento de serviços/produtos (cardápio)
+  const [servicesList, setServicesList] = useState<any[]>([]);
+  const [serviceModalVisible, setServiceModalVisible] = useState(false);
+  const [editingServiceItem, setEditingServiceItem] = useState<any | null>(null);
+  const [serviceForm, setServiceForm] = useState({
+    id: "",
+    name: "",
+    description: "",
+    price: "",
+    productCategory: "",
+    imageUri: "",
+  });
+
+  const isCommerce = categoryId === "comercios" || category === "Comércios" || category === "comercios";
   
   // ── New subcategory state ──
   const [newSubName, setNewSubName] = useState("");
@@ -219,9 +235,125 @@ export default function EditarPrestador() {
       
       setSelectedSpecialties(newSelected);
       setSubcategoryName(specNamesCleaned.join(", "));
+
+      // Recuperar produtos/serviços reais do campo services
+      let initialServices: any[] = [];
+      if (dbProvider.services) {
+        try {
+          const parsed = typeof dbProvider.services === "string" ? JSON.parse(dbProvider.services) : dbProvider.services;
+          if (Array.isArray(parsed)) {
+            if (parsed.length === 0 || (parsed[0] && typeof parsed[0] === "object")) {
+              initialServices = parsed;
+            } else {
+              // Converter strings do formato antigo para objetos
+              initialServices = parsed.map((name, idx) => ({
+                id: `svc-${Date.now()}-${idx}`,
+                name: String(name),
+                description: `Serviço de ${name}`,
+                createdAt: new Date().toISOString()
+              }));
+            }
+          }
+        } catch {}
+      }
+      setServicesList(initialServices);
+
       hasInitialized.current = true;
     }
   }, [dbProvider, allSubServices, dbServices]);
+
+  // Métodos para gerenciar itens do cardápio/serviços pelo admin
+  const openAddServiceModal = () => {
+    setEditingServiceItem(null);
+    setServiceForm({
+      id: "",
+      name: "",
+      description: "",
+      price: "",
+      productCategory: "",
+      imageUri: "",
+    });
+    setServiceModalVisible(true);
+  };
+
+  const openEditServiceModal = (item: any) => {
+    setEditingServiceItem(item);
+    setServiceForm({
+      id: item.id,
+      name: item.name,
+      description: item.description || "",
+      price: item.price !== undefined ? String(item.price) : "",
+      productCategory: item.productCategory || "",
+      imageUri: item.imageUri || "",
+    });
+    setServiceModalVisible(true);
+  };
+
+  const handlePickServiceImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.85,
+    });
+    if (!result.canceled) {
+      setServiceForm(prev => ({ ...prev, imageUri: result.assets[0].uri }));
+    }
+  };
+
+  const handleSaveServiceItem = async () => {
+    if (!serviceForm.name.trim()) {
+      if (Platform.OS === "web") window.alert("Nome é obrigatório.");
+      else Alert.alert("Campo obrigatório", "Digite o nome.");
+      return;
+    }
+
+    let finalImg = serviceForm.imageUri;
+    if (finalImg && !finalImg.startsWith("http")) {
+      try {
+        const uploadedUrl = await storage.uploadImage(finalImg);
+        if (uploadedUrl) finalImg = uploadedUrl;
+      } catch (err) {
+        console.warn("Upload de foto do item falhou:", err);
+      }
+    }
+
+    const payload: any = {
+      id: serviceForm.id || `svc-${Date.now()}`,
+      name: serviceForm.name.trim(),
+      description: serviceForm.description.trim(),
+      imageUri: finalImg || undefined,
+      createdAt: new Date().toISOString(),
+    };
+
+    if (isCommerce) {
+      payload.price = serviceForm.price ? Number(serviceForm.price) : undefined;
+      payload.productCategory = serviceForm.productCategory.trim() || undefined;
+    }
+
+    if (editingServiceItem) {
+      setServicesList(prev => prev.map(s => s.id === editingServiceItem.id ? payload : s));
+    } else {
+      setServicesList(prev => [...prev, payload]);
+    }
+
+    setServiceModalVisible(false);
+  };
+
+  const handleDeleteServiceItem = (id: string) => {
+    const performDelete = () => {
+      setServicesList(prev => prev.filter(s => s.id !== id));
+    };
+
+    if (Platform.OS === "web") {
+      if (window.confirm("Deseja remover este item?")) performDelete();
+    } else {
+      Alert.alert("Excluir item", "Deseja remover este item?", [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Excluir", style: "destructive", onPress: performDelete },
+      ]);
+    }
+  };
 
   const handleSave = async () => {
     if (!name.trim() || !category) {
@@ -284,6 +416,16 @@ export default function EditarPrestador() {
       const primaryService = selectedItems.find(s => s.type === 'service');
       const primarySubcat = selectedItems.find(s => s.type === 'subcategory');
 
+      let finalServicesList = [...servicesList];
+      if (finalServicesList.length === 0 && selectedNames.length > 0) {
+        finalServicesList = selectedNames.map((name, idx) => ({
+          id: `svc-${Date.now()}-${idx}`,
+          name,
+          description: `Serviço de ${name}`,
+          createdAt: new Date().toISOString()
+        }));
+      }
+
       const data = {
         name: name.trim(),
         category: category || null,
@@ -304,7 +446,7 @@ export default function EditarPrestador() {
         coverUri: finalCover || null,
         foundedYear: foundedYear ? Number(foundedYear) : null,
         gallery: finalGallery.length > 0 ? finalGallery : null,
-        services: JSON.stringify(selectedNames.length > 0 ? selectedNames : (subcategoryName ? [subcategoryName] : [])),
+        services: JSON.stringify(finalServicesList),
       };
 
       if (isEditing) {
@@ -691,6 +833,72 @@ export default function EditarPrestador() {
           </ScrollView>
         </View>
 
+        {/* Cardápio / Serviços */}
+        <Text style={styles.sectionTitle}>{isCommerce ? "Cardápio de Produtos" : "Serviços Oferecidos"}</Text>
+        <View style={styles.card}>
+          {servicesList.length === 0 ? (
+            <Text style={{ color: "#9CA3AF", textAlign: "center", paddingVertical: 12 }}>
+              Nenhum {isCommerce ? "produto" : "serviço"} cadastrado ainda.
+            </Text>
+          ) : (
+            servicesList.map((svc) => (
+              <View key={svc.id} style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#F3F4F6" }}>
+                {svc.imageUri ? (
+                  <Image source={{ uri: svc.imageUri }} style={{ width: 44, height: 44, borderRadius: 8, backgroundColor: "#E5E7EB", marginRight: 10 }} />
+                ) : (
+                  <View style={{ width: 44, height: 44, borderRadius: 8, backgroundColor: "#F0FDF4", alignItems: "center", justifyContent: "center", marginRight: 10 }}>
+                    <MaterialIcons name={isCommerce ? "restaurant" : "build"} size={20} color="#25D366" />
+                  </View>
+                )}
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontWeight: "700", color: "#111827" }}>{svc.name}</Text>
+                  {isCommerce && svc.price !== undefined && (
+                    <Text style={{ fontSize: 12, fontWeight: "600", color: "#15803D", marginTop: 1 }}>
+                      R$ {Number(svc.price).toFixed(2)}
+                    </Text>
+                  )}
+                  {!!svc.productCategory && (
+                    <Text style={{ fontSize: 10, color: "#6B7280", marginTop: 1 }}>
+                      Categoria: {svc.productCategory}
+                    </Text>
+                  )}
+                  {!!svc.description && (
+                    <Text style={{ fontSize: 12, color: "#6B7280", marginTop: 2 }} numberOfLines={1}>
+                      {svc.description}
+                    </Text>
+                  )}
+                </View>
+                <View style={{ flexDirection: "row", gap: 6 }}>
+                  <Pressable
+                    style={{ width: 32, height: 32, borderRadius: 6, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#BFDBFE" }}
+                    onPress={() => openEditServiceModal(svc)}
+                  >
+                    <MaterialIcons name="edit" size={14} color="#2563EB" />
+                  </Pressable>
+                  <Pressable
+                    style={{ width: 32, height: 32, borderRadius: 6, backgroundColor: "#FEF2F2", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#FECACA" }}
+                    onPress={() => handleDeleteServiceItem(svc.id)}
+                  >
+                    <MaterialIcons name="delete-outline" size={14} color="#DC2626" />
+                  </Pressable>
+                </View>
+              </View>
+            ))
+          )}
+          <Pressable
+            style={({ pressed }) => [
+              { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: "#F0FDF4", borderWidth: 1, borderColor: "#BBF7D0", borderRadius: 10, paddingVertical: 12, marginTop: 12 },
+              pressed && { opacity: 0.8 }
+            ]}
+            onPress={openAddServiceModal}
+          >
+            <MaterialIcons name="add" size={18} color="#15803D" />
+            <Text style={{ color: "#15803D", fontWeight: "700", fontSize: 14 }}>
+              Adicionar {isCommerce ? "Produto" : "Serviço"}
+            </Text>
+          </Pressable>
+        </View>
+
         {/* Contact */}
         <Text style={styles.sectionTitle}>Informações de contato</Text>
         <View style={styles.card}>
@@ -725,7 +933,101 @@ export default function EditarPrestador() {
           )}
         </Pressable>
 
-        <View style={{ height: 32 }} />
+      {/* Modal para adicionar/editar produto ou serviço */}
+      <Modal visible={serviceModalVisible} transparent animationType="slide" onRequestClose={() => setServiceModalVisible(false)}>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+          <View style={{ backgroundColor: "#FFFFFF", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: "90%" }}>
+            <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: "#E5E7EB", alignSelf: "center", marginBottom: 12 }} />
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+              <Text style={{ fontSize: 18, fontWeight: "800", color: "#111827" }}>
+                {editingServiceItem ? (isCommerce ? "Editar Produto" : "Editar Serviço") : (isCommerce ? "Novo Produto" : "Novo Serviço")}
+              </Text>
+              <Pressable
+                style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" }}
+                onPress={() => setServiceModalVisible(false)}
+              >
+                <MaterialIcons name="close" size={18} color="#6B7280" />
+              </Pressable>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Imagem do Item */}
+              <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6 }}>Imagem (opcional)</Text>
+              <Pressable
+                style={{ height: 100, backgroundColor: "#F9FAFB", borderWidth: 1, borderColor: "#E5E7EB", borderStyle: "dashed", borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 16, overflow: "hidden" }}
+                onPress={handlePickServiceImage}
+              >
+                {serviceForm.imageUri ? (
+                  <Image source={{ uri: serviceForm.imageUri }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+                ) : (
+                  <>
+                    <MaterialIcons name="add-a-photo" size={24} color="#9CA3AF" />
+                    <Text style={{ fontSize: 12, color: "#9CA3AF", marginTop: 4 }}>Escolher foto</Text>
+                  </>
+                )}
+              </Pressable>
+
+              {/* Nome */}
+              <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6 }}>Nome *</Text>
+              <TextInput
+                style={{ backgroundColor: "#F9FAFB", borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: "#111827", marginBottom: 16 }}
+                placeholder={isCommerce ? "Ex: Pizza de Calabresa" : "Ex: Instalação de chuveiro"}
+                value={serviceForm.name}
+                onChangeText={(t) => setServiceForm({ ...serviceForm, name: t })}
+              />
+
+              {/* Descrição */}
+              <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6 }}>Descrição</Text>
+              <TextInput
+                style={{ backgroundColor: "#F9FAFB", borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: "#111827", minHeight: 60, textAlignVertical: "top", marginBottom: 16 }}
+                placeholder="Descreva brevemente..."
+                value={serviceForm.description}
+                onChangeText={(t) => setServiceForm({ ...serviceForm, description: t })}
+                multiline
+                numberOfLines={3}
+              />
+
+              {/* Campos adicionais para Comércio */}
+              {isCommerce && (
+                <>
+                  <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6 }}>Preço (R$)</Text>
+                  <TextInput
+                    style={{ backgroundColor: "#F9FAFB", borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: "#111827", marginBottom: 16 }}
+                    placeholder="Ex: 45.00"
+                    keyboardType="numeric"
+                    value={serviceForm.price}
+                    onChangeText={(t) => setServiceForm({ ...serviceForm, price: t })}
+                  />
+
+                  <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6 }}>Categoria no Cardápio (opcional)</Text>
+                  <TextInput
+                    style={{ backgroundColor: "#F9FAFB", borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: "#111827", marginBottom: 16 }}
+                    placeholder="Ex: Pizzas Salgadas, Bebidas"
+                    value={serviceForm.productCategory}
+                    onChangeText={(t) => setServiceForm({ ...serviceForm, productCategory: t })}
+                  />
+                </>
+              )}
+
+              <View style={{ flexDirection: "row", gap: 10, marginTop: 10, marginBottom: 20 }}>
+                <Pressable
+                  style={{ flex: 1, backgroundColor: "#F3F4F6", borderRadius: 12, paddingVertical: 12, alignItems: "center" }}
+                  onPress={() => setServiceModalVisible(false)}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151" }}>Cancelar</Text>
+                </Pressable>
+                <Pressable
+                  style={{ flex: 2, backgroundColor: "#25D366", borderRadius: 12, paddingVertical: 12, alignItems: "center" }}
+                  onPress={handleSaveServiceItem}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: "700", color: "#FFFFFF" }}>Salvar Item</Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
       </ScrollView>
     </View>
   );
