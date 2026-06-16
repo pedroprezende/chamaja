@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XamaJá - O que você precisa, perto de você</title>
+  <meta name="description" content="Encontre prestadores de serviços qualificados, autônomos e comércios locais próximos a você. Rápido, direto pelo WhatsApp e sem taxas!">
+  
+  <!-- Google Fonts - Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons (CDN) -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="container header-container">
+      <a href="/" class="logo">
+        <span class="logo-accent">Xama</span>Já
+      </a>
+      
+      <nav class="nav">
+        <a href="#como-funciona" class="nav-link">Como Funciona</a>
+        <a href="#beneficios" class="nav-link">Benefícios</a>
+        <a href="#cadastro" class="nav-link btn-secondary-sm">Seja um Prestador</a>
+      </nav>
+      
+      <div class="mobile-menu-btn" id="mobile-menu-btn">
+        <i data-lucide="menu"></i>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Nav Overlay -->
+  <div class="mobile-nav" id="mobile-nav">
+    <div class="mobile-nav-close" id="mobile-nav-close">
+      <i data-lucide="x"></i>
+    </div>
+    <a href="#como-funciona" class="mobile-link">Como Funciona</a>
+    <a href="#beneficios" class="mobile-link">Benefícios</a>
+    <a href="#cadastro" class="mobile-link btn-secondary">Seja um Prestador</a>
+  </div>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container hero-container">
+      <div class="hero-content">
+        <div class="badge-new">
+          <span class="badge-icon">🚀</span> Novidade na sua região
+        </div>
+        <h1 class="hero-title">O que você precisa, <span class="text-gradient">perto de você.</span></h1>
+        <p class="hero-subtitle">Encontre eletricistas, encanadores, pintores, diaristas, mecânicos e dezenas de outros profissionais locais. Fale direto pelo WhatsApp, sem taxas ou intermediários!</p>
+        
+        <div class="hero-actions">
+          <a href="#" class="btn-primary">
+            <i data-lucide="play"></i> Baixar na Play Store
+          </a>
+          <a href="#" class="btn-outline">
+            <i data-lucide="apple"></i> Baixar na App Store
+          </a>
+        </div>
+      </div>
+      
+      <div class="hero-image-wrapper">
+        <div class="glowing-circle"></div>
+        <img src="/assets/images/play_store_icon.png" alt="Mascote XamaJá" class="hero-mascot">
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works Section -->
+  <section class="section" id="como-funciona">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Como o XamaJá Funciona?</h2>
+        <p class="section-subtitle">Conectar clientes a profissionais locais nunca foi tão fácil e transparente.</p>
+      </div>
+      
+      <div class="grid-3">
+        <div class="card-step">
+          <div class="step-num">1</div>
+          <div class="step-icon-wrapper">
+            <i data-lucide="map-pin"></i>
+          </div>
+          <h3 class="step-title">Veja quem está perto</h3>
+          <p class="step-desc">Selecione a categoria de serviço e encontre prestadores de serviço e comércios no seu bairro ou cidade.</p>
+        </div>
+        
+        <div class="card-step">
+          <div class="step-num">2</div>
+          <div class="step-icon-wrapper">
+            <i data-lucide="star"></i>
+          </div>
+          <h3 class="step-title">Avalie o portfólio</h3>
+          <p class="step-desc">Veja fotos dos serviços anteriores, confira as avaliações e comentários reais de outros clientes.</p>
+        </div>
+        
+        <div class="card-step">
+          <div class="step-num">3</div>
+          <div class="step-icon-wrapper">
+            <i data-lucide="phone-call"></i>
+          </div>
+          <h3 class="step-title">Xame no WhatsApp</h3>
+          <p class="step-desc">Abra a conversa direto no WhatsApp do profissional. Sem comissão sobre o serviço e sem intermediários.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Benefits Section -->
+  <section class="section section-dark" id="beneficios">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Por que anunciar no XamaJá?</h2>
+        <p class="section-subtitle">Para prestadores de serviços que querem aumentar o faturamento e encontrar mais clientes locais.</p>
+      </div>
+      
+      <div class="grid-2">
+        <div class="benefit-item">
+          <div class="benefit-icon">
+            <i data-lucide="dollar-sign"></i>
+          </div>
+          <div>
+            <h3 class="benefit-title">Zero Comissão</h3>
+            <p class="benefit-desc">Todo o valor combinado com o cliente é 100% seu! Nós não cobramos porcentagem por serviço fechado.</p>
+          </div>
+        </div>
+        
+        <div class="benefit-item">
+          <div class="benefit-icon">
+            <i data-lucide="message-square"></i>
+          </div>
+          <div>
+            <h3 class="benefit-title">Contato Direto e Rápido</h3>
+            <p class="benefit-desc">Receba solicitações e negocie direto no seu WhatsApp comercial, sem demora e sem complicação.</p>
+          </div>
+        </div>
+        
+        <div class="benefit-item">
+          <div class="benefit-icon">
+            <i data-lucide="trending-up"></i>
+          </div>
+          <div>
+            <h3 class="benefit-title">Destaque sua Marca</h3>
+            <p class="benefit-desc">Apareça no topo da sua categoria para os usuários que estão no seu bairro e aumente seu fluxo de clientes.</p>
+          </div>
+        </div>
+        
+        <div class="benefit-item">
+          <div class="benefit-icon">
+            <i data-lucide="users"></i>
+          </div>
+          <div>
+            <h3 class="benefit-title">Avaliações Positivas</h3>
+            <p class="benefit-desc">Construa reputação na sua cidade recebendo feedbacks e estrelas de clientes satisfeitos no aplicativo.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Registration Form Section -->
+  <section class="section" id="cadastro">
+    <div class="container form-container">
+      <div class="form-header">
+        <h2 class="section-title">Seja um Prestador no XamaJá</h2>
+        <p class="section-subtitle">Preencha o formulário abaixo para cadastrar o seu serviço. Seu perfil ficará disponível imediatamente para milhares de clientes locais no aplicativo!</p>
+      </div>
+      
+      <div class="card-form">
+        <form id="provider-form" class="form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="name">Nome do Profissional ou Negócio *</label>
+              <input type="text" id="name" name="name" placeholder="Ex: João Silva ou Pinturas Silva" required>
+            </div>
+            <div class="form-group">
+              <label for="email">E-mail *</label>
+              <input type="email" id="email" name="email" placeholder="Ex: joao@gmail.com" required>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="phone">Telefone / WhatsApp *</label>
+              <input type="tel" id="phone" name="phone" placeholder="Ex: (11) 99999-9999" required>
+            </div>
+            <div class="form-group">
+              <label for="categoryId">Categoria Principal *</label>
+              <select id="categoryId" name="categoryId" required>
+                <option value="">Selecione uma categoria...</option>
+                <option value="reformas-reparos">Reformas e Reparos</option>
+                <option value="assistencia-tecnica">Assistência Técnica</option>
+                <option value="servicos-domesticos">Serviços Domésticos</option>
+                <option value="servicos-externos">Serviços Externos</option>
+                <option value="automotivo">Automotivo</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="city">Cidade *</label>
+              <input type="text" id="city" name="city" placeholder="Ex: Bragança Paulista" required>
+            </div>
+            <div class="form-group">
+              <label for="neighborhood">Bairro *</label>
+              <input type="text" id="neighborhood" name="neighborhood" placeholder="Ex: Centro" required>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="description">Descrição dos seus serviços *</label>
+            <textarea id="description" name="description" rows="4" placeholder="Descreva brevemente o seu serviço, sua experiência e diferenciais..." required></textarea>
+          </div>
+          
+          <!-- Mensagens de Alerta -->
+          <div id="form-success" class="alert alert-success" style="display: none;">
+            <i data-lucide="check-circle"></i>
+            <div>
+              <strong>Cadastro realizado com sucesso!</strong> Seu perfil de prestador foi criado e já está disponível no app do XamaJá!
+            </div>
+          </div>
+          
+          <div id="form-error" class="alert alert-danger" style="display: none;">
+            <i data-lucide="alert-triangle"></i>
+            <span id="error-message">Houve um erro ao processar seu cadastro. Tente novamente.</span>
+          </div>
+          
+          <button type="submit" class="btn-submit" id="btn-submit">
+            <span>Cadastrar Meu Serviço</span>
+            <div class="loader" id="form-loader" style="display: none;"></div>
+          </button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-container">
+      <div class="footer-info">
+        <a href="/" class="logo logo-footer">
+          <span class="logo-accent">Xama</span>Já
+        </a>
+        <p class="footer-copy">&copy; 2026 XamaJá. Todos os direitos reservados.</p>
+      </div>
+      
+      <div class="footer-links">
+        <a href="/politica-de-privacidade" class="footer-link">Política de Privacidade</a>
+        <a href="/exclusao-conta" class="footer-link">Excluir Conta</a>
+        <a href="mailto:suporte.xamaja@gmail.com" class="footer-link">Contato</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/script.js"></script>
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+  </script>
+</body>
+</html>

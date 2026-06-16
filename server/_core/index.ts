@@ -10,6 +10,7 @@ import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { getPrivacyPolicyHtml, getDeletionPolicyHtml } from "./privacy";
+import * as db from "../db";
  
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -103,17 +104,69 @@ async function startServer() {
     }),
   );
 
-  // Serve static files from the Expo web build
+  // Servir website institucional
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
-  const webDistPath = path.resolve(__dirname, "web");
-  app.use(express.static(webDistPath));
+  
+  const publicPath = path.resolve(__dirname, "..", "public");
+  app.use(express.static(publicPath));
 
-  // Fallback for client-side routing (SPA fallback)
-  app.get("*", (req, res, next) => {
-    if (req.path.startsWith("/api")) {
-      return next();
+  const projectAssetsPath = path.resolve(__dirname, "..", "..", "assets");
+  app.use("/assets", express.static(projectAssetsPath));
+
+  // Servir Expo Web do aplicativo
+  const webDistPath = path.resolve(__dirname, "web");
+  app.use("/app", express.static(webDistPath));
+
+  // Rota de Cadastro de Prestador via Web
+  app.post("/api/web-register-provider", async (req, res) => {
+    try {
+      const { name, email, phone, categoryId, city, neighborhood, description } = req.body;
+
+      if (!name || !email || !phone || !categoryId || !city || !neighborhood || !description) {
+        return res.status(400).json({ success: false, error: "Preencha todos os campos obrigatórios." });
+      }
+
+      const CATEGORY_MAP: Record<string, string> = {
+        "reformas-reparos": "Reformas e Reparos",
+        "assistencia-tecnica": "Assistência Técnica",
+        "servicos-domesticos": "Serviços Domésticos",
+        "servicos-externos": "Serviços Externos",
+        "automotivo": "Automotivo"
+      };
+
+      const providerId = `prov_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      await db.createProvider({
+        id: providerId,
+        userId: null,
+        name,
+        category: CATEGORY_MAP[categoryId] || "",
+        categoryId,
+        city,
+        neighborhood,
+        phone,
+        whatsapp: phone,
+        description,
+        plan: "monthly",
+        isActive: true,
+        isVerified: false,
+        rating: 5,
+        ratingCount: 0,
+        priceLevel: 2,
+        onlineStatus: false,
+      });
+
+      console.log(`[Web API] Provider registered successfully: ${name} (${providerId})`);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("[Web API] Failed to register provider:", error);
+      res.status(500).json({ success: false, error: error.message || "Erro interno no servidor." });
     }
+  });
+
+  // Fallback para rotas SPA do aplicativo Expo Web
+  app.get("/app*", (req, res) => {
     res.sendFile(path.join(webDistPath, "index.html"), (err) => {
       if (err) {
         res.status(404).send("Frontend assets not found. Make sure to run the web build first.");
