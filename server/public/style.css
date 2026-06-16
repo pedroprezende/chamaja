@@ -67,6 +67,12 @@ body {
   display: flex;
   align-items: center;
   text-decoration: none;
+  color: var(--text-primary);
+  transition: var(--transition);
+}
+
+.logo:hover {
+  opacity: 0.9;
 }
 
 .logo-img {
