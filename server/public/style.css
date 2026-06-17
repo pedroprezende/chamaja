@@ -2738,58 +2738,45 @@ body {
   display: block;
 }
 
-.drink-image-overlay {
-  position: absolute;
-  left: -20px;
-  bottom: 0px;
-  width: 120px;
+/* Combined Provider Layout for Section 2 */
+.combined-provider-image {
+  width: 100%;
+  max-width: 520px;
   height: auto;
-  z-index: 4;
+  z-index: 2;
   pointer-events: none;
-  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.6));
-  animation: floatDrink 8s ease-in-out infinite;
-}
-
-@keyframes floatDrink {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-6px) rotate(-2deg); }
-}
-
-.floating-ui-buttons-overlay {
-  position: absolute;
-  left: -20px;
-  top: 20px;
-  width: 140px;
-  height: auto;
-  z-index: 4;
-  pointer-events: none;
-  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.5));
-  animation: floatUI 8s ease-in-out infinite;
-}
-
-@keyframes floatUI {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-5px) rotate(1deg); }
-}
-
-.phone-overlay-right-small {
-  position: absolute;
-  right: -10px;
-  bottom: 20px;
-  width: 170px;
-  height: 340px;
-  z-index: 3;
-  transform: rotate(-4deg);
-  background-color: #0d0d0f;
-  border: 6px solid #1c1c1e;
-  border-radius: 22px;
-  overflow: hidden;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
+  filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.45));
   transition: var(--transition);
 }
 
-.phone-overlay-right-small:hover {
-  transform: rotate(-2deg) scale(1.03);
-  border-color: var(--primary);
+.combined-provider-image:hover {
+  transform: scale(1.02);
+}
+
+/* Flow Arrow between Phone and Card in Section 3 */
+.flow-arrow-middle {
+  position: absolute;
+  left: 250px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--primary);
+  font-size: 28px;
+  z-index: 2;
+  animation: pulseArrow 2s infinite;
+}
+
+@keyframes pulseArrow {
+  0%, 100% { transform: translateY(-50%) translateX(0px); opacity: 0.8; }
+  50% { transform: translateY(-50%) translateX(6px); opacity: 1; }
+}
+
+/* Custom Pizza Positioning to fit between screens */
+.pizza-image-overlay {
+  position: absolute !important;
+  left: 200px !important;
+  right: auto !important;
+  top: 60px !important;
+  width: 140px !important;
+  z-index: 1 !important;
 }
 
