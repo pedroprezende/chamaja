@@ -117,6 +117,14 @@ async function startServer() {
   const webDistPath = path.resolve(rootDir, "dist", "web");
   app.use("/app", express.static(webDistPath));
 
+  // Servir arquivos do Expo Web a partir da raiz para evitar que requisições retornem 404 e quebrem o app
+  app.use("/_expo", express.static(path.resolve(webDistPath, "_expo")));
+  app.use("/assets", express.static(path.resolve(webDistPath, "assets")));
+  app.get("/service-worker.js", (req, res) => res.sendFile(path.resolve(webDistPath, "service-worker.js")));
+  app.get("/manifest.json", (req, res) => res.sendFile(path.resolve(webDistPath, "manifest.json")));
+  app.get("/favicon.png", (req, res) => res.sendFile(path.resolve(webDistPath, "favicon.png")));
+  app.get("/favicon.ico", (req, res) => res.sendFile(path.resolve(webDistPath, "favicon.ico")));
+
   // Rota de Cadastro de Prestador via Web
   app.post("/api/web-register-provider", async (req, res) => {
     try {
