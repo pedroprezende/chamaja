@@ -646,7 +646,30 @@ body {
   50% { transform: translateX(6px); }
 }
 
-/* Phone Mockup Styling *.mockup-phone {
+/* Como funciona image */
+.como-funciona-image-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-top: 40px;
+}
+
+.como-funciona-img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  transition: var(--transition);
+}
+
+.como-funciona-img:hover {
+  transform: scale(1.005);
+  box-shadow: 0 15px 35px rgba(132, 204, 22, 0.1), 0 0 0 1px rgba(132, 204, 22, 0.2);
+}
+
+/* Phone Mockup Styling */
+.mockup-phone {
   width: 220px;
   height: 440px;
   background-color: #0d0d0f;
