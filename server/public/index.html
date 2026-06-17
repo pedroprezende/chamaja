@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <script>
+    // Se o usuário cair na landing page vindo de um fluxo de login do Supabase (com o token no hash),
+    // redireciona ele automaticamente para dentro do aplicativo (/app) mantendo o token.
+    if (window.location.hash && (window.location.hash.indexOf('access_token=') !== -1 || window.location.hash.indexOf('error=') !== -1)) {
+      window.location.replace('/app/' + window.location.hash);
+    }
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>XamaJá - O que você precisa, perto de você</title>
