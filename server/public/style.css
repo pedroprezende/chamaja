@@ -2280,18 +2280,33 @@ body {
   }
   
   .pizza-image-overlay {
-    position: relative;
-    right: 0;
-    top: 0;
-    margin-bottom: -40px;
-    width: 140px;
+    position: absolute !important;
+    left: calc(50% - 120px) !important;
+    top: -20px !important;
+    width: 100px !important;
+    z-index: 4 !important;
+    transform: rotate(-5deg);
   }
   
-  .pedido-floating-card {
+  .drink-image-overlay {
+    position: absolute;
+    right: calc(50% - 110px);
+    bottom: -10px;
+    width: 90px;
+    z-index: 4;
+    transform: rotate(5deg);
+  }
+  
+  .phone-overlay-right-small {
     position: relative;
-    right: 0;
-    bottom: 0;
-    margin-top: 16px;
+    right: auto;
+    bottom: auto;
+    transform: none;
+    margin: 30px auto 0 auto;
+  }
+  
+  .flow-arrow-middle {
+    display: none;
   }
   
   .mockup-showcase-container {
@@ -2786,5 +2801,44 @@ body {
   top: 50px !important;
   width: 140px !important;
   z-index: 1 !important;
+}
+
+.drink-image-overlay {
+  position: absolute;
+  left: -20px;
+  bottom: 10px;
+  width: 110px;
+  height: auto;
+  z-index: 4;
+  pointer-events: none;
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.6));
+  animation: floatDrink 8s ease-in-out infinite;
+}
+
+@keyframes floatDrink {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-6px) rotate(-2deg); }
+}
+
+.phone-overlay-right-small {
+  position: absolute;
+  right: 10px;
+  bottom: 20px;
+  width: 170px;
+  height: 340px;
+  z-index: 3;
+  transform: rotate(-4deg);
+  background-color: #0d0d0f;
+  border: 6px solid #1c1c1e;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
+  transition: var(--transition);
+}
+
+.phone-overlay-right-small:hover {
+  transform: rotate(-2deg) scale(1.03);
+  border-color: var(--primary);
+  box-shadow: 0 15px 30px rgba(132, 204, 22, 0.15);
 }
 
