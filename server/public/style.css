@@ -646,26 +646,174 @@ body {
   50% { transform: translateX(6px); }
 }
 
-/* Como funciona image */
-.como-funciona-image-wrapper {
+/* Step Mockups for Como funciona */
+.phone-flow-s {
+  width: 190px !important;
+  height: 180px !important;
+  border-radius: 24px !important;
+  justify-content: center !important;
+  align-items: center !important;
+  border: 2.5px solid #28282a !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45) !important;
+}
+
+.step-mockup-inner {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   width: 100%;
-  margin-top: 40px;
+  height: 100%;
+  padding: 12px;
 }
 
-.como-funciona-img {
-  max-width: 100%;
+/* Step 1 Search Mockup */
+.mockup-s1 {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.search-input-line {
+  background-color: #121214;
+  border: 1.5px solid #28282a;
+  border-radius: 12px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 145px;
+}
+
+.search-icon-s1 {
+  width: 16px;
+  height: 16px;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+}
+
+.horizontal-line-s1 {
+  width: 70px;
+  height: 2px;
+  background-color: #444446;
+  border-radius: 1px;
+}
+
+.menu-button-s1 {
+  margin-top: 14px;
+  background-color: #1c1c1e;
+  border-radius: 8px;
+  padding: 8px;
+  width: 42px;
+  height: 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  margin-left: 18px;
+  border: 1px solid rgba(255,255,255,0.03);
+}
+
+.menu-line-s1 {
+  width: 18px;
+  height: 2px;
+  background-color: #8e8e93;
+  border-radius: 1px;
+}
+
+/* Step 2 Provider mockup */
+.mockup-s2 {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.provider-card-s2 {
+  background-color: #121214;
+  border: 1.5px solid #28282a;
+  border-radius: 14px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 155px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.avatar-s2 {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid var(--primary);
+  background-color: #1c1c1e;
+}
+
+.provider-info-s2 {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
+
+.name-s2 {
+  font-size: 10px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.rating-s2 {
+  font-size: 8px;
+  color: #fbbf24;
+  letter-spacing: 0.5px;
+}
+
+.dist-s2 {
+  font-size: 8px;
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.pin-logo-s2 {
+  margin-top: 10px;
+  align-self: flex-start;
+  margin-left: 18px;
+}
+
+.mascot-pin-s2 {
+  width: 24px;
   height: auto;
-  border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
-  transition: var(--transition);
+  filter: drop-shadow(0 0 4px rgba(132, 204, 22, 0.4));
 }
 
-.como-funciona-img:hover {
-  transform: scale(1.005);
-  box-shadow: 0 15px 35px rgba(132, 204, 22, 0.1), 0 0 0 1px rgba(132, 204, 22, 0.2);
+/* Step 3 WhatsApp mockup */
+.mockup-s3 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.whatsapp-box-s3 {
+  width: 68px;
+  height: 68px;
+  border-radius: 18px;
+  background-color: #1c1c1e;
+  border: 1.5px solid #28282a;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #25D366;
+  box-shadow: 0 6px 18px rgba(37, 211, 102, 0.15);
+}
+
+.whatsapp-svg-s3 {
+  width: 34px;
+  height: 34px;
 }
 
 /* Phone Mockup Styling */
