@@ -653,11 +653,13 @@ body {
 .phone-flow-s {
   width: 175px !important;
   height: 350px !important;
-  border-radius: 26px !important;
+  border-radius: 0 !important;
   justify-content: center !important;
   align-items: center !important;
-  border: 5px solid #1c1c1e !important;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.45) !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.45)) !important;
 }
 
 .step-mockup-inner {
@@ -823,12 +825,12 @@ body {
 .mockup-phone {
   width: 220px;
   height: 440px;
-  background-color: #0d0d0f;
-  border: 8px solid #1c1c1e;
-  border-radius: 28px;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
   position: relative;
-  overflow: hidden;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  overflow: visible;
+  filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.45));
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -836,8 +838,8 @@ body {
 }
 
 .mockup-phone:hover {
-  border-color: var(--primary);
-  box-shadow: 0 20px 45px rgba(132, 204, 22, 0.15), 0 0 0 1px rgba(132, 204, 22, 0.3);
+  filter: drop-shadow(0 20px 45px rgba(132, 204, 22, 0.25));
+  transform: translateY(-2px);
 }
 
 .mockup-screen {
@@ -2828,17 +2830,16 @@ body {
   height: 340px;
   z-index: 3;
   transform: rotate(-4deg);
-  background-color: #0d0d0f;
-  border: 6px solid #1c1c1e;
-  border-radius: 22px;
-  overflow: hidden;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+  filter: drop-shadow(0 10px 25px rgba(0, 0, 0, 0.45));
   transition: var(--transition);
 }
 
 .phone-overlay-right-small:hover {
   transform: rotate(-2deg) scale(1.03);
-  border-color: var(--primary);
-  box-shadow: 0 15px 30px rgba(132, 204, 22, 0.15);
+  filter: drop-shadow(0 15px 30px rgba(132, 204, 22, 0.25));
 }
 
