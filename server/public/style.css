@@ -571,12 +571,15 @@ body {
 /* Card Passo a Passo (New flow with phones) */
 .steps-flow-container {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   margin-top: 48px;
-  gap: 20px;
+  gap: 40px;
   position: relative;
   width: 100%;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .step-flow-item {
@@ -648,13 +651,13 @@ body {
 
 /* Step Mockups for Como funciona */
 .phone-flow-s {
-  width: 190px !important;
-  height: 180px !important;
-  border-radius: 24px !important;
+  width: 175px !important;
+  height: 350px !important;
+  border-radius: 26px !important;
   justify-content: center !important;
   align-items: center !important;
-  border: 2.5px solid #28282a !important;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45) !important;
+  border: 5px solid #1c1c1e !important;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.45) !important;
 }
 
 .step-mockup-inner {
@@ -1624,6 +1627,8 @@ body {
   align-items: center;
   height: 440px;
   width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
 }
 
 .glowing-backdrop-green {
@@ -1768,7 +1773,7 @@ body {
 /* Comércios locals section (Section 3) */
 .phone-overlay-right {
   position: absolute;
-  left: 20px;
+  left: 10px;
   z-index: 2;
   transform: rotate(3deg);
 }
@@ -1928,9 +1933,9 @@ body {
 /* Floating Pedido Card overlay */
 .pedido-floating-card {
   position: absolute;
-  right: 0px;
+  right: 10px;
   bottom: 20px;
-  width: 180px;
+  width: 190px;
   background-color: rgba(18, 18, 20, 0.9);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(132, 204, 22, 0.25);
@@ -1999,9 +2004,12 @@ body {
 .pratica-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 32px;
+  gap: 24px;
   margin-top: 48px;
   width: 100%;
+  max-width: 960px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .pratica-item {
@@ -2756,7 +2764,7 @@ body {
 /* Flow Arrow between Phone and Card in Section 3 */
 .flow-arrow-middle {
   position: absolute;
-  left: 250px;
+  left: 238px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--primary);
@@ -2773,9 +2781,9 @@ body {
 /* Custom Pizza Positioning to fit between screens */
 .pizza-image-overlay {
   position: absolute !important;
-  left: 200px !important;
+  left: 175px !important;
   right: auto !important;
-  top: 60px !important;
+  top: 50px !important;
   width: 140px !important;
   z-index: 1 !important;
 }
