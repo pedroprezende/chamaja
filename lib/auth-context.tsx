@@ -217,7 +217,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logger.info("AUTH", `Iniciando login OAuth com: ${provider}`);
     try {
       const redirectTo = Platform.OS === "web"
-        ? `${window.location.origin}/oauth/callback`
+        ? `${window.location.origin}/app/oauth/callback`
         : Linking.createURL("/oauth/callback");
         
       const { data, error } = await supabase.auth.signInWithOAuth({

@@ -125,6 +125,11 @@ async function startServer() {
   app.get("/favicon.png", (req, res) => res.sendFile(path.resolve(webDistPath, "favicon.png")));
   app.get("/favicon.ico", (req, res) => res.sendFile(path.resolve(webDistPath, "favicon.ico")));
 
+  // Redireciona a URL de callback do Supabase da raiz para dentro da pasta do aplicativo (/app)
+  app.get("/oauth/callback", (req, res) => {
+    res.redirect(302, "/app/oauth/callback" + req.url.slice("/oauth/callback".length));
+  });
+
   // Rota de Cadastro de Prestador via Web
   app.post("/api/web-register-provider", async (req, res) => {
     try {
