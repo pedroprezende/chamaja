@@ -1,0 +1,67 @@
+# =========================================================================
+# EAS Ignore Configuration
+# Since EAS CLI ignores .gitignore if .easignore is present, we must define
+# both standard gitignore items and our custom non-app directories here.
+# =========================================================================
+
+# Dependencies
+node_modules/
+
+# Expo and build outputs
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native folders
+/ios
+/android
+.kotlin/
+
+# Temporary and development files
+*.orig.*
+.metro-health-check*
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.cache/
+.webdev/
+logs/
+*.log
+
+# Credentials and secrets (local build / keys)
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.pem
+.env
+.env*.local
+.local/
+credentials.json
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+Thumbs.db
+
+# Non-app directories (Website, backend server, dashboard)
+/admin
+/home
+/server
+/drizzle
+/scratch
+/attached_assets
+/tests
+/__tests__
+
+# Specific extra files
+/cloudflared.exe
+/lt-url.txt
+/expo-qr-code.png
+/upload_certificate.pem
+package-lock.json
