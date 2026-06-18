@@ -41,9 +41,12 @@ export default function WhatsappOrderScreen() {
     items.forEach((item) => {
       // Alinhamento inteligente com pontinhos
       const maxLen = 22;
-      const namePart = item.name.substring(0, maxLen);
+      const itemName = item.name || "Produto";
+      const namePart = itemName.substring(0, maxLen);
       const padding = ".".repeat(Math.max(2, maxLen - namePart.length + 4));
-      msg += `• ${item.quantity}x ${namePart} ${padding} R$ ${(item.price * item.quantity).toFixed(2)}\n`;
+      const itemQuantity = item.quantity || 1;
+      const itemPrice = item.price || 0;
+      msg += `• ${itemQuantity}x ${namePart} ${padding} R$ ${(itemPrice * itemQuantity).toFixed(2)}\n`;
     });
 
     msg += `\n💰 Total: R$ ${cartTotal.toFixed(2)}\n\n`;
@@ -143,11 +146,14 @@ export default function WhatsappOrderScreen() {
               <Text style={{ fontWeight: "700" }}>🖥️ MEU PEDIDO:</Text>{"\n"}
               {items.map((item) => {
                 const maxLen = 22;
-                const namePart = item.name.substring(0, maxLen);
+                const itemName = item.name || "Produto";
+                const namePart = itemName.substring(0, maxLen);
                 const padding = ".".repeat(Math.max(2, maxLen - namePart.length + 4));
+                const itemQuantity = item.quantity || 1;
+                const itemPrice = item.price || 0;
                 return (
                   <Text key={item.id}>
-                    • {item.quantity}x {namePart} {padding} R$ {(item.price * item.quantity).toFixed(2)}{"\n"}
+                    • {itemQuantity}x {namePart} {padding} R$ ${(itemPrice * itemQuantity).toFixed(2)}{"\n"}
                   </Text>
                 );
               })}
