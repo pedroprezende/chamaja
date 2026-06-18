@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="dark">
 <head>
   <script>
     // Se o usuário cair na landing page vindo de um fluxo de login do Supabase (com o token no hash),
@@ -13,550 +13,586 @@
   <title>XamaJá - O que você precisa, perto de você</title>
   <meta name="description" content="Encontre prestadores de serviços qualificados, autônomos e comércios locais próximos a você. Rápido, direto pelo WhatsApp e sem taxas!">
   
-  <!-- Google Fonts - Inter & Outfit -->
+  <!-- Google Fonts - Inter & Montserrat -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   
   <!-- Lucide Icons (CDN) -->
   <script src="https://unpkg.com/lucide@latest"></script>
   
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        container: {
+          center: true,
+          padding: '1.5rem',
+          screens: {
+            '2xl': '1280px',
+          },
+        },
+        extend: {
+          colors: {
+            border: '#2A2F4A',
+            input: '#1A1F3A',
+            ring: '#CCFF00',
+            background: '#0A0E27',
+            foreground: '#FFFFFF',
+            primary: {
+              DEFAULT: '#CCFF00',
+              foreground: '#0A0E27',
+            },
+            secondary: {
+              DEFAULT: '#4A90E2',
+              foreground: '#FFFFFF',
+            },
+            destructive: {
+              DEFAULT: '#FF4444',
+              foreground: '#FFFFFF',
+            },
+            muted: {
+              DEFAULT: '#2A2F4A',
+              foreground: '#A0A0A0',
+            },
+            accent: {
+              DEFAULT: '#CCFF00',
+              foreground: '#0A0E27',
+            },
+            popover: {
+              DEFAULT: '#1A1F3A',
+              foreground: '#FFFFFF',
+            },
+            card: {
+              DEFAULT: '#1A1F3A',
+              foreground: '#FFFFFF',
+            },
+          },
+          borderRadius: {
+            lg: '0.65rem',
+            md: 'calc(0.65rem - 2px)',
+            sm: 'calc(0.65rem - 4px)',
+          },
+          fontFamily: {
+            title: ['Montserrat', 'sans-serif'],
+            body: ['Inter', 'sans-serif'],
+          },
+        },
+      },
+    }
+  </script>
   <link rel="stylesheet" href="/style.css">
 </head>
-<body>
+<body class="bg-background text-foreground font-body antialiased selection:bg-primary selection:text-primary-foreground overflow-x-hidden">
 
   <!-- Header -->
-  <header class="header">
-    <div class="container header-container">
-      <a href="/" class="logo">
-        <img src="/assets/images/logo-xamaja.png" alt="XamaJá Logo" class="logo-img">
+  <header class="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border transition-all duration-300">
+    <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-3 group">
+        <img src="/assets/images/logo-xamaja.png" alt="XamaJá Logo" class="h-10 w-auto object-contain transition-transform group-hover:scale-105">
       </a>
       
-      <nav class="nav">
-        <a href="/" class="nav-link active">Início</a>
-        <a href="#como-funciona" class="nav-link">Como funciona</a>
-        <a href="#beneficios" class="nav-link">Vantagens</a>
-        <a href="/app" class="btn-entrar">Entrar</a>
+      <nav class="hidden md:flex items-center gap-8">
+        <a href="/" class="text-sm font-semibold text-primary transition-colors">Início</a>
+        <a href="#como-funciona" class="text-sm font-semibold text-muted hover:text-foreground transition-colors">Como funciona</a>
+        <a href="#para-prestadores" class="text-sm font-semibold text-muted hover:text-foreground transition-colors">Para prestadores</a>
+        <a href="#para-comercios" class="text-sm font-semibold text-muted hover:text-foreground transition-colors">Para comércios</a>
+        <a href="#vantagens" class="text-sm font-semibold text-muted hover:text-foreground transition-colors">Vantagens</a>
       </nav>
       
-      <div class="mobile-menu-btn" id="mobile-menu-btn">
+      <div class="hidden md:block">
+        <a href="/app" class="inline-flex items-center justify-center border border-primary text-primary hover:bg-primary hover:text-primary-foreground font-semibold px-6 py-2.5 rounded-lg text-sm transition-all shadow-md shadow-primary/5 hover:shadow-primary/20 hover:-translate-y-0.5">
+          Entrar
+        </a>
+      </div>
+      
+      <div class="mobile-menu-btn md:hidden cursor-pointer text-foreground p-1 hover:text-primary transition-colors" id="mobile-menu-btn">
         <i data-lucide="menu"></i>
       </div>
     </div>
   </header>
 
-  <!-- Mobile Nav Overlay -->
+  <!-- Mobile Nav Drawer -->
   <div class="mobile-nav" id="mobile-nav">
-    <div class="mobile-nav-close" id="mobile-nav-close">
+    <div class="mobile-nav-close cursor-pointer text-muted hover:text-foreground transition-colors" id="mobile-nav-close">
       <i data-lucide="x"></i>
     </div>
-    <a href="/" class="mobile-link">Início</a>
-    <a href="#como-funciona" class="mobile-link">Como funciona</a>
-    <a href="#beneficios" class="mobile-link">Vantagens</a>
-    <a href="/app" class="btn-secondary-drawer">
+    <a href="/" class="mobile-link text-lg font-bold text-primary">Início</a>
+    <a href="#como-funciona" class="mobile-link text-lg font-bold text-foreground hover:text-primary transition-colors">Como funciona</a>
+    <a href="#para-prestadores" class="mobile-link text-lg font-bold text-foreground hover:text-primary transition-colors">Para prestadores</a>
+    <a href="#para-comercios" class="mobile-link text-lg font-bold text-foreground hover:text-primary transition-colors">Para comércios</a>
+    <a href="#vantagens" class="mobile-link text-lg font-bold text-foreground hover:text-primary transition-colors">Vantagens</a>
+    
+    <a href="/app" class="btn-secondary-drawer mt-4 flex items-center justify-center gap-2 border border-primary text-primary hover:bg-primary hover:text-primary-foreground font-semibold px-6 py-3 rounded-xl transition-all">
       <i data-lucide="layout"></i> Entrar no App
     </a>
-    <a href="#cadastro" class="btn-primary-drawer">Cadastre-se</a>
+    <a href="#cadastro" class="btn-primary-drawer flex items-center justify-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-6 py-3 rounded-xl transition-all shadow-lg shadow-primary/25">
+      Cadastre-se
+    </a>
   </div>
 
   <!-- Hero Section -->
-  <section class="hero">
-    <div class="container hero-container">
-      <div class="hero-content">
-        <h1 class="hero-title">Aumente<br><span class="text-gradient">seus ganhos</span><br>no XamaJá</h1>
-        <p class="hero-subtitle">Conecte-se com clientes da sua região e cresça seu negócio com praticidade e segurança.</p>
-        
-        <div class="hero-actions-vertical">
-          <a href="#cadastro" class="btn-primary-mock">
-            Cadastre-se agora
-          </a>
-          <span class="hero-subtext">
-            <span class="check-icon">✓</span> É rápido, fácil e gratuito!
-          </span>
+  <section class="py-16 md:py-24 bg-gradient-to-b from-background to-background/50 border-b border-border relative overflow-hidden">
+    <div class="container mx-auto px-4 relative z-10">
+      <div class="grid md:grid-cols-12 gap-12 items-center">
+        <!-- Left Content -->
+        <div class="md:col-span-7 space-y-8">
+          <div class="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/30 rounded-full">
+            <span class="text-primary text-xs md:text-sm font-semibold tracking-wider uppercase">✦ PLATAFORMA COMPLETA</span>
+          </div>
+
+          <div class="space-y-4">
+            <h1 class="text-4xl md:text-6xl font-black font-title tracking-tight text-white leading-tight">
+              A solução mais<br>
+              rápida para conectar<br>
+              <span class="text-primary">você ao que precisa.</span>
+            </h1>
+
+            <p class="text-base md:text-lg text-muted max-w-lg leading-relaxed">
+              Encontre prestadores de serviços e comércios perto de você com praticidade, segurança e confiança.
+            </p>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-4 pt-2">
+            <a href="#cadastro" class="inline-flex items-center justify-center bg-primary text-primary-foreground hover:bg-primary/90 font-extrabold px-8 py-4 rounded-xl text-base transition-all shadow-lg shadow-primary/20 hover:-translate-y-0.5">
+              Cadastrar agora <i data-lucide="arrow-right" class="ml-2 w-5 h-5"></i>
+            </a>
+            <a href="#como-funciona" class="inline-flex items-center justify-center border border-border text-foreground hover:bg-card px-8 py-4 rounded-xl text-base font-semibold transition-all">
+              Quero ser prestador
+            </a>
+          </div>
+
+          <!-- Stats Grid -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-border">
+            <div class="flex flex-col gap-1.5">
+              <div class="flex items-center gap-2 text-primary">
+                <i data-lucide="users" class="w-5 h-5"></i>
+                <span class="text-lg font-bold text-white">Mais clientes</span>
+              </div>
+              <p class="text-xs text-muted">da sua região</p>
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <div class="flex items-center gap-2 text-primary">
+                <i data-lucide="wrench" class="w-5 h-5"></i>
+                <span class="text-lg font-bold text-white">Serviços</span>
+              </div>
+              <p class="text-xs text-muted">diversificados</p>
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <div class="flex items-center gap-2 text-primary">
+                <i data-lucide="shield-check" class="w-5 h-5"></i>
+                <span class="text-lg font-bold text-white">Pagamentos</span>
+              </div>
+              <p class="text-xs text-muted">seguros</p>
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <div class="flex items-center gap-2 text-primary">
+                <i data-lucide="trending-up" class="w-5 h-5"></i>
+                <span class="text-lg font-bold text-white">Cresça seu</span>
+              </div>
+              <p class="text-xs text-muted">negócio</p>
+            </div>
+          </div>
         </div>
-      </div>
-      
-      <div class="hero-image-wrapper">
-        <div class="glowing-circle"></div>
-        <img src="/assets/images/mascote-xara.png" alt="Mascote XamaJá" class="hero-mascot">
-        
-        <!-- Floating Neon Icons -->
-        <img src="/assets/images/icon_wrench.png" class="floating-icon icon-wrench" alt="Wrench">
-        <img src="/assets/images/icon_store.png" class="floating-icon icon-store" alt="Store">
-        <img src="/assets/images/icon_pin1.png" class="floating-icon icon-pin1" alt="Pin">
-        <img src="/assets/images/icon_pin2.png" class="floating-icon icon-pin2" alt="Pin">
-        <img src="/assets/images/icon_user.png" class="floating-icon icon-user" alt="User">
-        <img src="/assets/images/icon_lightning.png" class="floating-icon icon-lightning" alt="Lightning">
+
+        <!-- Right Content - Cropped Hero Mockup Image -->
+        <div class="md:col-span-5 flex justify-center relative">
+          <div class="absolute inset-0 bg-primary/10 rounded-full blur-3xl filter opacity-40 pointer-events-none"></div>
+          <img src="/assets/images/hero_mockup_right.png" alt="App XamaJá Mockup" class="w-full max-w-[490px] h-auto object-contain drop-shadow-2xl relative z-10 animate-float">
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- Hero Features Bar -->
-  <div class="hero-features-bar">
-    <div class="container features-bar-container">
-      <div class="feature-bar-item">
-        <img src="/assets/images/icon_user.png" class="feature-bar-icon" alt="User icon">
-        <div class="feature-bar-text">
-          <span class="feature-bar-title">Mais clientes</span>
-          <span class="feature-bar-desc">da sua região</span>
-        </div>
+  <!-- Como Funciona Section -->
+  <section id="como-funciona" class="py-20 bg-card/30 border-b border-border">
+    <div class="container mx-auto px-4">
+      <div class="text-center max-w-2xl mx-auto mb-16 space-y-4">
+        <h2 class="text-3xl md:text-5xl font-black font-title text-white">
+          Como <span class="text-primary">funciona</span>
+        </h2>
+        <p class="text-base md:text-lg text-muted">É simples, rápido e funcional</p>
       </div>
-      
-      <div class="feature-bar-item">
-        <img src="/assets/images/icon_lightning.png" class="feature-bar-icon" alt="Lightning icon">
-        <div class="feature-bar-text">
-          <span class="feature-bar-title">Serviços</span>
-          <span class="feature-bar-desc">diversificados</span>
-        </div>
-      </div>
-      
-      <div class="feature-bar-item">
-        <div class="neon-icon-box">
-          <i data-lucide="shield"></i>
-        </div>
-        <div class="feature-bar-text">
-          <span class="feature-bar-title">Pagamentos</span>
-          <span class="feature-bar-desc">seguros</span>
-        </div>
-      </div>
-      
-      <div class="feature-bar-item">
-        <div class="neon-icon-box">
-          <i data-lucide="trending-up"></i>
-        </div>
-        <div class="feature-bar-text">
-          <span class="feature-bar-title">Cresça seu</span>
-          <span class="feature-bar-desc">negócio</span>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- Section 1: Como funciona -->
-  <section class="section" id="como-funciona">
-    <div class="container">
-      <div class="section-header">
-        <h2 class="section-title">Como <span class="text-gradient">funciona</span></h2>
-        <p class="section-subtitle">É simples, rápido e funciona!</p>
-      </div>
-      <div class="steps-flow-container">
+      <div class="grid md:grid-cols-4 gap-8">
         <!-- Step 1 -->
-        <div class="step-flow-item">
-          <div class="step-phone-wrapper">
-            <span class="step-flow-number">1</span>
-            <div class="mockup-phone phone-flow-s">
-              <img src="/assets/images/xj/frame_busca.png" class="mockup-screen-img" alt="Você busca">
-            </div>
+        <div class="flex flex-col items-center text-center space-y-4 group">
+          <div class="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-black font-title text-lg shadow-lg shadow-primary/20 transition-transform group-hover:scale-110">
+            1
           </div>
-          <div class="step-flow-info">
-            <h3 class="step-flow-title">Você <span class="text-gradient">busca</span></h3>
-            <p class="step-flow-desc">Encontre o serviço ou comércio que precisa perto de você.</p>
+          <div class="relative overflow-hidden rounded-2xl bg-background border border-border p-2">
+            <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-how-it-works-1-YELFGGwpwvDRAB5gWkGeRy.webp" alt="Você busca" class="w-[200px] h-auto object-cover rounded-xl transition-transform duration-300 group-hover:scale-105">
+          </div>
+          <div class="space-y-2">
+            <h3 class="text-xl font-bold text-white font-title">Você busca</h3>
+            <p class="text-sm text-muted max-w-[220px] mx-auto">Encontre o serviço ou comércio que precisa perto de você.</p>
           </div>
         </div>
-
-        <div class="step-flow-arrow"><i data-lucide="arrow-right"></i></div>
 
         <!-- Step 2 -->
-        <div class="step-flow-item">
-          <div class="step-phone-wrapper">
-            <span class="step-flow-number">2</span>
-            <div class="mockup-phone phone-flow-s">
-              <img src="/assets/images/xj/frame_prestador_joao.png" class="mockup-screen-img" alt="Encontre e escolha">
-            </div>
+        <div class="flex flex-col items-center text-center space-y-4 group">
+          <div class="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-black font-title text-lg shadow-lg shadow-primary/20 transition-transform group-hover:scale-110">
+            2
           </div>
-          <div class="step-flow-info">
-            <h3 class="step-flow-title">Encontre e <span class="text-gradient">escolha</span></h3>
-            <p class="step-flow-desc">Veja avaliações, localização e escolha o melhor para você.</p>
+          <div class="relative overflow-hidden rounded-2xl bg-background border border-border p-2">
+            <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-how-it-works-2-gddMe4gnuUmsyxDMDXEV8Y.webp" alt="Encontre e escolha" class="w-[200px] h-auto object-cover rounded-xl transition-transform duration-300 group-hover:scale-105">
+          </div>
+          <div class="space-y-2">
+            <h3 class="text-xl font-bold text-white font-title">Encontre e escolha</h3>
+            <p class="text-sm text-muted max-w-[220px] mx-auto">Veja avaliações, localização e escolha a melhor para você.</p>
           </div>
         </div>
-
-        <div class="step-flow-arrow"><i data-lucide="arrow-right"></i></div>
 
         <!-- Step 3 -->
-        <div class="step-flow-item">
-          <div class="step-phone-wrapper">
-            <span class="step-flow-number">3</span>
-            <div class="mockup-phone phone-flow-s">
-              <img src="/assets/images/xj/frame_whatsapp.png" class="mockup-screen-img" alt="Fale direto no WhatsApp">
-            </div>
+        <div class="flex flex-col items-center text-center space-y-4 group">
+          <div class="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-black font-title text-lg shadow-lg shadow-primary/20 transition-transform group-hover:scale-110">
+            3
           </div>
-          <div class="step-flow-info">
-            <h3 class="step-flow-title">Fale direto <span class="text-gradient">no WhatsApp</span></h3>
-            <p class="step-flow-desc">Chame no WhatsApp e resolva tudo de forma rápida.</p>
+          <div class="relative overflow-hidden rounded-2xl bg-background border border-border p-2">
+            <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-how-it-works-3-R4296w5gJuujeFURG4oyzj.webp" alt="Fale no WhatsApp" class="w-[200px] h-auto object-cover rounded-xl transition-transform duration-300 group-hover:scale-105">
+          </div>
+          <div class="space-y-2">
+            <h3 class="text-xl font-bold text-white font-title">Fale no WhatsApp</h3>
+            <p class="text-sm text-muted max-w-[220px] mx-auto">Chame no WhatsApp e resolva tudo de forma rápida.</p>
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="flex flex-col items-center text-center space-y-4 group">
+          <div class="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-black font-title text-lg shadow-lg shadow-primary/20 transition-transform group-hover:scale-110">
+            4
+          </div>
+          <div class="relative overflow-hidden rounded-2xl bg-background border border-border p-2">
+            <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-how-it-works-4-9A3jbMW432PLGGSxpUuDVa.webp" alt="Problema resolvido" class="w-[200px] h-auto object-cover rounded-xl transition-transform duration-300 group-hover:scale-105">
+          </div>
+          <div class="space-y-2">
+            <h3 class="text-xl font-bold text-white font-title">Problema resolvido!</h3>
+            <p class="text-sm text-muted max-w-[220px] mx-auto">Tudo que você precisa, em um só lugar.</p>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Section 2: Para prestadores de serviços -->
-  <section class="section section-dark provider-section-with-bg" id="para-prestadores">
-    <div class="container grid-2-align-center">
-      <div class="benefits-text-column">
-        <div class="pill-badge">
-          <i data-lucide="bell" class="pill-badge-icon"></i>
-          <span>Feito para prestadores como você</span>
+  <!-- Para Prestadores Section -->
+  <section id="para-prestadores" class="py-20 border-b border-border">
+    <div class="container mx-auto px-4">
+      <div class="grid md:grid-cols-2 gap-12 items-center">
+        <!-- Left Column -->
+        <div class="space-y-8">
+          <div class="space-y-4">
+            <h2 class="text-3xl md:text-5xl font-black font-title text-white leading-tight">
+              Para prestadores<br>
+              <span class="text-primary">de serviços</span>
+            </h2>
+            <p class="text-base md:text-lg text-muted max-w-md">
+              Mais visibilidade. Mais clientes. Mais ganhos.
+            </p>
+          </div>
+
+          <ul class="space-y-4">
+            <li class="flex items-start gap-3">
+              <i data-lucide="check-circle-2" class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"></i>
+              <span class="text-base text-foreground">Receba clientes perto de você</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <i data-lucide="check-circle-2" class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"></i>
+              <span class="text-base text-foreground">Gerencie seus serviços e visibilidade</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <i data-lucide="check-circle-2" class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"></i>
+              <span class="text-base text-foreground">Receba avaliações e conquiste mais confiança</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <i data-lucide="check-circle-2" class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"></i>
+              <span class="text-base text-foreground">Tenha mais oportunidades todos os dias</span>
+            </li>
+          </ul>
+
+          <a href="#cadastro" class="inline-flex items-center justify-center bg-primary text-primary-foreground hover:bg-primary/90 font-extrabold px-8 py-4 rounded-xl text-base transition-all shadow-lg shadow-primary/20 hover:-translate-y-0.5">
+            Quero ser encontrado
+          </a>
         </div>
-        
-        <h2 class="section-title text-left">Para <span class="text-gradient">prestadores</span><br>de serviços</h2>
-        <p class="section-subtitle text-left margin-bottom-32">Seu serviço encontrado por quem precisa.<br>Mais visibilidade, mais clientes e mais ganhos.</p>
-        
-        <ul class="benefits-bullets-rich">
-          <li>
-            <div class="bullet-icon-check"><i data-lucide="check"></i></div>
-            <div class="bullet-rich-content">
-              <span class="bullet-rich-title">Seu perfil aparece para clientes próximos</span>
-              <span class="bullet-rich-desc">Seja encontrado por quem precisa do seu serviço.</span>
-            </div>
-          </li>
-          <li>
-            <div class="bullet-icon-check"><i data-lucide="check"></i></div>
-            <div class="bullet-rich-content">
-              <span class="bullet-rich-title">Receba chamadas direto pelo WhatsApp</span>
-              <span class="bullet-rich-desc">Fale direto com o cliente e feche mais serviços.</span>
-            </div>
-          </li>
-          <li>
-            <div class="bullet-icon-check"><i data-lucide="check"></i></div>
-            <div class="bullet-rich-content">
-              <span class="bullet-rich-title">Mostre avaliações e conquiste confiança</span>
-              <span class="bullet-rich-desc">Aumente sua credibilidade e destaque seu trabalho.</span>
-            </div>
-          </li>
-          <li>
-            <div class="bullet-icon-check"><i data-lucide="check"></i></div>
-            <div class="bullet-rich-content">
-              <span class="bullet-rich-title">Tenha mais oportunidades todos os dias</span>
-              <span class="bullet-rich-desc">Novos clientes procurando por serviços como o seu.</span>
-            </div>
-          </li>
-        </ul>
-        
-        <a href="#cadastro" class="btn-primary-mock btn-icon-left">
-          <i data-lucide="search"></i> Quero receber clientes
-        </a>
-        
-        <div class="rating-avatars-row">
-          <div class="avatars-group">
-            <div class="avatar-stacked avatar-g1">JM</div>
-            <div class="avatar-stacked avatar-g2">AS</div>
-            <div class="avatar-stacked avatar-g3">CR</div>
-            <div class="avatar-stacked avatar-g4">PL</div>
-          </div>
-          <div class="rating-info">
-            <div class="rating-stars-gold">
-              <i data-lucide="star"></i>
-              <i data-lucide="star"></i>
-              <i data-lucide="star"></i>
-              <i data-lucide="star"></i>
-              <i data-lucide="star"></i>
-            </div>
-            <span class="rating-text-muted"><strong>+2.500 prestadores</strong> já estão crescendo com o XamaJá</span>
-          </div>
-        </div>
-      </div>
-      
-      <div class="benefits-image-column">
-        <div class="neon-rings-backdrop">
-          <div class="neon-ring ring-1"></div>
-          <div class="neon-ring ring-2"></div>
-          <div class="neon-ring ring-3"></div>
-        </div>
-        <div class="mockup-showcase-container showcase-prestadores">
-          <!-- Combined Phone + Worker High-Fidelity Asset -->
-          <img src="/assets/images/xj/asset_prestador_combined.png" class="combined-provider-image" alt="Prestador de Serviço">
-          
-          <!-- Floating Client Notification -->
-          <div class="floating-client-notification">
-            <div class="notification-header">
-              <i data-lucide="bell" class="bell-glow-icon"></i>
-              <span>Novo cliente encontrado</span>
-            </div>
-            <div class="notification-body">
-              <div class="notification-user-row">
-                <div class="notification-user-avatar">
-                  <i data-lucide="user"></i>
-                </div>
-                <div class="notification-user-info">
-                  <span class="notification-user-name">João precisa de um encanador</span>
-                  <span class="notification-user-dist">
-                    <i data-lucide="map-pin"></i> 1,2 km de você
-                  </span>
-                </div>
-              </div>
-              <a href="#cadastro" class="btn-notification-respond">
-                <i data-lucide="message-square"></i> Responder agora
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Bottom certifications -->
-    <div class="container border-top-divider">
-      <div class="provider-features-row">
-        <div class="provider-feature-badge">
-          <div class="provider-feature-icon">
-            <i data-lucide="shield-check"></i>
-          </div>
-          <div class="provider-feature-text">
-            <span class="provider-feature-title">Perfil verificado</span>
-            <span class="provider-feature-desc">Mais confiança para seus clientes</span>
-          </div>
-        </div>
-        
-        <div class="provider-feature-badge">
-          <div class="provider-feature-icon">
-            <i data-lucide="star"></i>
-          </div>
-          <div class="provider-feature-text">
-            <span class="provider-feature-title">4.9 avaliações</span>
-            <span class="provider-feature-desc">Baseado em mais de 128 avaliações</span>
-          </div>
-        </div>
-        
-        <div class="provider-feature-badge">
-          <div class="provider-feature-icon">
-            <i data-lucide="map-pin"></i>
-          </div>
-          <div class="provider-feature-text">
-            <span class="provider-feature-title">2.1 km dos clientes</span>
-            <span class="provider-feature-desc">Mais visibilidade na sua região</span>
-          </div>
-        </div>
-        
-        <div class="provider-feature-badge">
-          <div class="provider-feature-icon-pulse">
-            <span class="pulse-dot-large"></span>
-          </div>
-          <div class="provider-feature-text">
-            <span class="provider-feature-title">Disponível agora</span>
-            <span class="provider-feature-desc">Mostre que você está pronto para atender</span>
-          </div>
+
+        <!-- Right Column -->
+        <div class="flex justify-center relative">
+          <div class="absolute inset-0 bg-primary/10 rounded-full blur-3xl filter opacity-30 pointer-events-none"></div>
+          <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-service-provider-Md5EygbsDPWs42ZSrzGGp6.webp" alt="Para Prestadores" class="w-full max-w-[340px] h-auto object-contain drop-shadow-2xl relative z-10">
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Section 3: Para comércios locais -->
-  <section class="section" id="para-comercios">
-    <div class="container grid-2-align-center reverse-mobile">
-      <div class="benefits-image-column">
-        <div class="glowing-backdrop-green"></div>
-        <div class="mockup-showcase-container showcase-comercios">
-          <!-- Pizza image overlay -->
-          <img src="/assets/images/xj/asset_pizzas.png" class="pizza-image-overlay" alt="Pizza Deliciosa">
-          
-          <!-- Drink image overlay -->
-          <img src="/assets/images/xj/asset_bebida.png" class="drink-image-overlay" alt="Bebidas">
-          
-          <!-- Phone Mockup Pizzaria Japa -->
-          <div class="mockup-phone phone-overlay-right">
-            <img src="/assets/images/xj/tela_cardapio.png" class="mockup-screen-img" alt="Tela do cardápio">
-          </div>
-          
-          <!-- Green Arrow pointing to the card -->
-          <div class="flow-arrow-middle">
-            <i data-lucide="arrow-right"></i>
-          </div>
-          
-          <!-- Phone Mockup Seu Pedido -->
-          <div class="mockup-phone phone-overlay-right-small">
-            <img src="/assets/images/xj/tela_pedido.png" class="mockup-screen-img" alt="Seu pedido">
-          </div>
+  <!-- Para Comércios Section -->
+  <section id="para-comercios" class="py-20 bg-card/10 border-b border-border">
+    <div class="container mx-auto px-4">
+      <div class="grid md:grid-cols-2 gap-12 items-center">
+        <!-- Left Column -->
+        <div class="flex justify-center order-2 md:order-1 relative">
+          <div class="absolute inset-0 bg-primary/10 rounded-full blur-3xl filter opacity-30 pointer-events-none"></div>
+          <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-commerce-kCETcfMaD2NsM9wbVS6gvi.webp" alt="Para Comércios" class="w-full max-w-[340px] h-auto object-contain drop-shadow-2xl relative z-10">
         </div>
-      </div>
 
-      <div class="benefits-text-column">
-        <h2 class="section-title text-left">Para <span class="text-gradient">comércios</span> locais</h2>
-        <p class="section-subtitle text-left margin-bottom-32">Seu negócio na palma da mão do cliente.</p>
-        
-        <ul class="benefits-bullets-list">
-          <li>
-            <div class="bullet-icon-check"><i data-lucide="check"></i></div>
-            <span>Divulgue seu cardápio ou produtos</span>
-          </li>
-          <li>
-            <div class="bullet-icon-check"><i data-lucide="check"></i></div>
-            <span>Receba pedidos direto no WhatsApp</span>
-          </li>
-          <li>
-            <div class="bullet-icon-check"><i data-lucide="check"></i></div>
-            <span>Mais pedidos, mais vendas</span>
-          </li>
-          <li>
-            <div class="bullet-icon-check"><i data-lucide="check"></i></div>
-            <span>Sem taxas por pedido</span>
-          </li>
-        </ul>
-        
-        <a href="#cadastro" class="btn-primary-mock margin-top-24">Quero meu comércio no XamaJá</a>
-      </div>
-    </div>
-  </section>
+        <!-- Right Column -->
+        <div class="space-y-8 order-1 md:order-2">
+          <div class="space-y-4">
+            <h2 class="text-3xl md:text-5xl font-black font-title text-white leading-tight">
+              Para comércios<br>
+              <span class="text-primary">locais</span>
+            </h2>
+            <p class="text-base md:text-lg text-muted max-w-md">
+              Seu negócio em destaque na sua comunidade.
+            </p>
+          </div>
 
-  <!-- Section 4: O app na prática -->
-  <section class="section section-dark" id="app-na-pratica">
-    <div class="container">
-      <div class="section-header">
-        <h2 class="section-title">O app na <span class="text-gradient">prática</span></h2>
-        <p class="section-subtitle">Tudo que você precisa, em um só lugar.</p>
-      </div>
-      
-      <div class="pratica-grid">
-        <!-- Screen 1: Map -->
-        <div class="pratica-item">
-          <div class="mockup-phone">
-            <img src="/assets/images/xj/frame_busca.png" class="mockup-screen-img" alt="Encontre perto de você">
-          </div>
-          <div class="pratica-info">
-            <h4 class="pratica-title">Encontre perto de você</h4>
-            <p class="pratica-desc">Veja prestadores e comércios no mapa da sua região.</p>
-          </div>
-        </div>
-        
-        <!-- Screen 2: Categories -->
-        <div class="pratica-item">
-          <div class="mockup-phone">
-            <img src="/assets/images/xj/tela_categorias.png" class="mockup-screen-img" alt="Categorias">
-          </div>
-          <div class="pratica-info">
-            <h4 class="pratica-title">Categorias</h4>
-            <p class="pratica-desc">Serviços, comércios, delivery e muito mais.</p>
-          </div>
-        </div>
-        
-        <!-- Screen 3: Choices -->
-        <div class="pratica-item">
-          <div class="mockup-phone">
-            <img src="/assets/images/xj/frame_prestador_joao.png" class="mockup-screen-img" alt="Escolha o melhor">
-          </div>
-          <div class="pratica-info">
-            <h4 class="pratica-title">Escolha o melhor</h4>
-            <p class="pratica-desc">Veja avaliações, distância e disponibilidade.</p>
-          </div>
-        </div>
-        
-        <!-- Screen 4: Profile -->
-        <div class="pratica-item">
-          <div class="mockup-phone">
-            <img src="/assets/images/xj/tela_perfil_prestador.png" class="mockup-screen-img" alt="Perfil do prestador">
-          </div>
-          <div class="pratica-info">
-            <h4 class="pratica-title">Perfil do prestador</h4>
-            <p class="pratica-desc">Mostre seus serviços e receba mais clientes.</p>
-          </div>
+          <ul class="space-y-4">
+            <li class="flex items-start gap-3">
+              <i data-lucide="check-circle-2" class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"></i>
+              <span class="text-base text-foreground">Divulgue seu cardápio ou produtos</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <i data-lucide="check-circle-2" class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"></i>
+              <span class="text-base text-foreground">Receba pedidos direto no WhatsApp</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <i data-lucide="check-circle-2" class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"></i>
+              <span class="text-base text-foreground">Aumente seus pedidos e vendas</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <i data-lucide="check-circle-2" class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"></i>
+              <span class="text-base text-foreground">Plataforma sem taxas por pedido</span>
+            </li>
+          </ul>
+
+          <a href="#cadastro" class="inline-flex items-center justify-center bg-primary text-primary-foreground hover:bg-primary/90 font-extrabold px-8 py-4 rounded-xl text-base transition-all shadow-lg shadow-primary/20 hover:-translate-y-0.5">
+            Quero meu comércio no XamaJá
+          </a>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Registration Form Section -->
-  <section class="section" id="cadastro">
-    <div class="container form-container">
-      <div class="form-header">
-        <h2 class="section-title">Cadastre seu Negócio ou Serviço no XamaJá</h2>
-        <p class="section-subtitle">Preencha o formulário abaixo para enviar as informações do seu comércio, loja ou serviço. Nossa equipe entrará em contato para concluir a ativação do perfil.</p>
+  <!-- O App na Prática Section -->
+  <section class="py-20 bg-card/30 border-b border-border">
+    <div class="container mx-auto px-4">
+      <div class="text-center max-w-2xl mx-auto mb-16 space-y-4">
+        <h2 class="text-3xl md:text-5xl font-black font-title text-white">
+          O app na <span class="text-primary">prática</span>
+        </h2>
+        <p class="text-base md:text-lg text-muted">Tudo que você precisa, em um só lugar.</p>
       </div>
-      
-      <div class="card-form">
-        <form id="provider-form" class="form">
-          <div class="form-row">
-            <div class="form-group">
-              <label for="name">Nome do Profissional ou Negócio *</label>
-              <input type="text" id="name" name="name" placeholder="Ex: João Silva ou Pinturas Silva" required>
+
+      <div class="flex flex-col md:flex-row justify-center items-center gap-8 md:gap-12 overflow-x-auto pb-4">
+        <div class="flex flex-col items-center space-y-3 group">
+          <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-categories-WnxaxSy5YcqR9GYKJM377w.webp" alt="Categorias" class="w-full max-w-[270px] h-auto rounded-2xl shadow-xl border border-border/30 transition-transform group-hover:scale-[1.03]">
+          <span class="text-sm font-semibold text-muted group-hover:text-primary transition-colors">Categorias</span>
+        </div>
+        <div class="flex flex-col items-center space-y-3 group">
+          <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-profile-service-i3qrkeuJk74osjF9EguFjJ.webp" alt="Perfil do Prestador" class="w-full max-w-[270px] h-auto rounded-2xl shadow-xl border border-border/30 transition-transform group-hover:scale-[1.03]">
+          <span class="text-sm font-semibold text-muted group-hover:text-primary transition-colors">Perfil</span>
+        </div>
+        <div class="flex flex-col items-center space-y-3 group">
+          <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-app-showcase-WdeTpQk76sVEPj2emyYAPr.webp" alt="App Showcase" class="w-full max-w-[270px] h-auto rounded-2xl shadow-xl border border-border/30 transition-transform group-hover:scale-[1.03]">
+          <span class="text-sm font-semibold text-muted group-hover:text-primary transition-colors">App</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Confiança Section -->
+  <section id="vantagens" class="py-20 border-b border-border">
+    <div class="container mx-auto px-4">
+      <div class="text-center max-w-2xl mx-auto mb-16 space-y-4">
+        <h2 class="text-3xl md:text-5xl font-black font-title text-white">
+          Confiança que gera <span class="text-primary">resultados</span>
+        </h2>
+        <p class="text-base md:text-lg text-muted">Números que comprovam nossa eficiência.</p>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div class="bg-card border border-border rounded-2xl p-6 text-center space-y-3 hover:border-primary/30 transition-colors">
+          <div class="text-4xl">👥</div>
+          <div class="text-3xl font-black font-title text-primary">+1.200</div>
+          <p class="text-sm font-semibold text-muted">Prestadores ativos</p>
+        </div>
+        <div class="bg-card border border-border rounded-2xl p-6 text-center space-y-3 hover:border-primary/30 transition-colors">
+          <div class="text-4xl">🏢</div>
+          <div class="text-3xl font-black font-title text-primary">+500</div>
+          <p class="text-sm font-semibold text-muted">Comércios parceiros</p>
+        </div>
+        <div class="bg-card border border-border rounded-2xl p-6 text-center space-y-3 hover:border-primary/30 transition-colors">
+          <div class="text-4xl">🔍</div>
+          <div class="text-3xl font-black font-title text-primary">+15.000</div>
+          <p class="text-sm font-semibold text-muted">Buscas realizadas</p>
+        </div>
+        <div class="bg-card border border-border rounded-2xl p-6 text-center space-y-3 hover:border-primary/30 transition-colors">
+          <div class="text-4xl">⭐</div>
+          <div class="text-3xl font-black font-title text-primary">4.9</div>
+          <p class="text-sm font-semibold text-muted">Avaliação média</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Form Section (Registration) -->
+  <section id="cadastro" class="py-20 bg-card/10 border-b border-border">
+    <div class="container mx-auto px-4 max-w-4xl">
+      <div class="text-center max-w-2xl mx-auto mb-12 space-y-4">
+        <h2 class="text-3xl md:text-5xl font-black font-title text-white">Cadastre seu <span class="text-primary">Serviço</span> ou <span class="text-primary">Negócio</span></h2>
+        <p class="text-sm md:text-base text-muted">Preencha o formulário abaixo com as informações do seu negócio ou serviço. Nossa equipe fará a verificação e entrará em contato para ativar seu perfil.</p>
+      </div>
+
+      <div class="bg-card border border-border rounded-3xl p-8 md:p-12 shadow-2xl relative">
+        <form id="provider-form" class="space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="flex flex-col gap-2">
+              <label for="name" class="text-sm font-semibold text-white">Nome do Profissional ou Negócio *</label>
+              <input type="text" id="name" name="name" placeholder="Ex: João Silva ou Pinturas Silva" required class="bg-background border border-border text-foreground rounded-xl px-4 py-3.5 focus:border-primary focus:outline-none transition text-sm">
             </div>
-            <div class="form-group">
-              <label for="email">E-mail *</label>
-              <input type="email" id="email" name="email" placeholder="Ex: joao@gmail.com" required>
+            <div class="flex flex-col gap-2">
+              <label for="email" class="text-sm font-semibold text-white">E-mail *</label>
+              <input type="email" id="email" name="email" placeholder="Ex: joao@gmail.com" required class="bg-background border border-border text-foreground rounded-xl px-4 py-3.5 focus:border-primary focus:outline-none transition text-sm">
             </div>
           </div>
           
-          <div class="form-row">
-            <div class="form-group">
-              <label for="phone">Telefone / WhatsApp *</label>
-              <input type="tel" id="phone" name="phone" placeholder="Ex: (11) 99999-9999" required>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="flex flex-col gap-2">
+              <label for="phone" class="text-sm font-semibold text-white">Telefone / WhatsApp *</label>
+              <input type="tel" id="phone" name="phone" placeholder="Ex: (11) 99999-9999" required class="bg-background border border-border text-foreground rounded-xl px-4 py-3.5 focus:border-primary focus:outline-none transition text-sm">
             </div>
-            <div class="form-group">
-              <label for="categoryId">Categoria Principal *</label>
-              <select id="categoryId" name="categoryId" required>
-                <option value="">Selecione uma categoria...</option>
-                <option value="reformas-reparos">Reformas e Reparos</option>
-                <option value="assistencia-tecnica">Assistência Técnica</option>
-                <option value="servicos-domesticos">Serviços Domésticos</option>
-                <option value="servicos-externos">Serviços Externos</option>
-                <option value="automotivo">Automotivo</option>
-                <option value="beleza-estetica">Beleza e Estética</option>
-                <option value="servicos-profissionais">Serviços Profissionais</option>
-                <option value="saude">Saúde</option>
-                <option value="eventos">Eventos</option>
-                <option value="logistica">Logística</option>
-                <option value="educacao">Educação</option>
-                <option value="comercios">Comércios / Lojas</option>
-                <option value="mobilidade">Mobilidade</option>
-                <option value="outro">Outro (Especificar)...</option>
+            <div class="flex flex-col gap-2">
+              <label for="categoryId" class="text-sm font-semibold text-white">Categoria Principal *</label>
+              <select id="categoryId" name="categoryId" required class="bg-background border border-border text-foreground rounded-xl px-4 py-3.5 focus:border-primary focus:outline-none transition text-sm">
+                <option value="" class="bg-card">Selecione uma categoria...</option>
+                <option value="reformas-reparos" class="bg-card">Reformas e Reparos</option>
+                <option value="assistencia-tecnica" class="bg-card">Assistência Técnica</option>
+                <option value="servicos-domesticos" class="bg-card">Serviços Domésticos</option>
+                <option value="servicos-externos" class="bg-card">Serviços Externos</option>
+                <option value="automotivo" class="bg-card">Automotivo</option>
+                <option value="beleza-estetica" class="bg-card">Beleza e Estética</option>
+                <option value="servicos-profissionais" class="bg-card">Serviços Profissionais</option>
+                <option value="saude" class="bg-card">Saúde</option>
+                <option value="eventos" class="bg-card">Eventos</option>
+                <option value="logistica" class="bg-card">Logística</option>
+                <option value="educacao" class="bg-card">Educação</option>
+                <option value="comercios" class="bg-card">Comércios / Lojas</option>
+                <option value="mobilidade" class="bg-card">Mobilidade</option>
+                <option value="outro" class="bg-card">Outro (Especificar)...</option>
               </select>
             </div>
           </div>
 
-          <div class="form-group" id="other-category-group" style="display: none;">
-            <label for="otherCategory">Especifique a Categoria *</label>
-            <input type="text" id="otherCategory" name="otherCategory" placeholder="Ex: Pet Shop, Consultoria, etc.">
+          <div class="flex flex-col gap-2" id="other-category-group" style="display: none;">
+            <label for="otherCategory" class="text-sm font-semibold text-white">Especifique a Categoria *</label>
+            <input type="text" id="otherCategory" name="otherCategory" placeholder="Ex: Pet Shop, Consultoria, etc." class="bg-background border border-border text-foreground rounded-xl px-4 py-3.5 focus:border-primary focus:outline-none transition text-sm">
           </div>
           
-          <div class="form-row">
-            <div class="form-group">
-              <label for="city">Cidade *</label>
-              <input type="text" id="city" name="city" placeholder="Ex: Bragança Paulista" required>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="flex flex-col gap-2">
+              <label for="city" class="text-sm font-semibold text-white">Cidade *</label>
+              <input type="text" id="city" name="city" placeholder="Ex: Bragança Paulista" required class="bg-background border border-border text-foreground rounded-xl px-4 py-3.5 focus:border-primary focus:outline-none transition text-sm">
             </div>
-            <div class="form-group">
-              <label for="neighborhood">Bairro *</label>
-              <input type="text" id="neighborhood" name="neighborhood" placeholder="Ex: Centro" required>
+            <div class="flex flex-col gap-2">
+              <label for="neighborhood" class="text-sm font-semibold text-white">Bairro *</label>
+              <input type="text" id="neighborhood" name="neighborhood" placeholder="Ex: Centro" required class="bg-background border border-border text-foreground rounded-xl px-4 py-3.5 focus:border-primary focus:outline-none transition text-sm">
             </div>
           </div>
           
-          <div class="form-group">
-            <label for="description">Descrição do seu negócio, produtos ou serviços *</label>
-            <textarea id="description" name="description" rows="4" placeholder="Descreva brevemente o seu comércio, loja, os produtos que vende ou serviços que oferece..." required></textarea>
+          <div class="flex flex-col gap-2">
+            <label for="description" class="text-sm font-semibold text-white">Descrição do seu negócio, produtos ou serviços *</label>
+            <textarea id="description" name="description" rows="4" placeholder="Descreva brevemente o seu comércio, loja, os produtos que vende ou serviços que oferece..." required class="bg-background border border-border text-foreground rounded-xl px-4 py-3.5 focus:border-primary focus:outline-none transition text-sm resize-none"></textarea>
           </div>
           
-          <!-- Mensagens de Alerta -->
-          <div id="form-success" class="alert alert-success" style="display: none;">
-            <i data-lucide="check-circle"></i>
+          <!-- Status Messages -->
+          <div id="form-success" class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl p-4 gap-3 text-sm items-start" style="display: none;">
+            <i data-lucide="check-circle" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>
             <div>
-              <strong>Formulário enviado com sucesso!</strong> Recebemos suas informações. Analisaremos os dados e entraremos em contato para ativar o seu perfil no app XamaJá.
+              <strong>Cadastro enviado com sucesso!</strong> Recebemos suas informações. Analisaremos os dados e entraremos em contato para ativar o seu perfil no app XamaJá.
             </div>
           </div>
           
-          <div id="form-error" class="alert alert-danger" style="display: none;">
-            <i data-lucide="alert-triangle"></i>
+          <div id="form-error" class="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-4 gap-3 text-sm items-start" style="display: none;">
+            <i data-lucide="alert-triangle" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>
             <span id="error-message">Houve um erro ao processar seu cadastro. Tente novamente.</span>
           </div>
           
-          <button type="submit" class="btn-submit" id="btn-submit">
+          <button type="submit" class="w-full flex items-center justify-center gap-3 bg-primary text-primary-foreground font-black font-title py-4 rounded-xl hover:bg-primary/90 transition shadow-lg shadow-primary/20 hover:-translate-y-0.5 disabled:opacity-75 disabled:cursor-not-allowed" id="btn-submit">
             <span>Enviar Formulário</span>
-            <div class="loader" id="form-loader" style="display: none;"></div>
+            <div class="loader-form w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" id="form-loader" style="display: none;"></div>
           </button>
         </form>
       </div>
     </div>
   </section>
 
-  <!-- Footer -->
-  <footer class="footer">
-    <div class="container footer-container">
-      <div class="footer-info">
-        <a href="/" class="logo logo-footer">
-          <span class="logo-accent">Xama</span>Já
-        </a>
-        <p class="footer-copy">&copy; 2026 XamaJá. Todos os direitos reservados.</p>
+  <!-- CTA Final Section -->
+  <section class="py-20 border-b border-border bg-gradient-to-r from-primary/5 to-primary/0">
+    <div class="container mx-auto px-4">
+      <div class="grid md:grid-cols-2 gap-12 items-center">
+        <div class="flex justify-center relative">
+          <div class="absolute inset-0 bg-primary/10 rounded-full blur-3xl filter opacity-30 pointer-events-none"></div>
+          <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/mascote-parrot-WdeTpQk76sVEPj2emyYAPr.webp" alt="Mascote XamaJá" class="w-full max-w-[340px] h-auto object-contain relative z-10 animate-float">
+        </div>
+
+        <div class="space-y-8">
+          <h2 class="text-3xl md:text-5xl font-black font-title text-white leading-tight">
+            Pronto para crescer com o XamaJá?
+          </h2>
+          <p class="text-base md:text-lg text-muted max-w-md">
+            Cadastre-se agora e comece a receber mais clientes ou encontre os melhores prestadores perto de você.
+          </p>
+
+          <a href="#cadastro" class="inline-flex items-center justify-center bg-primary text-primary-foreground hover:bg-primary/90 font-extrabold px-8 py-4 rounded-xl text-base transition-all shadow-lg shadow-primary/20 hover:-translate-y-0.5">
+            Cadastrar agora <i data-lucide="arrow-right" class="ml-2 w-5 h-5"></i>
+          </a>
+        </div>
       </div>
-      
-      <div class="footer-links">
-        <a href="/politica-de-privacidade" class="footer-link">Política de Privacidade</a>
-        <a href="/exclusao-conta" class="footer-link">Excluir Conta</a>
-        <a href="mailto:suporte.xamaja@gmail.com" class="footer-link">Contato</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-background border-t border-border py-16">
+    <div class="container mx-auto px-4">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+        <div class="space-y-4">
+          <h3 class="font-bold font-title text-white text-sm uppercase tracking-wider">Navegação</h3>
+          <ul class="space-y-2 text-sm text-muted">
+            <li><a href="/" class="hover:text-primary transition-colors">Início</a></li>
+            <li><a href="#como-funciona" class="hover:text-primary transition-colors">Como funciona</a></li>
+            <li><a href="#para-prestadores" class="hover:text-primary transition-colors">Para prestadores</a></li>
+            <li><a href="#para-comercios" class="hover:text-primary transition-colors">Para comércios</a></li>
+          </ul>
+        </div>
+
+        <div class="space-y-4">
+          <h3 class="font-bold font-title text-white text-sm uppercase tracking-wider">Suporte</h3>
+          <ul class="space-y-2 text-sm text-muted">
+            <li><a href="mailto:suporte.xamaja@gmail.com" class="hover:text-primary transition-colors">Contato</a></li>
+            <li><a href="mailto:suporte.xamaja@gmail.com" class="hover:text-primary transition-colors">Suporte Técnico</a></li>
+          </ul>
+        </div>
+
+        <div class="space-y-4">
+          <h3 class="font-bold font-title text-white text-sm uppercase tracking-wider">Legal</h3>
+          <ul class="space-y-2 text-sm text-muted">
+            <li><a href="/politica-de-privacidade" class="hover:text-primary transition-colors">Política de Privacidade</a></li>
+            <li><a href="/exclusao-conta" class="hover:text-primary transition-colors">Excluir Conta</a></li>
+          </ul>
+        </div>
+
+        <div class="space-y-4">
+          <h3 class="font-bold font-title text-white text-sm uppercase tracking-wider">XamaJá</h3>
+          <p class="text-xs text-muted leading-relaxed">
+            Plataforma digital para conectar comércios locais e prestadores de serviços de forma ágil, segura e sem custos de intermediários.
+          </p>
+        </div>
+      </div>
+
+      <div class="border-t border-border pt-8 text-center text-xs text-muted flex flex-col sm:flex-row items-center justify-between gap-4">
+        <p>&copy; 2026 XamaJá. Todos os direitos reservados.</p>
+        <p class="flex items-center gap-1.5">O X MARCA O LOCAL.</p>
       </div>
     </div>
   </footer>
