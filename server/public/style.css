@@ -13,8 +13,8 @@ html {
   right: -100%;
   width: 300px;
   height: 100%;
-  background-color: #1A1F3A; /* matches theme card color */
-  border-left: 1px solid #2A2F4A; /* matches theme border color */
+  background-color: #0E0E11; /* matches theme card color */
+  border-left: 1px solid #1F1F24; /* matches theme border color */
   z-index: 200;
   padding: 80px 40px;
   display: flex;
