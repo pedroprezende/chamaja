@@ -70,20 +70,32 @@ export default function WhatsappOrderScreen() {
     let cleaned = phone.replace(/\D/g, "");
     const whatsappNumber = cleaned.startsWith("55") ? cleaned : `55${cleaned}`;
     const encodedText = encodeURIComponent(messageText);
-    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedText}`;
 
-    Linking.openURL(whatsappUrl)
+    const whatsappAppUrl = `whatsapp://send?phone=${whatsappNumber}&text=${encodedText}`;
+    const whatsappWebUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${encodedText}`;
+
+    // Tenta abrir o app do WhatsApp diretamente primeiro
+    Linking.openURL(whatsappAppUrl)
       .then(() => {
-        // Ao abrir com sucesso, limpa o carrinho
         clearCart();
-        // Redireciona para a tela inicial
         router.replace({
           pathname: "/professional/[id]" as any,
           params: { id: id }
         });
       })
       .catch(() => {
-        Alert.alert("Erro", "Não foi possível abrir o WhatsApp. Certifique-se de que ele está instalado no dispositivo.");
+        // Fallback: Tenta abrir a página web oficial do WhatsApp (que abre no navegador e redireciona)
+        Linking.openURL(whatsappWebUrl)
+          .then(() => {
+            clearCart();
+            router.replace({
+              pathname: "/professional/[id]" as any,
+              params: { id: id }
+            });
+          })
+          .catch(() => {
+            Alert.alert("Erro", "Não foi possível abrir o WhatsApp. Certifique-se de que ele está instalado no dispositivo.");
+          });
       });
   };
 
