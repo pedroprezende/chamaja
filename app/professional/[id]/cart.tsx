@@ -47,35 +47,39 @@ export default function CartScreen() {
     enabled: !!id,
   });
 
+  const confirmAction = (title: string, message: string, onConfirm: () => void) => {
+    if (Platform.OS === "web") {
+      const confirmed = window.confirm(`${title}\n\n${message}`);
+      if (confirmed) {
+        onConfirm();
+      }
+    } else {
+      Alert.alert(title, message, [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Confirmar", style: "destructive", onPress: onConfirm }
+      ]);
+    }
+  };
+
   const handleClearCart = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Alert.alert(
+    confirmAction(
       "Esvaziar carrinho?",
       "Tem certeza que deseja remover todos os itens do seu carrinho?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Esvaziar",
-          style: "destructive",
-          onPress: () => {
-            clearCart();
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          },
-        },
-      ]
+      () => {
+        clearCart();
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
     );
   };
 
   const handleDecreaseQuantity = (itemId: string, currentQty: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (currentQty === 1) {
-      Alert.alert(
+      confirmAction(
         "Remover item?",
         "Deseja remover este item do carrinho?",
-        [
-          { text: "Cancelar", style: "cancel" },
-          { text: "Remover", style: "destructive", onPress: () => removeFromCart(itemId) }
-        ]
+        () => removeFromCart(itemId)
       );
     } else {
       updateQuantity(itemId, currentQty - 1);
@@ -212,6 +216,19 @@ export default function CartScreen() {
                       style={[styles.qtyBtn, { borderColor: colors.border }]}
                     >
                       <MaterialIcons name="add" size={16} color={colors.foreground} />
+                    </Pressable>
+                    <Pressable 
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                        confirmAction(
+                          "Remover item?",
+                          `Deseja remover "${item.name || "este produto"}" do carrinho?`,
+                          () => removeFromCart(item.id)
+                        );
+                      }}
+                      style={{ marginLeft: 10, padding: 4 }}
+                    >
+                      <MaterialIcons name="delete-outline" size={20} color="#EF4444" />
                     </Pressable>
                   </View>
                 </View>

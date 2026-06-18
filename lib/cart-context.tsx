@@ -42,10 +42,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [notes, setNotes] = useState<string>("");
   const [deliveryAddress, setDeliveryAddress] = useState<string>("");
 
-  // Inicializa o endereço com o LocationProvider se estiver vazio
+  // Atualiza o endereço quando o endereço global mudar
   useEffect(() => {
-    if (addressName && !deliveryAddress) {
+    if (addressName) {
       setDeliveryAddress(addressName);
+      saveCart(items, merchantId, notes, addressName);
     }
   }, [addressName]);
 
