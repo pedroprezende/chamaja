@@ -32,9 +32,6 @@ export default function Home() {
             <a href="#para-comercios" className="text-muted-foreground hover:text-foreground transition">
               Para comércios
             </a>
-            <a href="#vantagens" className="text-muted-foreground hover:text-foreground transition">
-              Vantagens
-            </a>
           </nav>
 
           <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
@@ -287,29 +284,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Confiança Section */}
-      <section id="vantagens" className="py-20 md:py-32 bg-background" style={{backgroundColor: '#000000'}}>
-        <div className="container mx-auto px-4">
-          <h2 className="text-4xl md:text-5xl font-bold text-center mb-16">
-            Confiança que gera <span className="text-primary">resultados</span>
-          </h2>
 
-          <div className="grid md:grid-cols-5 gap-8">
-            {[
-              { icon: "👥", number: "+1.200", label: "Prestadores ativos" },
-              { icon: "🏢", number: "+500", label: "Comércios parceiros" },
-              { icon: "🔍", number: "+15.000", label: "Buscas realizadas" },
-              { icon: "⭐", number: "4.9", label: "Avaliação média" },
-            ].map((stat, idx) => (
-              <div key={idx} className="text-center">
-                <div className="text-4xl mb-4">{stat.icon}</div>
-                <div className="text-3xl font-bold text-primary mb-2">{stat.number}</div>
-                <p className="text-muted-foreground">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* CTA Final Section */}
       <section className="py-20 md:py-32 bg-gradient-to-r from-primary/10 to-primary/5 border-t border-border">

@@ -54,8 +54,8 @@
               foreground: '#FFFFFF',
             },
             muted: {
-              DEFAULT: '#1F1F24',
-              foreground: '#A0A0A0',
+              DEFAULT: '#A0A0A0',
+              foreground: '#1F1F24',
             },
             accent: {
               DEFAULT: '#CCFF00',
@@ -99,7 +99,6 @@
         <a href="#como-funciona" class="text-sm font-semibold text-muted hover:text-foreground transition-colors">Como funciona</a>
         <a href="#para-prestadores" class="text-sm font-semibold text-muted hover:text-foreground transition-colors">Para prestadores</a>
         <a href="#para-comercios" class="text-sm font-semibold text-muted hover:text-foreground transition-colors">Para comércios</a>
-        <a href="#vantagens" class="text-sm font-semibold text-muted hover:text-foreground transition-colors">Vantagens</a>
       </nav>
       
       <div class="hidden md:block">
@@ -123,7 +122,6 @@
     <a href="#como-funciona" class="mobile-link text-lg font-bold text-foreground hover:text-primary transition-colors">Como funciona</a>
     <a href="#para-prestadores" class="mobile-link text-lg font-bold text-foreground hover:text-primary transition-colors">Para prestadores</a>
     <a href="#para-comercios" class="mobile-link text-lg font-bold text-foreground hover:text-primary transition-colors">Para comércios</a>
-    <a href="#vantagens" class="mobile-link text-lg font-bold text-foreground hover:text-primary transition-colors">Vantagens</a>
     
     <a href="/app" class="btn-secondary-drawer mt-4 flex items-center justify-center gap-2 border border-primary text-primary hover:bg-primary hover:text-primary-foreground font-semibold px-6 py-3 rounded-xl transition-all">
       <i data-lucide="layout"></i> Entrar no App
@@ -134,7 +132,7 @@
   </div>
 
   <!-- Hero Section -->
-  <section class="py-16 md:py-24 bg-gradient-to-b from-background to-background/50 border-b border-border relative overflow-hidden">
+  <section class="py-16 md:py-24 bg-gradient-to-b from-background to-background/50 border-b border-border relative">
     <div class="container mx-auto px-4 relative z-10">
       <div class="grid md:grid-cols-12 gap-12 items-center">
         <!-- Left Content -->
@@ -200,7 +198,7 @@
         <!-- Right Content - Cropped Hero Mockup Image -->
         <div class="md:col-span-5 flex justify-center relative">
           <div class="absolute inset-0 bg-primary/10 rounded-full blur-3xl filter opacity-40 pointer-events-none"></div>
-          <img src="/assets/images/hero_mockup_right.png" alt="App XamaJá Mockup" class="w-full max-w-[490px] h-auto object-contain drop-shadow-2xl relative z-10 animate-float">
+          <img src="/assets/images/hero_mockup_right.png" alt="App XamaJá Mockup" class="w-full max-w-[490px] h-auto object-contain drop-shadow-2xl relative z-10 animate-float hero-mask mb-6 md:mb-0">
         </div>
       </div>
     </div>
@@ -401,40 +399,7 @@
     </div>
   </section>
 
-  <!-- Confiança Section -->
-  <section id="vantagens" class="py-20 border-b border-border">
-    <div class="container mx-auto px-4">
-      <div class="text-center max-w-2xl mx-auto mb-16 space-y-4">
-        <h2 class="text-3xl md:text-5xl font-black font-title text-white">
-          Confiança que gera <span class="text-primary">resultados</span>
-        </h2>
-        <p class="text-base md:text-lg text-muted">Números que comprovam nossa eficiência.</p>
-      </div>
 
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
-        <div class="bg-card border border-border rounded-2xl p-6 text-center space-y-3 hover:border-primary/30 transition-colors">
-          <div class="text-4xl">👥</div>
-          <div class="text-3xl font-black font-title text-primary">+1.200</div>
-          <p class="text-sm font-semibold text-muted">Prestadores ativos</p>
-        </div>
-        <div class="bg-card border border-border rounded-2xl p-6 text-center space-y-3 hover:border-primary/30 transition-colors">
-          <div class="text-4xl">🏢</div>
-          <div class="text-3xl font-black font-title text-primary">+500</div>
-          <p class="text-sm font-semibold text-muted">Comércios parceiros</p>
-        </div>
-        <div class="bg-card border border-border rounded-2xl p-6 text-center space-y-3 hover:border-primary/30 transition-colors">
-          <div class="text-4xl">🔍</div>
-          <div class="text-3xl font-black font-title text-primary">+15.000</div>
-          <p class="text-sm font-semibold text-muted">Buscas realizadas</p>
-        </div>
-        <div class="bg-card border border-border rounded-2xl p-6 text-center space-y-3 hover:border-primary/30 transition-colors">
-          <div class="text-4xl">⭐</div>
-          <div class="text-3xl font-black font-title text-primary">4.9</div>
-          <p class="text-sm font-semibold text-muted">Avaliação média</p>
-        </div>
-      </div>
-    </div>
-  </section>
 
   <!-- Form Section (Registration) -->
   <section id="cadastro" class="py-20 bg-card/10 border-b border-border">
