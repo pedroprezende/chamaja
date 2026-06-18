@@ -1622,15 +1622,27 @@ body {
 }
 
 /* Benefits Showcase Container */
+.benefits-image-column {
+  position: relative;
+}
+
 .mockup-showcase-container {
   position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 440px;
   width: 100%;
-  max-width: 480px;
   margin: 0 auto;
+}
+
+.showcase-prestadores {
+  max-width: 540px;
+  height: 520px;
+}
+
+.showcase-comercios {
+  max-width: 500px;
+  height: 440px;
 }
 
 .glowing-backdrop-green {
@@ -2313,7 +2325,8 @@ body {
   
   .mockup-showcase-container {
     flex-direction: column;
-    height: auto;
+    height: auto !important;
+    max-width: 100% !important;
     gap: 20px;
     padding: 24px 0;
   }
@@ -2846,7 +2859,7 @@ body {
 /* Upgraded Provider Section Styles */
 .provider-section-with-bg {
   position: relative;
-  background-image: linear-gradient(to bottom, rgba(8, 8, 8, 0.95), rgba(8, 8, 8, 0.95)), url('/assets/images/neon_map_bg.png');
+  background-image: linear-gradient(to bottom, rgba(8, 8, 8, 0.95), rgba(8, 8, 8, 0.95)), url('/assets/images/neon_map_bg.png?v=3');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -3030,8 +3043,8 @@ body {
 /* Floating Notification Card */
 .floating-client-notification {
   position: absolute;
-  top: 30px;
-  right: -25px;
+  top: -10px;
+  right: -80px;
   width: 240px;
   background-color: rgba(18, 18, 20, 0.95);
   backdrop-filter: blur(16px);
