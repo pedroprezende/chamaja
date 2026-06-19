@@ -107,11 +107,12 @@ export default function Home() {
             </div>
 
             {/* Right - Phone Mockup */}
-            <div className="flex justify-center">
+            <div className="flex justify-center relative">
+              <div className="absolute inset-0 bg-primary/10 rounded-full blur-3xl filter opacity-40 pointer-events-none"></div>
               <img
-                src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/hero-phone-main-kzBbzgV84kxiJCS96A5sDY.webp"
+                src="/assets/images/hero_mockup_right.png"
                 alt="App XamaJá"
-                className="max-w-sm w-full h-auto"
+                className="max-w-lg w-full h-auto relative z-10 drop-shadow-2xl"
               />
             </div>
           </div>
@@ -268,17 +269,17 @@ export default function Home() {
             <img
               src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-categories-WnxaxSy5YcqR9GYKJM377w.webp"
               alt="Categorias"
-              className="h-[340px] md:h-[420px] w-auto rounded-lg object-contain"
+              className="w-[240px] h-[320px] md:w-[300px] md:h-[400px] object-contain rounded-lg bg-card p-3 border border-border"
             />
             <img
               src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-profile-service-i3qrkeuJk74osjF9EguFjJ.webp"
               alt="Perfil"
-              className="h-[340px] md:h-[420px] w-auto rounded-lg object-contain"
+              className="w-[240px] h-[320px] md:w-[300px] md:h-[400px] object-contain rounded-lg bg-card p-3 border border-border"
             />
             <img
               src="/assets/images/xj/app_mockup.webp"
               alt="App"
-              className="h-[340px] md:h-[420px] w-auto rounded-lg object-contain"
+              className="w-[240px] h-[320px] md:w-[300px] md:h-[400px] object-contain rounded-lg bg-card p-3 border border-border"
             />
           </div>
         </div>
