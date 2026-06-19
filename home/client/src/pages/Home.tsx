@@ -276,7 +276,7 @@ export default function Home() {
               className="max-w-xs w-full h-auto rounded-lg"
             />
             <img
-              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-app-showcase-WdeTpQk76sVEPj2emyYAPr.webp"
+              src="/assets/images/xj/app_mockup.webp"
               alt="App"
               className="max-w-xs w-full h-auto rounded-lg"
             />
