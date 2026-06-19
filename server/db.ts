@@ -12,6 +12,7 @@ import {
   reviews, InsertReview,
   favorites,
   appEvents,
+  admins,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -67,7 +68,19 @@ export async function getUserByOpenId(openId: string) {
   const db = await getDb();
   if (!db) { console.warn("[Database] Cannot get user: database not available"); return undefined; }
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  if (result.length > 0) {
+    const user = result[0];
+    const adminRecord = await db.select().from(admins).where(eq(admins.openId, openId)).limit(1);
+    if (adminRecord.length > 0) {
+      return {
+        ...user,
+        role: "admin" as const,
+        adminRole: adminRecord[0].adminRole,
+      };
+    }
+    return user;
+  }
+  return undefined;
 }
 
 export async function deleteUserFully(openId: string): Promise<void> {

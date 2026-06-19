@@ -21,66 +21,33 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       let dbUser: any = null;
 
       // 1. Tenta login normal via Supabase Auth
-      try {
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-        if (!authError && authData.user) {
-          // Busca role no banco de dados
-          const { data, error: dbError } = await supabase
-            .from("users")
-            .select("*")
-            .eq("open_id", authData.user.id)
-            .single();
-
-          if (!dbError && data) {
-            dbUser = data;
-          }
-        }
-      } catch (e) {
-        console.warn("Falha no login via Supabase Auth. Usando fallback se credenciais de teste forem válidas...", e);
+      if (authError) {
+        throw new Error(authError.message || "E-mail ou senha incorretos.");
       }
 
-      // 2. Fallback de segurança para e-mail/senhas de admin conhecidos do projeto
-      const lowercaseEmail = email.toLowerCase();
-      const isFallbackAdmin =
-        lowercaseEmail === "pedroprezende33@gmail.com" &&
-        (password === "admin123456" || password === "3404001#Sayajins" || password === "340401#Sayajins");
-
-      if (!dbUser && isFallbackAdmin) {
-        // Tenta buscar o admin direto na tabela public.users (que tem leitura pública)
-        const { data, error: dbError } = await supabase
-          .from("users")
+      if (authData.user) {
+        // Busca administrador na tabela dedicada admins
+        const { data: adminData, error: dbError } = await supabase
+          .from("admins")
           .select("*")
-          .eq("email", "pedroprezende33@gmail.com")
-          .limit(1);
+          .eq("open_id", authData.user.id)
+          .single();
 
-        if (!dbError && data && data.length > 0) {
-          dbUser = data[0];
-        } else {
-          // Se o usuário ainda não existe na tabela users, cria um mock com a role admin
-          dbUser = {
-            id: 9999,
-            open_id: "admin-fallback",
-            name: "Pedro Prezende",
-            email: "pedroprezende33@gmail.com",
-            role: "admin",
-            admin_role: "principal",
-            created_at: new Date().toISOString(),
-            last_signed_in: new Date().toISOString(),
-          };
+        if (dbError || !adminData) {
+          await supabase.auth.signOut();
+          throw new Error("Acesso não autorizado. Apenas administradores cadastrados podem acessar este painel.");
         }
+
+        dbUser = adminData;
       }
 
       if (!dbUser) {
-        throw new Error("E-mail ou senha incorretos.");
-      }
-
-      if (dbUser.role !== "admin") {
-        await supabase.auth.signOut();
-        throw new Error("Acesso não autorizado. Apenas administradores podem acessar este painel.");
+        throw new Error("Ocorreu um erro ao tentar entrar.");
       }
 
       onLoginSuccess(dbUser);

@@ -23,9 +23,23 @@ export const users = pgTable("users", {
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("login_method", { length: 64 }),
   role: userRoleEnum("role").default("user").notNull(),
+  status: varchar("status", { length: 50 }),
+  phone: varchar("phone", { length: 50 }),
+  adminRole: varchar("admin_role", { length: 50 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   lastSignedIn: timestamp("last_signed_in").defaultNow().notNull(),
+});
+
+// ── Admins ────────────────────────────────────────────────────────────────────
+export const admins = pgTable("admins", {
+  id: serial("id").primaryKey(),
+  openId: varchar("open_id", { length: 64 }).notNull().unique(),
+  name: text("name"),
+  email: varchar("email", { length: 320 }).notNull().unique(),
+  adminRole: varchar("admin_role", { length: 50 }).default("moderador").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // ── Categories ────────────────────────────────────────────────────────────────
@@ -165,6 +179,8 @@ export const featuredAds = pgTable("featured_ads", {
 // ── Types ─────────────────────────────────────────────────────────────────────
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
+export type Admin = typeof admins.$inferSelect;
+export type InsertAdmin = typeof admins.$inferInsert;
 export type Category = typeof categories.$inferSelect;
 export type InsertCategory = typeof categories.$inferInsert;
 export type SubService = typeof subServices.$inferSelect;

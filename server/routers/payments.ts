@@ -1,17 +1,17 @@
 import { z } from "zod";
-import { adminProcedure, router } from "../_core/trpc";
+import { adminWriteProcedure, router } from "../_core/trpc";
 import * as db from "../db";
 import { payments, providers } from "../../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
 
 export const paymentsRouter = router({
-  listAll: adminProcedure.query(async () => {
+  listAll: adminWriteProcedure.query(async () => {
     const dbInstance = await db.getDb();
     if (!dbInstance) throw new Error("DB not found");
     return dbInstance.select().from(payments).orderBy(desc(payments.dataPagamento));
   }),
 
-  getByProvider: adminProcedure
+  getByProvider: adminWriteProcedure
     .input(z.string())
     .query(async ({ input }) => {
       const dbInstance = await db.getDb();
@@ -23,7 +23,7 @@ export const paymentsRouter = router({
         .orderBy(desc(payments.dataPagamento));
     }),
 
-  register: adminProcedure
+  register: adminWriteProcedure
     .input(
       z.object({
         prestadorId: z.string(),

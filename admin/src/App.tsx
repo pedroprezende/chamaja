@@ -10,18 +10,13 @@ export default function App() {
   const checkAdminRole = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from("users")
+        .from("admins")
         .select("*")
         .eq("open_id", userId)
         .single();
       
       if (error) {
         throw error;
-      }
-      
-      if (data.role !== "admin") {
-        await supabase.auth.signOut();
-        return null;
       }
       
       return data;
@@ -38,20 +33,15 @@ export default function App() {
       if (savedSession) {
         try {
           const parsed = JSON.parse(savedSession);
-          if (parsed.open_id === "admin-fallback") {
-            setAdminUser(parsed);
-            setSessionChecked(true);
-            return;
-          }
           
           // Caso contrário, busca do banco de dados para garantir que a permissão ainda é válida
           const { data, error } = await supabase
-            .from("users")
+            .from("admins")
             .select("*")
             .eq("open_id", parsed.open_id)
             .single();
           
-          if (!error && data && data.role === "admin") {
+          if (!error && data) {
             setAdminUser(data);
             localStorage.setItem("@chamaja_admin_session", JSON.stringify(data));
             setSessionChecked(true);

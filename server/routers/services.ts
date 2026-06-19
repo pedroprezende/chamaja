@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, adminProcedure, router } from "../_core/trpc";
+import { publicProcedure, adminProcedure, adminWriteProcedure, router } from "../_core/trpc";
 import * as db from "../db";
 
 const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -29,7 +29,7 @@ export const servicesRouter = router({
       return db.getServiceById(input.id);
     }),
 
-  create: adminProcedure
+  create: adminWriteProcedure
     .input(z.object({
       name: z.string().min(1),
       category: z.string(),
@@ -71,7 +71,7 @@ export const servicesRouter = router({
       });
     }),
 
-  update: adminProcedure
+  update: adminWriteProcedure
     .input(z.object({
       id: z.string(),
       name: z.string().min(1).optional(),
@@ -94,13 +94,13 @@ export const servicesRouter = router({
       await db.updateService(id, data);
     }),
 
-  delete: adminProcedure
+  delete: adminWriteProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       await db.deleteService(input.id);
     }),
 
-  reorder: adminProcedure
+  reorder: adminWriteProcedure
     .input(z.object({ ids: z.array(z.string()) }))
     .mutation(async ({ input }) => {
       await Promise.all(

@@ -20,7 +20,57 @@ export const storage = {
         return uri;
       }
 
-      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}.jpg`;
+      let fileSize = 0;
+      let fileType = "";
+
+      if (uri.startsWith("data:")) {
+        const match = uri.match(/^data:(image\/[a-z0-9-+.]+);base64,/i);
+        if (match) {
+          fileType = match[1];
+        }
+        const base64Data = uri.split(",")[1];
+        fileSize = base64Data ? Math.round(base64Data.length * 0.75) : 0;
+      } else if (Platform.OS === "web") {
+        const response = await fetch(uri);
+        const blob = await response.blob();
+        fileSize = blob.size;
+        fileType = blob.type;
+      } else {
+        const fileInfo = await FileSystem.getInfoAsync(uri);
+        if (!fileInfo.exists) {
+          throw new Error("Arquivo não encontrado no caminho especificado.");
+        }
+        fileSize = fileInfo.size || 0;
+        
+        const cleanUri = uri.split("?")[0].split("#")[0];
+        const ext = cleanUri.substring(cleanUri.lastIndexOf(".") + 1).toLowerCase();
+        if (ext === "jpg" || ext === "jpeg") {
+          fileType = "image/jpeg";
+        } else if (ext === "png") {
+          fileType = "image/png";
+        } else if (ext === "webp") {
+          fileType = "image/webp";
+        } else {
+          fileType = `image/${ext}`;
+        }
+      }
+
+      logger.info("STORAGE", `Validando arquivo: tamanho = ${fileSize} bytes, tipo = ${fileType}`);
+
+      const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+      if (fileSize > MAX_SIZE) {
+        logger.error("STORAGE", `Arquivo excede o limite de tamanho: ${fileSize} > ${MAX_SIZE}`);
+        throw new Error("O arquivo excede o limite de tamanho de 5MB.");
+      }
+
+      const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+      if (!ALLOWED_TYPES.includes(fileType.toLowerCase())) {
+        logger.error("STORAGE", `Tipo de arquivo não permitido: ${fileType}`);
+        throw new Error("Formato de arquivo inválido. Apenas imagens JPG, PNG e WEBP são permitidas.");
+      }
+
+      const ext = fileType.toLowerCase() === "image/png" ? "png" : fileType.toLowerCase() === "image/webp" ? "webp" : "jpg";
+      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
       const filePath = fileName;
 
       logger.info("STORAGE", `Processando imagem local: ${uri.substring(0, 50)}...`);
@@ -32,7 +82,7 @@ export const storage = {
         const blob = await response.blob();
         const { data, error } = await supabase.storage
           .from(bucket)
-          .upload(filePath, blob, { contentType: "image/jpeg", cacheControl: "3600", upsert: true });
+          .upload(filePath, blob, { contentType: fileType, cacheControl: "3600", upsert: true });
         
         if (error) throw error;
         
@@ -51,7 +101,7 @@ export const storage = {
         const { data, error } = await supabase.storage
           .from(bucket)
           .upload(filePath, body, {
-            contentType: "image/jpeg",
+            contentType: fileType,
             cacheControl: "3600",
             upsert: true,
           });

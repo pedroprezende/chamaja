@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, adminProcedure, router } from "../_core/trpc";
+import { publicProcedure, adminProcedure, adminWriteProcedure, router } from "../_core/trpc";
 import * as db from "../db";
 
 const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -53,7 +53,7 @@ export const featuredAdsRouter = router({
     });
   }),
 
-  create: adminProcedure
+  create: adminWriteProcedure
     .input(z.object({
       providerId: z.string(),
       providerName: z.string(),
@@ -83,14 +83,14 @@ export const featuredAdsRouter = router({
       });
     }),
 
-  delete: adminProcedure
+  delete: adminWriteProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       await db.deleteFeaturedAd(input.id);
       return { success: true };
     }),
 
-  toggle: adminProcedure
+  toggle: adminWriteProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       const ads = await db.getFeaturedAds();

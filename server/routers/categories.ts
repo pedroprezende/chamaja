@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, adminProcedure, router } from "../_core/trpc";
+import { publicProcedure, adminProcedure, adminWriteProcedure, router } from "../_core/trpc";
 import * as db from "../db";
 
 const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -104,7 +104,7 @@ export const categoriesRouter = router({
     return db.getAllCategories();
   }),
 
-  create: adminProcedure
+  create: adminWriteProcedure
     .input(z.object({
       name: z.string().min(1),
       icon: z.string().default("build"),
@@ -116,14 +116,14 @@ export const categoriesRouter = router({
       return db.createCategory({ id, name: input.name, icon: input.icon, displayOrder: maxOrder + 1, isActive: true });
     }),
 
-  update: adminProcedure
+  update: adminWriteProcedure
     .input(z.object({ id: z.string(), name: z.string().optional(), icon: z.string().optional(), isActive: z.boolean().optional() }))
     .mutation(async ({ input }) => {
       const { id, ...data } = input;
       await db.updateCategory(id, data);
     }),
 
-  delete: adminProcedure
+  delete: adminWriteProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       await db.deleteCategory(input.id);
@@ -175,7 +175,7 @@ export const categoriesRouter = router({
         return subs;
       }),
     
-    create: adminProcedure
+    create: adminWriteProcedure
       .input(z.object({ categoryId: z.string(), name: z.string().min(1), icon: z.string().default("build"), imageUrl: z.string().optional() }))
       .mutation(async ({ input }) => {
         const existing = await db.getSubServicesByCategoryId(input.categoryId);
@@ -184,13 +184,13 @@ export const categoriesRouter = router({
         return db.createSubService({ id, categoryId: input.categoryId, name: input.name, icon: input.icon, imageUrl: input.imageUrl, displayOrder: maxOrder + 1, isActive: true });
       }),
 
-    delete: adminProcedure
+    delete: adminWriteProcedure
       .input(z.object({ id: z.string() }))
       .mutation(async ({ input }) => {
         await db.deleteSubService(input.id);
       }),
 
-    update: adminProcedure
+    update: adminWriteProcedure
       .input(z.object({ 
         id: z.string(), 
         name: z.string().optional(), 
@@ -204,7 +204,7 @@ export const categoriesRouter = router({
       }),
   }),
 
-  reorder: adminProcedure
+  reorder: adminWriteProcedure
     .input(z.object({ ids: z.array(z.string()) }))
     .mutation(async ({ input }) => {
       await Promise.all(

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, adminProcedure, protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure, adminProcedure, adminWriteProcedure, protectedProcedure, router } from "../_core/trpc";
 import * as db from "../db";
 import { providers, appEvents } from "../../drizzle/schema";
 import { eq, or, ilike, and, gte, lte, ne, desc, asc, sql } from "drizzle-orm";
@@ -83,16 +83,47 @@ const ProviderUpdateSchema = z.object({
 
 const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
+function sanitizeProviderForUser(
+  provider: any,
+  currentUser: { openId: string; role: string } | null
+) {
+  if (!provider) return null;
+  const isAdmin = currentUser?.role === "admin";
+  const isOwner = currentUser && provider.userId === currentUser.openId;
+
+  if (isAdmin || isOwner) {
+    return provider;
+  }
+
+  // Clone and mask private details
+  const { userId, planExpiresAt, status, ...publicData } = provider;
+  return {
+    ...publicData,
+    userId: null,
+    planExpiresAt: null,
+    status: null,
+  };
+}
+
+function sanitizeProvidersForUser(
+  providersList: any[],
+  currentUser: { openId: string; role: string } | null
+) {
+  return providersList.map((p) => sanitizeProviderForUser(p, currentUser));
+}
+
 export const providersRouter = router({
   list: publicProcedure
     .input(z.object({ subcategoryId: z.string().optional() }).optional())
-    .query(async ({ input }) => {
-      return db.getProviders(true);
+    .query(async ({ input, ctx }) => {
+      const results = await db.getProviders(true);
+      return sanitizeProvidersForUser(results, ctx.user);
     }),
 
   listLightweight: publicProcedure
-    .query(async () => {
-      return db.getProvidersLightweight(true);
+    .query(async ({ ctx }) => {
+      const results = await db.getProvidersLightweight(true);
+      return sanitizeProvidersForUser(results, ctx.user);
     }),
 
   all: adminProcedure.query(async () => {
@@ -300,10 +331,10 @@ export const providersRouter = router({
 
   getByCategory: publicProcedure
     .input(z.string())
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const dbInstance = await db.getDb();
       if (!dbInstance) return [];
-      return dbInstance.select().from(providers).where(
+      const results = await dbInstance.select().from(providers).where(
         or(
           eq(providers.category, input),
           eq(providers.categoryId, input),
@@ -313,15 +344,16 @@ export const providersRouter = router({
           ilike(providers.serviceName, `%${input}%`)
         )
       );
+      return sanitizeProvidersForUser(results, ctx.user);
     }),
 
   search: publicProcedure
     .input(z.string())
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const dbInstance = await db.getDb();
       if (!dbInstance) return [];
       const lower = `%${input.toLowerCase()}%`;
-      return dbInstance.select().from(providers).where(
+      const results = await dbInstance.select().from(providers).where(
         or(
           ilike(providers.name, lower),
           ilike(providers.category, lower),
@@ -331,6 +363,7 @@ export const providersRouter = router({
           ilike(providers.description, lower)
         )
       );
+      return sanitizeProvidersForUser(results, ctx.user);
     }),
 
   searchFiltered: publicProcedure
@@ -348,7 +381,7 @@ export const providersRouter = router({
       availability: z.enum(["any", "now", "today", "scheduled"]).optional(),
       sortBy: z.enum(["relevance", "distance", "rating", "popularity", "recent", "name"]).optional(),
     }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const dbInstance = await db.getDb();
       if (!dbInstance) return [];
 
@@ -509,7 +542,7 @@ export const providersRouter = router({
       queryBuilder.orderBy(...orderByExprs);
       const results = await queryBuilder;
 
-      return results.map(r => {
+      const mapped = results.map(r => {
         let distanceStr = "";
         let distanceKm = (r as any).distanceKm;
         if (distanceKm !== undefined && distanceKm !== null) {
@@ -525,6 +558,7 @@ export const providersRouter = router({
           distanceStr,
         };
       });
+      return sanitizeProvidersForUser(mapped, ctx.user);
     }),
 
   smartSearch: publicProcedure
@@ -772,7 +806,7 @@ export const providersRouter = router({
 
   getById: publicProcedure
     .input(z.string())
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const dbInstance = await db.getDb();
       if (!dbInstance) return null;
       const res = await dbInstance.select().from(providers).where(
@@ -781,7 +815,7 @@ export const providersRouter = router({
           eq(providers.userId, input)
         )
       ).limit(1);
-      return res.length > 0 ? res[0] : null;
+      return res.length > 0 ? sanitizeProviderForUser(res[0], ctx.user) : null;
     }),
 
   getReviews: publicProcedure
@@ -862,7 +896,7 @@ export const providersRouter = router({
     }),
 
   // Admin routes (preserved)
-  create: adminProcedure
+  create: adminWriteProcedure
     .input(z.any())
     .mutation(async ({ input }) => {
       // Used by admin dashboard
@@ -920,7 +954,7 @@ export const providersRouter = router({
       });
     }),
 
-  update: adminProcedure
+  update: adminWriteProcedure
     .input(z.any())
     .mutation(async ({ input }) => {
       const { id, ...data } = input;
@@ -955,7 +989,7 @@ export const providersRouter = router({
       await db.updateProvider(id, data);
     }),
 
-  delete: adminProcedure
+  delete: adminWriteProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       await db.deleteProvider(input.id);

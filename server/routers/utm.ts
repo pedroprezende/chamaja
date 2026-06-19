@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { adminProcedure, router } from "../_core/trpc";
+import { adminWriteProcedure, router } from "../_core/trpc";
 import * as db from "../db";
 import { utmLinks, appEvents } from "../../drizzle/schema";
 import { eq, desc, count, and, isNotNull, ne } from "drizzle-orm";
 
 export const utmRouter = router({
-  listAll: adminProcedure.query(async () => {
+  listAll: adminWriteProcedure.query(async () => {
     const dbInstance = await db.getDb();
     if (!dbInstance) throw new Error("DB not found");
 
@@ -40,7 +40,7 @@ export const utmRouter = router({
     }));
   }),
 
-  generate: adminProcedure
+  generate: adminWriteProcedure
     .input(
       z.object({
         source: z.string().min(1),

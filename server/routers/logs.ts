@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, adminProcedure, router } from "../_core/trpc";
+import { publicProcedure, adminMasterProcedure, router } from "../_core/trpc";
 import * as db from "../db";
 import { systemLogs } from "../../drizzle/schema";
 import { desc } from "drizzle-orm";
@@ -32,7 +32,7 @@ export const logsRouter = router({
       return { success: true };
     }),
 
-  list: adminProcedure
+  list: adminMasterProcedure
     .query(async () => {
       const dbInstance = await db.getDb();
       if (!dbInstance) throw new Error("DB not found");
