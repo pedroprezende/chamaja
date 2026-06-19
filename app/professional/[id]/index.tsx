@@ -88,6 +88,15 @@ export default function ProfessionalDetailScreen() {
     enabled: !!id,
   });
 
+  const isCommerce = useMemo(() => {
+    if (!professional) return false;
+    return (
+      professional.categoryId === "comercios" ||
+      professional.category === "Comércios" ||
+      professional.category === "comercios"
+    );
+  }, [professional]);
+
   const galleryImages = professional?.gallery || [];
   const currentImageIndex = selectedImage ? galleryImages.indexOf(selectedImage) : -1;
 
@@ -236,15 +245,6 @@ export default function ProfessionalDetailScreen() {
 
   // Type-narrowed alias to prevent TS closure warnings
   const prof = professional;
-
-  const isCommerce = useMemo(() => {
-    if (!prof) return false;
-    return (
-      prof.categoryId === "comercios" ||
-      prof.category === "Comércios" ||
-      prof.category === "comercios"
-    );
-  }, [prof]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
