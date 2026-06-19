@@ -268,17 +268,17 @@ export default function Home() {
             <img
               src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-categories-WnxaxSy5YcqR9GYKJM377w.webp"
               alt="Categorias"
-              className="max-w-xs w-full h-auto rounded-lg"
+              className="h-[340px] md:h-[420px] w-auto rounded-lg object-contain"
             />
             <img
               src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-profile-service-i3qrkeuJk74osjF9EguFjJ.webp"
               alt="Perfil"
-              className="max-w-xs w-full h-auto rounded-lg"
+              className="h-[340px] md:h-[420px] w-auto rounded-lg object-contain"
             />
             <img
               src="/assets/images/xj/app_mockup.webp"
               alt="App"
-              className="max-w-xs w-full h-auto rounded-lg"
+              className="h-[340px] md:h-[420px] w-auto rounded-lg object-contain"
             />
           </div>
         </div>
