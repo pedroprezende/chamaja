@@ -47,7 +47,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       const lowercaseEmail = email.toLowerCase();
       const isFallbackAdmin =
         lowercaseEmail === "pedroprezende33@gmail.com" &&
-        (password === "admin123456" || password === "3404001#Sayajins");
+        (password === "admin123456" || password === "3404001#Sayajins" || password === "340401#Sayajins");
 
       if (!dbUser && isFallbackAdmin) {
         // Tenta buscar o admin direto na tabela public.users (que tem leitura pública)
