@@ -281,7 +281,7 @@ export default function Home() {
               },
             ].map((item) => (
               <div key={item.title} className="flex flex-col items-center gap-4">
-                <div className="w-[240px] h-[320px] md:w-[300px] md:h-[400px] rounded-2xl bg-[#09090b] border border-zinc-800/80 p-6 flex items-center justify-center shadow-2xl transition hover:border-primary/50 hover:scale-[1.02] duration-300">
+                <div className="w-[280px] h-[480px] md:w-[340px] md:h-[600px] rounded-2xl bg-[#09090b] border border-zinc-800/80 p-2 flex items-center justify-center shadow-2xl transition hover:border-primary/50 hover:scale-[1.02] duration-300">
                   <img
                     src={item.img}
                     alt={item.title}
