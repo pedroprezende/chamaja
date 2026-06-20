@@ -265,22 +265,34 @@ export default function Home() {
             <p className="text-lg text-muted-foreground">Tudo que você precisa, em um só lugar.</p>
           </div>
 
-          <div className="flex justify-center gap-4 overflow-x-auto pb-4">
-            <img
-              src="/assets/images/xj/categorias_mockup.png"
-              alt="Categorias"
-              className="w-[240px] h-[320px] md:w-[300px] md:h-[400px] object-contain rounded-lg bg-card p-3 border border-border"
-            />
-            <img
-              src="/assets/images/xj/prestador_mockup.png"
-              alt="Perfil"
-              className="w-[240px] h-[320px] md:w-[300px] md:h-[400px] object-contain rounded-lg bg-card p-3 border border-border"
-            />
-            <img
-              src="/assets/images/xj/app_mockup.webp"
-              alt="App"
-              className="w-[240px] h-[320px] md:w-[300px] md:h-[400px] object-contain rounded-lg bg-card p-3 border border-border"
-            />
+          <div className="flex flex-wrap justify-center gap-8 pb-4">
+            {[
+              {
+                title: "Categorias",
+                img: "/assets/images/xj/categorias_mockup.png",
+              },
+              {
+                title: "Perfil",
+                img: "/assets/images/xj/prestador_mockup.png",
+              },
+              {
+                title: "App",
+                img: "/assets/images/xj/app_mockup.webp",
+              },
+            ].map((item) => (
+              <div key={item.title} className="flex flex-col items-center gap-4">
+                <div className="w-[240px] h-[320px] md:w-[300px] md:h-[400px] rounded-2xl bg-[#09090b] border border-zinc-800/80 p-6 flex items-center justify-center shadow-2xl transition hover:border-primary/50 hover:scale-[1.02] duration-300">
+                  <img
+                    src={item.img}
+                    alt={item.title}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <span className="text-zinc-400 text-lg font-medium tracking-wide">
+                  {item.title}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       </section>
