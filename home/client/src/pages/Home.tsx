@@ -267,12 +267,12 @@ export default function Home() {
 
           <div className="flex justify-center gap-4 overflow-x-auto pb-4">
             <img
-              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-categories-WnxaxSy5YcqR9GYKJM377w.webp"
+              src="/assets/images/xj/categorias_mockup.png"
               alt="Categorias"
               className="w-[240px] h-[320px] md:w-[300px] md:h-[400px] object-contain rounded-lg bg-card p-3 border border-border"
             />
             <img
-              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-profile-service-i3qrkeuJk74osjF9EguFjJ.webp"
+              src="/assets/images/xj/prestador_mockup.png"
               alt="Perfil"
               className="w-[240px] h-[320px] md:w-[300px] md:h-[400px] object-contain rounded-lg bg-card p-3 border border-border"
             />

@@ -301,7 +301,7 @@ export default function AdminServiceDetailScreen() {
               <Text style={styles.gallerySectionTitle}>Fotos do local</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }}>
                 <View style={styles.galleryRow}>
-                  {service.gallery!.map((uri, idx) => (
+                  {service.gallery!.map((uri: string, idx: number) => (
                     <Image
                       key={idx}
                       source={{ uri }}

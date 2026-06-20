@@ -26,6 +26,7 @@ import * as ImagePicker from "expo-image-picker";
 import { trpc } from "@/lib/trpc";
 import { type AdminProvider, type CreateAdminProviderInput } from "@/lib/admin-providers-db";
 import { storage } from "@/lib/storage";
+import { useAdminServices } from "@/hooks/use-admin-services";
 
 interface ProviderForm extends CreateAdminProviderInput {
   serviceIds: string[];
@@ -249,7 +250,7 @@ export default function AdminProvidersScreen() {
 
   const utils = trpc.useUtils();
   const { data: dbProvidersData, isLoading: providersLoading } = trpc.providers.list.useQuery();
-  const { data: dbServices } = trpc.services.all.useQuery();
+  const { services: localServices } = useAdminServices(false);
 
   const createMutation = trpc.providers.create.useMutation({
     onSuccess: () => {
@@ -271,7 +272,7 @@ export default function AdminProvidersScreen() {
   });
 
   const providers = useMemo(() => dbProvidersData || [], [dbProvidersData]);
-  const services = useMemo(() => dbServices || [], [dbServices]);
+  const services = useMemo(() => localServices || [], [localServices]);
   
   const loading = providersLoading;
   const [saving, setSaving] = useState(false);

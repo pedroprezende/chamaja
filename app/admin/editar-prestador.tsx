@@ -19,6 +19,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { trpc } from "@/lib/trpc";
 import { storage } from "@/lib/storage";
 import * as ImagePicker from "expo-image-picker";
+import { useAdminServices } from "@/hooks/use-admin-services";
 // Removed mock import
 
 export default function EditarPrestador() {
@@ -117,11 +118,14 @@ export default function EditarPrestador() {
     { enabled: !!categoryId }
   );
 
-  // Fetch admin services for this category to use as specialties too
-  const { data: dbServices = [] } = trpc.services.getByCategory.useQuery(
-    { categoryId },
-    { enabled: !!categoryId }
-  );
+  // Load admin services locally
+  const { services: localServices } = useAdminServices(false);
+
+  // Filter admin services for this category to use as specialties too
+  const dbServices = useMemo(() => {
+    if (!categoryId) return [];
+    return localServices.filter((s) => s.categoryId === categoryId);
+  }, [localServices, categoryId]);
 
   // Fetch all subcategories globally for restoration mapping
   const { data: allSubServices = [] } = trpc.categories.subServices.listAll.useQuery();
@@ -219,8 +223,8 @@ export default function EditarPrestador() {
       
       // Também tentamos restaurar pelos IDs se estiverem salvos no subcategoryId
       if (dbProvider.subcategoryId && typeof dbProvider.subcategoryId === "string") {
-        const ids = dbProvider.subcategoryId.split(",").map(id => id.trim()).filter(Boolean);
-        ids.forEach(id => { newSelected[id] = true; });
+        const ids = dbProvider.subcategoryId.split(",").map((id: string) => id.trim()).filter(Boolean);
+        ids.forEach((id: string) => { newSelected[id] = true; });
       }
 
       specNamesCleaned.forEach(name => {

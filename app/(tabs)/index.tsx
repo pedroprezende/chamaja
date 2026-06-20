@@ -40,6 +40,7 @@ import { adminDB, type Service } from "@/lib/admin-database";
 import { trpc } from "@/lib/trpc";
 import { storage } from "@/lib/storage";
 import { useAds } from "@/hooks/use-ads";
+import { useAdminServices } from "@/hooks/use-admin-services";
 import { useAuth } from "@/lib/auth-context";
 import { useNotifications } from "@/lib/notifications-context";
 import { MigrationManager } from "@/components/MigrationManager";
@@ -279,6 +280,7 @@ export default function HomeScreen() {
 
   const { colorScheme, setColorScheme } = useThemeContext();
   const { coords, addressName, permissionGranted, loading: locationLoading } = useLocation();
+  const { services: adminServices } = useAdminServices(false);
   
   const isDefaultCity = addressName === "Bragança Paulista - SP";
   const showDistance = coords !== null;
@@ -770,8 +772,30 @@ export default function HomeScreen() {
       };
     });
 
-    // Apenas prestadores e comércios (providers), sem duplicar como serviços administrativos
-    let results = [...providers];
+    // Mapear serviços admin locais correspondentes
+    const q = homeSearchQuery.toLowerCase();
+    const matchingAdminServices = adminServices
+      .filter(
+        (s) =>
+          s.name.toLowerCase().includes(q) ||
+          s.category.toLowerCase().includes(q) ||
+          s.description?.toLowerCase().includes(q)
+      )
+      .map((s) => ({
+        id: s.id,
+        name: s.name,
+        category: s.category,
+        description: s.description || "",
+        imageUri: s.imageUri || undefined,
+        type: "SERVICE" as const,
+        rating: 5.0, // Nota padrão de verificação para serviços oficiais
+        latitude: undefined,
+        longitude: undefined,
+        categoryId: s.categoryId || "",
+      }));
+
+    // Combinar prestadores e serviços administrativos
+    let results = [...providers, ...matchingAdminServices];
 
     // Calcular distâncias
     const mapped = results.map((r) => {
@@ -800,7 +824,7 @@ export default function HomeScreen() {
     }
 
     return mapped;
-  }, [searchResults, homeSearchQuery, dbSubcategories, activeFilter, coords, showDistance]);
+  }, [searchResults, homeSearchQuery, dbSubcategories, activeFilter, coords, showDistance, adminServices]);
 
   // ── Drag-and-drop Categorias ──
   const handleCategoryDragEnd = useCallback(async ({ data }: { data: any[] }) => {
@@ -1199,10 +1223,17 @@ export default function HomeScreen() {
                 ]}
                 onPress={() => {
                   if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.push({
-                    pathname: "/professional/[id]",
-                    params: { id: item.id }
-                  } as any);
+                  if (item.type === "SERVICE") {
+                    router.push({
+                      pathname: "/admin-services/[serviceId]",
+                      params: { serviceId: item.id, title: item.name }
+                    } as any);
+                  } else {
+                    router.push({
+                      pathname: "/professional/[id]",
+                      params: { id: item.id }
+                    } as any);
+                  }
                 }}
               >
                 <View style={styles.verticalCardContent}>
@@ -1223,9 +1254,11 @@ export default function HomeScreen() {
                       <Text style={[styles.verticalCardCategory, { color: colors.primary }]}>{item.category}</Text>
                       <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.border }} />
                       <Text style={{ fontSize: 11, color: colors.muted }}>
-                        {item.categoryId === "comercios" || String(item.category).toLowerCase().includes("comercio")
-                          ? "Comércio" 
-                          : "Profissional"}
+                        {item.type === "SERVICE"
+                          ? "Serviço"
+                          : (item.categoryId === "comercios" || String(item.category).toLowerCase().includes("comercio")
+                              ? "Comércio" 
+                              : "Profissional")}
                       </Text>
                       {showDistance && item.distanceKm && item.distanceKm < 9000 ? (
                         <>

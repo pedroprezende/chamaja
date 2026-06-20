@@ -173,9 +173,21 @@ export default function DashboardAdmin() {
           <>
             {/* --- VISÃO GERAL HOJE --- */}
             <Text style={styles.sectionTitle}>Visão geral de hoje</Text>
-            <View style={styles.statsGrid}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.statsHorizontalScroll}
+            >
               {[
-                { label: "Prestadores\nativos", value: dashboardData?.stats.activeProviders || 0, sub: "Total", icon: "people", color: "#EFF6FF", iconColor: "#2563EB" },
+                {
+                  label: "Prestadores\nativos",
+                  value: dashboardData?.stats.activeProviders || 0,
+                  sub: "Gerenciar",
+                  icon: "people",
+                  color: "#EFF6FF",
+                  iconColor: "#2563EB",
+                  onPress: () => router.push("/admin/prestadores-admin" as any),
+                },
                 { label: "Cliques no\nWhatsApp", value: dashboardData?.stats.whatsappClicks || 0, sub: "Hoje", icon: "chat", color: "#F0FDF4", iconColor: "#16A34A" },
                 { label: "Visualizações\nde serviços", value: dashboardData?.stats.serviceViews || 0, sub: "Hoje", icon: "bar-chart", color: "#FFF7ED", iconColor: "#EA580C" },
                 {
@@ -190,7 +202,7 @@ export default function DashboardAdmin() {
               ].map((stat) => (
                 <Pressable
                   key={stat.label}
-                  style={({ pressed }) => [styles.statCard, pressed && stat.onPress && { opacity: 0.85 }]}
+                  style={({ pressed }) => [styles.statCardHorizontal, pressed && stat.onPress && { opacity: 0.85 }]}
                   onPress={stat.onPress}
                   disabled={!stat.onPress}
                 >
@@ -202,7 +214,7 @@ export default function DashboardAdmin() {
                   <Text style={styles.statSub}>{stat.sub}</Text>
                 </Pressable>
               ))}
-            </View>
+            </ScrollView>
 
             {/* --- ASSINATURAS E FATURAMENTO (NEW SECTION) --- */}
             <Text style={styles.sectionTitle}>Assinaturas & Faturamento</Text>
@@ -504,6 +516,19 @@ const styles = StyleSheet.create({
   statCard: {
     width: "47.5%", backgroundColor: "#FFFFFF", borderRadius: 14,
     padding: 14, borderWidth: 1, borderColor: "#F3F4F6",
+  },
+  statsHorizontalScroll: {
+    paddingRight: 16,
+    gap: 10,
+    flexDirection: "row",
+  },
+  statCardHorizontal: {
+    width: 140,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
   },
   statIconBox: { width: 40, height: 40, borderRadius: 10, alignItems: "center", justifyContent: "center", marginBottom: 8 },
   statValue: { fontSize: 26, fontWeight: "800", color: "#111827" },

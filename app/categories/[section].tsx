@@ -67,8 +67,8 @@ export default function CategoryScreen() {
     dbProviders.filter(p => p.isActive).forEach(p => {
       if (p.subcategoryId) {
         // Pode ser "id1, id2"
-        const ids = p.subcategoryId.split(",").map(id => id.trim());
-        ids.forEach(id => {
+        const ids = p.subcategoryId.split(",").map((id: string) => id.trim());
+        ids.forEach((id: string) => {
           if (id) counts[id] = (counts[id] || 0) + 1;
         });
       }

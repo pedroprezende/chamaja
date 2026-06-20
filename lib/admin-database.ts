@@ -279,6 +279,17 @@ export const adminDB = {
     _services = _services.filter((s) => s.id !== id);
     if (_services.length < before) {
       await persistServices();
+      // Track the deleted ID locally for server sync
+      try {
+        const raw = await AsyncStorage.getItem("@chamaja_admin_deleted_services");
+        const current: string[] = raw ? JSON.parse(raw) : [];
+        if (!current.includes(id)) {
+          current.push(id);
+          await AsyncStorage.setItem("@chamaja_admin_deleted_services", JSON.stringify(current));
+        }
+      } catch (e) {
+        console.warn("Failed to track deleted service ID locally:", e);
+      }
       return true;
     }
     return false;
@@ -377,5 +388,32 @@ export const adminDB = {
     _adminsInitialized   = false;
     _services = [];
     _admins   = [];
+  },
+
+  // ── Rastreamento de exclusões para sincronização ─────────────────────────────
+  getDeletedServiceIds: async (): Promise<string[]> => {
+    try {
+      const raw = await AsyncStorage.getItem("@chamaja_admin_deleted_services");
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  },
+
+  addDeletedServiceId: async (id: string): Promise<void> => {
+    try {
+      const raw = await AsyncStorage.getItem("@chamaja_admin_deleted_services");
+      const current: string[] = raw ? JSON.parse(raw) : [];
+      if (!current.includes(id)) {
+        current.push(id);
+        await AsyncStorage.setItem("@chamaja_admin_deleted_services", JSON.stringify(current));
+      }
+    } catch {}
+  },
+
+  clearDeletedServiceIds: async (): Promise<void> => {
+    try {
+      await AsyncStorage.removeItem("@chamaja_admin_deleted_services");
+    } catch {}
   },
 };
