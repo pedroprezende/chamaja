@@ -277,7 +277,7 @@ export default function Home() {
               },
               {
                 title: "App",
-                img: "/assets/images/xj/app_mockup.webp",
+                img: "/assets/images/xj/app_mockup.png",
               },
             ].map((item) => (
               <div key={item.title} className="flex flex-col items-center gap-4">
