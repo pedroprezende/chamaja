@@ -5,16 +5,31 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://jtkjsehhprtrtmptjndr.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_YlhCdn7U9aoC_bdbt92wNg_RTO5Jt7d",
+        "EXPO_PUBLIC_API_URL": "https://chamaja-production.up.railway.app"
+      }
     },
     "preview": {
       "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://jtkjsehhprtrtmptjndr.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_YlhCdn7U9aoC_bdbt92wNg_RTO5Jt7d",
+        "EXPO_PUBLIC_API_URL": "https://chamaja-production.up.railway.app"
+      },
       "android": {
         "buildType": "apk"
       }
     },
     "production": {
       "credentialsSource": "local",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://jtkjsehhprtrtmptjndr.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_YlhCdn7U9aoC_bdbt92wNg_RTO5Jt7d",
+        "EXPO_PUBLIC_API_URL": "https://chamaja-production.up.railway.app"
+      },
       "android": {
         "buildType": "app-bundle"
       },
