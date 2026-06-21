@@ -112,7 +112,7 @@ export default function Home() {
               <img
                 src="/assets/images/hero_mockup_right.png"
                 alt="App XamaJá"
-                className="max-w-lg w-full h-auto relative z-10 drop-shadow-2xl"
+                className="max-w-[650px] w-full h-auto relative z-10 drop-shadow-2xl"
               />
             </div>
           </div>
