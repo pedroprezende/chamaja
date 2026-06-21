@@ -21,7 +21,7 @@ const config: ExpoConfig = {
   slug: env.appSlug,
   version: "1.0.3",
   orientation: "portrait",
-  icon: "./assets/images/icon.png",
+  icon: "./assets/images/xj/icone_mascote_512.png",
   scheme: env.scheme,
   userInterfaceStyle: "automatic",
   newArchEnabled: true,
@@ -40,10 +40,8 @@ const config: ExpoConfig = {
   android: {
     versionCode: 4,
     adaptiveIcon: {
-      backgroundColor: "#1e2126",
-      foregroundImage: "./assets/images/android-icon-foreground.png",
-      backgroundImage: "./assets/images/android-icon-background.png",
-      monochromeImage: "./assets/images/android-icon-monochrome.png",
+      backgroundColor: "#000000",
+      foregroundImage: "./assets/images/xj/icone_mascote_512.png",
     },
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
@@ -122,12 +120,12 @@ const config: ExpoConfig = {
     [
       "expo-splash-screen",
       {
-        image: "./assets/images/splash-icon.png",
+        image: "./assets/images/xj/carregamento_splash.png",
         imageWidth: 200,
         resizeMode: "contain",
-        backgroundColor: "#1e2126",
+        backgroundColor: "#000000",
         dark: {
-          backgroundColor: "#1e2126",
+          backgroundColor: "#000000",
         },
       },
     ],
