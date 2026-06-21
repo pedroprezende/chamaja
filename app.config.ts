@@ -19,7 +19,7 @@ const env = {
 const config: ExpoConfig = {
   name: env.appName,
   slug: env.appSlug,
-  version: "1.0.3",
+  version: "1.0.4",
   orientation: "portrait",
   icon: "./assets/images/xj/icone_mascote_512.png",
   scheme: env.scheme,
@@ -38,10 +38,10 @@ const config: ExpoConfig = {
     }
   },
   android: {
-    versionCode: 4,
+    versionCode: 5,
     adaptiveIcon: {
       backgroundColor: "#000000",
-      foregroundImage: "./assets/images/xj/icone_mascote_512.png",
+      foregroundImage: "./assets/images/xj/icone_mascote_foreground.png",
     },
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
