@@ -12,9 +12,9 @@ export default function Home() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <img
-              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/xamaja-logo-ddr6eZAXiZa9HMSPrbCtrd.webp"
+              src="/assets/images/parrot_custom.png"
               alt="XamaJá"
-              className="h-8 w-8"
+              className="h-8 w-8 object-contain"
             />
             <span className="text-xl font-bold text-foreground">XamaJá</span>
           </div>
