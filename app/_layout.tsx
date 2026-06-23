@@ -58,31 +58,27 @@ function RootLayoutNav() {
       } else if (path === "") {
         router.replace("/auth/login" as any);
       }
-    } else if (isSignedIn) {
+    } else if (isSignedIn && inAuthGroup) {
+      // User is signed in but still on auth screens — redirect to appropriate home
       (async () => {
         try {
           const isBusinessFlag = await AsyncStorage.getItem("@chamaja_login_as_business");
           if (isBusinessFlag === "true") {
-            const currentPath = segments.join("/");
-            if (currentPath !== "provider-dashboard" && currentPath !== "become-provider" && currentPath !== "register-professional") {
-              if (isProviderLoading) return;
-              if (provider) {
-                if (provider.status === "pendente" || !provider.isActive) {
-                  router.replace("/become-provider" as any);
-                } else {
-                  router.replace("/provider-dashboard" as any);
-                }
+            if (isProviderLoading) return;
+            if (provider) {
+              if (provider.status === "pendente" || !provider.isActive) {
+                router.replace("/become-provider" as any);
               } else {
-                router.replace("/register-professional" as any);
+                router.replace("/provider-dashboard" as any);
               }
+            } else {
+              router.replace("/register-professional" as any);
             }
-          } else if (inAuthGroup) {
+          } else {
             router.replace("/(tabs)" as any);
           }
         } catch {
-          if (inAuthGroup) {
-            router.replace("/(tabs)" as any);
-          }
+          router.replace("/(tabs)" as any);
         }
       })();
     }

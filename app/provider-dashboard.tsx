@@ -301,7 +301,13 @@ export default function ProviderDashboard() {
       <View style={styles.header}>
         <Pressable
           style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
-          onPress={() => router.back()}
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace("/(tabs)" as any);
+            }
+          }}
         >
           <MaterialIcons name="arrow-back" size={24} color="#111827" />
         </Pressable>
