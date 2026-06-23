@@ -22,7 +22,7 @@ export default function ProviderDashboard() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { provider, isProvider, addService, updateService, deleteService, renewPlan, updateProvider } = useProvider();
-  const isCommerce = provider?.categoryId === "comercios" || provider?.category === "Comércios" || provider?.category === "comercios";
+  const isCommerce = provider?.hasCatalog || provider?.categoryId === "comercios" || provider?.category === "Comércios" || provider?.category === "comercios";
 
   const [showModal, setShowModal] = useState(false);
   const [editingService, setEditingService] = useState<ProviderService | null>(null);

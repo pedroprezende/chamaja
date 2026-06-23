@@ -28,6 +28,7 @@ export interface StoredProvider {
   maxServicos?: number;
   permissionsStatus?: string;
   workingHours?: any;
+  hasCatalog?: boolean;
   services: Array<{
     id: string;
     name: string;
@@ -75,6 +76,7 @@ function mapToStoredProvider(dbProvider: any): StoredProvider {
     maxServicos: dbProvider.maxServicos !== undefined ? Number(dbProvider.maxServicos) : undefined,
     permissionsStatus: dbProvider.permissionsStatus || undefined,
     workingHours: dbProvider.workingHours || undefined,
+    hasCatalog: dbProvider.hasCatalog ?? false,
   };
 }
 

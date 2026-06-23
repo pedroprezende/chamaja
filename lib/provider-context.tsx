@@ -31,6 +31,7 @@ export interface ProviderProfile {
   gallery?: string[];
   maxServicos?: number;
   permissionsStatus?: string;
+  hasCatalog?: boolean;
 }
 
 export interface ProviderService {
@@ -117,6 +118,7 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
             gallery: dbProvider.gallery,
             maxServicos: dbProvider.maxServicos,
             permissionsStatus: dbProvider.permissionsStatus,
+            hasCatalog: dbProvider.hasCatalog,
           };
           await save(syncedProvider);
         }

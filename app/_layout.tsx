@@ -58,22 +58,27 @@ function RootLayoutNav() {
       } else if (path === "") {
         router.replace("/auth/login" as any);
       }
-    } else if (isSignedIn && inAuthGroup) {
+    } else if (isSignedIn) {
       (async () => {
         try {
           const isBusinessFlag = await AsyncStorage.getItem("@chamaja_login_as_business");
           if (isBusinessFlag === "true") {
-            if (isProviderLoading) return;
-            if (provider) {
-              router.replace("/provider-dashboard" as any);
-            } else {
-              router.replace("/become-provider" as any);
+            const currentPath = segments.join("/");
+            if (currentPath !== "provider-dashboard" && currentPath !== "become-provider") {
+              if (isProviderLoading) return;
+              if (provider) {
+                router.replace("/provider-dashboard" as any);
+              } else {
+                router.replace("/become-provider" as any);
+              }
             }
-          } else {
+          } else if (inAuthGroup) {
             router.replace("/(tabs)" as any);
           }
         } catch {
-          router.replace("/(tabs)" as any);
+          if (inAuthGroup) {
+            router.replace("/(tabs)" as any);
+          }
         }
       })();
     }

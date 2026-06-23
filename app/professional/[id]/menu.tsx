@@ -47,6 +47,15 @@ export default function MenuScreen() {
     }
   }, [professional]);
 
+  const isRealCommerce = useMemo(() => {
+    if (!professional) return false;
+    return (
+      professional.categoryId === "comercios" ||
+      professional.category === "Comércios" ||
+      professional.category === "comercios"
+    );
+  }, [professional]);
+
   // Categorias de produtos dinâmicas
   const categories = useMemo(() => {
     const cats = new Set<string>();
@@ -131,7 +140,7 @@ export default function MenuScreen() {
         </Pressable>
         <View style={styles.headerTitleContainer}>
           <Text style={[styles.headerTitle, { color: colors.foreground }]} numberOfLines={1}>
-            Cardápio
+            {isRealCommerce ? "Cardápio" : "Serviços e Preços"}
           </Text>
           <Text style={[styles.headerSubtitle, { color: colors.muted }]} numberOfLines={1}>
             {professional.name}
@@ -194,7 +203,7 @@ export default function MenuScreen() {
                 <Image source={{ uri: item.imageUri }} style={styles.productImage} />
               ) : (
                 <View style={[styles.productImage, { alignItems: "center", justifyContent: "center", backgroundColor: colors.border + "40" }]}>
-                  <MaterialIcons name="restaurant" size={28} color={colors.muted} />
+                  <MaterialIcons name={isRealCommerce ? "restaurant" : "assignment"} size={28} color={colors.muted} />
                 </View>
               )}
               <View style={styles.productInfo}>

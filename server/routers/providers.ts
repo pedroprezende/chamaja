@@ -47,6 +47,7 @@ const ProviderUpsertSchema = z.object({
   tags: z.any().optional(),
   workingHours: z.any().optional(),
   utmSource: z.string().nullable().optional(),
+  hasCatalog: z.boolean().optional(),
 });
 
 const ProviderUpdateSchema = z.object({
@@ -78,6 +79,7 @@ const ProviderUpdateSchema = z.object({
     popularServices: z.any().optional(),
     tags: z.any().optional(),
     workingHours: z.any().optional(),
+    hasCatalog: z.boolean().optional(),
   }),
 });
 
@@ -233,6 +235,7 @@ export const providersRouter = router({
           workingHours: safeStringify(input.workingHours),
           isActive: true,
           displayOrder: 0,
+          hasCatalog: false,
         });
 
         // Insert default business permissions
@@ -978,6 +981,7 @@ export const providersRouter = router({
         popularServices: safeStringify(input.popularServices),
         tags: safeStringify(input.tags),
         workingHours: safeStringify(input.workingHours),
+        hasCatalog: input.hasCatalog ?? false,
       });
     }),
 

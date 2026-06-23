@@ -328,6 +328,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
   const [advertiserTab, setAdvertiserTab] = useState<"info" | "reviews" | "payments">("info");
   const [advertiserPermission, setAdvertiserPermission] = useState<any | null>(null);
   const [editMaxServicos, setEditMaxServicos] = useState<number>(1);
+  const [editHasCatalog, setEditHasCatalog] = useState(false);
+
+  // Promotion states
+  const [categoriesList, setCategoriesList] = useState<any[]>([]);
+  const [promoCategory, setPromoCategory] = useState("");
+  const [promoHasCatalog, setPromoHasCatalog] = useState(false);
+  const [promoting, setPromoting] = useState(false);
 
   // Report detail modal states
   const [selectedReport, setSelectedReport] = useState<any | null>(null);
@@ -416,6 +423,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
       
       if (activityLogsError) console.warn("Erro ao buscar logs de atividades:", activityLogsError);
 
+      // Fetch categories
+      const { data: categories, error: categoriesError } = await supabase
+        .from("categories")
+        .select("*")
+        .order("name", { ascending: true });
+      
+      if (categoriesError) console.warn("Erro ao buscar categorias:", categoriesError);
+
       setUsersList(users || []);
       setProvidersList(providers || []);
       setPaymentsList(payments || []);
@@ -425,6 +440,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
       setSubscriptionsList(subscriptions || []);
       setAppSettingsList(settings || []);
       setActivityLogsList(activityLogs || []);
+      setCategoriesList(categories || []);
 
       // Initialize settings form states with current database values
       if (settings) {
@@ -698,6 +714,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
     setUserEvents([]);
     setUserReviews([]);
     setUserActions([]);
+    setPromoCategory("");
+    setPromoHasCatalog(false);
 
     try {
       const { data: events } = await supabase
@@ -750,6 +768,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
     setEditDescription(provider.description || "");
     setEditPlan(provider.plan || "free");
     setEditPlanExpiresAt(provider.plan_expires_at ? provider.plan_expires_at.split("T")[0] : "");
+    setEditHasCatalog(provider.has_catalog || false);
 
     try {
       // 1. Fetch reviews
@@ -834,6 +853,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
           description: editDescription,
           plan: editPlan,
           plan_expires_at: editPlanExpiresAt ? new Date(editPlanExpiresAt).toISOString() : null,
+          has_catalog: editHasCatalog,
         })
         .eq("id", selectedAdvertiser.id);
 
@@ -930,6 +950,85 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
       alert(`Erro: ${err.message || "Não foi possível concluir a ação."}`);
     } finally {
       setModalLoading(false);
+    }
+  };
+
+  // Promote a user to provider / commerce
+  const handlePromoteUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedUser) return;
+    if (!promoCategory) {
+      alert("Por favor, selecione uma categoria.");
+      return;
+    }
+
+    if (adminUser.admin_role === "moderador") {
+      alert("Permissão insuficiente. Moderadores não podem criar ou promover anunciantes.");
+      return;
+    }
+
+    const confirmMsg = `Tem certeza que deseja promover o usuário "${selectedUser.name || selectedUser.email}" a Anunciante?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setPromoting(true);
+
+    try {
+      const selectedCat = categoriesList.find(c => c.id === promoCategory);
+      const categoryName = selectedCat ? selectedCat.name : "Serviços";
+      
+      // Generate a unique provider ID
+      const providerId = 'p_' + (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID().replace(/-/g, '').substring(0, 20)
+        : Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15));
+
+      // 1. Insert provider
+      const { error: pErr } = await supabase
+        .from("providers")
+        .insert({
+          id: providerId,
+          user_id: selectedUser.open_id,
+          name: selectedUser.name || selectedUser.email?.split("@")[0] || "Anunciante",
+          category: categoryName,
+          category_id: promoCategory,
+          has_catalog: promoHasCatalog,
+          is_active: true,
+          status: "ativo",
+          plan: "free",
+          display_order: 0,
+          clients_served: 0,
+          rating: 0,
+          rating_count: 0
+        });
+
+      if (pErr) throw pErr;
+
+      // 2. Insert business permissions
+      const { error: permErr } = await supabase
+        .from("business_permissions")
+        .insert({
+          business_id: providerId,
+          max_servicos: 10, // Default a reasonable number for services if promoted by admin
+          status: "ativo"
+        });
+
+      if (permErr) console.warn("Erro ao inserir permissões padrão:", permErr);
+
+      // 3. Log activity
+      await logAdminActivity("promote_user", `Usuário ${selectedUser.email} promovido a Anunciante (${categoryName}). ID do Anúncio: ${providerId}. Catálogo: ${promoHasCatalog ? 'Sim' : 'Não'}`);
+
+      alert("Usuário promovido com sucesso! Agora ele é um anunciante ativo.");
+      
+      // Reset promotion form
+      setPromoCategory("");
+      setPromoHasCatalog(false);
+      
+      // Reload dashboard data
+      await fetchData();
+    } catch (err: any) {
+      console.error("Erro ao promover usuário:", err);
+      alert(`Erro ao promover usuário: ${err.message || err}`);
+    } finally {
+      setPromoting(false);
     }
   };
 
@@ -3337,6 +3436,88 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
                     </button>
                   </div>
                 </div>
+
+                {getUserType(selectedUser.open_id) !== "cliente" ? (
+                  <div className="action-card" style={{ borderLeft: "4px solid var(--accent-primary)", marginTop: "1rem" }}>
+                    <div className="action-card-header">
+                      <Store size={16} style={{ color: "var(--accent-primary)" }} />
+                      <span>Anunciante Vinculado</span>
+                    </div>
+                    <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", margin: "0.5rem 0" }}>
+                      Este usuário já possui um perfil de {getUserType(selectedUser.open_id)} cadastrado.
+                    </p>
+                    <button
+                      className="btn btn-primary"
+                      style={{ width: "100%", marginTop: "0.5rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+                      onClick={() => {
+                        const provider = providersList.find(p => p.user_id === selectedUser.open_id);
+                        if (provider) {
+                          setSelectedUser(null); // Close User modal
+                          handleSelectAdvertiser(provider); // Open Advertiser modal
+                          setActiveTab("advertisers"); // Switch to Advertisers tab
+                        } else {
+                          alert("Não foi possível encontrar o perfil do anunciante correspondente.");
+                        }
+                      }}
+                    >
+                      <ArrowRight size={14} /> Ir para Perfil de Anunciante
+                    </button>
+                  </div>
+                ) : (
+                  <div className="action-card" style={{ borderLeft: "4px solid var(--accent-primary)", marginTop: "1rem" }}>
+                    <div className="action-card-header">
+                      <UserPlus size={16} style={{ color: "var(--accent-primary)" }} />
+                      <span>Promover a Prestador ou Comércio</span>
+                    </div>
+                    <form onSubmit={handlePromoteUser} style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "0.5rem" }}>
+                      <div>
+                        <label className="form-label" style={{ fontSize: "0.8rem", marginBottom: "4px" }}>Selecionar Categoria / Tipo</label>
+                        <select
+                          className="filter-select"
+                          style={{ width: "100%", padding: "6px" }}
+                          value={promoCategory}
+                          onChange={(e) => {
+                            setPromoCategory(e.target.value);
+                            // Auto check hasCatalog if category is Comércios
+                            if (e.target.value === "comercios") {
+                              setPromoHasCatalog(true);
+                            }
+                          }}
+                          required
+                        >
+                          <option value="">Selecione uma categoria...</option>
+                          {categoriesList.map((cat) => (
+                            <option key={cat.id} value={cat.id}>
+                              {cat.name} {cat.id === "comercios" ? "(Comércio)" : "(Prestador)"}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", margin: "4px 0" }}>
+                        <input
+                          type="checkbox"
+                          id="promoHasCatalog"
+                          checked={promoHasCatalog}
+                          onChange={(e) => setPromoHasCatalog(e.target.checked)}
+                          style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                        />
+                        <label htmlFor="promoHasCatalog" className="form-label" style={{ margin: 0, cursor: "pointer", fontSize: "0.82rem", color: "var(--text-primary)" }}>
+                          Ativar Catálogo de Serviços / Cardápio (com preços)
+                        </label>
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="btn btn-primary"
+                        style={{ width: "100%", marginTop: "0.25rem" }}
+                        disabled={promoting || !promoCategory}
+                      >
+                        {promoting ? "Promovendo..." : "Confirmar Promoção"}
+                      </button>
+                    </form>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -3618,6 +3799,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
                             />
                           </div>
 
+                          <div className="form-group" style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "8px" }}>
+                            <input 
+                              type="checkbox" 
+                              id="editHasCatalog"
+                              checked={editHasCatalog}
+                              onChange={(e) => setEditHasCatalog(e.target.checked)}
+                              style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                            />
+                            <label htmlFor="editHasCatalog" className="form-label" style={{ margin: 0, cursor: "pointer", fontSize: "0.85rem", color: "var(--text-primary)" }}>
+                              Ativar Catálogo de Serviços / Cardápio (com preços)
+                            </label>
+                          </div>
+
                           <div className="btn-group-row edit-form-full" style={{ justifyContent: "flex-end", marginTop: "1rem" }}>
                             <button type="button" className="btn btn-logout" style={{ width: "auto" }} onClick={() => setIsEditing(false)}>
                               Cancelar
@@ -3676,6 +3870,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
                                   {(advertiserPermission?.status || "ativo").toUpperCase()}
                                 </span>
                               </div>
+                            </div>
+                          </div>
+
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                            <div>
+                              <span className="modal-info-label">Catálogo / Cardápio</span>
+                              <p className="modal-info-value" style={{ fontWeight: 600 }}>
+                                {selectedAdvertiser.has_catalog ? "Habilitado" : "Desabilitado"}
+                              </p>
                             </div>
                           </div>
 

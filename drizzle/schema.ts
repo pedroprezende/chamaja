@@ -134,6 +134,7 @@ export const providers = pgTable("providers", {
   coverUri: text("cover_uri"),
   coverThumbnailUri: text("cover_thumbnail_uri"),
   isVerified: boolean("is_verified").default(false).notNull(),
+  hasCatalog: boolean("has_catalog").default(false).notNull(),
   onlineStatus: boolean("online_status").default(false).notNull(),
   responseTime: varchar("response_time", { length: 100 }),
   clientsServed: integer("clients_served").default(0),

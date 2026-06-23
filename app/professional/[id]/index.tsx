@@ -91,6 +91,16 @@ export default function ProfessionalDetailScreen() {
   const isCommerce = useMemo(() => {
     if (!professional) return false;
     return (
+      professional.hasCatalog ||
+      professional.categoryId === "comercios" ||
+      professional.category === "Comércios" ||
+      professional.category === "comercios"
+    );
+  }, [professional]);
+
+  const isRealCommerce = useMemo(() => {
+    if (!professional) return false;
+    return (
       professional.categoryId === "comercios" ||
       professional.category === "Comércios" ||
       professional.category === "comercios"
@@ -730,9 +740,11 @@ export default function ProfessionalDetailScreen() {
             ]}
             onPress={isCommerce ? () => router.push(`/professional/${prof.id}/menu` as any) : handleOpenWhatsApp}
           >
-            <MaterialIcons name={isCommerce ? "restaurant" : "chat"} size={22} color="#FFFFFF" />
+            <MaterialIcons name={isCommerce ? (isRealCommerce ? "restaurant" : "assignment") : "chat"} size={22} color="#FFFFFF" />
             <Text style={styles.whatsappButtonText}>
-              {isCommerce ? "Ver cardápio / Fazer pedido" : "Chamar no WhatsApp"}
+              {isCommerce 
+                ? (isRealCommerce ? "Ver cardápio / Fazer pedido" : "Ver serviços e preços") 
+                : "Chamar no WhatsApp"}
             </Text>
           </Pressable>
         </View>
