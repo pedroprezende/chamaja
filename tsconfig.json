@@ -25,6 +25,9 @@
   "exclude": [
     "node_modules",
     "dist",
-    "admin"
+    "admin",
+    "home",
+    "scratch",
+    "tests"
   ]
 }

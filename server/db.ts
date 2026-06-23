@@ -13,6 +13,8 @@ import {
   favorites,
   appEvents,
   admins,
+  businessPermissions,
+  InsertBusinessPermission,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 

@@ -21,7 +21,7 @@ import { useProvider, PLANS, type ProviderService } from "@/lib/provider-context
 export default function ProviderDashboard() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { provider, isProvider, addService, updateService, deleteService, renewPlan } = useProvider();
+  const { provider, isProvider, addService, updateService, deleteService, renewPlan, updateProvider } = useProvider();
   const isCommerce = provider?.categoryId === "comercios" || provider?.category === "Comércios" || provider?.category === "comercios";
 
   const [showModal, setShowModal] = useState(false);
@@ -35,6 +35,75 @@ export default function ProviderDashboard() {
     gallery: [] as string[] 
   });
   const [saving, setSaving] = useState(false);
+
+  // Edit Profile States & Handlers
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    name: "",
+    category: "",
+    description: "",
+    phone: "",
+    city: "",
+    neighborhood: "",
+    address: "",
+    avatar: "",
+    coverUri: "",
+    workingHours: "",
+  });
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  const handlePickAvatar = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.85,
+    });
+    if (!result.canceled) {
+      setProfileForm((prev) => ({ ...prev, avatar: result.assets[0].uri }));
+    }
+  };
+
+  const handlePickCover = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.85,
+    });
+    if (!result.canceled) {
+      setProfileForm((prev) => ({ ...prev, coverUri: result.assets[0].uri }));
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!profileForm.name.trim() || !profileForm.category.trim()) {
+      Alert.alert("Erro", "Nome e categoria são obrigatórios.");
+      return;
+    }
+
+    setSavingProfile(true);
+    try {
+      await updateProvider({
+        name: profileForm.name.trim(),
+        category: profileForm.category.trim(),
+        description: profileForm.description.trim(),
+        phone: profileForm.phone.trim(),
+        city: profileForm.city.trim(),
+        neighborhood: profileForm.neighborhood.trim(),
+        address: profileForm.address.trim(),
+        avatar: profileForm.avatar,
+        coverUri: profileForm.coverUri,
+        workingHours: profileForm.workingHours.trim(),
+      });
+      setShowEditProfileModal(false);
+      Alert.alert("Sucesso", "Dados do negócio atualizados com sucesso.");
+    } catch (e) {
+      Alert.alert("Erro", "Não foi possível atualizar os dados do negócio.");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
   if (!isProvider || !provider) {
     return (
@@ -57,6 +126,15 @@ export default function ProviderDashboard() {
     : null;
 
   const openCreateModal = () => {
+    const max = provider.maxServicos !== undefined ? provider.maxServicos : 1;
+    if (max !== -1 && provider.services.length >= max) {
+      Alert.alert(
+        "Limite Atingido",
+        `Seu plano permite cadastrar apenas ${max} ${isCommerce ? "produto" : "serviço"}(s). Faça upgrade para adicionar mais.`,
+        [{ text: "OK" }]
+      );
+      return;
+    }
     setEditingService(null);
     setForm({ name: "", description: "", imageUri: "", price: "", productCategory: "", gallery: [] });
     setShowModal(true);
@@ -154,7 +232,7 @@ export default function ProviderDashboard() {
         >
           <MaterialIcons name="arrow-back" size={24} color="#111827" />
         </Pressable>
-        <Text style={styles.headerTitle}>Minha Área</Text>
+        <Text style={styles.headerTitle}>Meu negócio</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -166,6 +244,27 @@ export default function ProviderDashboard() {
             <Text style={styles.profileName}>{provider.name}</Text>
             <Text style={styles.profileCategory}>{provider.category}</Text>
             <Text style={styles.profileCity}>{provider.city} — {provider.neighborhood}</Text>
+            <Pressable
+              style={({ pressed }) => [styles.editProfileInlineBtn, pressed && { opacity: 0.7 }]}
+              onPress={() => {
+                setProfileForm({
+                  name: provider.name || "",
+                  category: provider.category || "",
+                  description: provider.description || "",
+                  phone: provider.phone || "",
+                  city: provider.city || "",
+                  neighborhood: provider.neighborhood || "",
+                  address: provider.address || "",
+                  avatar: provider.avatar || "",
+                  coverUri: provider.coverUri || "",
+                  workingHours: provider.workingHours ? (typeof provider.workingHours === "string" ? provider.workingHours : JSON.stringify(provider.workingHours)) : "",
+                });
+                setShowEditProfileModal(true);
+              }}
+            >
+              <MaterialIcons name="edit" size={14} color="#25D366" />
+              <Text style={styles.editProfileInlineText}>Editar dados do negócio</Text>
+            </Pressable>
           </View>
         </View>
 
@@ -195,8 +294,11 @@ export default function ProviderDashboard() {
         {/* Stats */}
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{provider.services.length}</Text>
-            <Text style={styles.statLabel}>Serviços</Text>
+            <Text style={styles.statValue}>
+              {provider.services.length}
+              {provider.maxServicos !== undefined ? (provider.maxServicos === -1 ? " / ∞" : ` / ${provider.maxServicos}`) : " / 1"}
+            </Text>
+            <Text style={styles.statLabel}>{isCommerce ? "Produtos" : "Serviços"}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
@@ -410,6 +512,195 @@ export default function ProviderDashboard() {
           </View>
         </View>
       </Modal>
+
+      {/* Modal Editar Dados do Negócio */}
+      <Modal visible={showEditProfileModal} transparent animationType="slide" onRequestClose={() => setShowEditProfileModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Editar Dados do Negócio</Text>
+              <Pressable
+                style={({ pressed }) => [styles.modalCloseBtn, pressed && { opacity: 0.6 }]}
+                onPress={() => setShowEditProfileModal(false)}
+              >
+                <MaterialIcons name="close" size={22} color="#6B7280" />
+              </Pressable>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Fotos (Avatar e Cover) */}
+              <View style={{ flexDirection: "row", gap: 12, marginBottom: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.fieldLabel}>Foto do Negócio</Text>
+                  <Pressable
+                    style={({ pressed }) => [styles.imagePickerBtn, pressed && { opacity: 0.8 }]}
+                    onPress={handlePickAvatar}
+                  >
+                    {profileForm.avatar ? (
+                      <View style={{ width: "100%", height: 80, position: "relative" }}>
+                        <Image source={{ uri: profileForm.avatar }} style={{ width: "100%", height: 80, borderRadius: 8 }} resizeMode="cover" />
+                        <View style={styles.imageEditOverlay}>
+                          <MaterialIcons name="edit" size={14} color="#fff" />
+                        </View>
+                      </View>
+                    ) : (
+                      <View style={[styles.imagePlaceholder, { height: 80 }]}>
+                        <MaterialIcons name="add-a-photo" size={20} color="#9CA3AF" />
+                      </View>
+                    )}
+                  </Pressable>
+                </View>
+
+                <View style={{ flex: 2 }}>
+                  <Text style={styles.fieldLabel}>Foto de Capa</Text>
+                  <Pressable
+                    style={({ pressed }) => [styles.imagePickerBtn, pressed && { opacity: 0.8 }]}
+                    onPress={handlePickCover}
+                  >
+                    {profileForm.coverUri ? (
+                      <View style={{ width: "100%", height: 80, position: "relative" }}>
+                        <Image source={{ uri: profileForm.coverUri }} style={{ width: "100%", height: 80, borderRadius: 8 }} resizeMode="cover" />
+                        <View style={styles.imageEditOverlay}>
+                          <MaterialIcons name="edit" size={14} color="#fff" />
+                        </View>
+                      </View>
+                    ) : (
+                      <View style={[styles.imagePlaceholder, { height: 80 }]}>
+                        <MaterialIcons name="add-photo-alternate" size={20} color="#9CA3AF" />
+                      </View>
+                    )}
+                  </Pressable>
+                </View>
+              </View>
+
+              <Text style={styles.fieldLabel}>Nome do Negócio</Text>
+              <View style={styles.fieldBox}>
+                <MaterialIcons name="store" size={18} color="#9CA3AF" />
+                <TextInput
+                  style={styles.fieldInput}
+                  placeholder="Nome do seu negócio"
+                  placeholderTextColor="#9CA3AF"
+                  value={profileForm.name}
+                  onChangeText={(t) => setProfileForm({ ...profileForm, name: t })}
+                />
+              </View>
+
+              <Text style={styles.fieldLabel}>Categoria</Text>
+              <View style={styles.fieldBox}>
+                <MaterialIcons name="label" size={18} color="#9CA3AF" />
+                <TextInput
+                  style={styles.fieldInput}
+                  placeholder="Ex: Eletricista, Restaurante"
+                  placeholderTextColor="#9CA3AF"
+                  value={profileForm.category}
+                  onChangeText={(t) => setProfileForm({ ...profileForm, category: t })}
+                />
+              </View>
+
+              <Text style={styles.fieldLabel}>Descrição do Negócio</Text>
+              <View style={[styles.fieldBox, { alignItems: "flex-start", paddingTop: 12 }]}>
+                <TextInput
+                  style={[styles.fieldInput, { minHeight: 60, textAlignVertical: "top" }]}
+                  placeholder="Fale um pouco sobre o seu negócio..."
+                  placeholderTextColor="#9CA3AF"
+                  value={profileForm.description}
+                  onChangeText={(t) => setProfileForm({ ...profileForm, description: t })}
+                  multiline
+                  numberOfLines={3}
+                />
+              </View>
+
+              <Text style={styles.fieldLabel}>Telefone/WhatsApp</Text>
+              <View style={styles.fieldBox}>
+                <MaterialIcons name="phone" size={18} color="#9CA3AF" />
+                <TextInput
+                  style={styles.fieldInput}
+                  placeholder="DDD + Número"
+                  placeholderTextColor="#9CA3AF"
+                  value={profileForm.phone}
+                  onChangeText={(t) => setProfileForm({ ...profileForm, phone: t })}
+                />
+              </View>
+
+              <Text style={styles.fieldLabel}>Horário de Funcionamento</Text>
+              <View style={styles.fieldBox}>
+                <MaterialIcons name="access-time" size={18} color="#9CA3AF" />
+                <TextInput
+                  style={styles.fieldInput}
+                  placeholder="Ex: Seg a Sex, das 8h às 18h"
+                  placeholderTextColor="#9CA3AF"
+                  value={profileForm.workingHours}
+                  onChangeText={(t) => setProfileForm({ ...profileForm, workingHours: t })}
+                />
+              </View>
+
+              <Text style={styles.fieldLabel}>Endereço Completo</Text>
+              <View style={styles.fieldBox}>
+                <MaterialIcons name="place" size={18} color="#9CA3AF" />
+                <TextInput
+                  style={styles.fieldInput}
+                  placeholder="Rua, número, complemento"
+                  placeholderTextColor="#9CA3AF"
+                  value={profileForm.address}
+                  onChangeText={(t) => setProfileForm({ ...profileForm, address: t })}
+                />
+              </View>
+
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.fieldLabel}>Bairro</Text>
+                  <View style={styles.fieldBox}>
+                    <TextInput
+                      style={styles.fieldInput}
+                      placeholder="Bairro"
+                      placeholderTextColor="#9CA3AF"
+                      value={profileForm.neighborhood}
+                      onChangeText={(t) => setProfileForm({ ...profileForm, neighborhood: t })}
+                    />
+                  </View>
+                </View>
+
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.fieldLabel}>Cidade</Text>
+                  <View style={styles.fieldBox}>
+                    <TextInput
+                      style={styles.fieldInput}
+                      placeholder="Cidade"
+                      placeholderTextColor="#9CA3AF"
+                      value={profileForm.city}
+                      onChangeText={(t) => setProfileForm({ ...profileForm, city: t })}
+                    />
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.modalActions}>
+                <Pressable
+                  style={({ pressed }) => [styles.cancelBtn, pressed && { opacity: 0.7 }]}
+                  onPress={() => setShowEditProfileModal(false)}
+                >
+                  <Text style={styles.cancelBtnText}>Cancelar</Text>
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [styles.saveBtn, (pressed || savingProfile) && { opacity: 0.85 }]}
+                  onPress={handleSaveProfile}
+                  disabled={savingProfile}
+                >
+                  {savingProfile ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <>
+                      <MaterialIcons name="check" size={18} color="#fff" />
+                      <Text style={styles.saveBtnText}>Salvar</Text>
+                    </>
+                  )}
+                </Pressable>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -591,4 +882,16 @@ const styles = StyleSheet.create({
     justifyContent: "center", gap: 6,
   },
   saveBtnText: { fontSize: 15, fontWeight: "700", color: "#FFFFFF" },
+  editProfileInlineBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 6,
+    alignSelf: "flex-start",
+  },
+  editProfileInlineText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#25D366",
+  },
 });

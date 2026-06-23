@@ -25,6 +25,9 @@ export interface StoredProvider {
   reviewCount: number;
   latitude?: number;
   longitude?: number;
+  maxServicos?: number;
+  permissionsStatus?: string;
+  workingHours?: any;
   services: Array<{
     id: string;
     name: string;
@@ -69,6 +72,9 @@ function mapToStoredProvider(dbProvider: any): StoredProvider {
     services: parsedServices,
     latitude: dbProvider.latitude !== null && dbProvider.latitude !== undefined ? Number(dbProvider.latitude) : undefined,
     longitude: dbProvider.longitude !== null && dbProvider.longitude !== undefined ? Number(dbProvider.longitude) : undefined,
+    maxServicos: dbProvider.maxServicos !== undefined ? Number(dbProvider.maxServicos) : undefined,
+    permissionsStatus: dbProvider.permissionsStatus || undefined,
+    workingHours: dbProvider.workingHours || undefined,
   };
 }
 

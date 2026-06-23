@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { publicProcedure, adminProcedure, adminWriteProcedure, protectedProcedure, router } from "../_core/trpc";
 import * as db from "../db";
-import { providers, appEvents } from "../../drizzle/schema";
+import { providers, appEvents, businessPermissions } from "../../drizzle/schema";
 import { eq, or, ilike, and, gte, lte, ne, desc, asc, sql } from "drizzle-orm";
 import { getReviewsByProfessional as getMockReviewsByProfessional } from "../../data/mock";
 import { geocodeAddress } from "../geocoding";
@@ -233,6 +233,15 @@ export const providersRouter = router({
           workingHours: safeStringify(input.workingHours),
           isActive: true,
           displayOrder: 0,
+        });
+
+        // Insert default business permissions
+        await dbInstance.insert(businessPermissions).values({
+          businessId: providerId,
+          maxServicos: 1,
+          status: "ativo",
+        }).catch((err) => {
+          console.error("[providersRouter] Failed to insert default business permissions:", err);
         });
 
         // Log provider registration event
@@ -809,13 +818,31 @@ export const providersRouter = router({
     .query(async ({ input, ctx }) => {
       const dbInstance = await db.getDb();
       if (!dbInstance) return null;
-      const res = await dbInstance.select().from(providers).where(
-        or(
-          eq(providers.id, input),
-          eq(providers.userId, input)
+      
+      const res = await dbInstance
+        .select({
+          provider: providers,
+          permissions: businessPermissions,
+        })
+        .from(providers)
+        .leftJoin(businessPermissions, eq(businessPermissions.businessId, providers.id))
+        .where(
+          or(
+            eq(providers.id, input),
+            eq(providers.userId, input)
+          )
         )
-      ).limit(1);
-      return res.length > 0 ? sanitizeProviderForUser(res[0], ctx.user) : null;
+        .limit(1);
+        
+      if (res.length === 0) return null;
+      
+      const providerData = {
+        ...res[0].provider,
+        maxServicos: res[0].permissions?.maxServicos ?? 1,
+        permissionsStatus: res[0].permissions?.status ?? "ativo",
+      };
+      
+      return sanitizeProviderForUser(providerData, ctx.user);
     }),
 
   getReviews: publicProcedure
@@ -994,4 +1021,42 @@ export const providersRouter = router({
     .mutation(async ({ input }) => {
       await db.deleteProvider(input.id);
     }),
+
+  updatePermissions: adminProcedure
+    .input(z.object({
+      businessId: z.string(),
+      maxServicos: z.number().int().min(-1),
+      status: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      const dbInstance = await db.getDb();
+      if (!dbInstance) throw new Error("DB not found");
+      
+      const existing = await dbInstance
+        .select()
+        .from(businessPermissions)
+        .where(eq(businessPermissions.businessId, input.businessId))
+        .limit(1);
+
+      if (existing.length > 0) {
+        await dbInstance
+          .update(businessPermissions)
+          .set({
+            maxServicos: input.maxServicos,
+            status: input.status,
+            updatedAt: new Date(),
+          })
+          .where(eq(businessPermissions.businessId, input.businessId));
+      } else {
+        await dbInstance
+          .insert(businessPermissions)
+          .values({
+            businessId: input.businessId,
+            maxServicos: input.maxServicos,
+            status: input.status,
+          });
+      }
+      return { success: true };
+    }),
 });
+

@@ -17,6 +17,7 @@ import { MaterialIcons, FontAwesome } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import Svg, { Path } from "react-native-svg";
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ScreenContainer } from "@/components/screen-container";
 import { useAuth } from "@/lib/auth-context";
 
@@ -29,6 +30,7 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [isBusiness, setIsBusiness] = useState(false);
   
   const passwordRef = useRef<TextInput>(null);
 
@@ -36,6 +38,11 @@ export default function LoginScreen() {
     try {
       setErrorMsg("");
       setIsLoading(true);
+      if (isBusiness) {
+        await AsyncStorage.setItem("@chamaja_login_as_business", "true");
+      } else {
+        await AsyncStorage.removeItem("@chamaja_login_as_business");
+      }
       await auth.signInWithGoogle();
     } catch (error) {
       Alert.alert("Erro", "Não foi possível fazer login com Google");
@@ -57,6 +64,11 @@ export default function LoginScreen() {
     try {
       setErrorMsg("");
       setIsLoading(true);
+      if (isBusiness) {
+        await AsyncStorage.setItem("@chamaja_login_as_business", "true");
+      } else {
+        await AsyncStorage.removeItem("@chamaja_login_as_business");
+      }
       await auth.signInWithApple();
     } catch (error) {
       console.warn("Apple login error:", error);
@@ -74,6 +86,13 @@ export default function LoginScreen() {
       }
 
       setIsLoading(true);
+
+      if (isBusiness) {
+        await AsyncStorage.setItem("@chamaja_login_as_business", "true");
+      } else {
+        await AsyncStorage.removeItem("@chamaja_login_as_business");
+      }
+
       await auth.signInWithEmail(email, password);
     } catch (error: any) {
       setErrorMsg(error.message || "Não foi possível fazer login");
@@ -187,13 +206,26 @@ export default function LoginScreen() {
               </Pressable>
             </View>
 
-            {/* Forgot Password */}
-            <Pressable
-              onPress={() => router.push("/auth/forgot-password" as any)}
-              style={styles.forgotBtn}
-            >
-              <Text style={styles.forgotText}>Esqueceu sua senha?</Text>
-            </Pressable>
+            {/* Options Row with Checkbox and Forgot Password */}
+            <View style={styles.optionsRow}>
+              <Pressable
+                onPress={() => setIsBusiness(!isBusiness)}
+                style={styles.checkboxContainer}
+                disabled={isLoading}
+              >
+                <View style={[styles.checkbox, isBusiness && styles.checkboxChecked]}>
+                  {isBusiness && <MaterialIcons name="check" size={14} color="#000000" />}
+                </View>
+                <Text style={styles.checkboxLabel}>Sou prestador/comércio</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => router.push("/auth/forgot-password" as any)}
+                style={styles.forgotBtn}
+              >
+                <Text style={styles.forgotText}>Esqueceu a senha?</Text>
+              </Pressable>
+            </View>
 
             {/* Error Message */}
             {errorMsg ? (
@@ -406,10 +438,39 @@ const styles = StyleSheet.create({
   eyeBtn: {
     padding: 4,
   },
-  forgotBtn: {
-    alignSelf: "flex-end",
+  optionsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 20,
     marginTop: -4,
+    width: "100%",
+  },
+  checkboxContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  checkbox: {
+    width: 18,
+    height: 18,
+    borderWidth: 1.5,
+    borderColor: "#666666",
+    borderRadius: 4,
+    marginRight: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkboxChecked: {
+    borderColor: "#84cc16",
+    backgroundColor: "#84cc16",
+  },
+  checkboxLabel: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  forgotBtn: {
+    alignSelf: "center",
   },
   forgotText: {
     color: "#84cc16",

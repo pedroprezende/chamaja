@@ -313,4 +313,21 @@ export const utmLinks = pgTable("utm_links", {
 export type UtmLink = typeof utmLinks.$inferSelect;
 export type InsertUtmLink = typeof utmLinks.$inferInsert;
 
+// ── Business Permissions ──────────────────────────────────────────────────────
+export const businessPermissions = pgTable("business_permissions", {
+  id: serial("id").primaryKey(),
+  businessId: varchar("business_id", { length: 64 })
+    .notNull()
+    .unique()
+    .references(() => providers.id, { onDelete: "cascade" }),
+  maxServicos: integer("max_servicos").notNull().default(1),
+  status: varchar("status", { length: 50 }).notNull().default("ativo"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type BusinessPermission = typeof businessPermissions.$inferSelect;
+export type InsertBusinessPermission = typeof businessPermissions.$inferInsert;
+
+
 

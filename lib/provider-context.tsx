@@ -2,8 +2,9 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { providersDB } from "@/lib/providers-database";
 import { storage } from "@/lib/storage";
+import { useAuth } from "./auth-context";
 
-export type PlanType = "monthly" | "annual" | null;
+export type PlanType = "monthly" | "annual" | "free" | null;
 
 export interface ProviderProfile {
   userId: string;
@@ -23,6 +24,13 @@ export interface ProviderProfile {
   isActive: boolean;
   createdAt: string;
   services: ProviderService[];
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  workingHours?: any;
+  gallery?: string[];
+  maxServicos?: number;
+  permissionsStatus?: string;
 }
 
 export interface ProviderService {
@@ -38,6 +46,7 @@ export interface ProviderService {
 }
 
 export const PLANS = {
+  free: { label: "Gratuito", price: 0, priceLabel: "Grátis", period: "sempre", savings: undefined },
   monthly: { label: "Mensal", price: 10, priceLabel: "R$ 10,00/mês", period: "mês" },
   annual: { label: "Anual", price: 99.9, priceLabel: "R$ 99,90/ano", period: "ano", savings: "Economize 58%" },
 };
@@ -62,16 +71,61 @@ const ProviderContext = createContext<ProviderContextType | undefined>(undefined
 export function ProviderContextProvider({ children }: { children: ReactNode }) {
   const [provider, setProvider] = useState<ProviderProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
-    loadProvider();
-  }, []);
+    loadAndSyncProvider();
+  }, [user?.id]);
 
-  const loadProvider = async () => {
+  const loadAndSyncProvider = async () => {
+    setIsLoading(true);
+    let localProvider: ProviderProfile | null = null;
     try {
       const raw = await AsyncStorage.getItem(STORAGE_KEY);
-      if (raw) setProvider(JSON.parse(raw));
+      if (raw) {
+        localProvider = JSON.parse(raw);
+        setProvider(localProvider);
+      }
     } catch {}
+
+    if (user?.id) {
+      try {
+        const dbProvider = await providersDB.getById(user.id);
+        if (dbProvider) {
+          const syncedProvider: ProviderProfile = {
+            userId: dbProvider.userId,
+            name: dbProvider.name,
+            category: dbProvider.category,
+            categoryId: dbProvider.categoryId,
+            city: dbProvider.city,
+            neighborhood: dbProvider.neighborhood,
+            phone: dbProvider.phone,
+            avatar: dbProvider.avatar,
+            avatarThumbnailUri: dbProvider.avatarThumbnailUri,
+            coverUri: dbProvider.coverUri,
+            coverThumbnailUri: dbProvider.coverThumbnailUri,
+            description: dbProvider.description,
+            plan: dbProvider.plan,
+            planExpiresAt: dbProvider.planExpiresAt,
+            isActive: dbProvider.isActive,
+            createdAt: dbProvider.createdAt,
+            services: dbProvider.services || [],
+            address: dbProvider.address,
+            latitude: dbProvider.latitude,
+            longitude: dbProvider.longitude,
+            workingHours: dbProvider.workingHours,
+            gallery: dbProvider.gallery,
+            maxServicos: dbProvider.maxServicos,
+            permissionsStatus: dbProvider.permissionsStatus,
+          };
+          await save(syncedProvider);
+        }
+      } catch (err) {
+        console.error("[ProviderContext] Failed to sync provider with database:", err);
+      }
+    } else {
+      setProvider(null);
+    }
     setIsLoading(false);
   };
 
@@ -130,6 +184,7 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
       userId,
       name: data.name,
       category: data.category,
+      categoryId: data.categoryId,
       city: data.city,
       neighborhood: data.neighborhood,
       phone: data.phone,
@@ -138,8 +193,8 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
       coverUri: finalCover,
       coverThumbnailUri: finalCoverThumbnail,
       description: data.description,
-      address: "",
-      gallery: [],
+      address: data.address || "",
+      gallery: data.gallery || [],
       plan,
       planExpiresAt: expiresAt,
       isActive: true,
@@ -147,6 +202,9 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
       rating: 5.0,
       reviewCount: 0,
       services: [],
+      latitude: data.latitude,
+      longitude: data.longitude,
+      workingHours: data.workingHours,
     });
   };
 
@@ -173,6 +231,7 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
     await providersDB.updateProvider(provider.userId, {
       name: updated.name,
       category: updated.category,
+      categoryId: updated.categoryId,
       city: updated.city,
       neighborhood: updated.neighborhood,
       phone: updated.phone,
@@ -184,6 +243,11 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
       plan: updated.plan,
       planExpiresAt: updated.planExpiresAt,
       isActive: updated.isActive,
+      address: updated.address,
+      latitude: updated.latitude,
+      longitude: updated.longitude,
+      workingHours: updated.workingHours,
+      gallery: updated.gallery,
     });
   };
 
@@ -294,7 +358,7 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
     <ProviderContext.Provider
       value={{
         provider,
-        isProvider: provider !== null && provider.isActive,
+        isProvider: provider !== null && provider.isActive && provider.permissionsStatus !== "bloqueado",
         isLoading,
         registerProvider,
         updateProvider,

@@ -10,7 +10,8 @@ import "@/lib/_core/nativewind-pressable";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { useColors } from "@/hooks/use-colors";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
-import { ProviderContextProvider } from "@/lib/provider-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ProviderContextProvider, useProvider } from "@/lib/provider-context";
 import { FavoritesProvider } from "@/lib/favorites-context";
 import { NotificationsProvider } from "@/lib/notifications-context";
 import { CartProvider } from "@/lib/cart-context";
@@ -36,6 +37,7 @@ export const unstable_settings = {
 
 function RootLayoutNav() {
   const { isSignedIn, isLoading } = useAuth();
+  const { provider, isLoading: isProviderLoading } = useProvider();
   const segments = useSegments();
   const router = useRouter();
   const [hasMounted, setHasMounted] = useState(false);
@@ -57,9 +59,25 @@ function RootLayoutNav() {
         router.replace("/auth/login" as any);
       }
     } else if (isSignedIn && inAuthGroup) {
-      router.replace("/(tabs)" as any);
+      (async () => {
+        try {
+          const isBusinessFlag = await AsyncStorage.getItem("@chamaja_login_as_business");
+          if (isBusinessFlag === "true") {
+            if (isProviderLoading) return;
+            if (provider) {
+              router.replace("/provider-dashboard" as any);
+            } else {
+              router.replace("/become-provider" as any);
+            }
+          } else {
+            router.replace("/(tabs)" as any);
+          }
+        } catch {
+          router.replace("/(tabs)" as any);
+        }
+      })();
     }
-  }, [isSignedIn, isLoading, segments, router, hasMounted]);
+  }, [isSignedIn, isLoading, segments, router, hasMounted, provider, isProviderLoading]);
 
   if (!hasMounted || isLoading) {
     return null;

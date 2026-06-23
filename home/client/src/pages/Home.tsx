@@ -119,7 +119,7 @@ export default function Home() {
       </section>
 
       {/* Como Funciona Section */}
-      <section id="como-funciona" className="py-20 md:py-32 bg-card/50" style={{backgroundColor: '#000000'}}>
+      <section id="como-funciona" className="py-20 md:py-32 bg-card/50" style={{ backgroundColor: '#000000' }}>
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
@@ -171,7 +171,7 @@ export default function Home() {
       </section>
 
       {/* Para Prestadores Section */}
-      <section id="para-prestadores" className="py-20 md:py-32 bg-background" style={{backgroundColor: '#000000'}}>
+      <section id="para-prestadores" className="py-20 md:py-32 bg-background" style={{ backgroundColor: '#000000' }}>
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
             <div>
@@ -255,7 +255,7 @@ export default function Home() {
       </section>
 
       {/* O App na Prática Section */}
-      <section className="py-20 md:py-32 bg-card/50" style={{backgroundColor: '#000000'}}>
+      <section className="py-20 md:py-32 bg-card/50" style={{ backgroundColor: '#000000' }}>
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">

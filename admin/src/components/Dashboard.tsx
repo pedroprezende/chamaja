@@ -326,6 +326,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
   const [advertiserStats, setAdvertiserStats] = useState({ views: 0, clicks: 0, favorites: 0 });
   const [isEditing, setIsEditing] = useState(false);
   const [advertiserTab, setAdvertiserTab] = useState<"info" | "reviews" | "payments">("info");
+  const [advertiserPermission, setAdvertiserPermission] = useState<any | null>(null);
+  const [editMaxServicos, setEditMaxServicos] = useState<number>(1);
 
   // Report detail modal states
   const [selectedReport, setSelectedReport] = useState<any | null>(null);
@@ -734,6 +736,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
     setAdvertiserTab("info");
     setAdvertiserReviews([]);
     setAdvertiserPayments([]);
+    setAdvertiserPermission(null);
+    setEditMaxServicos(1);
 
     // Initialize edit fields
     setEditName(provider.name || "");
@@ -777,6 +781,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
         .from("favorites")
         .select("*", { count: "exact", head: true })
         .eq("provider_id", provider.id);
+
+      // 4. Fetch business permissions
+      const { data: permData } = await supabase
+        .from("business_permissions")
+        .select("*")
+        .eq("business_id", provider.id)
+        .maybeSingle();
+
+      if (permData) {
+        setAdvertiserPermission(permData);
+        setEditMaxServicos(permData.max_servicos);
+      }
 
       setAdvertiserReviews(reviews || []);
       setAdvertiserPayments(payments || []);
@@ -823,6 +839,30 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
 
       if (error) throw error;
 
+      // Save business permissions
+      if (advertiserPermission) {
+        const { error: permErr } = await supabase
+          .from("business_permissions")
+          .update({
+            max_servicos: editMaxServicos,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", advertiserPermission.id);
+        if (permErr) throw permErr;
+      } else {
+        const { data: newPerm, error: permErr } = await supabase
+          .from("business_permissions")
+          .insert({
+            business_id: selectedAdvertiser.id,
+            max_servicos: editMaxServicos,
+            status: "ativo",
+          })
+          .select()
+          .single();
+        if (permErr) throw permErr;
+        setAdvertiserPermission(newPerm);
+      }
+
       alert("Informações do anunciante atualizadas com sucesso!");
       await logAdminActivity("edit_advertiser", `Informações do anunciante ${selectedAdvertiser.name} (ID: ${selectedAdvertiser.id}) editadas. Plano: ${editPlan}, Categoria: ${editCategory}`);
       setIsEditing(false);
@@ -835,8 +875,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
     }
   };
 
-  // Advertiser Actions (ativar, desativar, suspender)
-  const handleAdvertiserStatusAction = async (action: "ativar" | "desativar" | "suspender") => {
+  // Advertiser Actions (ativar, desativar, suspender, aprovar, bloquear)
+  const handleAdvertiserStatusAction = async (action: "ativar" | "desativar" | "suspender" | "aprovar" | "bloquear") => {
     if (!selectedAdvertiser) return;
 
     if (adminUser.admin_role === "moderador") {
@@ -844,19 +884,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
       return;
     }
 
-    const confirmMsg = `Tem certeza que deseja ${action} o anúncio de ${selectedAdvertiser.name}?`;
+    const confirmMsg = `Tem certeza que deseja ${action} o negócio de ${selectedAdvertiser.name}?`;
     if (!window.confirm(confirmMsg)) return;
 
     setModalLoading(true);
 
     try {
       let updates: any = {};
-      if (action === "ativar") {
+      if (action === "ativar" || action === "aprovar") {
         updates = { is_active: true, status: "ativo" };
       } else if (action === "desativar") {
         updates = { is_active: false, status: "inativo" };
       } else if (action === "suspender") {
         updates = { is_active: false, status: "suspenso" };
+      } else if (action === "bloquear") {
+        updates = { is_active: false, status: "bloqueado" };
       }
 
       const { error } = await supabase
@@ -866,7 +908,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
 
       if (error) throw error;
 
-      alert(`Anúncio atualizado com status: ${action === "ativar" ? "Ativo" : action === "desativar" ? "Inativo" : "Suspenso"}`);
+      // Update business_permissions status too if blocking/approving/suspending
+      let permStatus = "ativo";
+      if (action === "bloquear") permStatus = "bloqueado";
+      else if (action === "suspender") permStatus = "suspenso";
+
+      const { error: permErr } = await supabase
+        .from("business_permissions")
+        .update({ status: permStatus, updated_at: new Date().toISOString() })
+        .eq("business_id", selectedAdvertiser.id);
+
+      if (permErr) {
+        console.warn("Could not update business_permissions status:", permErr);
+      }
+
+      alert(`Anúncio atualizado com status: ${updates.status.toUpperCase()}`);
       await logAdminActivity(`${action}_advertiser`, `Status do anunciante ${selectedAdvertiser.name} (ID: ${selectedAdvertiser.id}) alterado para: ${action}`);
       await fetchData();
     } catch (err: any) {
@@ -1610,7 +1666,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
           <li className={`sidebar-item ${activeTab === "advertisers" ? "active" : ""}`}>
             <button onClick={() => setActiveTab("advertisers")}>
               <Store size={18} />
-              Anunciantes ({providersList.length})
+              Negócios cadastrados ({providersList.length})
             </button>
           </li>
           <li className={`sidebar-item ${activeTab === "reports" ? "active" : ""}`}>
@@ -1656,7 +1712,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
             <h1>
               {activeTab === "dashboard" && "Dashboard Geral"}
               {activeTab === "users" && "Gestão de Usuários"}
-              {activeTab === "advertisers" && "Gestão de Anunciantes"}
+              {activeTab === "advertisers" && "Negócios cadastrados"}
               {activeTab === "reports" && "Gestão de Denúncias"}
               {activeTab === "financial" && "Módulo Financeiro"}
               {activeTab === "settings" && "Configurações Administrativas"}
@@ -1664,7 +1720,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
             <p>
               {activeTab === "dashboard" && "Visão analítica em tempo real do ecossistema ChamaJá"}
               {activeTab === "users" && "Controle de perfis, auditoria de atividades e ações administrativas"}
-              {activeTab === "advertisers" && "Gerenciamento de prestadores de serviços, estabelecimentos comerciais e planos premium"}
+              {activeTab === "advertisers" && "Gerenciamento de prestadores de serviços, estabelecimentos comerciais, limites de serviços e planos premium"}
               {activeTab === "reports" && "Análise de reclamações, moderação de perfis e histórico de resoluções"}
               {activeTab === "financial" && "Acompanhamento de receita, assinaturas de profissionais e status de planos SaaS"}
               {activeTab === "settings" && "Controle de permissões, logs de atividades e parametrização geral do aplicativo"}
@@ -2101,7 +2157,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
           <div className="section-container">
             <div className="section-header" style={{ flexWrap: "wrap", gap: "1rem" }}>
               <div className="section-title">
-                <h2>Gerenciar Anunciantes ({filteredAdvertisers.length})</h2>
+                <h2>Negócios cadastrados ({filteredAdvertisers.length})</h2>
               </div>
               
               <div className="filter-row">
@@ -2154,6 +2210,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
                       <th>Categoria</th>
                       <th>Cidade</th>
                       <th>Telefone/WhatsApp</th>
+                      <th>Serviços</th>
                       <th>Plano Contratado</th>
                       <th>Data de Cadastro</th>
                       <th>Status do Anúncio</th>
@@ -2165,6 +2222,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
                       const isPremium = p.plan === "monthly" || p.plan === "annual";
                       const hasExpired = p.plan_expires_at ? new Date(p.plan_expires_at) < new Date() : true;
                       const status = p.status || "ativo";
+                      let servicesCount = 0;
+                      try {
+                        if (p.services) {
+                          const parsed = typeof p.services === "string" ? JSON.parse(p.services) : p.services;
+                          if (Array.isArray(parsed)) servicesCount = parsed.length;
+                        }
+                      } catch {}
                       
                       return (
                         <tr 
@@ -2180,6 +2244,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
                           </td>
                           <td>{p.city || "-"}</td>
                           <td>{p.whatsapp || p.phone || "-"}</td>
+                          <td>{servicesCount}</td>
                           <td>
                             {isPremium && !hasExpired ? (
                               <span className="badge badge-premium">
@@ -3540,6 +3605,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
                             />
                           </div>
 
+                          <div className="form-group">
+                            <label className="form-label">Limite de Serviços (max: -1 = ilimitado)</label>
+                            <input 
+                              type="number" 
+                              className="form-input" 
+                              style={{ paddingLeft: "0.75rem" }} 
+                              value={editMaxServicos}
+                              onChange={(e) => setEditMaxServicos(parseInt(e.target.value) || 1)}
+                              min="-1"
+                              required
+                            />
+                          </div>
+
                           <div className="btn-group-row edit-form-full" style={{ justifyContent: "flex-end", marginTop: "1rem" }}>
                             <button type="button" className="btn btn-logout" style={{ width: "auto" }} onClick={() => setIsEditing(false)}>
                               Cancelar
@@ -3570,6 +3648,34 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
                             <div>
                               <span className="modal-info-label">Horário de Funcionamento</span>
                               <p className="modal-info-value">{selectedAdvertiser.working_hours || "Não especificado"}</p>
+                            </div>
+                          </div>
+
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                            <div>
+                              <span className="modal-info-label">Limite de Serviços / Produtos</span>
+                              <p className="modal-info-value" style={{ fontWeight: 600 }}>
+                                {advertiserPermission ? (advertiserPermission.max_servicos === -1 ? "Ilimitado" : `${advertiserPermission.max_servicos} serviços`) : "1 serviço"}
+                              </p>
+                            </div>
+
+                            <div>
+                              <span className="modal-info-label">Status da Permissão</span>
+                              <div>
+                                <span className="badge badge-active" style={{
+                                  backgroundColor: 
+                                    (advertiserPermission?.status || "ativo") === "bloqueado" ? "rgba(239, 68, 68, 0.15)" : 
+                                    (advertiserPermission?.status || "ativo") === "suspenso" ? "rgba(245, 158, 11, 0.15)" : undefined,
+                                  color: 
+                                    (advertiserPermission?.status || "ativo") === "bloqueado" ? "#ef4444" : 
+                                    (advertiserPermission?.status || "ativo") === "suspenso" ? "var(--accent-orange)" : undefined,
+                                  borderColor: 
+                                    (advertiserPermission?.status || "ativo") === "bloqueado" ? "rgba(239, 68, 68, 0.2)" : 
+                                    (advertiserPermission?.status || "ativo") === "suspenso" ? "rgba(245, 158, 11, 0.2)" : undefined
+                                }}>
+                                  {(advertiserPermission?.status || "ativo").toUpperCase()}
+                                </span>
+                              </div>
                             </div>
                           </div>
 
@@ -3694,8 +3800,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
                     </div>
                     
                     <div className="btn-group-row">
+                      {/* Aprovar Cadastro Button */}
+                      {(selectedAdvertiser.status || "ativo") === "pendente" && (
+                        <button 
+                          className="btn-action btn-action-reactivate"
+                          onClick={() => handleAdvertiserStatusAction("aprovar")}
+                          disabled={modalLoading}
+                        >
+                          <UserCheck size={14} /> Aprovar Cadastro
+                        </button>
+                      )}
+
                       {/* Ativar Button */}
-                      {(!selectedAdvertiser.is_active || (selectedAdvertiser.status || "ativo") !== "ativo") && (
+                      {(!selectedAdvertiser.is_active || (selectedAdvertiser.status || "ativo") !== "ativo") && (selectedAdvertiser.status || "ativo") !== "pendente" && (
                         <button 
                           className="btn-action btn-action-reactivate"
                           onClick={() => handleAdvertiserStatusAction("ativar")}
@@ -3724,6 +3841,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
                           disabled={modalLoading}
                         >
                           <ShieldAlert size={14} /> Suspender Perfil
+                        </button>
+                      )}
+
+                      {/* Bloquear Negócio Button */}
+                      {(selectedAdvertiser.status || "ativo") !== "bloqueado" && (
+                        <button 
+                          className="btn-action btn-action-block"
+                          onClick={() => handleAdvertiserStatusAction("bloquear")}
+                          disabled={modalLoading}
+                          style={{ backgroundColor: "rgba(239, 68, 68, 0.15)", color: "#ef4444", borderColor: "rgba(239, 68, 68, 0.2)" }}
+                        >
+                          <Lock size={14} /> Bloquear Negócio
                         </button>
                       )}
                     </div>
