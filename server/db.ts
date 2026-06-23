@@ -311,6 +311,8 @@ export async function getProvidersLightweight(activeOnly = true) {
     isActive: providers.isActive,
     displayOrder: providers.displayOrder,
     destaque: providers.destaque,
+    businessType: providers.businessType,
+    deliveryTime: providers.deliveryTime,
   }).from(providers);
   
   if (activeOnly) {

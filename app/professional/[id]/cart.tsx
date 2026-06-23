@@ -93,15 +93,21 @@ export default function CartScreen() {
 
   const handleCheckout = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (!deliveryAddress || deliveryAddress.trim() === "" || deliveryAddress.includes("defina seu endereço")) {
-      Alert.alert("Endereço necessário", "Por favor, defina um endereço de entrega antes de finalizar seu pedido.");
+    if (!deliveryAddress || deliveryAddress.trim() === "" || deliveryAddress.includes("defina seu endereço") || deliveryAddress.includes("endereço de atendimento")) {
+      Alert.alert(
+        isFood ? "Endereço necessário" : "Local de atendimento necessário", 
+        isFood 
+          ? "Por favor, defina um endereço de entrega antes de finalizar seu pedido."
+          : "Por favor, defina o endereço de atendimento antes de finalizar seu pedido."
+      );
       return;
     }
     // Redireciona para a tela de geração do pedido formatado
     router.push(`/professional/${id}/whatsapp-order` as any);
   };
 
-  const formattedDeliveryTime = professional?.responseTime || "30-45 min";
+  const isFood = (professional?.businessType || "servicos") === "alimentacao";
+  const formattedDeliveryTime = professional?.deliveryTime || "30-45 min";
 
   return (
     <KeyboardAvoidingView
@@ -153,26 +159,37 @@ export default function CartScreen() {
             {/* Seção Entrega/Endereço */}
             <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <View style={styles.sectionHeader}>
-                <MaterialIcons name="local-shipping" size={20} color={colors.primary} />
-                <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Entrega</Text>
-              </View>
-              
-              <View style={styles.infoRow}>
-                <MaterialIcons name="access-time" size={16} color={colors.muted} />
-                <Text style={[styles.infoText, { color: colors.foreground }]}>
-                  Tempo estimado: <Text style={{ fontWeight: "700" }}>{formattedDeliveryTime}</Text>
+                <MaterialIcons 
+                  name={isFood ? "local-shipping" : "room"} 
+                  size={20} 
+                  color={colors.primary} 
+                />
+                <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+                  {isFood ? "Entrega" : "Local de Atendimento"}
                 </Text>
               </View>
-
-              <View style={styles.divider} />
+              
+              {isFood && (
+                <>
+                  <View style={styles.infoRow}>
+                    <MaterialIcons name="access-time" size={16} color={colors.muted} />
+                    <Text style={[styles.infoText, { color: colors.foreground }]}>
+                      Tempo estimado: <Text style={{ fontWeight: "700" }}>{formattedDeliveryTime}</Text>
+                    </Text>
+                  </View>
+                  <View style={styles.divider} />
+                </>
+              )}
 
               <View style={styles.addressRow}>
                 <View style={styles.addressLeft}>
                   <MaterialIcons name="location-on" size={18} color="#EF4444" />
                   <View style={styles.addressTextContainer}>
-                    <Text style={[styles.addressLabel, { color: colors.muted }]}>Entregar em</Text>
+                    <Text style={[styles.addressLabel, { color: colors.muted }]}>
+                      {isFood ? "Entregar em" : "Atender em"}
+                    </Text>
                     <Text style={[styles.addressValue, { color: colors.foreground }]} numberOfLines={2}>
-                      {deliveryAddress || "Defina seu endereço de entrega"}
+                      {deliveryAddress || (isFood ? "Defina seu endereço de entrega" : "Defina o endereço de atendimento")}
                     </Text>
                   </View>
                 </View>
@@ -236,20 +253,22 @@ export default function CartScreen() {
             </View>
 
             {/* Observações */}
-            <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Text style={[styles.cardSectionTitle, { color: colors.foreground }]}>Observação (opcional)</Text>
-              <TextInput
-                style={[styles.notesInput, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
-                placeholder="Ex: Sem cebola, trocar refrigerante de guaraná por zero..."
-                placeholderTextColor={colors.muted}
-                multiline
-                numberOfLines={3}
-                value={notes}
-                onChangeText={setNotes}
-                maxLength={120}
-              />
-              <Text style={[styles.notesCharCount, { color: colors.muted }]}>{notes.length}/120</Text>
-            </View>
+            {isFood && (
+              <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Text style={[styles.cardSectionTitle, { color: colors.foreground }]}>Observação (opcional)</Text>
+                <TextInput
+                  style={[styles.notesInput, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
+                  placeholder="Ex: Sem cebola, trocar refrigerante de guaraná por zero..."
+                  placeholderTextColor={colors.muted}
+                  multiline
+                  numberOfLines={3}
+                  value={notes}
+                  onChangeText={setNotes}
+                  maxLength={120}
+                />
+                <Text style={[styles.notesCharCount, { color: colors.muted }]}>{notes.length}/120</Text>
+              </View>
+            )}
 
             {/* Resumo Financeiro */}
             <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>

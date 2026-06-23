@@ -32,6 +32,8 @@ export default function WhatsappOrderScreen() {
     enabled: !!id,
   });
 
+  const isFood = (professional?.businessType || "servicos") === "alimentacao";
+
   // Gera a mensagem formatada conforme a imagem de exemplo
   const messageText = useMemo(() => {
     let msg = "Olá! 👋\n";
@@ -50,14 +52,22 @@ export default function WhatsappOrderScreen() {
     });
 
     msg += `\n💰 Total: R$ ${cartTotal.toFixed(2)}\n\n`;
-    msg += "📍 Entrega\n";
+    if (isFood) {
+      msg += "📍 Entrega\n";
+    } else {
+      msg += "📍 Local do Atendimento\n";
+    }
     msg += `${deliveryAddress}\n\n`;
-    msg += "📝 Observação:\n";
-    msg += `${notes.trim() ? notes.trim() : "(sem observações)"}\n\n`;
+
+    if (isFood) {
+      msg += "📝 Observação:\n";
+      msg += `${notes.trim() ? notes.trim() : "(sem observações)"}\n\n`;
+    }
+    
     msg += "Aguardo confirmação, obrigado! 😊";
 
     return msg;
-  }, [items, cartTotal, deliveryAddress, notes]);
+  }, [items, cartTotal, deliveryAddress, notes, isFood]);
 
   const handleSendOrder = () => {
     if (!professional) return;
@@ -159,10 +169,14 @@ export default function WhatsappOrderScreen() {
               })}
               {"\n"}
               <Text style={{ fontWeight: "700" }}>💰 Total: R$ {cartTotal.toFixed(2)}</Text>{"\n\n"}
-              <Text style={{ fontWeight: "700" }}>📍 Entrega</Text>{"\n"}
+              <Text style={{ fontWeight: "700" }}>{isFood ? "📍 Entrega" : "📍 Local do Atendimento"}</Text>{"\n"}
               {deliveryAddress}{"\n\n"}
-              <Text style={{ fontWeight: "700" }}>📝 Observação:</Text>{"\n"}
-              {notes.trim() ? notes.trim() : "(sem observações)"}{"\n\n"}
+              {isFood && (
+                <>
+                  <Text style={{ fontWeight: "700" }}>📝 Observação:</Text>{"\n"}
+                  {notes.trim() ? notes.trim() : "(sem observações)"}{"\n\n"}
+                </>
+              )}
               Aguardo confirmação, obrigado! 😊
             </Text>
             <View style={styles.whatsappCheckRow}>

@@ -351,6 +351,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
   const [editDescription, setEditDescription] = useState("");
   const [editPlan, setEditPlan] = useState("");
   const [editPlanExpiresAt, setEditPlanExpiresAt] = useState("");
+  const [editBusinessType, setEditBusinessType] = useState("servicos");
+  const [editDeliveryTime, setEditDeliveryTime] = useState("");
+ 
+  // Promote custom states
+  const [promoBusinessType, setPromoBusinessType] = useState("servicos");
+  const [promoDeliveryTime, setPromoDeliveryTime] = useState("");
 
   const fetchData = async () => {
     try {
@@ -769,6 +775,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
     setEditPlan(provider.plan || "free");
     setEditPlanExpiresAt(provider.plan_expires_at ? provider.plan_expires_at.split("T")[0] : "");
     setEditHasCatalog(provider.has_catalog || false);
+    setEditBusinessType(provider.business_type || "servicos");
+    setEditDeliveryTime(provider.delivery_time || "");
 
     try {
       // 1. Fetch reviews
@@ -837,6 +845,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
       return;
     }
 
+    if (editBusinessType === "alimentacao" && (!editDeliveryTime || !editDeliveryTime.trim())) {
+      alert("Por favor, digite o tempo estimado de entrega.");
+      return;
+    }
+
     setModalLoading(true);
 
     try {
@@ -854,6 +867,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
           plan: editPlan,
           plan_expires_at: editPlanExpiresAt ? new Date(editPlanExpiresAt).toISOString() : null,
           has_catalog: editHasCatalog,
+          business_type: editBusinessType,
+          delivery_time: editBusinessType === "alimentacao" ? editDeliveryTime : null,
         })
         .eq("id", selectedAdvertiser.id);
 
@@ -962,6 +977,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
       return;
     }
 
+    if (promoBusinessType === "alimentacao" && (!promoDeliveryTime || !promoDeliveryTime.trim())) {
+      alert("Por favor, digite o tempo estimado de entrega.");
+      return;
+    }
+
     if (adminUser.admin_role === "moderador") {
       alert("Permissão insuficiente. Moderadores não podem criar ou promover anunciantes.");
       return;
@@ -997,7 +1017,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
           display_order: 0,
           clients_served: 0,
           rating: 0,
-          rating_count: 0
+          rating_count: 0,
+          business_type: promoBusinessType,
+          delivery_time: promoBusinessType === "alimentacao" ? promoDeliveryTime : null,
         });
 
       if (pErr) throw pErr;
@@ -1021,6 +1043,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
       // Reset promotion form
       setPromoCategory("");
       setPromoHasCatalog(false);
+      setPromoBusinessType("servicos");
+      setPromoDeliveryTime("");
       
       // Reload dashboard data
       await fetchData();
@@ -3493,6 +3517,41 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
                           ))}
                         </select>
                       </div>
+ 
+                      <div>
+                        <label className="form-label" style={{ fontSize: "0.8rem", marginBottom: "4px" }}>Tipo de Negócio</label>
+                        <select
+                          className="filter-select"
+                          style={{ width: "100%", padding: "6px" }}
+                          value={promoBusinessType}
+                          onChange={(e) => {
+                            setPromoBusinessType(e.target.value);
+                            if (e.target.value !== "alimentacao") {
+                              setPromoDeliveryTime("");
+                            }
+                          }}
+                          required
+                        >
+                          <option value="servicos">Serviços</option>
+                          <option value="alimentacao">Alimentação</option>
+                          <option value="produtos">Produtos</option>
+                        </select>
+                      </div>
+ 
+                      {promoBusinessType === "alimentacao" && (
+                        <div>
+                          <label className="form-label" style={{ fontSize: "0.8rem", marginBottom: "4px" }}>Tempo Estimado de Entrega</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            style={{ paddingLeft: "0.5rem", paddingRight: "0.5rem", height: "34px" }}
+                            value={promoDeliveryTime}
+                            onChange={(e) => setPromoDeliveryTime(e.target.value)}
+                            placeholder="Ex: 30-45 min"
+                            required
+                          />
+                        </div>
+                      )}
                       
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", margin: "4px 0" }}>
                         <input
@@ -3798,6 +3857,40 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
                               required
                             />
                           </div>
+ 
+                          <div className="form-group">
+                            <label className="form-label">Tipo de Negócio</label>
+                            <select 
+                              className="filter-select" 
+                              style={{ width: "100%" }}
+                              value={editBusinessType}
+                              onChange={(e) => {
+                                setEditBusinessType(e.target.value);
+                                if (e.target.value !== "alimentacao") {
+                                  setEditDeliveryTime("");
+                                }
+                              }}
+                            >
+                              <option value="servicos">Serviços</option>
+                              <option value="alimentacao">Alimentação</option>
+                              <option value="produtos">Produtos</option>
+                            </select>
+                          </div>
+ 
+                          {editBusinessType === "alimentacao" && (
+                            <div className="form-group">
+                              <label className="form-label">Tempo Estimado de Entrega</label>
+                              <input 
+                                type="text" 
+                                className="form-input" 
+                                style={{ paddingLeft: "0.75rem" }} 
+                                value={editDeliveryTime}
+                                onChange={(e) => setEditDeliveryTime(e.target.value)}
+                                placeholder="Ex: 30-45 min"
+                                required
+                              />
+                            </div>
+                          )}
 
                           <div className="form-group" style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "8px" }}>
                             <input 
@@ -3880,6 +3973,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
                                 {selectedAdvertiser.has_catalog ? "Habilitado" : "Desabilitado"}
                               </p>
                             </div>
+                          </div>
+ 
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                            <div>
+                              <span className="modal-info-label">Tipo de Negócio</span>
+                              <p className="modal-info-value" style={{ fontWeight: 600, textTransform: "capitalize" }}>
+                                {selectedAdvertiser.business_type === "alimentacao" ? "Alimentação" : selectedAdvertiser.business_type === "produtos" ? "Produtos" : "Serviços"}
+                              </p>
+                            </div>
+ 
+                            {selectedAdvertiser.business_type === "alimentacao" && (
+                              <div>
+                                <span className="modal-info-label">Tempo de Entrega</span>
+                                <p className="modal-info-value" style={{ fontWeight: 600 }}>
+                                  {selectedAdvertiser.delivery_time || "Não especificado"}
+                                </p>
+                              </div>
+                            )}
                           </div>
 
                           {/* Photos / Gallery rendering */}

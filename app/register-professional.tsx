@@ -35,6 +35,8 @@ export default function RegisterProfessionalScreen() {
     phone: "",
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
     description: "",
+    businessType: "servicos",
+    deliveryTime: null as string | null,
   });
 
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
@@ -79,6 +81,10 @@ export default function RegisterProfessionalScreen() {
       Alert.alert("Erro", "Descrição deve ter pelo menos 20 caracteres");
       return false;
     }
+    if (formData.businessType === "alimentacao" && (!formData.deliveryTime || !formData.deliveryTime.trim())) {
+      Alert.alert("Erro", "Digite o tempo estimado de entrega");
+      return false;
+    }
     return true;
   };
 
@@ -116,6 +122,8 @@ export default function RegisterProfessionalScreen() {
           phone: formData.phone,
           avatar: finalAvatar,
           description: formData.description,
+          businessType: formData.businessType,
+          deliveryTime: formData.deliveryTime,
         },
         user.id,
         "free"
@@ -264,6 +272,58 @@ export default function RegisterProfessionalScreen() {
                 </View>
               )}
             </View>
+ 
+            {/* Tipo de Negócio */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Tipo de Negócio</Text>
+              <View style={styles.businessTypeContainer}>
+                {[
+                  { id: "servicos", label: "Serviços", icon: "build" },
+                  { id: "alimentacao", label: "Alimentação", icon: "restaurant" },
+                  { id: "produtos", label: "Produtos", icon: "shopping-bag" },
+                ].map((type) => {
+                  const isSelected = formData.businessType === type.id;
+                  return (
+                    <Pressable
+                      key={type.id}
+                      style={[
+                        styles.typeButton,
+                        isSelected && styles.typeButtonSelected,
+                      ]}
+                      onPress={() => setFormData({
+                        ...formData,
+                        businessType: type.id,
+                        deliveryTime: type.id === "alimentacao" ? (formData.deliveryTime || "30-45 min") : null
+                      })}
+                    >
+                      <MaterialIcons
+                        name={type.icon as any}
+                        size={20}
+                        color={isSelected ? "#FFFFFF" : "#687076"}
+                      />
+                      <Text style={[styles.typeButtonText, isSelected && styles.typeButtonTextSelected]}>
+                        {type.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+ 
+            {/* Delivery Time (Only if businessType is alimentacao) */}
+            {formData.businessType === "alimentacao" && (
+              <View style={styles.fieldGroup}>
+                <Text style={styles.label}>Tempo Estimado de Entrega</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Ex: 30-45 min"
+                  placeholderTextColor="#9CA3AF"
+                  value={formData.deliveryTime || ""}
+                  onChangeText={(text) => setFormData({ ...formData, deliveryTime: text })}
+                  editable={!loading}
+                />
+              </View>
+            )}
 
             {/* City */}
             <View style={styles.fieldGroup}>
@@ -526,6 +586,35 @@ const styles = StyleSheet.create({
   registerButtonText: {
     fontSize: 16,
     fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  businessTypeContainer: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 4,
+  },
+  typeButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  typeButtonSelected: {
+    backgroundColor: "#25D366",
+    borderColor: "#25D366",
+  },
+  typeButtonText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#687076",
+  },
+  typeButtonTextSelected: {
     color: "#FFFFFF",
   },
 });

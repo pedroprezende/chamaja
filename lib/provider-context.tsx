@@ -33,6 +33,8 @@ export interface ProviderProfile {
   permissionsStatus?: string;
   hasCatalog?: boolean;
   status?: string;
+  businessType?: string;
+  deliveryTime?: string | null;
 }
 
 export interface ProviderService {
@@ -120,6 +122,8 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
             maxServicos: dbProvider.maxServicos,
             permissionsStatus: dbProvider.permissionsStatus,
             hasCatalog: dbProvider.hasCatalog,
+            businessType: dbProvider.businessType,
+            deliveryTime: dbProvider.deliveryTime,
           };
           await save(syncedProvider);
         }
@@ -210,6 +214,8 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
       latitude: data.latitude,
       longitude: data.longitude,
       workingHours: data.workingHours,
+      businessType: data.businessType,
+      deliveryTime: data.deliveryTime,
     });
   };
 
@@ -253,6 +259,8 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
       longitude: updated.longitude,
       workingHours: updated.workingHours,
       gallery: updated.gallery,
+      businessType: updated.businessType,
+      deliveryTime: updated.deliveryTime,
     });
   };
 

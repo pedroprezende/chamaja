@@ -50,6 +50,8 @@ const ProviderUpsertSchema = z.object({
   hasCatalog: z.boolean().optional(),
   isActive: z.boolean().optional(),
   status: z.string().optional(),
+  businessType: z.string().optional(),
+  deliveryTime: z.string().nullable().optional(),
 });
 
 const ProviderUpdateSchema = z.object({
@@ -82,6 +84,8 @@ const ProviderUpdateSchema = z.object({
     tags: z.any().optional(),
     workingHours: z.any().optional(),
     hasCatalog: z.boolean().optional(),
+    businessType: z.string().optional(),
+    deliveryTime: z.string().nullable().optional(),
   }),
 });
 
@@ -194,6 +198,8 @@ export const providersRouter = router({
           popularServices: safeStringify(input.popularServices),
           tags: safeStringify(input.tags),
           workingHours: safeStringify(input.workingHours),
+          businessType: input.businessType,
+          deliveryTime: input.deliveryTime,
           updatedAt: new Date(),
         }).where(eq(providers.userId, userId));
       } else {
@@ -237,6 +243,8 @@ export const providersRouter = router({
           workingHours: safeStringify(input.workingHours),
           isActive: input.isActive ?? false,
           status: input.status ?? "pendente",
+          businessType: input.businessType || "servicos",
+          deliveryTime: input.deliveryTime || null,
           displayOrder: 0,
           hasCatalog: false,
         });
@@ -303,6 +311,8 @@ export const providersRouter = router({
       if (input.updates.popularServices !== undefined) mappedUpdates.popularServices = safeStringify(input.updates.popularServices);
       if (input.updates.tags !== undefined) mappedUpdates.tags = safeStringify(input.updates.tags);
       if (input.updates.workingHours !== undefined) mappedUpdates.workingHours = safeStringify(input.updates.workingHours);
+      if (input.updates.businessType !== undefined) mappedUpdates.businessType = input.updates.businessType;
+      if (input.updates.deliveryTime !== undefined) mappedUpdates.deliveryTime = input.updates.deliveryTime;
       mappedUpdates.updatedAt = new Date();
 
       const existing = await dbInstance.select().from(providers).where(eq(providers.userId, input.userId)).limit(1);
@@ -515,6 +525,8 @@ export const providersRouter = router({
         displayOrder: providers.displayOrder,
         destaque: providers.destaque,
         priceLevel: providers.priceLevel,
+        businessType: providers.businessType,
+        deliveryTime: providers.deliveryTime,
       };
 
       let distanceSqlExpr = sql<number>`NULL`;

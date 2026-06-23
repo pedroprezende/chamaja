@@ -30,6 +30,8 @@ export interface StoredProvider {
   workingHours?: any;
   hasCatalog?: boolean;
   status?: string;
+  businessType?: string;
+  deliveryTime?: string | null;
   services: Array<{
     id: string;
     name: string;
@@ -79,6 +81,8 @@ function mapToStoredProvider(dbProvider: any): StoredProvider {
     workingHours: dbProvider.workingHours || undefined,
     hasCatalog: dbProvider.hasCatalog ?? false,
     status: dbProvider.status || "pendente",
+    businessType: dbProvider.businessType || "servicos",
+    deliveryTime: dbProvider.deliveryTime || null,
   };
 }
 

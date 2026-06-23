@@ -50,6 +50,8 @@ export default function ProviderDashboard() {
     avatar: "",
     coverUri: "",
     workingHours: "",
+    businessType: "servicos",
+    deliveryTime: "",
   });
   const [savingProfile, setSavingProfile] = useState(false);
 
@@ -129,6 +131,11 @@ export default function ProviderDashboard() {
       return;
     }
 
+    if (profileForm.businessType === "alimentacao" && (!profileForm.deliveryTime || !profileForm.deliveryTime.trim())) {
+      Alert.alert("Erro", "O tempo estimado de entrega é obrigatório para comércios de alimentação.");
+      return;
+    }
+
     let workingHoursValue = "";
     if (useCustomHours) {
       workingHoursValue = profileForm.workingHours;
@@ -159,6 +166,8 @@ export default function ProviderDashboard() {
         avatar: profileForm.avatar,
         coverUri: profileForm.coverUri,
         workingHours: workingHoursValue.trim(),
+        businessType: profileForm.businessType,
+        deliveryTime: profileForm.businessType === "alimentacao" ? profileForm.deliveryTime.trim() : null,
       });
       setShowEditProfileModal(false);
       Alert.alert("Sucesso", "Dados do negócio atualizados com sucesso.");
@@ -387,6 +396,8 @@ export default function ProviderDashboard() {
                   avatar: provider.avatar || "",
                   coverUri: provider.coverUri || "",
                   workingHours: rawValue,
+                  businessType: provider.businessType || "servicos",
+                  deliveryTime: provider.deliveryTime || "",
                 });
                 setShowEditProfileModal(true);
               }}
@@ -726,6 +737,58 @@ export default function ProviderDashboard() {
                   onChangeText={(t) => setProfileForm({ ...profileForm, category: t })}
                 />
               </View>
+ 
+              {/* Tipo de Negócio */}
+              <Text style={styles.fieldLabel}>Tipo de Negócio</Text>
+              <View style={styles.businessTypeContainer}>
+                {[
+                  { id: "servicos", label: "Serviços", icon: "build" },
+                  { id: "alimentacao", label: "Alimentação", icon: "restaurant" },
+                  { id: "produtos", label: "Produtos", icon: "shopping-bag" },
+                ].map((type) => {
+                  const isSelected = profileForm.businessType === type.id;
+                  return (
+                    <Pressable
+                      key={type.id}
+                      style={[
+                        styles.typeButton,
+                        isSelected && styles.typeButtonSelected,
+                      ]}
+                      onPress={() => setProfileForm({
+                        ...profileForm,
+                        businessType: type.id,
+                        deliveryTime: type.id === "alimentacao" ? (profileForm.deliveryTime || "30-45 min") : ""
+                      })}
+                    >
+                      <MaterialIcons
+                        name={type.icon as any}
+                        size={18}
+                        color={isSelected ? "#FFFFFF" : "#6B7280"}
+                      />
+                      <Text style={[styles.typeButtonText, isSelected && styles.typeButtonTextSelected]}>
+                        {type.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+ 
+              {/* Delivery Time (Only if businessType is alimentacao) */}
+              {profileForm.businessType === "alimentacao" && (
+                <>
+                  <Text style={styles.fieldLabel}>Tempo Estimado de Entrega</Text>
+                  <View style={styles.fieldBox}>
+                    <MaterialIcons name="access-time" size={18} color="#9CA3AF" />
+                    <TextInput
+                      style={styles.fieldInput}
+                      placeholder="Ex: 30-45 min"
+                      placeholderTextColor="#9CA3AF"
+                      value={profileForm.deliveryTime}
+                      onChangeText={(t) => setProfileForm({ ...profileForm, deliveryTime: t })}
+                    />
+                  </View>
+                </>
+              )}
 
               <Text style={styles.fieldLabel}>Descrição do Negócio</Text>
               <View style={[styles.fieldBox, { alignItems: "flex-start", paddingTop: 12 }]}>
@@ -1328,5 +1391,35 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     color: "#4B5563",
+  },
+  businessTypeContainer: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  typeButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: "#F9FAFB",
+    borderRadius: 10,
+    paddingVertical: 12,
+    borderWidth: 1.5,
+    borderColor: "#E5E7EB",
+  },
+  typeButtonSelected: {
+    backgroundColor: "#25D366",
+    borderColor: "#25D366",
+  },
+  typeButtonText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#6B7280",
+  },
+  typeButtonTextSelected: {
+    color: "#FFFFFF",
   },
 });
