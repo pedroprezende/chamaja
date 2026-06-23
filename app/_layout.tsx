@@ -2,10 +2,10 @@ import "@/global.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
-import { Platform, View } from "react-native";
+import { Platform, View, ActivityIndicator, Text } from "react-native";
 import "@/lib/_core/nativewind-pressable";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { useColors } from "@/hooks/use-colors";
@@ -41,30 +41,49 @@ function RootLayoutNav() {
   const segments = useSegments();
   const router = useRouter();
   const [hasMounted, setHasMounted] = useState(false);
+  const [loadingTimedOut, setLoadingTimedOut] = useState(false);
+  const hasNavigated = useRef(false);
 
   useEffect(() => {
     setHasMounted(true);
   }, []);
 
+  // Safety timeout: if loading takes more than 8 seconds, force render
   useEffect(() => {
-    if (!hasMounted || isLoading) return;
+    if (!isLoading) return;
+    const timer = setTimeout(() => {
+      console.warn("[RootLayoutNav] Loading timed out after 8s, forcing render");
+      setLoadingTimedOut(true);
+    }, 8000);
+    return () => clearTimeout(timer);
+  }, [isLoading]);
+
+  const shouldRender = hasMounted && (!isLoading || loadingTimedOut);
+
+  useEffect(() => {
+    if (!shouldRender) return;
+    // Prevent multiple navigations in the same render cycle
+    if (hasNavigated.current) return;
 
     const inAuthGroup = segments[0] === "auth";
     const path = segments.join("/");
 
     if (!isSignedIn && !inAuthGroup) {
       if (path !== "oauth/callback" && path !== "") {
+        hasNavigated.current = true;
         router.replace("/auth/login" as any);
       } else if (path === "") {
+        hasNavigated.current = true;
         router.replace("/auth/login" as any);
       }
     } else if (isSignedIn && inAuthGroup) {
       // User is signed in but still on auth screens — redirect to appropriate home
+      hasNavigated.current = true;
       (async () => {
         try {
           const isBusinessFlag = await AsyncStorage.getItem("@chamaja_login_as_business");
           if (isBusinessFlag === "true") {
-            if (isProviderLoading) return;
+            if (isProviderLoading && !loadingTimedOut) return;
             if (provider) {
               if (provider.status === "pendente" || !provider.isActive) {
                 router.replace("/become-provider" as any);
@@ -79,13 +98,21 @@ function RootLayoutNav() {
           }
         } catch {
           router.replace("/(tabs)" as any);
+        } finally {
+          // Allow future navigations on dependency changes
+          setTimeout(() => { hasNavigated.current = false; }, 100);
         }
       })();
     }
-  }, [isSignedIn, isLoading, segments, router, hasMounted, provider, isProviderLoading]);
+  }, [isSignedIn, isLoading, segments, router, shouldRender, provider, isProviderLoading, loadingTimedOut]);
 
-  if (!hasMounted || isLoading) {
-    return null;
+  if (!shouldRender) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#F8F9FA" }}>
+        <ActivityIndicator size="large" color="#25D366" />
+        <Text style={{ marginTop: 16, fontSize: 14, color: "#6B7280" }}>Carregando...</Text>
+      </View>
+    );
   }
 
   return (
