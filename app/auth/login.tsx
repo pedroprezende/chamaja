@@ -164,6 +164,28 @@ export default function LoginScreen() {
             <Text style={styles.cardTitle}>Bem-vindo!</Text>
             <Text style={styles.cardSubtitle}>Faça login para continuar</Text>
 
+            {/* Tabs selection */}
+            <View style={styles.tabContainer}>
+              <Pressable
+                style={[styles.tabButton, !isBusiness && styles.tabButtonActive]}
+                onPress={() => setIsBusiness(false)}
+                disabled={isLoading}
+              >
+                <Text style={[styles.tabButtonText, !isBusiness && styles.tabButtonTextActive]}>
+                  Cliente
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[styles.tabButton, isBusiness && styles.tabButtonActive]}
+                onPress={() => setIsBusiness(true)}
+                disabled={isLoading}
+              >
+                <Text style={[styles.tabButtonText, isBusiness && styles.tabButtonTextActive]}>
+                  Prestador / Comércio
+                </Text>
+              </Pressable>
+            </View>
+
             {/* Email/Phone Input */}
             <View style={styles.inputWrapper}>
               <MaterialIcons name="person-outline" size={20} color="#84cc16" style={styles.inputIcon} />
@@ -206,19 +228,8 @@ export default function LoginScreen() {
               </Pressable>
             </View>
 
-            {/* Options Row with Checkbox and Forgot Password */}
-            <View style={styles.optionsRow}>
-              <Pressable
-                onPress={() => setIsBusiness(!isBusiness)}
-                style={styles.checkboxContainer}
-                disabled={isLoading}
-              >
-                <View style={[styles.checkbox, isBusiness && styles.checkboxChecked]}>
-                  {isBusiness && <MaterialIcons name="check" size={14} color="#000000" />}
-                </View>
-                <Text style={styles.checkboxLabel}>Sou prestador/comércio</Text>
-              </Pressable>
-
+            {/* Options Row with Forgot Password */}
+            <View style={styles.optionsRowSingle}>
               <Pressable
                 onPress={() => router.push("/auth/forgot-password" as any)}
                 style={styles.forgotBtn}
@@ -438,36 +449,40 @@ const styles = StyleSheet.create({
   eyeBtn: {
     padding: 4,
   },
-  optionsRow: {
+  tabContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    backgroundColor: "#161616",
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#1c1c1e",
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 10,
     alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+  },
+  tabButtonActive: {
+    backgroundColor: "#84cc16",
+  },
+  tabButtonText: {
+    color: "#666666",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  tabButtonTextActive: {
+    color: "#000000",
+    fontWeight: "700",
+  },
+  optionsRowSingle: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
     marginBottom: 20,
     marginTop: -4,
     width: "100%",
-  },
-  checkboxContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  checkbox: {
-    width: 18,
-    height: 18,
-    borderWidth: 1.5,
-    borderColor: "#666666",
-    borderRadius: 4,
-    marginRight: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  checkboxChecked: {
-    borderColor: "#84cc16",
-    backgroundColor: "#84cc16",
-  },
-  checkboxLabel: {
-    color: "#FFFFFF",
-    fontSize: 13,
-    fontWeight: "500",
   },
   forgotBtn: {
     alignSelf: "center",
