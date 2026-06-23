@@ -48,6 +48,8 @@ const ProviderUpsertSchema = z.object({
   workingHours: z.any().optional(),
   utmSource: z.string().nullable().optional(),
   hasCatalog: z.boolean().optional(),
+  isActive: z.boolean().optional(),
+  status: z.string().optional(),
 });
 
 const ProviderUpdateSchema = z.object({
@@ -233,7 +235,8 @@ export const providersRouter = router({
           popularServices: safeStringify(input.popularServices),
           tags: safeStringify(input.tags),
           workingHours: safeStringify(input.workingHours),
-          isActive: true,
+          isActive: input.isActive ?? false,
+          status: input.status ?? "pendente",
           displayOrder: 0,
           hasCatalog: false,
         });
@@ -242,7 +245,7 @@ export const providersRouter = router({
         await dbInstance.insert(businessPermissions).values({
           businessId: providerId,
           maxServicos: 1,
-          status: "ativo",
+          status: "pendente",
         }).catch((err) => {
           console.error("[providersRouter] Failed to insert default business permissions:", err);
         });

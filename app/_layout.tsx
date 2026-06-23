@@ -64,12 +64,16 @@ function RootLayoutNav() {
           const isBusinessFlag = await AsyncStorage.getItem("@chamaja_login_as_business");
           if (isBusinessFlag === "true") {
             const currentPath = segments.join("/");
-            if (currentPath !== "provider-dashboard" && currentPath !== "become-provider") {
+            if (currentPath !== "provider-dashboard" && currentPath !== "become-provider" && currentPath !== "register-professional") {
               if (isProviderLoading) return;
               if (provider) {
-                router.replace("/provider-dashboard" as any);
+                if (provider.status === "pendente" || !provider.isActive) {
+                  router.replace("/become-provider" as any);
+                } else {
+                  router.replace("/provider-dashboard" as any);
+                }
               } else {
-                router.replace("/become-provider" as any);
+                router.replace("/register-professional" as any);
               }
             }
           } else if (inAuthGroup) {

@@ -17,10 +17,15 @@ import * as ImagePicker from "expo-image-picker";
 import { ScreenContainer } from "@/components/screen-container";
 import { createProfessional, subcategoriesByCategory } from "@/data/mock";
 
+import { useProvider } from "@/lib/provider-context";
+import { useAuth } from "@/lib/auth-context";
+
 const allSpecialties = Object.values(subcategoriesByCategory).flat();
 
 export default function RegisterProfessionalScreen() {
   const router = useRouter();
+  const { registerProvider } = useProvider();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [selectedSpecialties, setSelectedSpecialties] = useState<Record<string, boolean>>({});
   const [formData, setFormData] = useState({
@@ -79,6 +84,10 @@ export default function RegisterProfessionalScreen() {
 
   const handleRegister = async () => {
     if (!validateForm()) return;
+    if (!user) {
+      Alert.alert("Erro", "Você precisa estar logado para criar um perfil.");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -98,33 +107,34 @@ export default function RegisterProfessionalScreen() {
         }
       }
 
-      const newProfessional = createProfessional({
-        name: formData.name,
-        category: categoryNames,
-        city: formData.city,
-        neighborhood: formData.neighborhood,
-        phone: formData.phone,
-        avatar: finalAvatar,
-        description: formData.description,
-      });
+      await registerProvider(
+        {
+          name: formData.name,
+          category: categoryNames,
+          city: formData.city,
+          neighborhood: formData.neighborhood,
+          phone: formData.phone,
+          avatar: finalAvatar,
+          description: formData.description,
+        },
+        user.id,
+        "free"
+      );
 
       Alert.alert(
-        "Sucesso!",
-        "Seu perfil foi criado! Você pode agora atualizar para PREMIUM para ter mais visibilidade.",
+        "Cadastro Realizado!",
+        "Seu perfil foi enviado para análise. Aguarde a aprovação do administrador.",
         [
           {
-            text: "Explorar Planos",
+            text: "Avançar",
             onPress: () => {
-              router.push(`/professional-plans/${newProfessional.id}` as any);
+              router.replace("/become-provider" as any);
             },
-          },
-          {
-            text: "Voltar",
-            onPress: () => router.back(),
           },
         ]
       );
     } catch (error) {
+      console.error("[RegisterProfessional] error:", error);
       Alert.alert("Erro", "Não foi possível criar o perfil. Tente novamente.");
     } finally {
       setLoading(false);

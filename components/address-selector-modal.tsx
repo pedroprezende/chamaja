@@ -988,6 +988,8 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+    zIndex: 1,
+    backgroundColor: "transparent",
   },
   modalContent: {
     backgroundColor: "#111827",
@@ -997,6 +999,8 @@ const styles = StyleSheet.create({
     maxHeight: Dimensions.get("window").height * 0.85,
     borderWidth: 1,
     borderColor: "#1F2937",
+    zIndex: 2,
+    position: "relative",
   },
   dragIndicator: {
     width: 40,

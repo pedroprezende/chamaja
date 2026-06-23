@@ -29,6 +29,7 @@ export interface StoredProvider {
   permissionsStatus?: string;
   workingHours?: any;
   hasCatalog?: boolean;
+  status?: string;
   services: Array<{
     id: string;
     name: string;
@@ -77,6 +78,7 @@ function mapToStoredProvider(dbProvider: any): StoredProvider {
     permissionsStatus: dbProvider.permissionsStatus || undefined,
     workingHours: dbProvider.workingHours || undefined,
     hasCatalog: dbProvider.hasCatalog ?? false,
+    status: dbProvider.status || "pendente",
   };
 }
 

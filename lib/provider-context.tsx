@@ -32,6 +32,7 @@ export interface ProviderProfile {
   maxServicos?: number;
   permissionsStatus?: string;
   hasCatalog?: boolean;
+  status?: string;
 }
 
 export interface ProviderService {
@@ -176,7 +177,8 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
       userId,
       plan,
       planExpiresAt: expiresAt,
-      isActive: true,
+      isActive: false,
+      status: "pendente",
       createdAt: now.toISOString(),
       services: [],
     };
@@ -199,7 +201,8 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
       gallery: data.gallery || [],
       plan,
       planExpiresAt: expiresAt,
-      isActive: true,
+      isActive: false,
+      status: "pendente",
       createdAt: now.toISOString(),
       rating: 5.0,
       reviewCount: 0,
