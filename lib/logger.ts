@@ -45,6 +45,9 @@ class Logger {
 
   private async sendToServer(level: "info" | "warn" | "error", category: string, message: string, details?: any) {
     try {
+      // DISABLED: Sending logs to server is causing `vanillaTrpc` to call `supabase.auth.getSession()`
+      // repeatedly during app initialization, which freezes the app.
+      /*
       await vanillaTrpc.logs.register.mutate({
         level,
         category,
@@ -52,6 +55,7 @@ class Logger {
         details: details ? JSON.stringify(details) : undefined,
         platform: Platform.OS,
       });
+      */
     } catch (e) {
       // Falha silenciosa para evitar loop infinito de log
     }
