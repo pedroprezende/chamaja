@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import * as Clipboard from "expo-clipboard";
 import {
   View,
   Text,
@@ -52,6 +53,52 @@ export default function ProviderDashboard() {
   });
   const [savingProfile, setSavingProfile] = useState(false);
 
+  // Hours Option States
+  const [weekdayOpen, setWeekdayOpen] = useState(true);
+  const [weekdayStart, setWeekdayStart] = useState("08:00");
+  const [weekdayEnd, setWeekdayEnd] = useState("18:00");
+
+  const [saturdayOpen, setSaturdayOpen] = useState(false);
+  const [saturdayStart, setSaturdayStart] = useState("09:00");
+  const [saturdayEnd, setSaturdayEnd] = useState("14:00");
+
+  const [sundayOpen, setSundayOpen] = useState(false);
+  const [sundayStart, setSundayStart] = useState("09:00");
+  const [sundayEnd, setSundayEnd] = useState("14:00");
+
+  const [useCustomHours, setUseCustomHours] = useState(false);
+
+  // Time Picker Modal states
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const [pickerOptions, setPickerOptions] = useState<string[]>([]);
+  const [pickerTitle, setPickerTitle] = useState("");
+  const [onSelectOption, setOnSelectOption] = useState<(val: string) => void>(() => (val: string) => {});
+
+  const HOURS = [
+    "00:00", "01:00", "02:00", "03:00", "04:00", "05:00", "06:00", "07:00", "07:30", "08:00", 
+    "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "13:00", 
+    "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00", 
+    "18:30", "19:00", "19:30", "20:00", "20:30", "21:00", "21:30", "22:00", "22:30", "23:00", "23:30"
+  ];
+
+  const openTimePicker = (title: string, currentVal: string, onSelect: (val: string) => void) => {
+    setPickerTitle(title);
+    setPickerOptions(HOURS);
+    setOnSelectOption(() => onSelect);
+    setPickerVisible(true);
+  };
+
+  const handlePaste = async () => {
+    try {
+      const text = await Clipboard.getStringAsync();
+      if (text) {
+        setProfileForm((prev) => ({ ...prev, workingHours: text }));
+      }
+    } catch (e) {
+      Alert.alert("Erro", "Não foi possível colar do clipboard.");
+    }
+  };
+
   const handlePickAvatar = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -82,6 +129,23 @@ export default function ProviderDashboard() {
       return;
     }
 
+    let workingHoursValue = "";
+    if (useCustomHours) {
+      workingHoursValue = profileForm.workingHours;
+    } else {
+      const obj: any = {};
+      if (weekdayOpen) {
+        obj.weekday = `${weekdayStart}h-${weekdayEnd}h`;
+      }
+      if (saturdayOpen) {
+        obj.saturday = `${saturdayStart}h-${saturdayEnd}h`;
+      }
+      if (sundayOpen) {
+        obj.sunday = `${sundayStart}h-${sundayEnd}h`;
+      }
+      workingHoursValue = JSON.stringify(obj);
+    }
+
     setSavingProfile(true);
     try {
       await updateProvider({
@@ -94,7 +158,7 @@ export default function ProviderDashboard() {
         address: profileForm.address.trim(),
         avatar: profileForm.avatar,
         coverUri: profileForm.coverUri,
-        workingHours: profileForm.workingHours.trim(),
+        workingHours: workingHoursValue.trim(),
       });
       setShowEditProfileModal(false);
       Alert.alert("Sucesso", "Dados do negócio atualizados com sucesso.");
@@ -247,6 +311,71 @@ export default function ProviderDashboard() {
             <Pressable
               style={({ pressed }) => [styles.editProfileInlineBtn, pressed && { opacity: 0.7 }]}
               onPress={() => {
+                let wOpen = true, wStart = "08:00", wEnd = "18:00";
+                let sOpen = false, sStart = "09:00", sEnd = "14:00";
+                let sunOpen = false, sunStart = "09:00", sunEnd = "14:00";
+                let custom = false;
+                let rawValue = provider.workingHours ? (typeof provider.workingHours === "string" ? provider.workingHours : JSON.stringify(provider.workingHours)) : "";
+                
+                if (provider.workingHours) {
+                  try {
+                    const parsed = JSON.parse(provider.workingHours);
+                    if (parsed && (parsed.weekday || parsed.saturday || parsed.sunday)) {
+                      if (parsed.weekday) {
+                        const parts = parsed.weekday.replace(/h/g, "").split("-");
+                        if (parts.length === 2) {
+                          wOpen = true;
+                          wStart = parts[0].trim();
+                          wEnd = parts[1].trim();
+                        }
+                      } else {
+                        wOpen = false;
+                      }
+
+                      if (parsed.saturday) {
+                        const parts = parsed.saturday.replace(/h/g, "").split("-");
+                        if (parts.length === 2) {
+                          sOpen = true;
+                          sStart = parts[0].trim();
+                          sEnd = parts[1].trim();
+                        }
+                      } else {
+                        sOpen = false;
+                      }
+
+                      if (parsed.sunday) {
+                        const parts = parsed.sunday.replace(/h/g, "").split("-");
+                        if (parts.length === 2) {
+                          sunOpen = true;
+                          sunStart = parts[0].trim();
+                          sunEnd = parts[1].trim();
+                        }
+                      } else {
+                        sunOpen = false;
+                      }
+                    } else {
+                      custom = true;
+                    }
+                  } catch {
+                    custom = true;
+                  }
+                } else {
+                  wOpen = true;
+                  sOpen = false;
+                  sunOpen = false;
+                }
+
+                setWeekdayOpen(wOpen);
+                setWeekdayStart(wStart);
+                setWeekdayEnd(wEnd);
+                setSaturdayOpen(sOpen);
+                setSaturdayStart(sStart);
+                setSaturdayEnd(sEnd);
+                setSundayOpen(sunOpen);
+                setSundayStart(sunStart);
+                setSundayEnd(sunEnd);
+                setUseCustomHours(custom);
+
                 setProfileForm({
                   name: provider.name || "",
                   category: provider.category || "",
@@ -257,7 +386,7 @@ export default function ProviderDashboard() {
                   address: provider.address || "",
                   avatar: provider.avatar || "",
                   coverUri: provider.coverUri || "",
-                  workingHours: provider.workingHours ? (typeof provider.workingHours === "string" ? provider.workingHours : JSON.stringify(provider.workingHours)) : "",
+                  workingHours: rawValue,
                 });
                 setShowEditProfileModal(true);
               }}
@@ -624,16 +753,152 @@ export default function ProviderDashboard() {
               </View>
 
               <Text style={styles.fieldLabel}>Horário de Funcionamento</Text>
-              <View style={styles.fieldBox}>
-                <MaterialIcons name="access-time" size={18} color="#9CA3AF" />
-                <TextInput
-                  style={styles.fieldInput}
-                  placeholder="Ex: Seg a Sex, das 8h às 18h"
-                  placeholderTextColor="#9CA3AF"
-                  value={profileForm.workingHours}
-                  onChangeText={(t) => setProfileForm({ ...profileForm, workingHours: t })}
-                />
+              
+              {/* Type of working hours input toggle */}
+              <View style={{ flexDirection: "row", gap: 10, marginBottom: 12 }}>
+                <Pressable
+                  style={[
+                    styles.hourModeBtn,
+                    !useCustomHours && styles.hourModeBtnActive
+                  ]}
+                  onPress={() => setUseCustomHours(false)}
+                >
+                  <Text style={[styles.hourModeBtnText, !useCustomHours && styles.hourModeBtnTextActive]}>
+                    Selecionar Opções
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={[
+                    styles.hourModeBtn,
+                    useCustomHours && styles.hourModeBtnActive
+                  ]}
+                  onPress={() => setUseCustomHours(true)}
+                >
+                  <Text style={[styles.hourModeBtnText, useCustomHours && styles.hourModeBtnTextActive]}>
+                    Digitar/Colar Texto
+                  </Text>
+                </Pressable>
               </View>
+
+              {!useCustomHours ? (
+                <View style={styles.optionsHoursContainer}>
+                  {/* Segunda a Sexta */}
+                  <View style={styles.hourRow}>
+                    <View style={{ flexDirection: "row", alignItems: "center", width: 110, gap: 6 }}>
+                      <Pressable
+                        style={[styles.checkbox, weekdayOpen && styles.checkboxChecked]}
+                        onPress={() => setWeekdayOpen(!weekdayOpen)}
+                      >
+                        {weekdayOpen && <MaterialIcons name="check" size={12} color="#fff" />}
+                      </Pressable>
+                      <Text style={[styles.hourRowLabel, weekdayOpen && { fontWeight: "700" }]}>Seg a Sex</Text>
+                    </View>
+                    {weekdayOpen ? (
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1, justifyContent: "flex-end" }}>
+                        <Pressable 
+                          style={styles.timeSelectBtn}
+                          onPress={() => openTimePicker("Início Segunda a Sexta", weekdayStart, setWeekdayStart)}
+                        >
+                          <Text style={styles.timeSelectBtnText}>{weekdayStart}</Text>
+                        </Pressable>
+                        <Text style={{ fontSize: 12, color: "#6B7280" }}>até</Text>
+                        <Pressable 
+                          style={styles.timeSelectBtn}
+                          onPress={() => openTimePicker("Fim Segunda a Sexta", weekdayEnd, setWeekdayEnd)}
+                        >
+                          <Text style={styles.timeSelectBtnText}>{weekdayEnd}</Text>
+                        </Pressable>
+                      </View>
+                    ) : (
+                      <Text style={styles.closedText}>Fechado / Sem Atendimento</Text>
+                    )}
+                  </View>
+
+                  {/* Sábado */}
+                  <View style={styles.hourRow}>
+                    <View style={{ flexDirection: "row", alignItems: "center", width: 110, gap: 6 }}>
+                      <Pressable
+                        style={[styles.checkbox, saturdayOpen && styles.checkboxChecked]}
+                        onPress={() => setSaturdayOpen(!saturdayOpen)}
+                      >
+                        {saturdayOpen && <MaterialIcons name="check" size={12} color="#fff" />}
+                      </Pressable>
+                      <Text style={[styles.hourRowLabel, saturdayOpen && { fontWeight: "700" }]}>Sábado</Text>
+                    </View>
+                    {saturdayOpen ? (
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1, justifyContent: "flex-end" }}>
+                        <Pressable 
+                          style={styles.timeSelectBtn}
+                          onPress={() => openTimePicker("Início Sábado", saturdayStart, setSaturdayStart)}
+                        >
+                          <Text style={styles.timeSelectBtnText}>{saturdayStart}</Text>
+                        </Pressable>
+                        <Text style={{ fontSize: 12, color: "#6B7280" }}>até</Text>
+                        <Pressable 
+                          style={styles.timeSelectBtn}
+                          onPress={() => openTimePicker("Fim Sábado", saturdayEnd, setSaturdayEnd)}
+                        >
+                          <Text style={styles.timeSelectBtnText}>{saturdayEnd}</Text>
+                        </Pressable>
+                      </View>
+                    ) : (
+                      <Text style={styles.closedText}>Fechado / Sem Atendimento</Text>
+                    )}
+                  </View>
+
+                  {/* Domingo */}
+                  <View style={styles.hourRow}>
+                    <View style={{ flexDirection: "row", alignItems: "center", width: 110, gap: 6 }}>
+                      <Pressable
+                        style={[styles.checkbox, sundayOpen && styles.checkboxChecked]}
+                        onPress={() => setSundayOpen(!sundayOpen)}
+                      >
+                        {sundayOpen && <MaterialIcons name="check" size={12} color="#fff" />}
+                      </Pressable>
+                      <Text style={[styles.hourRowLabel, sundayOpen && { fontWeight: "700" }]}>Domingo</Text>
+                    </View>
+                    {sundayOpen ? (
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1, justifyContent: "flex-end" }}>
+                        <Pressable 
+                          style={styles.timeSelectBtn}
+                          onPress={() => openTimePicker("Início Domingo", sundayStart, setSundayStart)}
+                        >
+                          <Text style={styles.timeSelectBtnText}>{sundayStart}</Text>
+                        </Pressable>
+                        <Text style={{ fontSize: 12, color: "#6B7280" }}>até</Text>
+                        <Pressable 
+                          style={styles.timeSelectBtn}
+                          onPress={() => openTimePicker("Fim Domingo", sundayEnd, setSundayEnd)}
+                        >
+                          <Text style={styles.timeSelectBtnText}>{sundayEnd}</Text>
+                        </Pressable>
+                      </View>
+                    ) : (
+                      <Text style={styles.closedText}>Fechado / Sem Atendimento</Text>
+                    )}
+                  </View>
+                </View>
+              ) : (
+                <View style={[styles.fieldBox, { paddingRight: 8 }]}>
+                  <MaterialIcons name="access-time" size={18} color="#9CA3AF" />
+                  <TextInput
+                    style={styles.fieldInput}
+                    placeholder="Ex: Seg a Sex, das 8h às 18h"
+                    placeholderTextColor="#9CA3AF"
+                    value={profileForm.workingHours}
+                    onChangeText={(t) => setProfileForm({ ...profileForm, workingHours: t })}
+                    selectTextOnFocus={true}
+                    contextMenuHidden={false}
+                  />
+                  <Pressable
+                    style={({ pressed }) => [styles.pasteInlineBtn, pressed && { opacity: 0.7 }]}
+                    onPress={handlePaste}
+                  >
+                    <MaterialIcons name="content-paste" size={16} color="#25D366" />
+                    <Text style={styles.pasteInlineText}>Colar</Text>
+                  </Pressable>
+                </View>
+              )}
 
               <Text style={styles.fieldLabel}>Endereço Completo</Text>
               <View style={styles.fieldBox}>
@@ -698,6 +963,35 @@ export default function ProviderDashboard() {
                 </Pressable>
               </View>
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Time Picker Modal */}
+      <Modal visible={pickerVisible} transparent animationType="fade" onRequestClose={() => setPickerVisible(false)}>
+        <View style={styles.pickerOverlay}>
+          <View style={styles.pickerSheet}>
+            <Text style={styles.pickerTitle}>{pickerTitle}</Text>
+            <FlatList
+              data={pickerOptions}
+              keyExtractor={(item) => item}
+              renderItem={({ item }) => (
+                <Pressable
+                  style={styles.pickerOptionItem}
+                  onPress={() => {
+                    onSelectOption(item);
+                    setPickerVisible(false);
+                  }}
+                >
+                  <Text style={styles.pickerOptionText}>{item}</Text>
+                </Pressable>
+              )}
+              style={{ maxHeight: 300 }}
+              showsVerticalScrollIndicator={true}
+            />
+            <Pressable style={styles.pickerCloseBtn} onPress={() => setPickerVisible(false)}>
+              <Text style={styles.pickerCloseBtnText}>Fechar</Text>
+            </Pressable>
           </View>
         </View>
       </Modal>
@@ -893,5 +1187,146 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     color: "#25D366",
+  },
+  hourModeBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    backgroundColor: "#F3F4F6",
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  hourModeBtnActive: {
+    backgroundColor: "#E5FBEB",
+    borderColor: "#25D366",
+  },
+  hourModeBtnText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#4B5563",
+  },
+  hourModeBtnTextActive: {
+    color: "#15803D",
+    fontWeight: "700",
+  },
+  optionsHoursContainer: {
+    backgroundColor: "#F9FAFB",
+    borderWidth: 1.5,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    padding: 12,
+    gap: 12,
+    marginBottom: 8,
+  },
+  hourRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 4,
+  },
+  hourRowLabel: {
+    fontSize: 14,
+    color: "#374151",
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: "#9CA3AF",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+  },
+  checkboxChecked: {
+    backgroundColor: "#25D366",
+    borderColor: "#25D366",
+  },
+  timeSelectBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    backgroundColor: "#fff",
+    minWidth: 70,
+    alignItems: "center",
+  },
+  timeSelectBtnText: {
+    fontSize: 14,
+    color: "#111827",
+    fontWeight: "600",
+  },
+  closedText: {
+    fontSize: 13,
+    color: "#9CA3AF",
+    fontStyle: "italic",
+  },
+  pasteInlineBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: "#F0FDF4",
+    borderWidth: 1,
+    borderColor: "#BBF7D0",
+  },
+  pasteInlineText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#25D366",
+  },
+  pickerOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  pickerSheet: {
+    width: "100%",
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 20,
+    maxHeight: "70%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  pickerTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  pickerOptionItem: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+    alignItems: "center",
+  },
+  pickerOptionText: {
+    fontSize: 16,
+    color: "#111827",
+    fontWeight: "500",
+  },
+  pickerCloseBtn: {
+    marginTop: 16,
+    paddingVertical: 12,
+    backgroundColor: "#F3F4F6",
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  pickerCloseBtnText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#4B5563",
   },
 });

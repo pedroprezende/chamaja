@@ -620,17 +620,24 @@ export default function ProfessionalDetailScreen() {
               {(() => {
                 let weekdayHours = "";
                 let satHours = "";
+                let sunHours = "";
+                let isJson = false;
+                let parsedObj: any = null;
                 if (prof.workingHours) {
                   try {
-                    const parsed = JSON.parse(prof.workingHours);
-                    weekdayHours = parsed.weekday || "";
-                    satHours = parsed.saturday || "";
+                    parsedObj = JSON.parse(prof.workingHours);
+                    if (parsedObj && (parsedObj.weekday || parsedObj.saturday || parsedObj.sunday)) {
+                      weekdayHours = parsedObj.weekday || "";
+                      satHours = parsedObj.saturday || "";
+                      sunHours = parsedObj.sunday || "";
+                      isJson = true;
+                    }
                   } catch {
                     weekdayHours = prof.workingHours;
                   }
                 }
                 
-                if (weekdayHours || satHours) {
+                if (isJson) {
                   return (
                     <View style={{ gap: 2, marginTop: 2 }}>
                       {!!weekdayHours && (
@@ -639,7 +646,14 @@ export default function ProfessionalDetailScreen() {
                       {!!satHours && (
                         <Text style={styles.hoursText}>Sábado: <Text style={styles.hoursValueText}>{satHours}</Text></Text>
                       )}
+                      {!!sunHours && (
+                        <Text style={styles.hoursText}>Domingo: <Text style={styles.hoursValueText}>{sunHours}</Text></Text>
+                      )}
                     </View>
+                  );
+                } else if (prof.workingHours) {
+                  return (
+                    <Text style={[styles.infoValue, { color: colors.foreground }]}>{prof.workingHours}</Text>
                   );
                 }
                 return (
