@@ -125,6 +125,9 @@ export default function Home() {
             <a href="#para-comercios" className="text-muted-foreground hover:text-foreground transition">
               Para comércios
             </a>
+            <a href="/parceiros" className="text-primary font-semibold hover:text-primary/80 transition">
+              Seja um Parceiro ✦
+            </a>
           </nav>
 
           <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
@@ -588,6 +591,35 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Partners Banner Section */}
+      <section className="py-16 bg-card border-y border-border relative overflow-hidden">
+        <div className="absolute inset-0 bg-primary/5 blur-3xl filter opacity-30 pointer-events-none"></div>
+        <div className="container mx-auto px-4 max-w-5xl relative z-10">
+          <div className="bg-[#09090b]/80 border border-primary/20 rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 backdrop-blur-sm">
+            <div className="space-y-4 max-w-xl text-left">
+              <div className="inline-block px-3 py-1 bg-primary/10 border border-primary/30 rounded-full">
+                <span className="text-primary text-xs font-semibold uppercase tracking-wider">✦ Indicações & Parceiros</span>
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-white tracking-tight">
+                Ganhe Indicando Prestadores e Comércios!
+              </h2>
+              <p className="text-muted-foreground text-sm md:text-base leading-relaxed">
+                Indique profissionais e comércios locais para a nossa plataforma. Cadastre-se como parceiro, obtenha seu código de indicação exclusivo e acompanhe todos os seus leads pelo painel de controle.
+              </p>
+            </div>
+            <div className="flex-shrink-0 w-full md:w-auto">
+              <Button 
+                onClick={() => window.location.href = "/parceiros"}
+                className="w-full md:w-auto bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-8 py-6 rounded-xl flex items-center justify-center gap-2"
+              >
+                <span>Ser um Parceiro</span>
+                <ArrowRight className="h-5 w-5" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Final Section */}
       <section className="py-20 md:py-32 bg-gradient-to-r from-primary/10 to-primary/5 border-t border-border">
         <div className="container mx-auto px-4">
@@ -630,6 +662,7 @@ export default function Home() {
                 <li><a href="#como-funciona" className="hover:text-foreground transition">Como funciona</a></li>
                 <li><a href="#para-prestadores" className="hover:text-foreground transition">Para prestadores</a></li>
                 <li><a href="#para-comercios" className="hover:text-foreground transition">Para comércios</a></li>
+                <li><a href="/parceiros" className="text-primary hover:text-primary/80 transition font-semibold">Seja um Parceiro ✦</a></li>
               </ul>
             </div>
 
