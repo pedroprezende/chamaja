@@ -40,7 +40,11 @@ const PRESTADORES_PILLS = [
 const PRESTADORES_MORE = [
   { id: "automotivo", name: "Automotivo", icon: "directions-car" },
   { id: "servicos-externos", name: "Serviços Externos", icon: "yard" },
-  { id: "servicos-profissionais", name: "Serviços Profissionais", icon: "business-center" },
+  {
+    id: "servicos-profissionais",
+    name: "Serviços Profissionais",
+    icon: "business-center",
+  },
   { id: "saude", name: "Saúde", icon: "local-hospital" },
   { id: "eventos", name: "Eventos", icon: "celebration" },
   { id: "logistica", name: "Logística", icon: "local-shipping" },
@@ -87,7 +91,10 @@ export default function SearchScreen() {
   const { coords, addressName, permissionGranted } = useLocation();
   const { isFavorite, toggleFavorite } = useFavorites();
   const mapComponentRef = useRef<any>(null);
-  const [mapCenter, setMapCenter] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [mapCenter, setMapCenter] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
 
   const isDefaultCity = addressName === "Bragança Paulista - SP";
   const showDistance = coords !== null;
@@ -97,40 +104,74 @@ export default function SearchScreen() {
   const [isMapView, setIsMapView] = useState(false);
   const [addressModalVisible, setAddressModalVisible] = useState(false);
   const [selectedPill, setSelectedPill] = useState("todos");
-  const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
+  const [selectedProviderId, setSelectedProviderId] = useState<string | null>(
+    null,
+  );
   const [showMoreModal, setShowMoreModal] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
 
   // Filtros ativos
-  const [activeSort, setActiveSort] = useState<"relevance" | "distance" | "rating" | "popularity" | "recent">("relevance");
-  const [activeProximityFilter, setActiveProximityFilter] = useState<"all" | "1" | "3" | "5" | "10" | "50">("all");
-  const [activeProfileType, setActiveProfileType] = useState<"all" | "professional" | "comercio">("professional");
-  const [activeRatingFilter, setActiveRatingFilter] = useState<"all" | "2" | "3" | "4" | "5">("all");
-  const [activeAvailability, setActiveAvailability] = useState<"any" | "now" | "today" | "scheduled">("any");
-  const [activePriceLevel, setActivePriceLevel] = useState<"all" | "1" | "2" | "3" | "4">("all");
+  const [activeSort, setActiveSort] = useState<
+    "relevance" | "distance" | "rating" | "popularity" | "recent"
+  >("relevance");
+  const [activeProximityFilter, setActiveProximityFilter] = useState<
+    "all" | "1" | "3" | "5" | "10" | "50"
+  >("all");
+  const [activeProfileType, setActiveProfileType] = useState<
+    "all" | "professional" | "comercio"
+  >("professional");
+  const [activeRatingFilter, setActiveRatingFilter] = useState<
+    "all" | "2" | "3" | "4" | "5"
+  >("all");
+  const [activeAvailability, setActiveAvailability] = useState<
+    "any" | "now" | "today" | "scheduled"
+  >("any");
+  const [activePriceLevel, setActivePriceLevel] = useState<
+    "all" | "1" | "2" | "3" | "4"
+  >("all");
   const [onlyOnlineFilter, setOnlyOnlineFilter] = useState(false); // keep for toggle option backward compatibility
 
   // Estados temporários do modal de filtros
-  const [tempSort, setTempSort] = useState<"relevance" | "distance" | "rating" | "popularity" | "recent">("relevance");
-  const [tempProximity, setTempProximity] = useState<"all" | "1" | "3" | "5" | "10" | "50">("all");
-  const [tempProfileType, setTempProfileType] = useState<"all" | "professional" | "comercio">("professional");
-  const [tempRating, setTempRating] = useState<"all" | "2" | "3" | "4" | "5">("all");
-  const [tempAvailability, setTempAvailability] = useState<"any" | "now" | "today" | "scheduled">("any");
-  const [tempPriceLevel, setTempPriceLevel] = useState<"all" | "1" | "2" | "3" | "4">("all");
+  const [tempSort, setTempSort] = useState<
+    "relevance" | "distance" | "rating" | "popularity" | "recent"
+  >("relevance");
+  const [tempProximity, setTempProximity] = useState<
+    "all" | "1" | "3" | "5" | "10" | "50"
+  >("all");
+  const [tempProfileType, setTempProfileType] = useState<
+    "all" | "professional" | "comercio"
+  >("professional");
+  const [tempRating, setTempRating] = useState<"all" | "2" | "3" | "4" | "5">(
+    "all",
+  );
+  const [tempAvailability, setTempAvailability] = useState<
+    "any" | "now" | "today" | "scheduled"
+  >("any");
+  const [tempPriceLevel, setTempPriceLevel] = useState<
+    "all" | "1" | "2" | "3" | "4"
+  >("all");
   const [tempCategory, setTempCategory] = useState<string>("todos");
   const [tempOnlyOnline, setTempOnlyOnline] = useState(false);
 
   const [cachedProviders, setCachedProviders] = useState<any[]>([]);
 
   // Estados para Busca Inteligente
-  const [smartMatch, setSmartMatch] = useState<{ id: string; name: string; type: "category" | "subcategory"; categoryId?: string; subcategoryId?: string } | null>(null);
+  const [smartMatch, setSmartMatch] = useState<{
+    id: string;
+    name: string;
+    type: "category" | "subcategory";
+    categoryId?: string;
+    subcategoryId?: string;
+  } | null>(null);
   const [smartSearching, setSmartSearching] = useState(false);
 
   // Estados do Chatbot Xará
   const [chatModalVisible, setChatModalVisible] = useState(false);
   const [chatStep, setChatStep] = useState(0);
-  const [chatMessages, setChatMessages] = useState<Array<{ sender: "bot" | "user"; text: string }>>([]);
+  const [chatMessages, setChatMessages] = useState<
+    Array<{ sender: "bot" | "user"; text: string }>
+  >([]);
 
   useEffect(() => {
     AsyncStorage.getItem("@chamaja_cached_providers_filtered")
@@ -139,31 +180,39 @@ export default function SearchScreen() {
           setCachedProviders(JSON.parse(val));
         }
       })
-      .catch((err) => console.warn("Failed to load cached providers in search:", err));
+      .catch((err) =>
+        console.warn("Failed to load cached providers in search:", err),
+      );
   }, []);
 
   // Coordenadas padrão de Bragança Paulista - SP
-  const defaultCoords = { latitude: -22.9520, longitude: -46.5420 };
+  const defaultCoords = { latitude: -22.952, longitude: -46.542 };
   const userCoords = coords || defaultCoords;
 
   // Helper functions para categorias
   const isPrestadorCategory = (pillId: string) => {
-    return PRESTADORES_PILLS.some(p => p.id === pillId) || PRESTADORES_MORE.some(p => p.id === pillId);
+    return (
+      PRESTADORES_PILLS.some((p) => p.id === pillId) ||
+      PRESTADORES_MORE.some((p) => p.id === pillId)
+    );
   };
 
   const isComercioCategory = (pillId: string) => {
-    return COMERCIOS_PILLS.some(p => p.id === pillId) || COMERCIOS_MORE.some(p => p.id === pillId);
+    return (
+      COMERCIOS_PILLS.some((p) => p.id === pillId) ||
+      COMERCIOS_MORE.some((p) => p.id === pillId)
+    );
   };
 
   // Listas de Pills Combinadas para quando o perfil for 'all'
   const combinedPills = useMemo(() => {
     const all = [
       { id: "todos", name: "Todos", icon: "all-inclusive" },
-      ...PRESTADORES_PILLS.filter(p => p.id !== "todos"),
-      ...COMERCIOS_PILLS.filter(p => p.id !== "todos")
+      ...PRESTADORES_PILLS.filter((p) => p.id !== "todos"),
+      ...COMERCIOS_PILLS.filter((p) => p.id !== "todos"),
     ];
     const seen = new Set();
-    return all.filter(p => {
+    return all.filter((p) => {
       if (seen.has(p.id)) return false;
       seen.add(p.id);
       return true;
@@ -171,12 +220,9 @@ export default function SearchScreen() {
   }, []);
 
   const combinedMorePills = useMemo(() => {
-    const all = [
-      ...PRESTADORES_MORE,
-      ...COMERCIOS_MORE
-    ];
+    const all = [...PRESTADORES_MORE, ...COMERCIOS_MORE];
     const seen = new Set();
-    return all.filter(p => {
+    return all.filter((p) => {
       if (seen.has(p.id)) return false;
       seen.add(p.id);
       return true;
@@ -184,52 +230,89 @@ export default function SearchScreen() {
   }, []);
 
   // tRPC query para busca filtrada otimizada no servidor
-  const { data: dbProviders = cachedProviders, isLoading: loadingProviders, refetch } = trpc.providers.searchFiltered.useQuery({
-    query: query.trim() || undefined,
-    profileType: activeProfileType === "all" ? undefined : activeProfileType,
-    categoryId: (selectedPill !== "todos" && isPrestadorCategory(selectedPill)) ? selectedPill : undefined,
-    subcategoryId: (selectedPill !== "todos" && isComercioCategory(selectedPill)) ? selectedPill : undefined,
-    userLatitude: userCoords.latitude,
-    userLongitude: userCoords.longitude,
-    maxDistanceKm: activeProximityFilter === "all" ? undefined : Number(activeProximityFilter),
-    minRating: activeRatingFilter === "all" ? undefined : Number(activeRatingFilter),
-    onlyOnline: activeAvailability === "now" || onlyOnlineFilter,
-    priceLevel: activePriceLevel === "all" ? undefined : Number(activePriceLevel),
-    availability: activeAvailability,
-    sortBy: activeSort,
-  }, {
-    placeholderData: (prev) => prev,
-  });
+  const {
+    data: dbProviders = cachedProviders,
+    isLoading: loadingProviders,
+    refetch,
+  } = trpc.providers.searchFiltered.useQuery(
+    {
+      query: query.trim() || undefined,
+      profileType: activeProfileType === "all" ? undefined : activeProfileType,
+      categoryId:
+        selectedPill !== "todos" && isPrestadorCategory(selectedPill)
+          ? selectedPill
+          : undefined,
+      subcategoryId:
+        selectedPill !== "todos" && isComercioCategory(selectedPill)
+          ? selectedPill
+          : undefined,
+      userLatitude: userCoords.latitude,
+      userLongitude: userCoords.longitude,
+      maxDistanceKm:
+        activeProximityFilter === "all"
+          ? undefined
+          : Number(activeProximityFilter),
+      minRating:
+        activeRatingFilter === "all" ? undefined : Number(activeRatingFilter),
+      onlyOnline: activeAvailability === "now" || onlyOnlineFilter,
+      priceLevel:
+        activePriceLevel === "all" ? undefined : Number(activePriceLevel),
+      availability: activeAvailability,
+      sortBy: activeSort,
+    },
+    {
+      placeholderData: (prev) => prev,
+    },
+  );
 
   // Preview query executada em tempo real enquanto o modal de filtros está aberto
-  const { data: previewProviders = [], isLoading: loadingPreview } = trpc.providers.searchFiltered.useQuery({
-    query: query.trim() || undefined,
-    profileType: tempProfileType === "all" ? undefined : tempProfileType,
-    categoryId: (tempCategory !== "todos" && isPrestadorCategory(tempCategory)) ? tempCategory : undefined,
-    subcategoryId: (tempCategory !== "todos" && isComercioCategory(tempCategory)) ? tempCategory : undefined,
-    userLatitude: userCoords.latitude,
-    userLongitude: userCoords.longitude,
-    maxDistanceKm: tempProximity === "all" ? undefined : Number(tempProximity),
-    minRating: tempRating === "all" ? undefined : Number(tempRating),
-    onlyOnline: tempAvailability === "now" || tempOnlyOnline,
-    priceLevel: tempPriceLevel === "all" ? undefined : Number(tempPriceLevel),
-    availability: tempAvailability,
-    sortBy: tempSort,
-  }, {
-    enabled: filterModalVisible,
-    placeholderData: (prev) => prev,
-  });
+  const { data: previewProviders = [], isLoading: loadingPreview } =
+    trpc.providers.searchFiltered.useQuery(
+      {
+        query: query.trim() || undefined,
+        profileType: tempProfileType === "all" ? undefined : tempProfileType,
+        categoryId:
+          tempCategory !== "todos" && isPrestadorCategory(tempCategory)
+            ? tempCategory
+            : undefined,
+        subcategoryId:
+          tempCategory !== "todos" && isComercioCategory(tempCategory)
+            ? tempCategory
+            : undefined,
+        userLatitude: userCoords.latitude,
+        userLongitude: userCoords.longitude,
+        maxDistanceKm:
+          tempProximity === "all" ? undefined : Number(tempProximity),
+        minRating: tempRating === "all" ? undefined : Number(tempRating),
+        onlyOnline: tempAvailability === "now" || tempOnlyOnline,
+        priceLevel:
+          tempPriceLevel === "all" ? undefined : Number(tempPriceLevel),
+        availability: tempAvailability,
+        sortBy: tempSort,
+      },
+      {
+        enabled: filterModalVisible,
+        placeholderData: (prev) => prev,
+      },
+    );
 
   useEffect(() => {
-    if (dbProviders && dbProviders.length > 0 && dbProviders !== cachedProviders) {
-      AsyncStorage.setItem("@chamaja_cached_providers_filtered", JSON.stringify(dbProviders)).catch(console.error);
+    if (
+      dbProviders &&
+      dbProviders.length > 0 &&
+      dbProviders !== cachedProviders
+    ) {
+      AsyncStorage.setItem(
+        "@chamaja_cached_providers_filtered",
+        JSON.stringify(dbProviders),
+      ).catch(console.error);
     }
   }, [dbProviders, cachedProviders]);
 
   // Busca Inteligente tRPC Query
   const { refetch: fetchSmartSearch } = trpc.providers.smartSearch.useQuery(
     { query },
-    { enabled: false }
+    { enabled: false },
   );
 
   const startChatbot = () => {
@@ -237,34 +320,45 @@ export default function SearchScreen() {
     setChatMessages([
       {
         sender: "bot",
-        text: "Olá! Sou o Xará, o assistente virtual do XamaJá. 🦜\n\nNão entendi muito bem sua busca. Pode me dizer em qual área você precisa de ajuda?"
-      }
+        text: "Olá! Sou o Xará, o assistente virtual do XamaJá. 🦜\n\nNão entendi muito bem sua busca. Pode me dizer em qual área você precisa de ajuda?",
+      },
     ]);
     setChatModalVisible(true);
   };
 
-  const handleChatOption = (option: { label: string; nextStep: number; mapCategory?: string; mapQuery?: string }) => {
-    setChatMessages(prev => [...prev, { sender: "user", text: option.label }]);
+  const handleChatOption = (option: {
+    label: string;
+    nextStep: number;
+    mapCategory?: string;
+    mapQuery?: string;
+  }) => {
+    setChatMessages((prev) => [
+      ...prev,
+      { sender: "user", text: option.label },
+    ]);
     const next = option.nextStep;
     setChatStep(next);
 
     setTimeout(() => {
       let botText = "";
       if (next === 1) {
-        botText = "Excelente! É algo relacionado à parte elétrica, encanamento, pintura, pedreiro ou móveis?";
+        botText =
+          "Excelente! É algo relacionado à parte elétrica, encanamento, pintura, pedreiro ou móveis?";
       } else if (next === 2) {
         botText = "Perfeito! Qual serviço doméstico você precisa no momento?";
       } else if (next === 3) {
-        botText = "Entendido! Qual equipamento ou aparelho está apresentando problemas?";
+        botText =
+          "Entendido! Qual equipamento ou aparelho está apresentando problemas?";
       } else if (next === 4) {
-        botText = "Com certeza! Que tipo de serviço de beleza/estética você procura?";
+        botText =
+          "Com certeza! Que tipo de serviço de beleza/estética você procura?";
       } else if (next === 5) {
         botText = "Legal! É conserto mecânico ou limpeza/lavagem de carro?";
       } else if (next === 99) {
         botText = `Perfeito! Entendi que você precisa de um ${option.mapQuery || "profissional"}. Clique no botão abaixo para ver as opções na sua região!`;
       }
 
-      setChatMessages(prev => [...prev, { sender: "bot", text: botText }]);
+      setChatMessages((prev) => [...prev, { sender: "bot", text: botText }]);
     }, 600);
   };
 
@@ -277,7 +371,7 @@ export default function SearchScreen() {
       name: queryStr,
       type: "subcategory",
       categoryId: category,
-      subcategoryId: category
+      subcategoryId: category,
     });
     setChatModalVisible(false);
   };
@@ -293,9 +387,9 @@ export default function SearchScreen() {
           name: res.name,
           type: res.type as "category" | "subcategory",
           categoryId: res.categoryId,
-          subcategoryId: res.subcategoryId
+          subcategoryId: res.subcategoryId,
         });
-        
+
         if (res.categoryId) {
           setSelectedPill(res.categoryId);
         }
@@ -385,11 +479,17 @@ export default function SearchScreen() {
   useEffect(() => {
     console.log("=== [DIAGNÓSTICO LOCALIZAÇÃO] ===");
     console.log(`- Endereço Selecionado: "${addressName}"`);
-    console.log(`- Coordenadas do Endereço/Usuário: Lat ${userCoords.latitude}, Lng ${userCoords.longitude}`);
-    console.log(`- Coordenadas do Fallback/GPS Ativo: ${coords ? `Lat ${coords.latitude}, Lng ${coords.longitude}` : "Nenhuma (Usando Fallback Padrão -22.9520, -46.5420)"}`);
+    console.log(
+      `- Coordenadas do Endereço/Usuário: Lat ${userCoords.latitude}, Lng ${userCoords.longitude}`,
+    );
+    console.log(
+      `- Coordenadas do Fallback/GPS Ativo: ${coords ? `Lat ${coords.latitude}, Lng ${coords.longitude}` : "Nenhuma (Usando Fallback Padrão -22.9520, -46.5420)"}`,
+    );
     console.log(`- Total de Prestadores Mapeados: ${providersList.length}`);
     providersList.forEach((p, idx) => {
-      console.log(`  [Prestador #${idx + 1}] Nome: "${p.name}" | Cat: "${p.category || p.subcategoryName}" | Bairro: "${p.neighborhood}" | Coordenadas: Lat ${p.latitude}, Lng ${p.longitude} | Distância: ${p.distanceStr || 'N/A'}`);
+      console.log(
+        `  [Prestador #${idx + 1}] Nome: "${p.name}" | Cat: "${p.category || p.subcategoryName}" | Bairro: "${p.neighborhood}" | Coordenadas: Lat ${p.latitude}, Lng ${p.longitude} | Distância: ${p.distanceStr || "N/A"}`,
+      );
     });
     console.log("=================================");
   }, [userCoords, addressName, coords, providersList]);
@@ -414,40 +514,43 @@ export default function SearchScreen() {
     }, 1200);
   };
 
-  const currentPills = activeProfileType === "professional"
-    ? PRESTADORES_PILLS
-    : activeProfileType === "comercio"
-    ? COMERCIOS_PILLS
-    : combinedPills;
+  const currentPills =
+    activeProfileType === "professional"
+      ? PRESTADORES_PILLS
+      : activeProfileType === "comercio"
+        ? COMERCIOS_PILLS
+        : combinedPills;
 
-  const morePills = activeProfileType === "professional"
-    ? PRESTADORES_MORE
-    : activeProfileType === "comercio"
-    ? COMERCIOS_MORE
-    : combinedMorePills;
+  const morePills =
+    activeProfileType === "professional"
+      ? PRESTADORES_MORE
+      : activeProfileType === "comercio"
+        ? COMERCIOS_MORE
+        : combinedMorePills;
 
   const modalCurrentPills = filterModalVisible
-    ? (tempProfileType === "professional"
+    ? tempProfileType === "professional"
       ? PRESTADORES_PILLS
       : tempProfileType === "comercio"
-      ? COMERCIOS_PILLS
-      : combinedPills)
+        ? COMERCIOS_PILLS
+        : combinedPills
     : currentPills;
 
   const modalMorePills = filterModalVisible
-    ? (tempProfileType === "professional"
+    ? tempProfileType === "professional"
       ? PRESTADORES_MORE
       : tempProfileType === "comercio"
-      ? COMERCIOS_MORE
-      : combinedMorePills)
+        ? COMERCIOS_MORE
+        : combinedMorePills
     : morePills;
 
   const currentCount = providersList.length;
-  const countLabel = activeProfileType === "professional"
-    ? `${currentCount} profissionais encontrados`
-    : activeProfileType === "comercio"
-    ? `${currentCount} comércios encontrados`
-    : `${currentCount} resultados encontrados`;
+  const countLabel =
+    activeProfileType === "professional"
+      ? `${currentCount} profissionais encontrados`
+      : activeProfileType === "comercio"
+        ? `${currentCount} comércios encontrados`
+        : `${currentCount} resultados encontrados`;
 
   return (
     <ScreenContainer edges={["left", "right"]} style={styles.container}>
@@ -462,12 +565,18 @@ export default function SearchScreen() {
             <Text style={styles.headerTitle}>
               {isMapView ? "Mapa" : "Profissionais próximos"}
             </Text>
-            <Pressable 
+            <Pressable
               style={styles.locationContainer}
               onPress={() => setAddressModalVisible(true)}
             >
-              <Text style={styles.locationText} numberOfLines={1}>📍 {addressName}</Text>
-              <MaterialIcons name="keyboard-arrow-down" size={16} color="#22C55E" />
+              <Text style={styles.locationText} numberOfLines={1}>
+                📍 {addressName}
+              </Text>
+              <MaterialIcons
+                name="keyboard-arrow-down"
+                size={16}
+                color="#22C55E"
+              />
             </Pressable>
             <Text style={styles.subtitleCount}>{countLabel}</Text>
           </View>
@@ -475,10 +584,13 @@ export default function SearchScreen() {
           {/* Botões de Ação Direta */}
           <View style={styles.headerRightRow}>
             {!isMapView && (
-              <Pressable 
+              <Pressable
                 style={[
                   styles.headerFilterBtn,
-                  activeFiltersCount > 0 && { borderColor: "#22C55E", backgroundColor: "rgba(34, 197, 94, 0.05)" }
+                  activeFiltersCount > 0 && {
+                    borderColor: "#22C55E",
+                    backgroundColor: "rgba(34, 197, 94, 0.05)",
+                  },
                 ]}
                 onPress={openFilterModal}
               >
@@ -486,7 +598,9 @@ export default function SearchScreen() {
                 <Text style={styles.headerFilterText}>Filtros</Text>
                 {activeFiltersCount > 0 && (
                   <View style={styles.filterBadge}>
-                    <Text style={styles.filterBadgeText}>{activeFiltersCount}</Text>
+                    <Text style={styles.filterBadgeText}>
+                      {activeFiltersCount}
+                    </Text>
                   </View>
                 )}
               </Pressable>
@@ -504,7 +618,12 @@ export default function SearchScreen() {
                 size={20}
                 color={isMapView ? "#22C55E" : "#FFFFFF"}
               />
-              <Text style={[styles.headerToggleText, isMapView && { color: "#22C55E" }]}>
+              <Text
+                style={[
+                  styles.headerToggleText,
+                  isMapView && { color: "#22C55E" },
+                ]}
+              >
                 {isMapView ? "Lista" : "Mapa"}
               </Text>
             </Pressable>
@@ -522,8 +641,8 @@ export default function SearchScreen() {
               activeProfileType === "professional"
                 ? "Buscar serviço ou profissional..."
                 : activeProfileType === "comercio"
-                ? "Buscar comércio ou local..."
-                : "Buscar profissionais ou comércios..."
+                  ? "Buscar comércio ou local..."
+                  : "Buscar profissionais ou comércios..."
             }
             placeholderTextColor="#9CA3AF"
             value={query}
@@ -536,9 +655,20 @@ export default function SearchScreen() {
             onSubmitEditing={handleSmartSearch}
             returnKeyType="search"
           />
-          {smartSearching && <ActivityIndicator size="small" color="#22C55E" style={{ marginRight: 6 }} />}
+          {smartSearching && (
+            <ActivityIndicator
+              size="small"
+              color="#22C55E"
+              style={{ marginRight: 6 }}
+            />
+          )}
           {query.length > 0 && !smartSearching && (
-            <Pressable onPress={() => { setQuery(""); setSmartMatch(null); }}>
+            <Pressable
+              onPress={() => {
+                setQuery("");
+                setSmartMatch(null);
+              }}
+            >
               <MaterialIcons name="close" size={18} color="#9CA3AF" />
             </Pressable>
           )}
@@ -550,42 +680,68 @@ export default function SearchScreen() {
         <View style={styles.tabBar}>
           <Pressable
             onPress={() => handleTabChange("all")}
-            style={[styles.tabButton, activeProfileType === "all" && styles.tabButtonActive]}
+            style={[
+              styles.tabButton,
+              activeProfileType === "all" && styles.tabButtonActive,
+            ]}
           >
             <MaterialIcons
               name="all-inclusive"
               size={18}
               color={activeProfileType === "all" ? "#FFFFFF" : "#9CA3AF"}
             />
-            <Text style={[styles.tabText, activeProfileType === "all" && styles.tabTextActive]}>
+            <Text
+              style={[
+                styles.tabText,
+                activeProfileType === "all" && styles.tabTextActive,
+              ]}
+            >
               Todos
             </Text>
           </Pressable>
 
           <Pressable
             onPress={() => handleTabChange("professional")}
-            style={[styles.tabButton, activeProfileType === "professional" && styles.tabButtonActive]}
+            style={[
+              styles.tabButton,
+              activeProfileType === "professional" && styles.tabButtonActive,
+            ]}
           >
             <MaterialIcons
               name="person"
               size={18}
-              color={activeProfileType === "professional" ? "#FFFFFF" : "#9CA3AF"}
+              color={
+                activeProfileType === "professional" ? "#FFFFFF" : "#9CA3AF"
+              }
             />
-            <Text style={[styles.tabText, activeProfileType === "professional" && styles.tabTextActive]}>
+            <Text
+              style={[
+                styles.tabText,
+                activeProfileType === "professional" && styles.tabTextActive,
+              ]}
+            >
               Prestadores
             </Text>
           </Pressable>
 
           <Pressable
             onPress={() => handleTabChange("comercio")}
-            style={[styles.tabButton, activeProfileType === "comercio" && styles.tabButtonActive]}
+            style={[
+              styles.tabButton,
+              activeProfileType === "comercio" && styles.tabButtonActive,
+            ]}
           >
             <MaterialIcons
               name="storefront"
               size={18}
               color={activeProfileType === "comercio" ? "#FFFFFF" : "#9CA3AF"}
             />
-            <Text style={[styles.tabText, activeProfileType === "comercio" && styles.tabTextActive]}>
+            <Text
+              style={[
+                styles.tabText,
+                activeProfileType === "comercio" && styles.tabTextActive,
+              ]}
+            >
               Comércios
             </Text>
           </Pressable>
@@ -608,9 +764,14 @@ export default function SearchScreen() {
                   setSelectedPill(pill.id);
                   setSelectedProviderId(null);
                 }}
-                style={[styles.pillButton, isSelected && styles.pillButtonActive]}
+                style={[
+                  styles.pillButton,
+                  isSelected && styles.pillButtonActive,
+                ]}
               >
-                <Text style={[styles.pillText, isSelected && styles.pillTextActive]}>
+                <Text
+                  style={[styles.pillText, isSelected && styles.pillTextActive]}
+                >
                   {pill.name}
                 </Text>
               </Pressable>
@@ -620,7 +781,12 @@ export default function SearchScreen() {
             onPress={() => setShowMoreModal(true)}
             style={styles.pillButtonMore}
           >
-            <MaterialIcons name="grid-view" size={16} color="#D1D5DB" style={{ marginRight: 4 }} />
+            <MaterialIcons
+              name="grid-view"
+              size={16}
+              color="#D1D5DB"
+              style={{ marginRight: 4 }}
+            />
             <Text style={styles.pillTextMore}>Mais</Text>
           </Pressable>
         </ScrollView>
@@ -653,9 +819,18 @@ export default function SearchScreen() {
                 style={styles.scanAreaButton}
               >
                 {isScanning ? (
-                  <ActivityIndicator size="small" color="#22C55E" style={{ marginRight: 6 }} />
+                  <ActivityIndicator
+                    size="small"
+                    color="#22C55E"
+                    style={{ marginRight: 6 }}
+                  />
                 ) : (
-                  <MaterialIcons name="refresh" size={18} color="#22C55E" style={{ marginRight: 6 }} />
+                  <MaterialIcons
+                    name="refresh"
+                    size={18}
+                    color="#22C55E"
+                    style={{ marginRight: 6 }}
+                  />
                 )}
                 <Text style={styles.scanAreaText}>
                   {isScanning ? "Buscando..." : "Buscar nesta área"}
@@ -681,7 +856,10 @@ export default function SearchScreen() {
                 <View style={styles.cardHeader}>
                   <Image
                     source={{
-                      uri: selectedProvider.avatarThumbnailUri || selectedProvider.avatarUri || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
+                      uri:
+                        selectedProvider.avatarThumbnailUri ||
+                        selectedProvider.avatarUri ||
+                        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
                     }}
                     style={styles.cardAvatar}
                   />
@@ -700,7 +878,8 @@ export default function SearchScreen() {
                       )}
                     </View>
                     <Text style={styles.cardSpecialty} numberOfLines={1}>
-                      {selectedProvider.category || selectedProvider.subcategoryName}
+                      {selectedProvider.category ||
+                        selectedProvider.subcategoryName}
                     </Text>
 
                     {/* Classificação */}
@@ -727,7 +906,9 @@ export default function SearchScreen() {
                 </View>
 
                 <Pressable
-                  onPress={() => router.push(`/professional/${selectedProvider.id}` as any)}
+                  onPress={() =>
+                    router.push(`/professional/${selectedProvider.id}` as any)
+                  }
                   style={styles.cardButton}
                 >
                   <Text style={styles.cardButtonText}>Ver perfil</Text>
@@ -744,13 +925,36 @@ export default function SearchScreen() {
             showsVerticalScrollIndicator={false}
             ListHeaderComponent={
               smartMatch ? (
-                <View style={[styles.smartMatchBanner, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <View
+                  style={[
+                    styles.smartMatchBanner,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
                   <View style={styles.smartMatchHeader}>
-                    <Image source={require("@/assets/images/mascote-xara.png")} style={styles.smartMatchMascot} />
+                    <Image
+                      source={require("@/assets/images/mascote-xara.png")}
+                      style={styles.smartMatchMascot}
+                    />
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.smartMatchTitle, { color: colors.foreground }]}>Busca Inteligente Xará</Text>
-                      <Text style={[styles.smartMatchSub, { color: colors.muted }]}>
-                        Mapeado para: <Text style={{ color: "#22C55E", fontWeight: "700" }}>{smartMatch.name}</Text>
+                      <Text
+                        style={[
+                          styles.smartMatchTitle,
+                          { color: colors.foreground },
+                        ]}
+                      >
+                        Busca Inteligente Xará
+                      </Text>
+                      <Text
+                        style={[styles.smartMatchSub, { color: colors.muted }]}
+                      >
+                        Mapeado para:{" "}
+                        <Text style={{ color: "#22C55E", fontWeight: "700" }}>
+                          {smartMatch.name}
+                        </Text>
                       </Text>
                     </View>
                     <Pressable
@@ -761,7 +965,11 @@ export default function SearchScreen() {
                       }}
                       style={styles.smartMatchClearBtn}
                     >
-                      <MaterialIcons name="close" size={16} color={colors.muted} />
+                      <MaterialIcons
+                        name="close"
+                        size={16}
+                        color={colors.muted}
+                      />
                     </Pressable>
                   </View>
                 </View>
@@ -779,7 +987,10 @@ export default function SearchScreen() {
                   <View style={styles.avatarSection}>
                     <Image
                       source={{
-                        uri: item.avatarThumbnailUri || item.avatarUri || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
+                        uri:
+                          item.avatarThumbnailUri ||
+                          item.avatarUri ||
+                          "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
                       }}
                       style={styles.providerAvatar}
                       contentFit="cover"
@@ -788,9 +999,11 @@ export default function SearchScreen() {
                       <View
                         style={[
                           styles.badgeTag,
-                          item.topBadge === "Patrocinado" && styles.badgePatrocinado,
+                          item.topBadge === "Patrocinado" &&
+                            styles.badgePatrocinado,
                           item.topBadge === "Destaque" && styles.badgeDestaque,
-                          item.topBadge === "Verificado" && styles.badgeVerificado,
+                          item.topBadge === "Verificado" &&
+                            styles.badgeVerificado,
                         ]}
                       >
                         <Text style={styles.badgeText}>{item.topBadge}</Text>
@@ -824,12 +1037,25 @@ export default function SearchScreen() {
                             name: item.name,
                             category: item.category || "",
                             city: item.city || "",
-                            avatar: item.avatarThumbnailUri || item.avatarUri || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}`,
+                            avatar:
+                              item.avatarThumbnailUri ||
+                              item.avatarUri ||
+                              `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}`,
                             rating: Number(item.rating) || 0,
                             phone: item.phone || item.whatsapp || "",
-                            type: (typeof item.plan === "string" && (item.plan.toLowerCase() === "premium" || item.plan.toLowerCase() === "annual" || item.plan.toLowerCase() === "monthly")) ? "premium" : "free",
-                            latitude: item.latitude ? Number(item.latitude) : null,
-                            longitude: item.longitude ? Number(item.longitude) : null,
+                            type:
+                              typeof item.plan === "string" &&
+                              (item.plan.toLowerCase() === "premium" ||
+                                item.plan.toLowerCase() === "annual" ||
+                                item.plan.toLowerCase() === "monthly")
+                                ? "premium"
+                                : "free",
+                            latitude: item.latitude
+                              ? Number(item.latitude)
+                              : null,
+                            longitude: item.longitude
+                              ? Number(item.longitude)
+                              : null,
                           });
                         }}
                         style={styles.favBtn}
@@ -849,19 +1075,27 @@ export default function SearchScreen() {
                     {/* Rating e Distância */}
                     <View style={styles.ratingSection}>
                       <MaterialIcons name="star" size={16} color="#FBBF24" />
-                      <Text style={styles.ratingValue}>{Number(item.rating).toFixed(1)}</Text>
-                      <Text style={styles.ratingCount}>({item.ratingCount})</Text>
+                      <Text style={styles.ratingValue}>
+                        {Number(item.rating).toFixed(1)}
+                      </Text>
+                      <Text style={styles.ratingCount}>
+                        ({item.ratingCount})
+                      </Text>
                       {showDistance && item.distanceStr ? (
                         <>
                           <Text style={styles.ratingDot}>•</Text>
-                          <Text style={styles.distanceText}>📍 {item.distanceStr}</Text>
+                          <Text style={styles.distanceText}>
+                            📍 {item.distanceStr}
+                          </Text>
                         </>
                       ) : null}
                     </View>
 
                     <View style={styles.statusRow}>
                       <Text style={styles.openText}>Aberto agora</Text>
-                      <Text style={styles.neighborhoodText}>{item.neighborhood}</Text>
+                      <Text style={styles.neighborhoodText}>
+                        {item.neighborhood}
+                      </Text>
                     </View>
                   </View>
                 </Pressable>
@@ -870,9 +1104,12 @@ export default function SearchScreen() {
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <MaterialIcons name="search-off" size={60} color="#9CA3AF" />
-                <Text style={styles.emptyTitle}>Nenhum profissional encontrado</Text>
+                <Text style={styles.emptyTitle}>
+                  Nenhum profissional encontrado
+                </Text>
                 <Text style={styles.emptySubtitle}>
-                  Tente alterar seus termos de busca ou selecionar outra categoria.
+                  Tente alterar seus termos de busca ou selecionar outra
+                  categoria.
                 </Text>
               </View>
             }
@@ -891,7 +1128,10 @@ export default function SearchScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Todas as categorias</Text>
-              <Pressable onPress={() => setShowMoreModal(false)} style={styles.modalCloseBtn}>
+              <Pressable
+                onPress={() => setShowMoreModal(false)}
+                style={styles.modalCloseBtn}
+              >
                 <MaterialIcons name="close" size={24} color="#FFFFFF" />
               </Pressable>
             </View>
@@ -909,19 +1149,27 @@ export default function SearchScreen() {
                   setSelectedProviderId(null);
                 }}
                 style={[
-                  styles.gridItem, 
-                  (filterModalVisible ? tempCategory === "todos" : selectedPill === "todos") && styles.gridItemActive
+                  styles.gridItem,
+                  (filterModalVisible
+                    ? tempCategory === "todos"
+                    : selectedPill === "todos") && styles.gridItemActive,
                 ]}
               >
                 <View style={styles.gridIconContainer}>
-                  <MaterialIcons name="all-inclusive" size={24} color="#22C55E" />
+                  <MaterialIcons
+                    name="all-inclusive"
+                    size={24}
+                    color="#22C55E"
+                  />
                 </View>
                 <Text style={styles.gridItemLabel}>Todos</Text>
               </Pressable>
 
               {/* Pills padrões */}
               {modalCurrentPills.slice(1).map((pill) => {
-                const isSelected = filterModalVisible ? tempCategory === pill.id : selectedPill === pill.id;
+                const isSelected = filterModalVisible
+                  ? tempCategory === pill.id
+                  : selectedPill === pill.id;
                 return (
                   <Pressable
                     key={pill.id}
@@ -934,10 +1182,17 @@ export default function SearchScreen() {
                       setShowMoreModal(false);
                       setSelectedProviderId(null);
                     }}
-                    style={[styles.gridItem, isSelected && styles.gridItemActive]}
+                    style={[
+                      styles.gridItem,
+                      isSelected && styles.gridItemActive,
+                    ]}
                   >
                     <View style={styles.gridIconContainer}>
-                      <MaterialIcons name={pill.icon as any} size={24} color="#22C55E" />
+                      <MaterialIcons
+                        name={pill.icon as any}
+                        size={24}
+                        color="#22C55E"
+                      />
                     </View>
                     <Text style={styles.gridItemLabel}>{pill.name}</Text>
                   </Pressable>
@@ -946,7 +1201,9 @@ export default function SearchScreen() {
 
               {/* Pills adicionais */}
               {modalMorePills.map((pill) => {
-                const isSelected = filterModalVisible ? tempCategory === pill.id : selectedPill === pill.id;
+                const isSelected = filterModalVisible
+                  ? tempCategory === pill.id
+                  : selectedPill === pill.id;
                 return (
                   <Pressable
                     key={pill.id}
@@ -959,10 +1216,17 @@ export default function SearchScreen() {
                       setShowMoreModal(false);
                       setSelectedProviderId(null);
                     }}
-                    style={[styles.gridItem, isSelected && styles.gridItemActive]}
+                    style={[
+                      styles.gridItem,
+                      isSelected && styles.gridItemActive,
+                    ]}
                   >
                     <View style={styles.gridIconContainer}>
-                      <MaterialIcons name={pill.icon as any} size={24} color="#22C55E" />
+                      <MaterialIcons
+                        name={pill.icon as any}
+                        size={24}
+                        color="#22C55E"
+                      />
                     </View>
                     <Text style={styles.gridItemLabel}>{pill.name}</Text>
                   </Pressable>
@@ -981,33 +1245,59 @@ export default function SearchScreen() {
         onRequestClose={() => setFilterModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <Pressable style={StyleSheet.absoluteFillObject} onPress={() => setFilterModalVisible(false)} />
-          <View style={[styles.filterSheet, { backgroundColor: "#080808", borderColor: "#1C1C1E", borderWidth: 1 }]}>
-            <View style={[styles.modalHandle, { backgroundColor: "#1C1C1E" }]} />
-            
+          <Pressable
+            style={StyleSheet.absoluteFillObject}
+            onPress={() => setFilterModalVisible(false)}
+          />
+          <View
+            style={[
+              styles.filterSheet,
+              {
+                backgroundColor: "#080808",
+                borderColor: "#1C1C1E",
+                borderWidth: 1,
+              },
+            ]}
+          >
+            <View
+              style={[styles.modalHandle, { backgroundColor: "#1C1C1E" }]}
+            />
+
             <View style={styles.filterModalHeader}>
-              <Pressable onPress={() => setFilterModalVisible(false)} style={styles.filterCloseBtn}>
+              <Pressable
+                onPress={() => setFilterModalVisible(false)}
+                style={styles.filterCloseBtn}
+              >
                 <MaterialIcons name="close" size={24} color="#FFFFFF" />
               </Pressable>
-              
+
               <View style={styles.filterHeaderTitleContainer}>
                 <Text style={styles.filterModalTitle}>Filtros</Text>
-                <Text style={styles.filterModalSubtitle}>Refine sua busca no XamaJá</Text>
+                <Text style={styles.filterModalSubtitle}>
+                  Refine sua busca no XamaJá
+                </Text>
               </View>
-              
+
               <Pressable onPress={clearFilters} style={styles.clearFiltersBtn}>
                 <Text style={styles.clearFiltersText}>Limpar tudo</Text>
               </Pressable>
             </View>
-            
-            <ScrollView showsVerticalScrollIndicator={false} style={styles.filterFormScroll}>
+
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              style={styles.filterFormScroll}
+            >
               {/* Seção Ordenação (Cards) */}
               <Text style={styles.filterSectionTitle}>Ordenar por</Text>
               <View style={styles.sortGrid}>
                 {[
                   { id: "distance", label: "Mais próximos", icon: "near-me" },
                   { id: "rating", label: "Melhor avaliação", icon: "star" },
-                  { id: "popularity", label: "Mais populares", icon: "trending-up" },
+                  {
+                    id: "popularity",
+                    label: "Mais populares",
+                    icon: "trending-up",
+                  },
                   { id: "recent", label: "Mais recentes", icon: "schedule" },
                 ].map((opt) => {
                   const isSel = tempSort === opt.id;
@@ -1015,13 +1305,19 @@ export default function SearchScreen() {
                     <Pressable
                       key={opt.id}
                       onPress={() => setTempSort(opt.id as any)}
-                      style={[
-                        styles.sortCard,
-                        isSel && styles.sortCardActive
-                      ]}
+                      style={[styles.sortCard, isSel && styles.sortCardActive]}
                     >
-                      <MaterialIcons name={opt.icon as any} size={22} color={isSel ? "#22C55E" : "#9CA3AF"} />
-                      <Text style={[styles.sortCardLabel, isSel && styles.sortCardLabelActive]}>
+                      <MaterialIcons
+                        name={opt.icon as any}
+                        size={22}
+                        color={isSel ? "#22C55E" : "#9CA3AF"}
+                      />
+                      <Text
+                        style={[
+                          styles.sortCardLabel,
+                          isSel && styles.sortCardLabelActive,
+                        ]}
+                      >
                         {opt.label}
                       </Text>
                     </Pressable>
@@ -1032,18 +1328,26 @@ export default function SearchScreen() {
               {/* Seção Distância Máxima (Step Slider Interativo) */}
               {showDistance && (
                 <>
-                  <Text style={[styles.filterSectionTitle, { marginTop: 22 }]}>Distância máxima</Text>
+                  <Text style={[styles.filterSectionTitle, { marginTop: 22 }]}>
+                    Distância máxima
+                  </Text>
                   <View style={styles.sliderContainer}>
                     <View style={styles.sliderTrackWrapper}>
                       <View style={styles.sliderTrackBackground} />
-                      <View 
+                      <View
                         style={[
-                          styles.sliderTrackActive, 
-                          { width: `${(DISTANCE_STEPS.findIndex(s => s.id === tempProximity)) * 25}%` }
-                        ]} 
+                          styles.sliderTrackActive,
+                          {
+                            width: `${DISTANCE_STEPS.findIndex((s) => s.id === tempProximity) * 25}%`,
+                          },
+                        ]}
                       />
                       {DISTANCE_STEPS.map((step, idx) => {
-                        const isPassed = idx <= DISTANCE_STEPS.findIndex(s => s.id === tempProximity);
+                        const isPassed =
+                          idx <=
+                          DISTANCE_STEPS.findIndex(
+                            (s) => s.id === tempProximity,
+                          );
                         const isCurrent = step.id === tempProximity;
                         return (
                           <Pressable
@@ -1053,13 +1357,13 @@ export default function SearchScreen() {
                               styles.sliderDot,
                               { left: `${idx * 25}%` },
                               isPassed && styles.sliderDotPassed,
-                              isCurrent && styles.sliderDotCurrent
+                              isCurrent && styles.sliderDotCurrent,
                             ]}
                           />
                         );
                       })}
                     </View>
-                    
+
                     <View style={styles.sliderLabelsRow}>
                       {DISTANCE_STEPS.map((step, idx) => {
                         const isCurrent = step.id === tempProximity;
@@ -1067,9 +1371,17 @@ export default function SearchScreen() {
                           <Pressable
                             key={step.id}
                             onPress={() => setTempProximity(step.id as any)}
-                            style={[styles.sliderLabelBtn, { left: `${idx * 25}%` }]}
+                            style={[
+                              styles.sliderLabelBtn,
+                              { left: `${idx * 25}%` },
+                            ]}
                           >
-                            <Text style={[styles.sliderStepLabel, isCurrent && styles.sliderStepLabelActive]}>
+                            <Text
+                              style={[
+                                styles.sliderStepLabel,
+                                isCurrent && styles.sliderStepLabelActive,
+                              ]}
+                            >
                               {step.label}
                             </Text>
                           </Pressable>
@@ -1081,10 +1393,12 @@ export default function SearchScreen() {
               )}
 
               {/* Seção Categoria (Fila de Categorias Circulares) */}
-              <Text style={[styles.filterSectionTitle, { marginTop: 22 }]}>Categoria</Text>
-              <ScrollView 
-                horizontal 
-                showsHorizontalScrollIndicator={false} 
+              <Text style={[styles.filterSectionTitle, { marginTop: 22 }]}>
+                Categoria
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.categoryScroll}
                 style={{ marginBottom: 4 }}
               >
@@ -1096,13 +1410,24 @@ export default function SearchScreen() {
                       onPress={() => setTempCategory(cat.id)}
                       style={styles.categoryCircleBtn}
                     >
-                      <View style={[
-                        styles.categoryCircle,
-                        isSel && styles.categoryCircleActive
-                      ]}>
-                        <MaterialIcons name={cat.icon as any} size={24} color={isSel ? "#22C55E" : "#FFFFFF"} />
+                      <View
+                        style={[
+                          styles.categoryCircle,
+                          isSel && styles.categoryCircleActive,
+                        ]}
+                      >
+                        <MaterialIcons
+                          name={cat.icon as any}
+                          size={24}
+                          color={isSel ? "#22C55E" : "#FFFFFF"}
+                        />
                       </View>
-                      <Text style={[styles.categoryCircleLabel, isSel && styles.categoryCircleLabelActive]}>
+                      <Text
+                        style={[
+                          styles.categoryCircleLabel,
+                          isSel && styles.categoryCircleLabelActive,
+                        ]}
+                      >
                         {cat.name}
                       </Text>
                     </Pressable>
@@ -1120,7 +1445,9 @@ export default function SearchScreen() {
               </ScrollView>
 
               {/* Seção Tipo de Perfil (Segmentador Horizontal) */}
-              <Text style={[styles.filterSectionTitle, { marginTop: 22 }]}>Tipo de perfil</Text>
+              <Text style={[styles.filterSectionTitle, { marginTop: 22 }]}>
+                Tipo de perfil
+              </Text>
               <View style={styles.segmentedContainer}>
                 {[
                   { id: "all", label: "Todos" },
@@ -1134,13 +1461,15 @@ export default function SearchScreen() {
                       onPress={() => setTempProfileType(opt.id as any)}
                       style={[
                         styles.segmentedButton,
-                        isSel && styles.segmentedButtonActive
+                        isSel && styles.segmentedButtonActive,
                       ]}
                     >
-                      <Text style={[
-                        styles.segmentedText,
-                        isSel && styles.segmentedTextActive
-                      ]}>
+                      <Text
+                        style={[
+                          styles.segmentedText,
+                          isSel && styles.segmentedTextActive,
+                        ]}
+                      >
                         {opt.label}
                       </Text>
                     </Pressable>
@@ -1149,7 +1478,9 @@ export default function SearchScreen() {
               </View>
 
               {/* Seção Avaliação Mínima (Fila de Estrelas) */}
-              <Text style={[styles.filterSectionTitle, { marginTop: 22 }]}>Avaliação mínima</Text>
+              <Text style={[styles.filterSectionTitle, { marginTop: 22 }]}>
+                Avaliação mínima
+              </Text>
               <View style={styles.ratingRowChips}>
                 {[
                   { id: "all", label: "Qualquer" },
@@ -1165,13 +1496,15 @@ export default function SearchScreen() {
                       onPress={() => setTempRating(opt.id as any)}
                       style={[
                         styles.ratingChip,
-                        isSel && styles.ratingChipActive
+                        isSel && styles.ratingChipActive,
                       ]}
                     >
-                      <Text style={[
-                        styles.ratingChipText,
-                        isSel && styles.ratingChipTextActive
-                      ]}>
+                      <Text
+                        style={[
+                          styles.ratingChipText,
+                          isSel && styles.ratingChipTextActive,
+                        ]}
+                      >
                         {opt.label}
                       </Text>
                     </Pressable>
@@ -1180,7 +1513,9 @@ export default function SearchScreen() {
               </View>
 
               {/* Seção Disponibilidade (Ícones clock/lightning/calendar) */}
-              <Text style={[styles.filterSectionTitle, { marginTop: 22 }]}>Disponibilidade</Text>
+              <Text style={[styles.filterSectionTitle, { marginTop: 22 }]}>
+                Disponibilidade
+              </Text>
               <View style={styles.availabilityRow}>
                 {[
                   { id: "any", label: "Qualquer", icon: "schedule" },
@@ -1195,14 +1530,20 @@ export default function SearchScreen() {
                       onPress={() => setTempAvailability(opt.id as any)}
                       style={[
                         styles.availabilityCard,
-                        isSel && styles.availabilityCardActive
+                        isSel && styles.availabilityCardActive,
                       ]}
                     >
-                      <MaterialIcons name={opt.icon as any} size={20} color={isSel ? "#22C55E" : "#9CA3AF"} />
-                      <Text style={[
-                        styles.availabilityCardLabel,
-                        isSel && styles.availabilityCardLabelActive
-                      ]}>
+                      <MaterialIcons
+                        name={opt.icon as any}
+                        size={20}
+                        color={isSel ? "#22C55E" : "#9CA3AF"}
+                      />
+                      <Text
+                        style={[
+                          styles.availabilityCardLabel,
+                          isSel && styles.availabilityCardLabelActive,
+                        ]}
+                      >
                         {opt.label}
                       </Text>
                     </Pressable>
@@ -1211,7 +1552,9 @@ export default function SearchScreen() {
               </View>
 
               {/* Seção Faixa de Preço (Faixa $, $$, $$$, $$$$) */}
-              <Text style={[styles.filterSectionTitle, { marginTop: 22 }]}>Faixa de preço</Text>
+              <Text style={[styles.filterSectionTitle, { marginTop: 22 }]}>
+                Faixa de preço
+              </Text>
               <View style={styles.priceRow}>
                 {[
                   { id: "all", label: "Qualquer" },
@@ -1227,13 +1570,15 @@ export default function SearchScreen() {
                       onPress={() => setTempPriceLevel(opt.id as any)}
                       style={[
                         styles.priceButton,
-                        isSel && styles.priceButtonActive
+                        isSel && styles.priceButtonActive,
                       ]}
                     >
-                      <Text style={[
-                        styles.priceButtonText,
-                        isSel && styles.priceButtonTextActive
-                      ]}>
+                      <Text
+                        style={[
+                          styles.priceButtonText,
+                          isSel && styles.priceButtonTextActive,
+                        ]}
+                      >
                         {opt.label}
                       </Text>
                     </Pressable>
@@ -1252,7 +1597,9 @@ export default function SearchScreen() {
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
                   <Text style={styles.applyFilterBtnText}>
-                    Aplicar filtros ({previewProviders.length} {previewProviders.length === 1 ? "resultado" : "resultados"})
+                    Aplicar filtros ({previewProviders.length}{" "}
+                    {previewProviders.length === 1 ? "resultado" : "resultados"}
+                    )
                   </Text>
                 )}
               </Pressable>
@@ -1274,17 +1621,38 @@ export default function SearchScreen() {
         onRequestClose={() => setChatModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <Pressable style={StyleSheet.absoluteFillObject} onPress={() => setChatModalVisible(false)} />
+          <Pressable
+            style={StyleSheet.absoluteFillObject}
+            onPress={() => setChatModalVisible(false)}
+          />
           <View style={[styles.chatSheet, { backgroundColor: colors.surface }]}>
             {/* Header do Chat */}
-            <View style={[styles.chatHeader, { borderBottomColor: colors.border }]}>
-              <Image source={require("@/assets/images/mascote-xara.png")} style={styles.chatHeaderMascot} />
+            <View
+              style={[styles.chatHeader, { borderBottomColor: colors.border }]}
+            >
+              <Image
+                source={require("@/assets/images/mascote-xara.png")}
+                style={styles.chatHeaderMascot}
+              />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.chatHeaderTitle, { color: colors.foreground }]}>Assistente Xará</Text>
-                <Text style={styles.chatHeaderSubtitle}>Estou aqui para ajudar!</Text>
+                <Text
+                  style={[styles.chatHeaderTitle, { color: colors.foreground }]}
+                >
+                  Assistente Xará
+                </Text>
+                <Text style={styles.chatHeaderSubtitle}>
+                  Estou aqui para ajudar!
+                </Text>
               </View>
-              <Pressable onPress={() => setChatModalVisible(false)} style={styles.chatCloseBtn}>
-                <MaterialIcons name="close" size={24} color={colors.foreground} />
+              <Pressable
+                onPress={() => setChatModalVisible(false)}
+                style={styles.chatCloseBtn}
+              >
+                <MaterialIcons
+                  name="close"
+                  size={24}
+                  color={colors.foreground}
+                />
               </Pressable>
             </View>
 
@@ -1299,13 +1667,25 @@ export default function SearchScreen() {
                   key={idx}
                   style={[
                     styles.chatMessageBubble,
-                    msg.sender === "user" ? styles.chatBubbleUser : [styles.chatBubbleBot, { backgroundColor: colors.background, borderColor: colors.border }]
+                    msg.sender === "user"
+                      ? styles.chatBubbleUser
+                      : [
+                          styles.chatBubbleBot,
+                          {
+                            backgroundColor: colors.background,
+                            borderColor: colors.border,
+                          },
+                        ],
                   ]}
                 >
-                  <Text style={[
-                    styles.chatMessageText,
-                    msg.sender === "user" ? styles.chatTextUser : { color: colors.foreground }
-                  ]}>
+                  <Text
+                    style={[
+                      styles.chatMessageText,
+                      msg.sender === "user"
+                        ? styles.chatTextUser
+                        : { color: colors.foreground },
+                    ]}
+                  >
                     {msg.text}
                   </Text>
                 </View>
@@ -1313,92 +1693,323 @@ export default function SearchScreen() {
             </ScrollView>
 
             {/* Opções de Resposta Rápida (Quick Replies) */}
-            <View style={[styles.chatOptionsContainer, { borderTopColor: colors.border }]}>
+            <View
+              style={[
+                styles.chatOptionsContainer,
+                { borderTopColor: colors.border },
+              ]}
+            >
               {chatStep === 0 && (
                 <View style={styles.chatOptionsGrid}>
-                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "🏠 Reformas ou Consertos", nextStep: 1 })}>
-                    <Text style={styles.chatOptionBtnText}>🏠 Reformas e Consertos</Text>
+                  <Pressable
+                    style={styles.chatOptionBtn}
+                    onPress={() =>
+                      handleChatOption({
+                        label: "🏠 Reformas ou Consertos",
+                        nextStep: 1,
+                      })
+                    }
+                  >
+                    <Text style={styles.chatOptionBtnText}>
+                      🏠 Reformas e Consertos
+                    </Text>
                   </Pressable>
-                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "🧹 Serviços Domésticos", nextStep: 2 })}>
-                    <Text style={styles.chatOptionBtnText}>🧹 Serviços Domésticos</Text>
+                  <Pressable
+                    style={styles.chatOptionBtn}
+                    onPress={() =>
+                      handleChatOption({
+                        label: "🧹 Serviços Domésticos",
+                        nextStep: 2,
+                      })
+                    }
+                  >
+                    <Text style={styles.chatOptionBtnText}>
+                      🧹 Serviços Domésticos
+                    </Text>
                   </Pressable>
-                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "💻 Assistência Técnica", nextStep: 3 })}>
-                    <Text style={styles.chatOptionBtnText}>💻 Assistência Técnica</Text>
+                  <Pressable
+                    style={styles.chatOptionBtn}
+                    onPress={() =>
+                      handleChatOption({
+                        label: "💻 Assistência Técnica",
+                        nextStep: 3,
+                      })
+                    }
+                  >
+                    <Text style={styles.chatOptionBtnText}>
+                      💻 Assistência Técnica
+                    </Text>
                   </Pressable>
-                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "✂️ Beleza ou Bem-estar", nextStep: 4 })}>
-                    <Text style={styles.chatOptionBtnText}>✂️ Beleza ou Bem-estar</Text>
+                  <Pressable
+                    style={styles.chatOptionBtn}
+                    onPress={() =>
+                      handleChatOption({
+                        label: "✂️ Beleza ou Bem-estar",
+                        nextStep: 4,
+                      })
+                    }
+                  >
+                    <Text style={styles.chatOptionBtnText}>
+                      ✂️ Beleza ou Bem-estar
+                    </Text>
                   </Pressable>
-                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "🚗 Serviços para Veículos", nextStep: 5 })}>
-                    <Text style={styles.chatOptionBtnText}>🚗 Serviços para Veículos</Text>
+                  <Pressable
+                    style={styles.chatOptionBtn}
+                    onPress={() =>
+                      handleChatOption({
+                        label: "🚗 Serviços para Veículos",
+                        nextStep: 5,
+                      })
+                    }
+                  >
+                    <Text style={styles.chatOptionBtnText}>
+                      🚗 Serviços para Veículos
+                    </Text>
                   </Pressable>
                 </View>
               )}
 
               {chatStep === 1 && (
                 <View style={styles.chatOptionsList}>
-                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "⚡ Elétrica", nextStep: 99, mapCategory: "reformas-reparos", mapQuery: "Eletricista" })}>
-                    <Text style={styles.chatOptionBtnText}>⚡ Elétrica (chuveiro, fiação, tomadas)</Text>
+                  <Pressable
+                    style={styles.chatOptionBtn}
+                    onPress={() =>
+                      handleChatOption({
+                        label: "⚡ Elétrica",
+                        nextStep: 99,
+                        mapCategory: "reformas-reparos",
+                        mapQuery: "Eletricista",
+                      })
+                    }
+                  >
+                    <Text style={styles.chatOptionBtnText}>
+                      ⚡ Elétrica (chuveiro, fiação, tomadas)
+                    </Text>
                   </Pressable>
-                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "💧 Encanamento", nextStep: 99, mapCategory: "reformas-reparos", mapQuery: "Encanador" })}>
-                    <Text style={styles.chatOptionBtnText}>💧 Encanamento (pias, canos, vazamento)</Text>
+                  <Pressable
+                    style={styles.chatOptionBtn}
+                    onPress={() =>
+                      handleChatOption({
+                        label: "💧 Encanamento",
+                        nextStep: 99,
+                        mapCategory: "reformas-reparos",
+                        mapQuery: "Encanador",
+                      })
+                    }
+                  >
+                    <Text style={styles.chatOptionBtnText}>
+                      💧 Encanamento (pias, canos, vazamento)
+                    </Text>
                   </Pressable>
-                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "🎨 Pintura", nextStep: 99, mapCategory: "reformas-reparos", mapQuery: "Pintor" })}>
-                    <Text style={styles.chatOptionBtnText}>🎨 Pintura (paredes, portões)</Text>
+                  <Pressable
+                    style={styles.chatOptionBtn}
+                    onPress={() =>
+                      handleChatOption({
+                        label: "🎨 Pintura",
+                        nextStep: 99,
+                        mapCategory: "reformas-reparos",
+                        mapQuery: "Pintor",
+                      })
+                    }
+                  >
+                    <Text style={styles.chatOptionBtnText}>
+                      🎨 Pintura (paredes, portões)
+                    </Text>
                   </Pressable>
-                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "🧱 Pedreiro / Construção", nextStep: 99, mapCategory: "reformas-reparos", mapQuery: "Pedreiro" })}>
-                    <Text style={styles.chatOptionBtnText}>🧱 Pedreiro / Construção geral</Text>
+                  <Pressable
+                    style={styles.chatOptionBtn}
+                    onPress={() =>
+                      handleChatOption({
+                        label: "🧱 Pedreiro / Construção",
+                        nextStep: 99,
+                        mapCategory: "reformas-reparos",
+                        mapQuery: "Pedreiro",
+                      })
+                    }
+                  >
+                    <Text style={styles.chatOptionBtnText}>
+                      🧱 Pedreiro / Construção geral
+                    </Text>
                   </Pressable>
-                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "🔨 Montagem de móveis", nextStep: 99, mapCategory: "reformas-reparos", mapQuery: "Montador" })}>
-                    <Text style={styles.chatOptionBtnText}>🔨 Montagem/Desmontagem de móveis</Text>
+                  <Pressable
+                    style={styles.chatOptionBtn}
+                    onPress={() =>
+                      handleChatOption({
+                        label: "🔨 Montagem de móveis",
+                        nextStep: 99,
+                        mapCategory: "reformas-reparos",
+                        mapQuery: "Montador",
+                      })
+                    }
+                  >
+                    <Text style={styles.chatOptionBtnText}>
+                      🔨 Montagem/Desmontagem de móveis
+                    </Text>
                   </Pressable>
                 </View>
               )}
 
               {chatStep === 2 && (
                 <View style={styles.chatOptionsList}>
-                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "🧹 Diarista", nextStep: 99, mapCategory: "servicos-domesticos", mapQuery: "Diarista" })}>
-                    <Text style={styles.chatOptionBtnText}>🧹 Diarista (limpeza geral)</Text>
+                  <Pressable
+                    style={styles.chatOptionBtn}
+                    onPress={() =>
+                      handleChatOption({
+                        label: "🧹 Diarista",
+                        nextStep: 99,
+                        mapCategory: "servicos-domesticos",
+                        mapQuery: "Diarista",
+                      })
+                    }
+                  >
+                    <Text style={styles.chatOptionBtnText}>
+                      🧹 Diarista (limpeza geral)
+                    </Text>
                   </Pressable>
-                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "🧼 Faxineira", nextStep: 99, mapCategory: "servicos-domesticos", mapQuery: "Faxineira" })}>
+                  <Pressable
+                    style={styles.chatOptionBtn}
+                    onPress={() =>
+                      handleChatOption({
+                        label: "🧼 Faxineira",
+                        nextStep: 99,
+                        mapCategory: "servicos-domesticos",
+                        mapQuery: "Faxineira",
+                      })
+                    }
+                  >
                     <Text style={styles.chatOptionBtnText}>🧼 Faxineira</Text>
                   </Pressable>
-                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "👶 Babá / Cuidado infantil", nextStep: 99, mapCategory: "servicos-domesticos", mapQuery: "Babá" })}>
-                    <Text style={styles.chatOptionBtnText}>👶 Babá / Cuidado infantil</Text>
+                  <Pressable
+                    style={styles.chatOptionBtn}
+                    onPress={() =>
+                      handleChatOption({
+                        label: "👶 Babá / Cuidado infantil",
+                        nextStep: 99,
+                        mapCategory: "servicos-domesticos",
+                        mapQuery: "Babá",
+                      })
+                    }
+                  >
+                    <Text style={styles.chatOptionBtnText}>
+                      👶 Babá / Cuidado infantil
+                    </Text>
                   </Pressable>
                 </View>
               )}
 
               {chatStep === 3 && (
                 <View style={styles.chatOptionsList}>
-                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "📱 Conserto de Celular", nextStep: 99, mapCategory: "assistencia-tecnica", mapQuery: "Celular" })}>
-                    <Text style={styles.chatOptionBtnText}>📱 Conserto de Celular</Text>
+                  <Pressable
+                    style={styles.chatOptionBtn}
+                    onPress={() =>
+                      handleChatOption({
+                        label: "📱 Conserto de Celular",
+                        nextStep: 99,
+                        mapCategory: "assistencia-tecnica",
+                        mapQuery: "Celular",
+                      })
+                    }
+                  >
+                    <Text style={styles.chatOptionBtnText}>
+                      📱 Conserto de Celular
+                    </Text>
                   </Pressable>
-                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "💻 Técnico de Notebook / PC", nextStep: 99, mapCategory: "assistencia-tecnica", mapQuery: "Notebook" })}>
-                    <Text style={styles.chatOptionBtnText}>💻 Técnico de Notebook / PC</Text>
+                  <Pressable
+                    style={styles.chatOptionBtn}
+                    onPress={() =>
+                      handleChatOption({
+                        label: "💻 Técnico de Notebook / PC",
+                        nextStep: 99,
+                        mapCategory: "assistencia-tecnica",
+                        mapQuery: "Notebook",
+                      })
+                    }
+                  >
+                    <Text style={styles.chatOptionBtnText}>
+                      💻 Técnico de Notebook / PC
+                    </Text>
                   </Pressable>
-                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "❄️ Ar-condicionado", nextStep: 99, mapCategory: "assistencia-tecnica", mapQuery: "Ar-condicionado" })}>
-                    <Text style={styles.chatOptionBtnText}>❄️ Ar-condicionado</Text>
+                  <Pressable
+                    style={styles.chatOptionBtn}
+                    onPress={() =>
+                      handleChatOption({
+                        label: "❄️ Ar-condicionado",
+                        nextStep: 99,
+                        mapCategory: "assistencia-tecnica",
+                        mapQuery: "Ar-condicionado",
+                      })
+                    }
+                  >
+                    <Text style={styles.chatOptionBtnText}>
+                      ❄️ Ar-condicionado
+                    </Text>
                   </Pressable>
                 </View>
               )}
 
               {chatStep === 4 && (
                 <View style={styles.chatOptionsList}>
-                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "✂️ Barbeiro ou Cabeleireiro", nextStep: 99, mapCategory: "beleza-estetica", mapQuery: "Barbeiro" })}>
-                    <Text style={styles.chatOptionBtnText}>✂️ Barbeiro ou Cabeleireiro</Text>
+                  <Pressable
+                    style={styles.chatOptionBtn}
+                    onPress={() =>
+                      handleChatOption({
+                        label: "✂️ Barbeiro ou Cabeleireiro",
+                        nextStep: 99,
+                        mapCategory: "beleza-estetica",
+                        mapQuery: "Barbeiro",
+                      })
+                    }
+                  >
+                    <Text style={styles.chatOptionBtnText}>
+                      ✂️ Barbeiro ou Cabeleireiro
+                    </Text>
                   </Pressable>
-                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "💅 Manicure ou Pedicure", nextStep: 99, mapCategory: "beleza-estetica", mapQuery: "Manicure" })}>
-                    <Text style={styles.chatOptionBtnText}>💅 Manicure ou Pedicure</Text>
+                  <Pressable
+                    style={styles.chatOptionBtn}
+                    onPress={() =>
+                      handleChatOption({
+                        label: "💅 Manicure ou Pedicure",
+                        nextStep: 99,
+                        mapCategory: "beleza-estetica",
+                        mapQuery: "Manicure",
+                      })
+                    }
+                  >
+                    <Text style={styles.chatOptionBtnText}>
+                      💅 Manicure ou Pedicure
+                    </Text>
                   </Pressable>
                 </View>
               )}
 
               {chatStep === 5 && (
                 <View style={styles.chatOptionsList}>
-                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "🔧 Mecânico", nextStep: 99, mapCategory: "automotivo", mapQuery: "Mecânico" })}>
-                    <Text style={styles.chatOptionBtnText}>🔧 Mecânico / Oficina</Text>
+                  <Pressable
+                    style={styles.chatOptionBtn}
+                    onPress={() =>
+                      handleChatOption({
+                        label: "🔧 Mecânico",
+                        nextStep: 99,
+                        mapCategory: "automotivo",
+                        mapQuery: "Mecânico",
+                      })
+                    }
+                  >
+                    <Text style={styles.chatOptionBtnText}>
+                      🔧 Mecânico / Oficina
+                    </Text>
                   </Pressable>
-                  <Pressable style={styles.chatOptionBtn} onPress={() => handleChatOption({ label: "🚗 Lava Rápido", nextStep: 99, mapCategory: "automotivo", mapQuery: "Lava Rápido" })}>
+                  <Pressable
+                    style={styles.chatOptionBtn}
+                    onPress={() =>
+                      handleChatOption({
+                        label: "🚗 Lava Rápido",
+                        nextStep: 99,
+                        mapCategory: "automotivo",
+                        mapQuery: "Lava Rápido",
+                      })
+                    }
+                  >
                     <Text style={styles.chatOptionBtnText}>🚗 Lava Rápido</Text>
                   </Pressable>
                 </View>
@@ -1406,30 +2017,98 @@ export default function SearchScreen() {
 
               {chatStep === 99 && (
                 <Pressable
-                  style={[styles.chatFinalBtn, { backgroundColor: colors.primary }]}
+                  style={[
+                    styles.chatFinalBtn,
+                    { backgroundColor: colors.primary },
+                  ]}
                   onPress={() => {
                     let matchedCat = "todos";
                     let matchedQ = "";
-                    if (chatMessages.some(m => m.text.includes("Elétrica"))) { matchedCat = "reformas-reparos"; matchedQ = "Eletricista"; }
-                    else if (chatMessages.some(m => m.text.includes("Encanamento"))) { matchedCat = "reformas-reparos"; matchedQ = "Encanador"; }
-                    else if (chatMessages.some(m => m.text.includes("Pintura"))) { matchedCat = "reformas-reparos"; matchedQ = "Pintor"; }
-                    else if (chatMessages.some(m => m.text.includes("Pedreiro"))) { matchedCat = "reformas-reparos"; matchedQ = "Pedreiro"; }
-                    else if (chatMessages.some(m => m.text.includes("Montagem de móveis"))) { matchedCat = "reformas-reparos"; matchedQ = "Montador"; }
-                    else if (chatMessages.some(m => m.text.includes("Diarista"))) { matchedCat = "servicos-domesticos"; matchedQ = "Diarista"; }
-                    else if (chatMessages.some(m => m.text.includes("Faxineira"))) { matchedCat = "servicos-domesticos"; matchedQ = "Faxineira"; }
-                    else if (chatMessages.some(m => m.text.includes("Babá"))) { matchedCat = "servicos-domesticos"; matchedQ = "Babá"; }
-                    else if (chatMessages.some(m => m.text.includes("Celular"))) { matchedCat = "assistencia-tecnica"; matchedQ = "Celular"; }
-                    else if (chatMessages.some(m => m.text.includes("Notebook"))) { matchedCat = "assistencia-tecnica"; matchedQ = "Notebook"; }
-                    else if (chatMessages.some(m => m.text.includes("Ar-condicionado"))) { matchedCat = "assistencia-tecnica"; matchedQ = "Ar-condicionado"; }
-                    else if (chatMessages.some(m => m.text.includes("Barbeiro"))) { matchedCat = "beleza-estetica"; matchedQ = "Barbeiro"; }
-                    else if (chatMessages.some(m => m.text.includes("Manicure"))) { matchedCat = "beleza-estetica"; matchedQ = "Manicure"; }
-                    else if (chatMessages.some(m => m.text.includes("Mecânico"))) { matchedCat = "automotivo"; matchedQ = "Mecânico"; }
-                    else if (chatMessages.some(m => m.text.includes("Lava Rápido"))) { matchedCat = "automotivo"; matchedQ = "Lava Rápido"; }
+                    if (chatMessages.some((m) => m.text.includes("Elétrica"))) {
+                      matchedCat = "reformas-reparos";
+                      matchedQ = "Eletricista";
+                    } else if (
+                      chatMessages.some((m) => m.text.includes("Encanamento"))
+                    ) {
+                      matchedCat = "reformas-reparos";
+                      matchedQ = "Encanador";
+                    } else if (
+                      chatMessages.some((m) => m.text.includes("Pintura"))
+                    ) {
+                      matchedCat = "reformas-reparos";
+                      matchedQ = "Pintor";
+                    } else if (
+                      chatMessages.some((m) => m.text.includes("Pedreiro"))
+                    ) {
+                      matchedCat = "reformas-reparos";
+                      matchedQ = "Pedreiro";
+                    } else if (
+                      chatMessages.some((m) =>
+                        m.text.includes("Montagem de móveis"),
+                      )
+                    ) {
+                      matchedCat = "reformas-reparos";
+                      matchedQ = "Montador";
+                    } else if (
+                      chatMessages.some((m) => m.text.includes("Diarista"))
+                    ) {
+                      matchedCat = "servicos-domesticos";
+                      matchedQ = "Diarista";
+                    } else if (
+                      chatMessages.some((m) => m.text.includes("Faxineira"))
+                    ) {
+                      matchedCat = "servicos-domesticos";
+                      matchedQ = "Faxineira";
+                    } else if (
+                      chatMessages.some((m) => m.text.includes("Babá"))
+                    ) {
+                      matchedCat = "servicos-domesticos";
+                      matchedQ = "Babá";
+                    } else if (
+                      chatMessages.some((m) => m.text.includes("Celular"))
+                    ) {
+                      matchedCat = "assistencia-tecnica";
+                      matchedQ = "Celular";
+                    } else if (
+                      chatMessages.some((m) => m.text.includes("Notebook"))
+                    ) {
+                      matchedCat = "assistencia-tecnica";
+                      matchedQ = "Notebook";
+                    } else if (
+                      chatMessages.some((m) =>
+                        m.text.includes("Ar-condicionado"),
+                      )
+                    ) {
+                      matchedCat = "assistencia-tecnica";
+                      matchedQ = "Ar-condicionado";
+                    } else if (
+                      chatMessages.some((m) => m.text.includes("Barbeiro"))
+                    ) {
+                      matchedCat = "beleza-estetica";
+                      matchedQ = "Barbeiro";
+                    } else if (
+                      chatMessages.some((m) => m.text.includes("Manicure"))
+                    ) {
+                      matchedCat = "beleza-estetica";
+                      matchedQ = "Manicure";
+                    } else if (
+                      chatMessages.some((m) => m.text.includes("Mecânico"))
+                    ) {
+                      matchedCat = "automotivo";
+                      matchedQ = "Mecânico";
+                    } else if (
+                      chatMessages.some((m) => m.text.includes("Lava Rápido"))
+                    ) {
+                      matchedCat = "automotivo";
+                      matchedQ = "Lava Rápido";
+                    }
 
                     completeChatbot(matchedCat, matchedQ);
                   }}
                 >
-                  <Text style={styles.chatFinalBtnText}>Ver Profissionais Próximos!</Text>
+                  <Text style={styles.chatFinalBtnText}>
+                    Ver Profissionais Próximos!
+                  </Text>
                 </Pressable>
               )}
             </View>
@@ -2395,7 +3074,7 @@ const styles = StyleSheet.create({
   chatSheet: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+    paddingBottom: Platform.OS === "ios" ? 40 : 24,
     height: "80%",
     width: "100%",
   },

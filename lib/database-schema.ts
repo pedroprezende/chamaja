@@ -108,10 +108,17 @@ export class MockDatabase {
     return null;
   }
 
-  async updateUser(id: string, updates: Partial<DatabaseUser>): Promise<DatabaseUser | null> {
+  async updateUser(
+    id: string,
+    updates: Partial<DatabaseUser>,
+  ): Promise<DatabaseUser | null> {
     const user = this.users.get(id);
     if (!user) return null;
-    const updated = { ...user, ...updates, updatedAt: new Date().toISOString() };
+    const updated = {
+      ...user,
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
     this.users.set(id, updated);
     return updated;
   }
@@ -134,10 +141,17 @@ export class MockDatabase {
     return Array.from(this.commerces.values()).filter((c) => c.isActive);
   }
 
-  async updateCommerce(id: string, updates: Partial<Commerce>): Promise<Commerce | null> {
+  async updateCommerce(
+    id: string,
+    updates: Partial<Commerce>,
+  ): Promise<Commerce | null> {
     const commerce = this.commerces.get(id);
     if (!commerce) return null;
-    const updated = { ...commerce, ...updates, updatedAt: new Date().toISOString() };
+    const updated = {
+      ...commerce,
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
     this.commerces.set(id, updated);
     return updated;
   }
@@ -152,7 +166,7 @@ export class MockDatabase {
 
   async getCommercesByCity(city: string): Promise<Commerce[]> {
     return Array.from(this.commerces.values()).filter(
-      (c) => c.city === city && c.isActive
+      (c) => c.city === city && c.isActive,
     );
   }
 
@@ -168,35 +182,43 @@ export class MockDatabase {
 
   async getProfessionalsByCity(city: string): Promise<Professional[]> {
     return Array.from(this.professionals.values()).filter(
-      (p) => p.city === city && p.isActive && p.approvedAt
+      (p) => p.city === city && p.isActive && p.approvedAt,
     );
   }
 
   async getProfessionalsByCategory(category: string): Promise<Professional[]> {
     return Array.from(this.professionals.values()).filter(
-      (p) => p.category === category && p.isActive && p.approvedAt
+      (p) => p.category === category && p.isActive && p.approvedAt,
     );
   }
 
-  async getProfessionalsByType(type: "free" | "premium"): Promise<Professional[]> {
+  async getProfessionalsByType(
+    type: "free" | "premium",
+  ): Promise<Professional[]> {
     return Array.from(this.professionals.values()).filter(
-      (p) => p.type === type && p.isActive && p.approvedAt
+      (p) => p.type === type && p.isActive && p.approvedAt,
     );
   }
 
   async updateProfessional(
     id: string,
-    updates: Partial<Professional>
+    updates: Partial<Professional>,
   ): Promise<Professional | null> {
     const professional = this.professionals.get(id);
     if (!professional) return null;
-    const updated = { ...professional, ...updates, updatedAt: new Date().toISOString() };
+    const updated = {
+      ...professional,
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
     this.professionals.set(id, updated);
     return updated;
   }
 
   async approveProfessional(id: string): Promise<Professional | null> {
-    return this.updateProfessional(id, { approvedAt: new Date().toISOString() });
+    return this.updateProfessional(id, {
+      approvedAt: new Date().toISOString(),
+    });
   }
 
   async getPendingProfessionals(): Promise<Professional[]> {
@@ -210,7 +232,9 @@ export class MockDatabase {
   }
 
   async getReviewsByProfessional(professionalId: string): Promise<Review[]> {
-    return Array.from(this.reviews.values()).filter((r) => r.professionalId === professionalId);
+    return Array.from(this.reviews.values()).filter(
+      (r) => r.professionalId === professionalId,
+    );
   }
 
   // Payments
@@ -220,17 +244,28 @@ export class MockDatabase {
   }
 
   async getPaymentsByProfessional(professionalId: string): Promise<Payment[]> {
-    return Array.from(this.payments.values()).filter((p) => p.professionalId === professionalId);
+    return Array.from(this.payments.values()).filter(
+      (p) => p.professionalId === professionalId,
+    );
   }
 
   async getActivePayments(): Promise<Payment[]> {
-    return Array.from(this.payments.values()).filter((p) => p.status === "approved");
+    return Array.from(this.payments.values()).filter(
+      (p) => p.status === "approved",
+    );
   }
 
-  async updatePayment(id: string, updates: Partial<Payment>): Promise<Payment | null> {
+  async updatePayment(
+    id: string,
+    updates: Partial<Payment>,
+  ): Promise<Payment | null> {
     const payment = this.payments.get(id);
     if (!payment) return null;
-    const updated = { ...payment, ...updates, updatedAt: new Date().toISOString() };
+    const updated = {
+      ...payment,
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
     this.payments.set(id, updated);
     return updated;
   }

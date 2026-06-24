@@ -47,7 +47,11 @@ export default function CartScreen() {
     enabled: !!id,
   });
 
-  const confirmAction = (title: string, message: string, onConfirm: () => void) => {
+  const confirmAction = (
+    title: string,
+    message: string,
+    onConfirm: () => void,
+  ) => {
     if (Platform.OS === "web") {
       const confirmed = window.confirm(`${title}\n\n${message}`);
       if (confirmed) {
@@ -56,7 +60,7 @@ export default function CartScreen() {
     } else {
       Alert.alert(title, message, [
         { text: "Cancelar", style: "cancel" },
-        { text: "Confirmar", style: "destructive", onPress: onConfirm }
+        { text: "Confirmar", style: "destructive", onPress: onConfirm },
       ]);
     }
   };
@@ -69,7 +73,7 @@ export default function CartScreen() {
       () => {
         clearCart();
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }
+      },
     );
   };
 
@@ -79,7 +83,7 @@ export default function CartScreen() {
       confirmAction(
         "Remover item?",
         "Deseja remover este item do carrinho?",
-        () => removeFromCart(itemId)
+        () => removeFromCart(itemId),
       );
     } else {
       updateQuantity(itemId, currentQty - 1);
@@ -93,12 +97,17 @@ export default function CartScreen() {
 
   const handleCheckout = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (!deliveryAddress || deliveryAddress.trim() === "" || deliveryAddress.includes("defina seu endereço") || deliveryAddress.includes("endereço de atendimento")) {
+    if (
+      !deliveryAddress ||
+      deliveryAddress.trim() === "" ||
+      deliveryAddress.includes("defina seu endereço") ||
+      deliveryAddress.includes("endereço de atendimento")
+    ) {
       Alert.alert(
-        isFood ? "Endereço necessário" : "Local de atendimento necessário", 
-        isFood 
+        isFood ? "Endereço necessário" : "Local de atendimento necessário",
+        isFood
           ? "Por favor, defina um endereço de entrega antes de finalizar seu pedido."
-          : "Por favor, defina o endereço de atendimento antes de finalizar seu pedido."
+          : "Por favor, defina o endereço de atendimento antes de finalizar seu pedido.",
       );
       return;
     }
@@ -116,16 +125,32 @@ export default function CartScreen() {
     >
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Header */}
-        <View style={[styles.header, { paddingTop: insets.top + 8, backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <View
+          style={[
+            styles.header,
+            {
+              paddingTop: insets.top + 8,
+              backgroundColor: colors.surface,
+              borderBottomColor: colors.border,
+            },
+          ]}
+        >
           <Pressable onPress={() => router.back()} style={styles.headerBackBtn}>
-            <MaterialIcons name="arrow-back" size={24} color={colors.foreground} />
+            <MaterialIcons
+              name="arrow-back"
+              size={24}
+              color={colors.foreground}
+            />
           </Pressable>
           <View style={styles.headerTitleContainer}>
             <Text style={[styles.headerTitle, { color: colors.foreground }]}>
               Carrinho
             </Text>
             {professional && (
-              <Text style={[styles.headerSubtitle, { color: colors.muted }]} numberOfLines={1}>
+              <Text
+                style={[styles.headerSubtitle, { color: colors.muted }]}
+                numberOfLines={1}
+              >
                 {professional.name}
               </Text>
             )}
@@ -139,12 +164,18 @@ export default function CartScreen() {
 
         {cartCount === 0 ? (
           <View style={styles.emptyContainer}>
-            <MaterialIcons name="shopping-basket" size={64} color={colors.muted} />
-            <Text style={[styles.emptyText, { color: colors.foreground }]}>Seu carrinho está vazio</Text>
+            <MaterialIcons
+              name="shopping-basket"
+              size={64}
+              color={colors.muted}
+            />
+            <Text style={[styles.emptyText, { color: colors.foreground }]}>
+              Seu carrinho está vazio
+            </Text>
             <Text style={[styles.emptySub, { color: colors.muted }]}>
               Navegue pelo cardápio e adicione itens para fazer seu pedido.
             </Text>
-            <Pressable 
+            <Pressable
               style={[styles.emptyBtn, { backgroundColor: colors.primary }]}
               onPress={() => router.back()}
             >
@@ -152,29 +183,45 @@ export default function CartScreen() {
             </Pressable>
           </View>
         ) : (
-          <ScrollView 
+          <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 140 }}
           >
             {/* Seção Entrega/Endereço */}
-            <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View
+              style={[
+                styles.sectionCard,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
+            >
               <View style={styles.sectionHeader}>
-                <MaterialIcons 
-                  name={isFood ? "local-shipping" : "room"} 
-                  size={20} 
-                  color={colors.primary} 
+                <MaterialIcons
+                  name={isFood ? "local-shipping" : "room"}
+                  size={20}
+                  color={colors.primary}
                 />
-                <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+                <Text
+                  style={[styles.sectionTitle, { color: colors.foreground }]}
+                >
                   {isFood ? "Entrega" : "Local de Atendimento"}
                 </Text>
               </View>
-              
+
               {isFood && (
                 <>
                   <View style={styles.infoRow}>
-                    <MaterialIcons name="access-time" size={16} color={colors.muted} />
-                    <Text style={[styles.infoText, { color: colors.foreground }]}>
-                      Tempo estimado: <Text style={{ fontWeight: "700" }}>{formattedDeliveryTime}</Text>
+                    <MaterialIcons
+                      name="access-time"
+                      size={16}
+                      color={colors.muted}
+                    />
+                    <Text
+                      style={[styles.infoText, { color: colors.foreground }]}
+                    >
+                      Tempo estimado:{" "}
+                      <Text style={{ fontWeight: "700" }}>
+                        {formattedDeliveryTime}
+                      </Text>
                     </Text>
                   </View>
                   <View style={styles.divider} />
@@ -185,67 +232,138 @@ export default function CartScreen() {
                 <View style={styles.addressLeft}>
                   <MaterialIcons name="location-on" size={18} color="#EF4444" />
                   <View style={styles.addressTextContainer}>
-                    <Text style={[styles.addressLabel, { color: colors.muted }]}>
+                    <Text
+                      style={[styles.addressLabel, { color: colors.muted }]}
+                    >
                       {isFood ? "Entregar em" : "Atender em"}
                     </Text>
-                    <Text style={[styles.addressValue, { color: colors.foreground }]} numberOfLines={2}>
-                      {deliveryAddress || (isFood ? "Defina seu endereço de entrega" : "Defina o endereço de atendimento")}
+                    <Text
+                      style={[
+                        styles.addressValue,
+                        { color: colors.foreground },
+                      ]}
+                      numberOfLines={2}
+                    >
+                      {deliveryAddress ||
+                        (isFood
+                          ? "Defina seu endereço de entrega"
+                          : "Defina o endereço de atendimento")}
                     </Text>
                   </View>
                 </View>
-                <Pressable 
-                  onPress={() => setShowAddressModal(true)} 
-                  style={[styles.addressEditBtn, { borderColor: colors.primary + "30" }]}
+                <Pressable
+                  onPress={() => setShowAddressModal(true)}
+                  style={[
+                    styles.addressEditBtn,
+                    { borderColor: colors.primary + "30" },
+                  ]}
                 >
-                  <Text style={[styles.addressEditBtnText, { color: colors.primary }]}>Alterar</Text>
+                  <Text
+                    style={[
+                      styles.addressEditBtnText,
+                      { color: colors.primary },
+                    ]}
+                  >
+                    Alterar
+                  </Text>
                 </Pressable>
               </View>
             </View>
 
             {/* Itens do Pedido */}
-            <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Text style={[styles.cardSectionTitle, { color: colors.foreground }]}>Seu pedido</Text>
+            <View
+              style={[
+                styles.sectionCard,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
+            >
+              <Text
+                style={[styles.cardSectionTitle, { color: colors.foreground }]}
+              >
+                Seu pedido
+              </Text>
               {items.map((item) => (
                 <View key={item.id} style={styles.itemRow}>
                   {item.imageUri ? (
-                    <Image source={{ uri: item.imageUri }} style={styles.itemImage} />
+                    <Image
+                      source={{ uri: item.imageUri }}
+                      style={styles.itemImage}
+                    />
                   ) : (
-                    <View style={[styles.itemImage, { alignItems: "center", justifyContent: "center", backgroundColor: colors.border + "40" }]}>
-                      <MaterialIcons name="restaurant" size={20} color={colors.muted} />
+                    <View
+                      style={[
+                        styles.itemImage,
+                        {
+                          alignItems: "center",
+                          justifyContent: "center",
+                          backgroundColor: colors.border + "40",
+                        },
+                      ]}
+                    >
+                      <MaterialIcons
+                        name="restaurant"
+                        size={20}
+                        color={colors.muted}
+                      />
                     </View>
                   )}
                   <View style={styles.itemDetails}>
-                    <Text style={[styles.itemName, { color: colors.foreground }]} numberOfLines={1}>{item.name}</Text>
+                    <Text
+                      style={[styles.itemName, { color: colors.foreground }]}
+                      numberOfLines={1}
+                    >
+                      {item.name}
+                    </Text>
                     <Text style={[styles.itemPrice, { color: colors.muted }]}>
                       R$ {item.price.toFixed(2)}
                     </Text>
                   </View>
                   <View style={styles.quantityControls}>
-                    <Pressable 
-                      onPress={() => handleDecreaseQuantity(item.id, item.quantity)}
+                    <Pressable
+                      onPress={() =>
+                        handleDecreaseQuantity(item.id, item.quantity)
+                      }
                       style={[styles.qtyBtn, { borderColor: colors.border }]}
                     >
-                      <MaterialIcons name="remove" size={16} color={colors.foreground} />
+                      <MaterialIcons
+                        name="remove"
+                        size={16}
+                        color={colors.foreground}
+                      />
                     </Pressable>
-                    <Text style={[styles.qtyText, { color: colors.foreground }]}>{item.quantity}</Text>
-                    <Pressable 
-                      onPress={() => handleIncreaseQuantity(item.id, item.quantity)}
+                    <Text
+                      style={[styles.qtyText, { color: colors.foreground }]}
+                    >
+                      {item.quantity}
+                    </Text>
+                    <Pressable
+                      onPress={() =>
+                        handleIncreaseQuantity(item.id, item.quantity)
+                      }
                       style={[styles.qtyBtn, { borderColor: colors.border }]}
                     >
-                      <MaterialIcons name="add" size={16} color={colors.foreground} />
+                      <MaterialIcons
+                        name="add"
+                        size={16}
+                        color={colors.foreground}
+                      />
                     </Pressable>
-                    <Pressable 
+                    <Pressable
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                         confirmAction(
                           "Remover item?",
                           `Deseja remover "${item.name || "este produto"}" do carrinho?`,
-                          () => removeFromCart(item.id)
+                          () => removeFromCart(item.id),
                         );
                       }}
                       style={{ marginLeft: 10, padding: 4 }}
                     >
-                      <MaterialIcons name="delete-outline" size={20} color="#EF4444" />
+                      <MaterialIcons
+                        name="delete-outline"
+                        size={20}
+                        color="#EF4444"
+                      />
                     </Pressable>
                   </View>
                 </View>
@@ -254,10 +372,32 @@ export default function CartScreen() {
 
             {/* Observações */}
             {isFood && (
-              <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <Text style={[styles.cardSectionTitle, { color: colors.foreground }]}>Observação (opcional)</Text>
+              <View
+                style={[
+                  styles.sectionCard,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.cardSectionTitle,
+                    { color: colors.foreground },
+                  ]}
+                >
+                  Observação (opcional)
+                </Text>
                 <TextInput
-                  style={[styles.notesInput, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
+                  style={[
+                    styles.notesInput,
+                    {
+                      color: colors.foreground,
+                      borderColor: colors.border,
+                      backgroundColor: colors.background,
+                    },
+                  ]}
                   placeholder="Ex: Sem cebola, trocar refrigerante de guaraná por zero..."
                   placeholderTextColor={colors.muted}
                   multiline
@@ -266,26 +406,69 @@ export default function CartScreen() {
                   onChangeText={setNotes}
                   maxLength={120}
                 />
-                <Text style={[styles.notesCharCount, { color: colors.muted }]}>{notes.length}/120</Text>
+                <Text style={[styles.notesCharCount, { color: colors.muted }]}>
+                  {notes.length}/120
+                </Text>
               </View>
             )}
 
             {/* Resumo Financeiro */}
-            <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View
+              style={[
+                styles.sectionCard,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
+            >
               <View style={styles.summaryRow}>
-                <Text style={{ color: colors.muted, fontSize: 14 }}>Subtotal</Text>
-                <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: "600" }}>R$ {cartTotal.toFixed(2)}</Text>
+                <Text style={{ color: colors.muted, fontSize: 14 }}>
+                  Subtotal
+                </Text>
+                <Text
+                  style={{
+                    color: colors.foreground,
+                    fontSize: 14,
+                    fontWeight: "600",
+                  }}
+                >
+                  R$ {cartTotal.toFixed(2)}
+                </Text>
               </View>
               <View style={styles.summaryRow}>
-                <Text style={{ color: colors.muted, fontSize: 14 }}>Taxa de entrega</Text>
-                <Text style={{ color: colors.primary, fontSize: 14, fontWeight: "700" }}>A combinar</Text>
+                <Text style={{ color: colors.muted, fontSize: 14 }}>
+                  Taxa de entrega
+                </Text>
+                <Text
+                  style={{
+                    color: colors.primary,
+                    fontSize: 14,
+                    fontWeight: "700",
+                  }}
+                >
+                  A combinar
+                </Text>
               </View>
-              
+
               <View style={[styles.divider, { marginVertical: 12 }]} />
-              
+
               <View style={styles.summaryRow}>
-                <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: "800" }}>Total estimado</Text>
-                <Text style={{ color: colors.foreground, fontSize: 18, fontWeight: "800" }}>R$ {cartTotal.toFixed(2)}</Text>
+                <Text
+                  style={{
+                    color: colors.foreground,
+                    fontSize: 16,
+                    fontWeight: "800",
+                  }}
+                >
+                  Total estimado
+                </Text>
+                <Text
+                  style={{
+                    color: colors.foreground,
+                    fontSize: 18,
+                    fontWeight: "800",
+                  }}
+                >
+                  R$ {cartTotal.toFixed(2)}
+                </Text>
               </View>
             </View>
           </ScrollView>
@@ -293,19 +476,32 @@ export default function CartScreen() {
 
         {/* Footer Checkout CTA */}
         {cartCount > 0 && (
-          <View style={[styles.footer, { backgroundColor: colors.surface, borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 16) }]}>
+          <View
+            style={[
+              styles.footer,
+              {
+                backgroundColor: colors.surface,
+                borderTopColor: colors.border,
+                paddingBottom: Math.max(insets.bottom, 16),
+              },
+            ]}
+          >
             <Pressable
               style={({ pressed }) => [
                 styles.checkoutBtn,
                 { backgroundColor: colors.primary },
-                pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] }
+                pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
               ]}
               onPress={handleCheckout}
             >
               <MaterialIcons name="chat" size={22} color="#FFF" />
               <View style={styles.checkoutBtnTextContainer}>
-                <Text style={styles.checkoutBtnText}>Enviar pedido no WhatsApp</Text>
-                <Text style={styles.checkoutBtnSub}>Seu pedido será enviado para o WhatsApp do estabelecimento</Text>
+                <Text style={styles.checkoutBtnText}>
+                  Enviar pedido no WhatsApp
+                </Text>
+                <Text style={styles.checkoutBtnSub}>
+                  Seu pedido será enviado para o WhatsApp do estabelecimento
+                </Text>
               </View>
             </Pressable>
           </View>

@@ -1,12 +1,12 @@
-import postgres from 'postgres';
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import postgres from "postgres";
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -19,7 +19,7 @@ const sql = postgres(databaseUrl, { max: 1 });
 async function run() {
   try {
     console.log("Conectando ao banco de dados...");
-    
+
     // Consulta direta usando o driver postgres
     const logs = await sql`
       SELECT id, level, message, details, created_at as "createdAt"

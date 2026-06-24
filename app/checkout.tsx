@@ -43,7 +43,7 @@ export default function CheckoutScreen() {
       const preference = await createPaymentPreference(
         professionalId,
         selectedPlan,
-        selectedMethod
+        selectedMethod,
       );
 
       // Process payment
@@ -64,7 +64,7 @@ export default function CheckoutScreen() {
     } catch (error) {
       Alert.alert(
         "Erro",
-        error instanceof Error ? error.message : "Erro desconhecido"
+        error instanceof Error ? error.message : "Erro desconhecido",
       );
     } finally {
       setLoading(false);
@@ -77,7 +77,10 @@ export default function CheckoutScreen() {
         {/* Header */}
         <View style={[styles.header, { paddingTop: insets.top }]}>
           <Pressable
-            style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
+            style={({ pressed }) => [
+              styles.backBtn,
+              pressed && { opacity: 0.6 },
+            ]}
             onPress={() => router.back()}
           >
             <MaterialIcons name="arrow-back" size={24} color="#111827" />
@@ -103,7 +106,11 @@ export default function CheckoutScreen() {
                   <View style={styles.planHeader}>
                     <Text style={styles.planName}>{p.name}</Text>
                     {selectedPlan === p.id && (
-                      <MaterialIcons name="check-circle" size={24} color="#25D366" />
+                      <MaterialIcons
+                        name="check-circle"
+                        size={24}
+                        color="#25D366"
+                      />
                     )}
                   </View>
                   <Text style={styles.planDescription}>{p.description}</Text>
@@ -143,7 +150,11 @@ export default function CheckoutScreen() {
                     <Text style={styles.methodName}>{m.name}</Text>
                   </View>
                   {selectedMethod === m.id && (
-                    <MaterialIcons name="check-circle" size={24} color="#25D366" />
+                    <MaterialIcons
+                      name="check-circle"
+                      size={24}
+                      color="#25D366"
+                    />
                   )}
                 </View>
               </Pressable>

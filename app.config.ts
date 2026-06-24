@@ -10,7 +10,8 @@ const schemeFromBundleId = "chamaja";
 const env = {
   appName: "XamaJá",
   appSlug: "chamaja",
-  logoUrl: "https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/ewPQX5Hdn85qUpsT3fJo4T/chamaja-icon-3vFAMQS6WicwcQNCYQranh.png",
+  logoUrl:
+    "https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/ewPQX5Hdn85qUpsT3fJo4T/chamaja-icon-3vFAMQS6WicwcQNCYQranh.png",
   scheme: schemeFromBundleId,
   iosBundleId: bundleId,
   androidPackage: bundleId,
@@ -32,10 +33,13 @@ const config: ExpoConfig = {
     usesAppleSignIn: true,
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
-      NSPhotoLibraryUsageDescription: "O XamaJá precisa acessar sua galeria para você poder enviar fotos para o perfil do seu serviço.",
-      NSCameraUsageDescription: "O XamaJá precisa acessar sua câmera para que você possa tirar fotos dos serviços que realiza.",
-      NSLocationWhenInUseUsageDescription: "O XamaJá usa sua localização para encontrar profissionais e serviços próximos a você.",
-    }
+      NSPhotoLibraryUsageDescription:
+        "O XamaJá precisa acessar sua galeria para você poder enviar fotos para o perfil do seu serviço.",
+      NSCameraUsageDescription:
+        "O XamaJá precisa acessar sua câmera para que você possa tirar fotos dos serviços que realiza.",
+      NSLocationWhenInUseUsageDescription:
+        "O XamaJá usa sua localização para encontrar profissionais e serviços próximos a você.",
+    },
   },
   android: {
     versionCode: 5,
@@ -52,7 +56,7 @@ const config: ExpoConfig = {
       "ACCESS_FINE_LOCATION",
       "CAMERA",
       "READ_EXTERNAL_STORAGE",
-      "WRITE_EXTERNAL_STORAGE"
+      "WRITE_EXTERNAL_STORAGE",
     ],
     intentFilters: [
       {
@@ -91,7 +95,7 @@ const config: ExpoConfig = {
     display: "standalone",
     startUrl: "/",
     dir: "ltr",
-    lang: "pt-BR"
+    lang: "pt-BR",
   },
   plugins: [
     "expo-router",
@@ -100,14 +104,17 @@ const config: ExpoConfig = {
     [
       "expo-image-picker",
       {
-        photosPermission: "O XamaJá precisa acessar suas fotos para você escolher a foto do perfil e dos serviços.",
-        cameraPermission: "O XamaJá precisa acessar sua câmera para tirar fotos dos serviços."
-      }
+        photosPermission:
+          "O XamaJá precisa acessar suas fotos para você escolher a foto do perfil e dos serviços.",
+        cameraPermission:
+          "O XamaJá precisa acessar sua câmera para tirar fotos dos serviços.",
+      },
     ],
     [
       "expo-audio",
       {
-        microphonePermission: "O XamaJá precisa de acesso ao microfone para mensagens de áudio.",
+        microphonePermission:
+          "O XamaJá precisa de acesso ao microfone para mensagens de áudio.",
       },
     ],
     [
@@ -141,8 +148,8 @@ const config: ExpoConfig = {
   ],
   extra: {
     eas: {
-      projectId: "0a635d57-ca56-4b53-876b-264ef2149589"
-    }
+      projectId: "0a635d57-ca56-4b53-876b-264ef2149589",
+    },
   },
   experiments: {
     typedRoutes: true,

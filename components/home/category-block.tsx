@@ -1,5 +1,13 @@
 import React, { memo } from "react";
-import { View, Text, Pressable, Image, StyleSheet, FlatList, Platform } from "react-native";
+import {
+  View,
+  Text,
+  Pressable,
+  Image,
+  StyleSheet,
+  FlatList,
+  Platform,
+} from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
@@ -22,92 +30,124 @@ interface CategoryBlockProps {
   serviceCount: number;
 }
 
-const SubCategoryCard = memo(({ item, onPress }: { item: SubCategory; onPress: () => void }) => {
-  const colors = useColors();
-  
-  return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.subCatCard, 
-        { backgroundColor: colors.background, borderColor: colors.border },
-        pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }
-      ]}
-      onPress={() => {
-        if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        onPress();
-      }}
-    >
-      <View style={styles.subCatImageWrapper}>
-        {item.imageUrl ? (
-          <Image source={{ uri: item.imageUrl }} style={styles.subCatImage} resizeMode="cover" />
+const SubCategoryCard = memo(
+  ({ item, onPress }: { item: SubCategory; onPress: () => void }) => {
+    const colors = useColors();
+
+    return (
+      <Pressable
+        style={({ pressed }) => [
+          styles.subCatCard,
+          { backgroundColor: colors.background, borderColor: colors.border },
+          pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] },
+        ]}
+        onPress={() => {
+          if (Platform.OS !== "web")
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onPress();
+        }}
+      >
+        <View style={styles.subCatImageWrapper}>
+          {item.imageUrl ? (
+            <Image
+              source={{ uri: item.imageUrl }}
+              style={styles.subCatImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View
+              style={[
+                styles.subCatPlaceholder,
+                { backgroundColor: colors.surface },
+              ]}
+            >
+              <MaterialIcons
+                name={(item.icon as any) || "build"}
+                size={32}
+                color={colors.muted}
+              />
+            </View>
+          )}
+        </View>
+        <View style={styles.subCatInfo}>
+          <Text
+            style={[styles.subCatName, { color: colors.foreground }]}
+            numberOfLines={2}
+          >
+            {item.name}
+          </Text>
+        </View>
+      </Pressable>
+    );
+  },
+);
+
+export const CategoryBlock = memo(
+  ({ category, subCategories, serviceCount }: CategoryBlockProps) => {
+    const colors = useColors();
+    const router = useRouter();
+
+    const handleSeeAll = () => {
+      if (Platform.OS !== "web")
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      router.push(`/categories/${category.id}` as any);
+    };
+
+    return (
+      <View
+        style={[
+          styles.categoryBlock,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+        ]}
+      >
+        <View style={styles.categoryHeader}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.categoryTitle, { color: colors.foreground }]}>
+              {category.name.replace("\n", " ")}
+            </Text>
+            {serviceCount > 0 && (
+              <Text style={[styles.categorySubtitle, { color: colors.muted }]}>
+                {serviceCount} serviço{serviceCount !== 1 ? "s" : ""} disponível
+                {serviceCount !== 1 ? "s" : ""}
+              </Text>
+            )}
+          </View>
+          <Pressable
+            onPress={handleSeeAll}
+            style={({ pressed }) => [pressed && { opacity: 0.6 }]}
+          >
+            <Text style={[styles.seeAllText, { color: colors.primary }]}>
+              Ver tudo
+            </Text>
+          </Pressable>
+        </View>
+
+        {subCategories.length > 0 ? (
+          <FlatList
+            data={subCategories}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.subCatList}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <SubCategoryCard item={item} onPress={handleSeeAll} />
+            )}
+            removeClippedSubviews={Platform.OS === "android"}
+            initialNumToRender={5}
+          />
         ) : (
-          <View style={[styles.subCatPlaceholder, { backgroundColor: colors.surface }]}>
-            <MaterialIcons name={(item.icon as any) || "build"} size={32} color={colors.muted} />
+          <View
+            style={[styles.emptySubCat, { backgroundColor: colors.background }]}
+          >
+            <Text style={[styles.emptySubCatText, { color: colors.muted }]}>
+              Nenhum serviço disponível nesta categoria no momento.
+            </Text>
           </View>
         )}
       </View>
-      <View style={styles.subCatInfo}>
-        <Text style={[styles.subCatName, { color: colors.foreground }]} numberOfLines={2}>
-          {item.name}
-        </Text>
-      </View>
-    </Pressable>
-  );
-});
-
-export const CategoryBlock = memo(({ category, subCategories, serviceCount }: CategoryBlockProps) => {
-  const colors = useColors();
-  const router = useRouter();
-
-  const handleSeeAll = () => {
-    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.push(`/categories/${category.id}` as any);
-  };
-
-  return (
-    <View style={[styles.categoryBlock, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-      <View style={styles.categoryHeader}>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.categoryTitle, { color: colors.foreground }]}>
-            {category.name.replace("\n", " ")}
-          </Text>
-          {serviceCount > 0 && (
-            <Text style={[styles.categorySubtitle, { color: colors.muted }]}>
-              {serviceCount} serviço{serviceCount !== 1 ? "s" : ""} disponível{serviceCount !== 1 ? "s" : ""}
-            </Text>
-          )}
-        </View>
-        <Pressable 
-          onPress={handleSeeAll}
-          style={({ pressed }) => [pressed && { opacity: 0.6 }]}
-        >
-          <Text style={[styles.seeAllText, { color: colors.primary }]}>Ver tudo</Text>
-        </Pressable>
-      </View>
-
-      {subCategories.length > 0 ? (
-        <FlatList
-          data={subCategories}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.subCatList}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <SubCategoryCard item={item} onPress={handleSeeAll} />
-          )}
-          removeClippedSubviews={Platform.OS === 'android'}
-          initialNumToRender={5}
-        />
-      ) : (
-        <View style={[styles.emptySubCat, { backgroundColor: colors.background }]}>
-          <Text style={[styles.emptySubCatText, { color: colors.muted }]}>
-            Nenhum serviço disponível nesta categoria no momento.
-          </Text>
-        </View>
-      )}
-    </View>
-  );
-});
+    );
+  },
+);
 
 const styles = StyleSheet.create({
   categoryBlock: {

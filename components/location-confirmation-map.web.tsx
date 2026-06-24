@@ -1,4 +1,10 @@
-import React, { forwardRef, useImperativeHandle, useRef, useState, useEffect } from "react";
+import React, {
+  forwardRef,
+  useImperativeHandle,
+  useRef,
+  useState,
+  useEffect,
+} from "react";
 import { View, StyleSheet, Text, Pressable } from "react-native";
 import { LocationConfirmationMapProps } from "./location-confirmation-map";
 
@@ -78,7 +84,10 @@ const MAP_HTML = `
 </html>
 `;
 
-const LocationConfirmationMapWeb = forwardRef<any, LocationConfirmationMapProps>((props, ref) => {
+const LocationConfirmationMapWeb = forwardRef<
+  any,
+  LocationConfirmationMapProps
+>((props, ref) => {
   const { initialCoords, onConfirm, onCancel } = props;
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [currentCoords, setCurrentCoords] = useState(initialCoords);
@@ -123,7 +132,10 @@ const LocationConfirmationMapWeb = forwardRef<any, LocationConfirmationMapProps>
         <Pressable style={styles.cancelBtn} onPress={onCancel}>
           <Text style={styles.cancelText}>Cancelar</Text>
         </Pressable>
-        <Pressable style={styles.confirmBtn} onPress={() => onConfirm(currentCoords)}>
+        <Pressable
+          style={styles.confirmBtn}
+          onPress={() => onConfirm(currentCoords)}
+        >
           <Text style={styles.confirmText}>Confirmar Localização</Text>
         </Pressable>
       </View>

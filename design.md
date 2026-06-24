@@ -9,22 +9,23 @@ Design fiel à imagem de referência: tema claro, cards brancos com sombra, bord
 
 ## Paleta de Cores
 
-| Token       | Valor (light)  | Uso                          |
-|-------------|----------------|------------------------------|
-| primary     | #25D366        | Botão WhatsApp, ícone ativo  |
-| background  | #F5F5F5        | Fundo das telas              |
-| surface     | #FFFFFF        | Cards, inputs                |
-| foreground  | #111827        | Texto principal              |
-| muted       | #6B7280        | Texto secundário             |
-| border      | #E5E7EB        | Bordas e divisores           |
-| accent      | #1A73E8        | Links, "Ver tudo"            |
-| star        | #F59E0B        | Estrelas de avaliação        |
+| Token      | Valor (light) | Uso                         |
+| ---------- | ------------- | --------------------------- |
+| primary    | #25D366       | Botão WhatsApp, ícone ativo |
+| background | #F5F5F5       | Fundo das telas             |
+| surface    | #FFFFFF       | Cards, inputs               |
+| foreground | #111827       | Texto principal             |
+| muted      | #6B7280       | Texto secundário            |
+| border     | #E5E7EB       | Bordas e divisores          |
+| accent     | #1A73E8       | Links, "Ver tudo"           |
+| star       | #F59E0B       | Estrelas de avaliação       |
 
 ---
 
 ## Lista de Telas
 
 ### 1. Home (index)
+
 - Saudação: "Olá, Pedro" + ícone de sino (notificação)
 - Campo de busca: "O que você precisa?"
 - Categorias horizontais com ícones (Assistência Técnica, Reformas e Reparos, Eventos, Serviços Domésticos, Aulas)
@@ -33,6 +34,7 @@ Design fiel à imagem de referência: tema claro, cards brancos com sombra, bord
 - Seção "Serviços Domésticos" → 3 cards (Babá, Cozinheira, Diarista) + "Ver tudo"
 
 ### 2. Listagem de Profissionais (professionals/[category])
+
 - Header com nome da categoria + botão voltar
 - Campo de busca específico + ícone de filtro
 - Filtro "Próximo a você" (dropdown)
@@ -44,12 +46,14 @@ Design fiel à imagem de referência: tema claro, cards brancos com sombra, bord
   - Botão "WhatsApp" verde (borda arredondada)
 
 ### 3. Listagem de Categorias (categories/[section])
+
 - Header com nome da seção + botão voltar + ícone busca
 - Grid 3 colunas de cards:
   - Imagem quadrada com bordas arredondadas
   - Nome do serviço abaixo
 
 ### 4. Detalhe do Profissional (professional/[id])
+
 - Header: botão voltar + ícone compartilhar
 - Avatar grande (circular)
 - Nome do profissional
@@ -63,15 +67,18 @@ Design fiel à imagem de referência: tema claro, cards brancos com sombra, bord
 - Botão fixo no rodapé: "Chamar no WhatsApp" (verde, ícone WhatsApp)
 
 ### 5. Buscar
+
 - Campo de busca centralizado
 - Categorias populares em grid
 - Estado vazio com ilustração
 
 ### 6. Pedidos
+
 - Lista de pedidos/contatos realizados
 - Estado vazio com mensagem
 
 ### 7. Perfil
+
 - Avatar do usuário
 - Nome e informações básicas
 - Configurações
@@ -100,12 +107,12 @@ Design fiel à imagem de referência: tema claro, cards brancos com sombra, bord
 
 ## Menu Inferior (Tab Bar)
 
-| Tab     | Ícone         | Rota         |
-|---------|---------------|--------------|
-| Início  | house.fill    | /            |
-| Buscar  | magnifyingglass | /search    |
-| Pedidos | bag           | /orders      |
-| Perfil  | person        | /profile     |
+| Tab     | Ícone           | Rota     |
+| ------- | --------------- | -------- |
+| Início  | house.fill      | /        |
+| Buscar  | magnifyingglass | /search  |
+| Pedidos | bag             | /orders  |
+| Perfil  | person          | /profile |
 
 ---
 

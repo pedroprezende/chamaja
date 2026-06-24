@@ -22,12 +22,12 @@ function formatDate(dateInput: any) {
   if (!dateInput) return "-";
   const date = new Date(dateInput);
   if (isNaN(date.getTime())) return "-";
-  
+
   if (typeof dateInput === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
     const [year, month, day] = dateInput.split("-");
     return `${day}/${month}/${year}`;
   }
-  
+
   const day = String(date.getDate()).padStart(2, "0");
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const year = date.getFullYear();
@@ -41,24 +41,37 @@ export default function AdminPaymentsScreen() {
 
   // Search & Filters
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState<"all" | "ativo" | "pendente" | "inativo">("all");
-  
+  const [filterStatus, setFilterStatus] = useState<
+    "all" | "ativo" | "pendente" | "inativo"
+  >("all");
+
   // Collapse state for provider payments history
-  const [expandedProviderId, setExpandedProviderId] = useState<string | null>(null);
+  const [expandedProviderId, setExpandedProviderId] = useState<string | null>(
+    null,
+  );
 
   // Modal Registration Form state
   const [showModal, setShowModal] = useState(false);
-  const [selectedProvider, setSelectedProvider] = useState<{ id: string; name: string } | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [plano, setPlano] = useState<"mensal" | "anual">("mensal");
   const [valor, setValor] = useState("10.00");
-  const [dataPagamento, setDataPagamento] = useState(new Date().toISOString().split("T")[0]);
+  const [dataPagamento, setDataPagamento] = useState(
+    new Date().toISOString().split("T")[0],
+  );
   const [metodo, setMetodo] = useState("Pix");
   const [nfcEnviada, setNfcEnviada] = useState(false);
-  const [dataEnvioNfc, setDataEnvioNfc] = useState(new Date().toISOString().split("T")[0]);
+  const [dataEnvioNfc, setDataEnvioNfc] = useState(
+    new Date().toISOString().split("T")[0],
+  );
 
   // Fetch data
-  const { data: dbProviders = [], isLoading: loadingProviders } = trpc.providers.all.useQuery();
-  const { data: dbPayments = [], isLoading: loadingPayments } = trpc.payments.listAll.useQuery();
+  const { data: dbProviders = [], isLoading: loadingProviders } =
+    trpc.providers.all.useQuery();
+  const { data: dbPayments = [], isLoading: loadingPayments } =
+    trpc.payments.listAll.useQuery();
 
   // Mutation
   const registerMutation = trpc.payments.register.useMutation({
@@ -78,7 +91,7 @@ export default function AdminPaymentsScreen() {
     },
     onError: (err) => {
       Alert.alert("Erro", err.message || "Erro ao registrar pagamento.");
-    }
+    },
   });
 
   // Calculate stats & status for each provider
@@ -92,15 +105,17 @@ export default function AdminPaymentsScreen() {
       if (prov.planExpiresAt) {
         const expiryDate = new Date(prov.planExpiresAt);
         isExpired = expiryDate.getTime() < now.getTime();
-        
+
         const diffTime = Math.abs(now.getTime() - expiryDate.getTime());
         daysDiff = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
+
         status = isExpired ? "pendente" : "ativo";
       }
 
       // Latest payment record for this provider
-      const providerPayments = dbPayments.filter(p => p.prestadorId === prov.id);
+      const providerPayments = dbPayments.filter(
+        (p) => p.prestadorId === prov.id,
+      );
       const latestPayment = providerPayments[0] || null;
 
       return {
@@ -117,9 +132,15 @@ export default function AdminPaymentsScreen() {
   // Statistics counters
   const stats = useMemo(() => {
     const total = providersWithStatus.length;
-    const ativo = providersWithStatus.filter(p => p.paymentStatus === "ativo").length;
-    const pendente = providersWithStatus.filter(p => p.paymentStatus === "pendente").length;
-    const inativo = providersWithStatus.filter(p => p.paymentStatus === "inativo").length;
+    const ativo = providersWithStatus.filter(
+      (p) => p.paymentStatus === "ativo",
+    ).length;
+    const pendente = providersWithStatus.filter(
+      (p) => p.paymentStatus === "pendente",
+    ).length;
+    const inativo = providersWithStatus.filter(
+      (p) => p.paymentStatus === "inativo",
+    ).length;
     const totalRevenue = dbPayments.reduce((sum, p) => sum + (p.valor || 0), 0);
 
     return { total, ativo, pendente, inativo, totalRevenue };
@@ -131,9 +152,10 @@ export default function AdminPaymentsScreen() {
       const matchesSearch =
         (prov.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
         (prov.category || "").toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const matchesFilter = filterStatus === "all" || prov.paymentStatus === filterStatus;
-      
+
+      const matchesFilter =
+        filterStatus === "all" || prov.paymentStatus === filterStatus;
+
       return matchesSearch && matchesFilter;
     });
   }, [providersWithStatus, searchQuery, filterStatus]);
@@ -150,7 +172,7 @@ export default function AdminPaymentsScreen() {
 
   const handleRegisterPayment = () => {
     if (!selectedProvider) return;
-    
+
     // Validate value
     const parsedValor = parseFloat(valor);
     if (isNaN(parsedValor) || parsedValor <= 0) {
@@ -161,12 +183,18 @@ export default function AdminPaymentsScreen() {
     // Validate payment date format YYYY-MM-DD
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(dataPagamento)) {
-      Alert.alert("Erro", "Formato de data de pagamento inválido. Use AAAA-MM-DD.");
+      Alert.alert(
+        "Erro",
+        "Formato de data de pagamento inválido. Use AAAA-MM-DD.",
+      );
       return;
     }
 
     if (plano === "anual" && nfcEnviada && !dateRegex.test(dataEnvioNfc)) {
-      Alert.alert("Erro", "Formato de data de envio da NFC inválido. Use AAAA-MM-DD.");
+      Alert.alert(
+        "Erro",
+        "Formato de data de envio da NFC inválido. Use AAAA-MM-DD.",
+      );
       return;
     }
 
@@ -205,23 +233,42 @@ export default function AdminPaymentsScreen() {
     switch (status) {
       case "ativo":
         return (
-          <View style={[styles.statusBadge, { backgroundColor: "rgba(16, 185, 129, 0.15)" }]}>
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: "rgba(16, 185, 129, 0.15)" },
+            ]}
+          >
             <MaterialIcons name="check-circle" size={14} color="#10B981" />
             <Text style={[styles.statusText, { color: "#10B981" }]}>Ativo</Text>
           </View>
         );
       case "pendente":
         return (
-          <View style={[styles.statusBadge, { backgroundColor: "rgba(239, 68, 68, 0.15)" }]}>
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: "rgba(239, 68, 68, 0.15)" },
+            ]}
+          >
             <MaterialIcons name="warning" size={14} color="#EF4444" />
-            <Text style={[styles.statusText, { color: "#EF4444" }]}>Pendente</Text>
+            <Text style={[styles.statusText, { color: "#EF4444" }]}>
+              Pendente
+            </Text>
           </View>
         );
       case "inativo":
         return (
-          <View style={[styles.statusBadge, { backgroundColor: "rgba(156, 163, 175, 0.15)" }]}>
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: "rgba(156, 163, 175, 0.15)" },
+            ]}
+          >
             <MaterialIcons name="remove-circle" size={14} color="#4B5563" />
-            <Text style={[styles.statusText, { color: "#4B5563" }]}>Inativo</Text>
+            <Text style={[styles.statusText, { color: "#4B5563" }]}>
+              Inativo
+            </Text>
           </View>
         );
     }
@@ -278,36 +325,72 @@ export default function AdminPaymentsScreen() {
 
         {/* Filter Tabs with Dynamic Counts */}
         <View style={styles.filterTabs}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterTabsContent}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterTabsContent}
+          >
             <Pressable
-              style={[styles.filterTab, filterStatus === "all" && styles.filterTabActive]}
+              style={[
+                styles.filterTab,
+                filterStatus === "all" && styles.filterTabActive,
+              ]}
               onPress={() => setFilterStatus("all")}
             >
-              <Text style={[styles.filterTabText, filterStatus === "all" && styles.filterTabTextActive]}>
+              <Text
+                style={[
+                  styles.filterTabText,
+                  filterStatus === "all" && styles.filterTabTextActive,
+                ]}
+              >
                 Todos ({stats.total})
               </Text>
             </Pressable>
             <Pressable
-              style={[styles.filterTab, filterStatus === "ativo" && styles.filterTabActive]}
+              style={[
+                styles.filterTab,
+                filterStatus === "ativo" && styles.filterTabActive,
+              ]}
               onPress={() => setFilterStatus("ativo")}
             >
-              <Text style={[styles.filterTabText, filterStatus === "ativo" && styles.filterTabTextActive]}>
+              <Text
+                style={[
+                  styles.filterTabText,
+                  filterStatus === "ativo" && styles.filterTabTextActive,
+                ]}
+              >
                 Ativos ({stats.ativo})
               </Text>
             </Pressable>
             <Pressable
-              style={[styles.filterTab, filterStatus === "pendente" && styles.filterTabActive]}
+              style={[
+                styles.filterTab,
+                filterStatus === "pendente" && styles.filterTabActive,
+              ]}
               onPress={() => setFilterStatus("pendente")}
             >
-              <Text style={[styles.filterTabText, filterStatus === "pendente" && styles.filterTabTextActive]}>
+              <Text
+                style={[
+                  styles.filterTabText,
+                  filterStatus === "pendente" && styles.filterTabTextActive,
+                ]}
+              >
                 Pendentes ({stats.pendente})
               </Text>
             </Pressable>
             <Pressable
-              style={[styles.filterTab, filterStatus === "inativo" && styles.filterTabActive]}
+              style={[
+                styles.filterTab,
+                filterStatus === "inativo" && styles.filterTabActive,
+              ]}
               onPress={() => setFilterStatus("inativo")}
             >
-              <Text style={[styles.filterTabText, filterStatus === "inativo" && styles.filterTabTextActive]}>
+              <Text
+                style={[
+                  styles.filterTabText,
+                  filterStatus === "inativo" && styles.filterTabTextActive,
+                ]}
+              >
                 Inativos ({stats.inativo})
               </Text>
             </Pressable>
@@ -322,7 +405,10 @@ export default function AdminPaymentsScreen() {
           <Text style={styles.loaderText}>Carregando dados financeiros...</Text>
         </View>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false} style={styles.listContainer}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          style={styles.listContainer}
+        >
           {filteredProviders.length === 0 ? (
             <View style={styles.emptyState}>
               <MaterialIcons name="receipt-long" size={56} color="#9CA3AF" />
@@ -332,7 +418,9 @@ export default function AdminPaymentsScreen() {
             <View style={styles.paymentsList}>
               {filteredProviders.map((prov) => {
                 const isExpanded = expandedProviderId === prov.id;
-                const provPayments = dbPayments.filter((p) => p.prestadorId === prov.id);
+                const provPayments = dbPayments.filter(
+                  (p) => p.prestadorId === prov.id,
+                );
 
                 return (
                   <View key={prov.id} style={styles.providerCard}>
@@ -347,7 +435,8 @@ export default function AdminPaymentsScreen() {
                         <View style={{ flex: 1, marginRight: 8 }}>
                           <Text style={styles.providerName}>{prov.name}</Text>
                           <Text style={styles.providerCategory}>
-                            {prov.category || "Sem categoria"} • {prov.city || "Cidade não informada"}
+                            {prov.category || "Sem categoria"} •{" "}
+                            {prov.city || "Cidade não informada"}
                           </Text>
                         </View>
                       </View>
@@ -365,10 +454,14 @@ export default function AdminPaymentsScreen() {
                         </View>
                         <View style={styles.subDetailRow}>
                           <Text style={styles.detailLabel}>Vence em:</Text>
-                          <Text style={[
-                            styles.detailValue,
-                            prov.isExpired ? styles.textDanger : styles.textSuccess
-                          ]}>
+                          <Text
+                            style={[
+                              styles.detailValue,
+                              prov.isExpired
+                                ? styles.textDanger
+                                : styles.textSuccess,
+                            ]}
+                          >
                             {formatDate(prov.planExpiresAt)}
                           </Text>
                         </View>
@@ -376,9 +469,14 @@ export default function AdminPaymentsScreen() {
                         {/* Expired visual alert */}
                         {prov.isExpired && (
                           <View style={styles.expiryAlertContainer}>
-                            <MaterialIcons name="error-outline" size={16} color="#991B1B" />
+                            <MaterialIcons
+                              name="error-outline"
+                              size={16}
+                              color="#991B1B"
+                            />
                             <Text style={styles.expiryAlertText}>
-                              Pagamento vencido há {prov.daysDiff} {prov.daysDiff === 1 ? "dia" : "dias"}!
+                              Pagamento vencido há {prov.daysDiff}{" "}
+                              {prov.daysDiff === 1 ? "dia" : "dias"}!
                             </Text>
                           </View>
                         )}
@@ -386,23 +484,39 @@ export default function AdminPaymentsScreen() {
                         {/* Remaining active days */}
                         {!prov.isExpired && prov.planExpiresAt && (
                           <Text style={styles.remainingDaysText}>
-                            Assinatura ativa. Restam {prov.daysDiff} {prov.daysDiff === 1 ? "dia" : "dias"}.
+                            Assinatura ativa. Restam {prov.daysDiff}{" "}
+                            {prov.daysDiff === 1 ? "dia" : "dias"}.
                           </Text>
                         )}
 
                         {/* NFC plaque status if annual plan */}
                         {prov.plan === "annual" && prov.latestPayment && (
                           <View style={styles.nfcStatusRow}>
-                            <MaterialIcons 
-                              name={prov.latestPayment.nfcEnviada ? "local-shipping" : "hourglass-empty"} 
-                              size={14} 
-                              color={prov.latestPayment.nfcEnviada ? "#059669" : "#D97706"} 
+                            <MaterialIcons
+                              name={
+                                prov.latestPayment.nfcEnviada
+                                  ? "local-shipping"
+                                  : "hourglass-empty"
+                              }
+                              size={14}
+                              color={
+                                prov.latestPayment.nfcEnviada
+                                  ? "#059669"
+                                  : "#D97706"
+                              }
                             />
-                            <Text style={[
-                              styles.nfcStatusText,
-                              { color: prov.latestPayment.nfcEnviada ? "#059669" : "#D97706" }
-                            ]}>
-                              Plaquinha NFC: {prov.latestPayment.nfcEnviada 
+                            <Text
+                              style={[
+                                styles.nfcStatusText,
+                                {
+                                  color: prov.latestPayment.nfcEnviada
+                                    ? "#059669"
+                                    : "#D97706",
+                                },
+                              ]}
+                            >
+                              Plaquinha NFC:{" "}
+                              {prov.latestPayment.nfcEnviada
                                 ? `Enviada em ${formatDate(prov.latestPayment.dataEnvioNfc)}`
                                 : "Pendente de Envio"}
                             </Text>
@@ -427,24 +541,36 @@ export default function AdminPaymentsScreen() {
                           setSelectedProvider({ id: prov.id, name: prov.name });
                           setPlano("mensal");
                           setValor("10.00");
-                          setDataPagamento(new Date().toISOString().split("T")[0]);
+                          setDataPagamento(
+                            new Date().toISOString().split("T")[0],
+                          );
                           setNfcEnviada(false);
-                          setDataEnvioNfc(new Date().toISOString().split("T")[0]);
+                          setDataEnvioNfc(
+                            new Date().toISOString().split("T")[0],
+                          );
                           setShowModal(true);
                         }}
                       >
-                        <MaterialIcons name="add-card" size={16} color="#FFFFFF" />
-                        <Text style={styles.registerBtnText}>Registrar Pago</Text>
+                        <MaterialIcons
+                          name="add-card"
+                          size={16}
+                          color="#FFFFFF"
+                        />
+                        <Text style={styles.registerBtnText}>
+                          Registrar Pago
+                        </Text>
                       </Pressable>
 
                       <Pressable
                         style={[styles.actionBtn, styles.historyBtn]}
-                        onPress={() => setExpandedProviderId(isExpanded ? null : prov.id)}
+                        onPress={() =>
+                          setExpandedProviderId(isExpanded ? null : prov.id)
+                        }
                       >
-                        <MaterialIcons 
-                          name={isExpanded ? "expand-less" : "expand-more"} 
-                          size={16} 
-                          color="#374151" 
+                        <MaterialIcons
+                          name={isExpanded ? "expand-less" : "expand-more"}
+                          size={16}
+                          color="#374151"
                         />
                         <Text style={styles.historyBtnText}>
                           Histórico ({prov.paymentsCount})
@@ -455,9 +581,13 @@ export default function AdminPaymentsScreen() {
                     {/* Expandable Payment History list */}
                     {isExpanded && (
                       <View style={styles.historySection}>
-                        <Text style={styles.historyTitle}>Histórico de Transações</Text>
+                        <Text style={styles.historyTitle}>
+                          Histórico de Transações
+                        </Text>
                         {provPayments.length === 0 ? (
-                          <Text style={styles.noHistoryText}>Nenhum histórico encontrado para este prestador.</Text>
+                          <Text style={styles.noHistoryText}>
+                            Nenhum histórico encontrado para este prestador.
+                          </Text>
                         ) : (
                           <View style={styles.historyList}>
                             {provPayments.map((payment) => (
@@ -465,31 +595,54 @@ export default function AdminPaymentsScreen() {
                                 <View style={{ flex: 1 }}>
                                   <View style={styles.historyItemHeader}>
                                     <Text style={styles.historyItemPlan}>
-                                      Plano {payment.plano === "anual" ? "Anual" : "Mensal"}
+                                      Plano{" "}
+                                      {payment.plano === "anual"
+                                        ? "Anual"
+                                        : "Mensal"}
                                     </Text>
                                     <Text style={styles.historyItemValue}>
-                                      R$ {payment.valor ? payment.valor.toFixed(2).replace(".", ",") : "0,00"}
+                                      R${" "}
+                                      {payment.valor
+                                        ? payment.valor
+                                            .toFixed(2)
+                                            .replace(".", ",")
+                                        : "0,00"}
                                     </Text>
                                   </View>
                                   <View style={styles.historyItemMeta}>
                                     <Text style={styles.historyItemDetail}>
-                                      Pago em: {formatDate(payment.dataPagamento)} • Método: {payment.metodo}
+                                      Pago em:{" "}
+                                      {formatDate(payment.dataPagamento)} •
+                                      Método: {payment.metodo}
                                     </Text>
                                   </View>
 
                                   {/* NFC status inside history item if annual */}
                                   {payment.plano === "anual" && (
                                     <View style={styles.historyItemNfcRow}>
-                                      <MaterialIcons 
-                                        name={payment.nfcEnviada ? "check" : "close"} 
-                                        size={12} 
-                                        color={payment.nfcEnviada ? "#059669" : "#DC2626"} 
+                                      <MaterialIcons
+                                        name={
+                                          payment.nfcEnviada ? "check" : "close"
+                                        }
+                                        size={12}
+                                        color={
+                                          payment.nfcEnviada
+                                            ? "#059669"
+                                            : "#DC2626"
+                                        }
                                       />
-                                      <Text style={[
-                                        styles.historyItemNfcText,
-                                        { color: payment.nfcEnviada ? "#059669" : "#DC2626" }
-                                      ]}>
-                                        Plaquinha NFC: {payment.nfcEnviada 
+                                      <Text
+                                        style={[
+                                          styles.historyItemNfcText,
+                                          {
+                                            color: payment.nfcEnviada
+                                              ? "#059669"
+                                              : "#DC2626",
+                                          },
+                                        ]}
+                                      >
+                                        Plaquinha NFC:{" "}
+                                        {payment.nfcEnviada
                                           ? `Enviada em ${formatDate(payment.dataEnvioNfc)}`
                                           : "Não enviada"}
                                       </Text>
@@ -522,7 +675,10 @@ export default function AdminPaymentsScreen() {
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Registrar Pagamento</Text>
-              <Pressable onPress={() => setShowModal(false)} style={styles.closeModalBtn}>
+              <Pressable
+                onPress={() => setShowModal(false)}
+                style={styles.closeModalBtn}
+              >
                 <MaterialIcons name="close" size={24} color="#111827" />
               </Pressable>
             </View>
@@ -530,31 +686,40 @@ export default function AdminPaymentsScreen() {
             {selectedProvider && (
               <View style={styles.modalProviderBanner}>
                 <Text style={styles.modalProviderLabel}>Prestador:</Text>
-                <Text style={styles.modalProviderName}>{selectedProvider.name}</Text>
+                <Text style={styles.modalProviderName}>
+                  {selectedProvider.name}
+                </Text>
               </View>
             )}
 
-            <ScrollView contentContainerStyle={styles.modalForm} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              contentContainerStyle={styles.modalForm}
+              showsVerticalScrollIndicator={false}
+            >
               {/* Plano selection */}
               <Text style={styles.inputLabel}>Plano Adquirido</Text>
               <View style={styles.planSelectorRow}>
                 <Pressable
                   style={[
                     styles.planSelectBtn,
-                    plano === "mensal" && styles.planSelectBtnActive
+                    plano === "mensal" && styles.planSelectBtnActive,
                   ]}
                   onPress={() => handlePlanoChange("mensal")}
                 >
-                  <Text style={[
-                    styles.planSelectBtnText,
-                    plano === "mensal" && styles.planSelectBtnTextActive
-                  ]}>
+                  <Text
+                    style={[
+                      styles.planSelectBtnText,
+                      plano === "mensal" && styles.planSelectBtnTextActive,
+                    ]}
+                  >
                     Mensal
                   </Text>
-                  <Text style={[
-                    styles.planSelectPrice,
-                    plano === "mensal" && styles.planSelectPriceActive
-                  ]}>
+                  <Text
+                    style={[
+                      styles.planSelectPrice,
+                      plano === "mensal" && styles.planSelectPriceActive,
+                    ]}
+                  >
                     R$ 10,00
                   </Text>
                 </Pressable>
@@ -562,20 +727,24 @@ export default function AdminPaymentsScreen() {
                 <Pressable
                   style={[
                     styles.planSelectBtn,
-                    plano === "anual" && styles.planSelectBtnActive
+                    plano === "anual" && styles.planSelectBtnActive,
                   ]}
                   onPress={() => handlePlanoChange("anual")}
                 >
-                  <Text style={[
-                    styles.planSelectBtnText,
-                    plano === "anual" && styles.planSelectBtnTextActive
-                  ]}>
+                  <Text
+                    style={[
+                      styles.planSelectBtnText,
+                      plano === "anual" && styles.planSelectBtnTextActive,
+                    ]}
+                  >
                     Anual
                   </Text>
-                  <Text style={[
-                    styles.planSelectPrice,
-                    plano === "anual" && styles.planSelectPriceActive
-                  ]}>
+                  <Text
+                    style={[
+                      styles.planSelectPrice,
+                      plano === "anual" && styles.planSelectPriceActive,
+                    ]}
+                  >
                     R$ 149,90
                   </Text>
                 </Pressable>
@@ -594,12 +763,20 @@ export default function AdminPaymentsScreen() {
 
               {/* Data do Pagamento input */}
               <View style={styles.inputLabelWithButtons}>
-                <Text style={styles.inputLabel}>Data do Pagamento (AAAA-MM-DD)</Text>
+                <Text style={styles.inputLabel}>
+                  Data do Pagamento (AAAA-MM-DD)
+                </Text>
                 <View style={styles.quickDateButtons}>
-                  <Pressable onPress={() => setDateToday("pagamento")} style={styles.quickDateBtn}>
+                  <Pressable
+                    onPress={() => setDateToday("pagamento")}
+                    style={styles.quickDateBtn}
+                  >
                     <Text style={styles.quickDateText}>Hoje</Text>
                   </Pressable>
-                  <Pressable onPress={() => setDateYesterday("pagamento")} style={styles.quickDateBtn}>
+                  <Pressable
+                    onPress={() => setDateYesterday("pagamento")}
+                    style={styles.quickDateBtn}
+                  >
                     <Text style={styles.quickDateText}>Ontem</Text>
                   </Pressable>
                 </View>
@@ -627,7 +804,9 @@ export default function AdminPaymentsScreen() {
               {plano === "anual" && (
                 <View style={styles.nfcFormContainer}>
                   <View style={styles.nfcSwitchRow}>
-                    <Text style={styles.nfcSwitchLabel}>Plaquinha NFC já foi enviada?</Text>
+                    <Text style={styles.nfcSwitchLabel}>
+                      Plaquinha NFC já foi enviada?
+                    </Text>
                     <Switch
                       value={nfcEnviada}
                       onValueChange={setNfcEnviada}
@@ -639,12 +818,20 @@ export default function AdminPaymentsScreen() {
                   {nfcEnviada && (
                     <View style={{ marginTop: 12 }}>
                       <View style={styles.inputLabelWithButtons}>
-                        <Text style={styles.inputLabel}>Data de Envio da NFC (AAAA-MM-DD)</Text>
+                        <Text style={styles.inputLabel}>
+                          Data de Envio da NFC (AAAA-MM-DD)
+                        </Text>
                         <View style={styles.quickDateButtons}>
-                          <Pressable onPress={() => setDateToday("nfc")} style={styles.quickDateBtn}>
+                          <Pressable
+                            onPress={() => setDateToday("nfc")}
+                            style={styles.quickDateBtn}
+                          >
                             <Text style={styles.quickDateText}>Hoje</Text>
                           </Pressable>
-                          <Pressable onPress={() => setDateYesterday("nfc")} style={styles.quickDateBtn}>
+                          <Pressable
+                            onPress={() => setDateYesterday("nfc")}
+                            style={styles.quickDateBtn}
+                          >
                             <Text style={styles.quickDateText}>Ontem</Text>
                           </Pressable>
                         </View>

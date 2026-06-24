@@ -1,12 +1,12 @@
-import postgres from 'postgres';
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import postgres from "postgres";
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -23,7 +23,7 @@ async function run() {
     const statements = [
       `ALTER TABLE providers ADD COLUMN IF NOT EXISTS price_level integer DEFAULT 2 NOT NULL;`,
       `CREATE INDEX IF NOT EXISTS "providers_price_level_idx" ON "providers" ("price_level");`,
-      `UPDATE providers SET price_level = FLOOR(RANDOM() * 4) + 1;`
+      `UPDATE providers SET price_level = FLOOR(RANDOM() * 4) + 1;`,
     ];
 
     for (const stmt of statements) {

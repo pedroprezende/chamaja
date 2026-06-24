@@ -1,10 +1,21 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  ArrowRight, Copy, Check, LogOut, 
-  Users, CheckCircle2, UserCheck, Phone, 
-  MapPin, Calendar, Clock, Lock, Mail, User
+import {
+  ArrowRight,
+  Copy,
+  Check,
+  LogOut,
+  Users,
+  CheckCircle2,
+  UserCheck,
+  Phone,
+  MapPin,
+  Calendar,
+  Clock,
+  Lock,
+  Mail,
+  User,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -104,13 +115,18 @@ export default function Parceiros() {
         const result = await response.json();
         if (response.ok && result.success) {
           localStorage.setItem("partner_token", result.sessionToken);
-          localStorage.setItem("partner_profile", JSON.stringify(result.partner));
+          localStorage.setItem(
+            "partner_profile",
+            JSON.stringify(result.partner)
+          );
           setSessionToken(result.sessionToken);
           setPartner(result.partner);
           toast.success(`Bem-vindo de volta, ${result.partner.nome}!`);
           resetForm();
         } else {
-          toast.error(result.error || "Falha no login. Verifique suas credenciais.");
+          toast.error(
+            result.error || "Falha no login. Verifique suas credenciais."
+          );
         }
       } else {
         // Registration flow
@@ -121,7 +137,9 @@ export default function Parceiros() {
         });
         const result = await response.json();
         if (response.ok && result.success) {
-          toast.success("Cadastro realizado com sucesso! Agora você pode fazer login.");
+          toast.success(
+            "Cadastro realizado com sucesso! Agora você pode fazer login."
+          );
           setIsLogin(true);
           setSenha("");
         } else {
@@ -208,11 +226,14 @@ export default function Parceiros() {
             />
           </a>
           <nav className="flex items-center gap-6">
-            <a href="/" className="text-sm font-semibold text-muted-foreground hover:text-foreground transition">
+            <a
+              href="/"
+              className="text-sm font-semibold text-muted-foreground hover:text-foreground transition"
+            >
               Início
             </a>
             {partner && (
-              <button 
+              <button
                 onClick={handleLogout}
                 className="flex items-center gap-2 text-sm font-semibold text-red-400 hover:text-red-300 transition"
               >
@@ -239,7 +260,8 @@ export default function Parceiros() {
                   Seja um Parceiro XamaJá
                 </h1>
                 <p className="text-sm md:text-base text-muted-foreground">
-                  Indique prestadores e comércios locais, ajude a nossa rede a crescer e acompanhe suas indicações.
+                  Indique prestadores e comércios locais, ajude a nossa rede a
+                  crescer e acompanhe suas indicações.
                 </p>
               </div>
 
@@ -247,17 +269,27 @@ export default function Parceiros() {
                 {/* Tabs switcher */}
                 <div className="flex bg-background border border-border rounded-xl p-1 mb-8">
                   <button
-                    onClick={() => { setIsLogin(true); resetForm(); }}
+                    onClick={() => {
+                      setIsLogin(true);
+                      resetForm();
+                    }}
                     className={`flex-1 py-3 text-sm font-semibold rounded-lg transition ${
-                      isLogin ? "bg-primary text-primary-foreground font-bold" : "text-muted-foreground hover:text-foreground"
+                      isLogin
+                        ? "bg-primary text-primary-foreground font-bold"
+                        : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     Entrar
                   </button>
                   <button
-                    onClick={() => { setIsLogin(false); resetForm(); }}
+                    onClick={() => {
+                      setIsLogin(false);
+                      resetForm();
+                    }}
                     className={`flex-1 py-3 text-sm font-semibold rounded-lg transition ${
-                      !isLogin ? "bg-primary text-primary-foreground font-bold" : "text-muted-foreground hover:text-foreground"
+                      !isLogin
+                        ? "bg-primary text-primary-foreground font-bold"
+                        : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     Criar Conta
@@ -268,7 +300,9 @@ export default function Parceiros() {
                   {!isLogin && (
                     <>
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-white uppercase tracking-wider">Nome Completo</label>
+                        <label className="text-xs font-bold text-white uppercase tracking-wider">
+                          Nome Completo
+                        </label>
                         <div className="relative">
                           <User className="absolute left-4 top-3.5 h-4.5 w-4.5 text-zinc-500" />
                           <Input
@@ -276,14 +310,16 @@ export default function Parceiros() {
                             placeholder="Ex: Pedro Silva"
                             required
                             value={nome}
-                            onChange={(e) => setNome(e.target.value)}
+                            onChange={e => setNome(e.target.value)}
                             className="bg-background border-border pl-12 h-12 rounded-xl focus-visible:ring-primary focus-visible:border-primary focus:border-primary text-sm"
                           />
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <label className="text-xs font-bold text-white uppercase tracking-wider">Telefone</label>
+                          <label className="text-xs font-bold text-white uppercase tracking-wider">
+                            Telefone
+                          </label>
                           <div className="relative">
                             <Phone className="absolute left-4 top-3.5 h-4.5 w-4.5 text-zinc-500" />
                             <Input
@@ -291,13 +327,15 @@ export default function Parceiros() {
                               placeholder="(11) 99999-9999"
                               required
                               value={telefone}
-                              onChange={(e) => setTelefone(e.target.value)}
+                              onChange={e => setTelefone(e.target.value)}
                               className="bg-background border-border pl-12 h-12 rounded-xl focus-visible:ring-primary focus-visible:border-primary focus:border-primary text-sm"
                             />
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <label className="text-xs font-bold text-white uppercase tracking-wider">Cidade</label>
+                          <label className="text-xs font-bold text-white uppercase tracking-wider">
+                            Cidade
+                          </label>
                           <div className="relative">
                             <MapPin className="absolute left-4 top-3.5 h-4.5 w-4.5 text-zinc-500" />
                             <Input
@@ -305,7 +343,7 @@ export default function Parceiros() {
                               placeholder="Bragança Paulista"
                               required
                               value={cidade}
-                              onChange={(e) => setCidade(e.target.value)}
+                              onChange={e => setCidade(e.target.value)}
                               className="bg-background border-border pl-12 h-12 rounded-xl focus-visible:ring-primary focus-visible:border-primary focus:border-primary text-sm"
                             />
                           </div>
@@ -315,7 +353,9 @@ export default function Parceiros() {
                   )}
 
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-white uppercase tracking-wider">E-mail</label>
+                    <label className="text-xs font-bold text-white uppercase tracking-wider">
+                      E-mail
+                    </label>
                     <div className="relative">
                       <Mail className="absolute left-4 top-3.5 h-4.5 w-4.5 text-zinc-500" />
                       <Input
@@ -323,14 +363,16 @@ export default function Parceiros() {
                         placeholder="parceiro@exemplo.com"
                         required
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        onChange={e => setEmail(e.target.value)}
                         className="bg-background border-border pl-12 h-12 rounded-xl focus-visible:ring-primary focus-visible:border-primary focus:border-primary text-sm"
                       />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-white uppercase tracking-wider">Senha</label>
+                    <label className="text-xs font-bold text-white uppercase tracking-wider">
+                      Senha
+                    </label>
                     <div className="relative">
                       <Lock className="absolute left-4 top-3.5 h-4.5 w-4.5 text-zinc-500" />
                       <Input
@@ -338,7 +380,7 @@ export default function Parceiros() {
                         placeholder="••••••••"
                         required
                         value={senha}
-                        onChange={(e) => setSenha(e.target.value)}
+                        onChange={e => setSenha(e.target.value)}
                         className="bg-background border-border pl-12 h-12 rounded-xl focus-visible:ring-primary focus-visible:border-primary focus:border-primary text-sm"
                       />
                     </div>
@@ -353,7 +395,9 @@ export default function Parceiros() {
                       <span className="loader-btn w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></span>
                     ) : (
                       <>
-                        <span>{isLogin ? "Acessar Painel" : "Criar Minha Conta"}</span>
+                        <span>
+                          {isLogin ? "Acessar Painel" : "Criar Minha Conta"}
+                        </span>
                         <ArrowRight className="h-4 w-4" />
                       </>
                     )}
@@ -374,17 +418,20 @@ export default function Parceiros() {
                   </h1>
                   <p className="text-muted-foreground text-sm md:text-base flex items-center gap-1.5">
                     <MapPin className="h-4.5 w-4.5 text-primary flex-shrink-0" />
-                    Parceiro de {partner.cidade} • Acompanhe suas indicações abaixo
+                    Parceiro de {partner.cidade} • Acompanhe suas indicações
+                    abaixo
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Button 
+                  <Button
                     variant="outline"
                     onClick={fetchReferrals}
                     disabled={isRefreshing}
                     className="border-border text-foreground hover:bg-card px-4 h-11 rounded-xl text-sm font-semibold flex items-center gap-2"
                   >
-                    <Clock className={`h-4.5 w-4.5 text-primary ${isRefreshing ? 'animate-spin' : ''}`} />
+                    <Clock
+                      className={`h-4.5 w-4.5 text-primary ${isRefreshing ? "animate-spin" : ""}`}
+                    />
                     Atualizar Dados
                   </Button>
                 </div>
@@ -399,13 +446,19 @@ export default function Parceiros() {
                         <Users className="h-6 w-6" />
                       </div>
                       <div>
-                        <h2 className="text-lg font-bold text-white">Sua Identidade</h2>
-                        <p className="text-xs text-muted-foreground">Indique novos prestadores</p>
+                        <h2 className="text-lg font-bold text-white">
+                          Sua Identidade
+                        </h2>
+                        <p className="text-xs text-muted-foreground">
+                          Indique novos prestadores
+                        </p>
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Seu Código Único</span>
+                      <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
+                        Seu Código Único
+                      </span>
                       <div className="bg-background border border-border rounded-2xl px-6 py-4 flex items-center justify-center border-dashed border-primary/30">
                         <span className="text-3xl font-black tracking-widest text-primary font-mono">
                           {partner.codigoIndicacao}
@@ -414,7 +467,9 @@ export default function Parceiros() {
                     </div>
 
                     <div className="space-y-2">
-                      <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Link de Indicação</span>
+                      <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
+                        Link de Indicação
+                      </span>
                       <div className="relative">
                         <input
                           type="text"
@@ -423,7 +478,11 @@ export default function Parceiros() {
                           className="w-full bg-background border border-border text-muted-foreground rounded-2xl pl-4 pr-14 py-3.5 focus:outline-none text-xs text-ellipsis overflow-hidden"
                         />
                         <button
-                          onClick={() => copyReferralLink(`${window.location.origin}/cadastro?ref=${partner.codigoIndicacao}`)}
+                          onClick={() =>
+                            copyReferralLink(
+                              `${window.location.origin}/cadastro?ref=${partner.codigoIndicacao}`
+                            )
+                          }
                           className="absolute right-2 top-2 p-2 rounded-xl bg-card border border-border text-foreground hover:text-primary hover:border-primary/50 transition"
                           title="Copiar Link"
                         >
@@ -439,7 +498,9 @@ export default function Parceiros() {
                     <div className="pt-2 text-xs text-muted-foreground leading-relaxed flex items-start gap-2 bg-primary/5 border border-primary/10 rounded-2xl p-4">
                       <CheckCircle2 className="h-4.5 w-4.5 text-primary flex-shrink-0 mt-0.5" />
                       <p>
-                        Compartilhe este link com prestadores ou comércios. Ao se cadastrarem, eles serão vinculados automaticamente à sua conta de parceiro.
+                        Compartilhe este link com prestadores ou comércios. Ao
+                        se cadastrarem, eles serão vinculados automaticamente à
+                        sua conta de parceiro.
                       </p>
                     </div>
                   </div>
@@ -453,10 +514,13 @@ export default function Parceiros() {
                         <h2 className="text-lg font-bold text-white flex items-center gap-2">
                           Indicações Realizadas
                         </h2>
-                        <p className="text-xs text-muted-foreground">Controle de leads cadastrados</p>
+                        <p className="text-xs text-muted-foreground">
+                          Controle de leads cadastrados
+                        </p>
                       </div>
                       <span className="bg-zinc-800 text-zinc-200 px-3 py-1 rounded-full text-xs font-bold font-mono">
-                        {referrals.length} {referrals.length === 1 ? 'indicação' : 'indicações'}
+                        {referrals.length}{" "}
+                        {referrals.length === 1 ? "indicação" : "indicações"}
                       </span>
                     </div>
 
@@ -466,9 +530,12 @@ export default function Parceiros() {
                           <Users className="h-8 w-8" />
                         </div>
                         <div className="space-y-1">
-                          <p className="text-base font-bold text-white">Nenhuma indicação ainda</p>
+                          <p className="text-base font-bold text-white">
+                            Nenhuma indicação ainda
+                          </p>
                           <p className="text-sm text-muted-foreground max-w-sm">
-                            Compartilhe seu link exclusivo com prestadores locais para começar a registrar indicações!
+                            Compartilhe seu link exclusivo com prestadores
+                            locais para começar a registrar indicações!
                           </p>
                         </div>
                       </div>
@@ -477,24 +544,41 @@ export default function Parceiros() {
                         <table className="w-full text-left border-collapse">
                           <thead>
                             <tr className="border-b border-border bg-background/30">
-                              <th className="px-6 py-4 text-xs font-bold text-zinc-400 uppercase tracking-wider">Profissional / Comércio</th>
-                              <th className="px-6 py-4 text-xs font-bold text-zinc-400 uppercase tracking-wider">Telefone</th>
-                              <th className="px-6 py-4 text-xs font-bold text-zinc-400 uppercase tracking-wider">Data</th>
-                              <th className="px-6 py-4 text-xs font-bold text-zinc-400 uppercase tracking-wider text-right">Status</th>
+                              <th className="px-6 py-4 text-xs font-bold text-zinc-400 uppercase tracking-wider">
+                                Profissional / Comércio
+                              </th>
+                              <th className="px-6 py-4 text-xs font-bold text-zinc-400 uppercase tracking-wider">
+                                Telefone
+                              </th>
+                              <th className="px-6 py-4 text-xs font-bold text-zinc-400 uppercase tracking-wider">
+                                Data
+                              </th>
+                              <th className="px-6 py-4 text-xs font-bold text-zinc-400 uppercase tracking-wider text-right">
+                                Status
+                              </th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-border/60">
-                            {referrals.map((ref) => (
-                              <tr key={ref.id} className="hover:bg-zinc-800/10 transition">
+                            {referrals.map(ref => (
+                              <tr
+                                key={ref.id}
+                                className="hover:bg-zinc-800/10 transition"
+                              >
                                 <td className="px-6 py-4">
-                                  <span className="text-sm font-bold text-white">{ref.nomeIndicado}</span>
+                                  <span className="text-sm font-bold text-white">
+                                    {ref.nomeIndicado}
+                                  </span>
                                 </td>
                                 <td className="px-6 py-4">
-                                  <span className="text-sm text-zinc-300 font-mono">{ref.telefoneIndicado}</span>
+                                  <span className="text-sm text-zinc-300 font-mono">
+                                    {ref.telefoneIndicado}
+                                  </span>
                                 </td>
                                 <td className="px-6 py-4">
                                   <span className="text-sm text-zinc-400">
-                                    {new Date(ref.createdAt).toLocaleDateString("pt-BR")}
+                                    {new Date(ref.createdAt).toLocaleDateString(
+                                      "pt-BR"
+                                    )}
                                   </span>
                                 </td>
                                 <td className="px-6 py-4 text-right">

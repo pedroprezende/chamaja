@@ -35,13 +35,14 @@ import {
   formatDistanceWithPreposition,
 } from "@/lib/location-utils";
 
-const DEFAULT_COVER = "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800&q=80";
+const DEFAULT_COVER =
+  "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800&q=80";
 
 function getWhatsAppUrl(phone: string, name: string) {
   const cleaned = phone.replace(/\D/g, "");
   const number = cleaned.startsWith("55") ? cleaned : `55${cleaned}`;
   const message = encodeURIComponent(
-    `Olá ${name}, encontrei seu perfil no XamaJá e gostaria de solicitar um orçamento.`
+    `Olá ${name}, encontrei seu perfil no XamaJá e gostaria de solicitar um orçamento.`,
   );
   return `https://wa.me/${number}?text=${message}`;
 }
@@ -54,7 +55,10 @@ const parseJsonArray = (val: any): string[] => {
     if (Array.isArray(parsed)) return parsed;
   } catch {}
   if (typeof val === "string") {
-    return val.split(",").map(s => s.trim()).filter(Boolean);
+    return val
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
   }
   return [];
 };
@@ -81,10 +85,20 @@ export default function ProfessionalDetailScreen() {
 
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showReportModal, setShowReportModal] = useState(false);
-  const [reportReason, setReportReason] = useState<"perfil_falso" | "golpe" | "informacoes_incorretas" | "comportamento_inadequado" | "outro">("perfil_falso");
+  const [reportReason, setReportReason] = useState<
+    | "perfil_falso"
+    | "golpe"
+    | "informacoes_incorretas"
+    | "comportamento_inadequado"
+    | "outro"
+  >("perfil_falso");
   const [reportDetails, setReportDetails] = useState("");
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
-  const { data: professional, isLoading: loading, refetch } = trpc.providers.getById.useQuery(id as string, {
+  const {
+    data: professional,
+    isLoading: loading,
+    refetch,
+  } = trpc.providers.getById.useQuery(id as string, {
     enabled: !!id,
   });
 
@@ -108,7 +122,9 @@ export default function ProfessionalDetailScreen() {
   }, [professional]);
 
   const galleryImages = professional?.gallery || [];
-  const currentImageIndex = selectedImage ? galleryImages.indexOf(selectedImage) : -1;
+  const currentImageIndex = selectedImage
+    ? galleryImages.indexOf(selectedImage)
+    : -1;
 
   const handlePrevImage = () => {
     if (currentImageIndex > 0) {
@@ -122,16 +138,30 @@ export default function ProfessionalDetailScreen() {
     }
   };
 
-  const { data: reviews = [], refetch: refetchReviews } = trpc.providers.getReviews.useQuery(id as string, {
-    enabled: !!id,
-  });
+  const { data: reviews = [], refetch: refetchReviews } =
+    trpc.providers.getReviews.useQuery(id as string, {
+      enabled: !!id,
+    });
 
   const distanceInfo = useMemo(() => {
-    if (showDistance && coords && professional && professional.latitude !== null && professional.latitude !== undefined && professional.longitude !== null && professional.longitude !== undefined) {
+    if (
+      showDistance &&
+      coords &&
+      professional &&
+      professional.latitude !== null &&
+      professional.latitude !== undefined &&
+      professional.longitude !== null &&
+      professional.longitude !== undefined
+    ) {
       const lat = Number(professional.latitude);
       const lon = Number(professional.longitude);
       if (!isNaN(lat) && !isNaN(lon)) {
-        const distKm = calculateHaversineDistance(coords.latitude, coords.longitude, lat, lon);
+        const distKm = calculateHaversineDistance(
+          coords.latitude,
+          coords.longitude,
+          lat,
+          lon,
+        );
         const timeMin = estimateDrivingTimeMinutes(distKm);
         return {
           distanceText: formatDistancePtBr(distKm),
@@ -163,17 +193,20 @@ export default function ProfessionalDetailScreen() {
       city: professional.city || undefined,
       userId: user?.id || undefined,
     });
-    
+
     const phone = professional.phone || professional.whatsapp || "";
     const url = getWhatsAppUrl(phone, professional.name);
     Linking.openURL(url).catch(() =>
-      Alert.alert("Erro", "Não foi possível abrir o WhatsApp.")
+      Alert.alert("Erro", "Não foi possível abrir o WhatsApp."),
     );
   };
 
   const handleOpenReportModal = () => {
     if (!user) {
-      Alert.alert("Acesso Necessário", "Você precisa estar conectado em uma conta para enviar uma denúncia.");
+      Alert.alert(
+        "Acesso Necessário",
+        "Você precisa estar conectado em uma conta para enviar uma denúncia.",
+      );
       router.push("/auth/login" as any);
       return;
     }
@@ -187,27 +220,34 @@ export default function ProfessionalDetailScreen() {
     setIsSubmittingReport(true);
 
     try {
-      const isCommerce = professional.categoryId === "comercios" || professional.category === "Comércios" || professional.category === "comercios";
+      const isCommerce =
+        professional.categoryId === "comercios" ||
+        professional.category === "Comércios" ||
+        professional.category === "comercios";
       const reportedType = isCommerce ? "comércio" : "prestador";
 
-      const { error } = await supabase
-        .from("denuncias")
-        .insert({
-          reporter_id: user.id,
-          reported_id: professional.id,
-          reported_type: reportedType,
-          reason: reportReason,
-          details: reportDetails.trim() || null,
-          status: "pendente",
-        });
+      const { error } = await supabase.from("denuncias").insert({
+        reporter_id: user.id,
+        reported_id: professional.id,
+        reported_type: reportedType,
+        reason: reportReason,
+        details: reportDetails.trim() || null,
+        status: "pendente",
+      });
 
       if (error) throw error;
 
-      Alert.alert("Denúncia Enviada", "Agradecemos o seu envio. A equipe administrativa analisará a denúncia em breve.");
+      Alert.alert(
+        "Denúncia Enviada",
+        "Agradecemos o seu envio. A equipe administrativa analisará a denúncia em breve.",
+      );
       setShowReportModal(false);
     } catch (err: any) {
       console.error("Erro ao enviar denúncia:", err);
-      Alert.alert("Erro", "Não foi possível enviar a denúncia. Tente novamente mais tarde.");
+      Alert.alert(
+        "Erro",
+        "Não foi possível enviar a denúncia. Tente novamente mais tarde.",
+      );
     } finally {
       setIsSubmittingReport(false);
     }
@@ -215,38 +255,78 @@ export default function ProfessionalDetailScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }]}>
+      <View
+        style={[
+          styles.container,
+          {
+            paddingTop: insets.top,
+            backgroundColor: colors.background,
+            alignItems: "center",
+            justifyContent: "center",
+          },
+        ]}
+      >
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={{ color: colors.muted, marginTop: 12, fontWeight: "600" }}>Carregando perfil...</Text>
+        <Text style={{ color: colors.muted, marginTop: 12, fontWeight: "600" }}>
+          Carregando perfil...
+        </Text>
       </View>
     );
   }
 
   if (!professional) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-        <View style={[styles.notFoundHeader, { borderBottomColor: colors.border, backgroundColor: colors.surface }]}>
+      <View
+        style={[
+          styles.container,
+          { paddingTop: insets.top, backgroundColor: colors.background },
+        ]}
+      >
+        <View
+          style={[
+            styles.notFoundHeader,
+            {
+              borderBottomColor: colors.border,
+              backgroundColor: colors.surface,
+            },
+          ]}
+        >
           <Pressable onPress={() => router.back()} style={styles.backBtn}>
-            <MaterialIcons name="arrow-back" size={24} color={colors.foreground} />
+            <MaterialIcons
+              name="arrow-back"
+              size={24}
+              color={colors.foreground}
+            />
           </Pressable>
         </View>
         <View style={styles.notFound}>
           <MaterialIcons name="person-off" size={64} color={colors.muted} />
-          <Text style={[styles.notFoundText, { color: colors.foreground }]}>Profissional não encontrado</Text>
-          <Text style={{ color: colors.muted, textAlign: "center", marginTop: 8, paddingHorizontal: 40 }}>
+          <Text style={[styles.notFoundText, { color: colors.foreground }]}>
+            Profissional não encontrado
+          </Text>
+          <Text
+            style={{
+              color: colors.muted,
+              textAlign: "center",
+              marginTop: 8,
+              paddingHorizontal: 40,
+            }}
+          >
             Este perfil pode ter sido removido ou o link está incorreto.
           </Text>
-          <Pressable 
-            style={{ 
-              marginTop: 24, 
-              backgroundColor: colors.primary, 
-              paddingHorizontal: 32, 
-              paddingVertical: 14, 
-              borderRadius: 16 
+          <Pressable
+            style={{
+              marginTop: 24,
+              backgroundColor: colors.primary,
+              paddingHorizontal: 32,
+              paddingVertical: 14,
+              borderRadius: 16,
             }}
             onPress={() => router.replace("/(tabs)")}
           >
-            <Text style={{ color: "#FFF", fontWeight: "700" }}>Voltar para o Início</Text>
+            <Text style={{ color: "#FFF", fontWeight: "700" }}>
+              Voltar para o Início
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -261,37 +341,63 @@ export default function ProfessionalDetailScreen() {
       {/* Floating Header */}
       <View style={[styles.floatingHeader, { paddingTop: insets.top + 8 }]}>
         <Pressable
-          style={({ pressed }) => [styles.floatingBackBtn, pressed && { opacity: 0.6 }]}
+          style={({ pressed }) => [
+            styles.floatingBackBtn,
+            pressed && { opacity: 0.6 },
+          ]}
           onPress={() => router.back()}
         >
           <MaterialIcons name="arrow-back" size={22} color="#FFF" />
         </Pressable>
         <View style={{ flex: 1 }} />
         <Pressable
-          style={({ pressed }) => [styles.floatingBackBtn, { marginRight: 8 }, pressed && { opacity: 0.6 }]}
-          onPress={() => toggleFavorite({
-            id: prof.id,
-            name: prof.name,
-            category: prof.category || "",
-            city: prof.city || "",
-            avatar: prof.avatarThumbnailUri || prof.avatarUri || getAvatarUrl(prof.name),
-            rating: Number(prof.rating) || 0,
-            phone: prof.phone || "",
-            type: (typeof prof.plan === "string" ? (prof.plan.toLowerCase() as "free" | "premium") : "free"),
-            latitude: prof.latitude ? Number(prof.latitude) : null,
-            longitude: prof.longitude ? Number(prof.longitude) : null,
-          })}
+          style={({ pressed }) => [
+            styles.floatingBackBtn,
+            { marginRight: 8 },
+            pressed && { opacity: 0.6 },
+          ]}
+          onPress={() =>
+            toggleFavorite({
+              id: prof.id,
+              name: prof.name,
+              category: prof.category || "",
+              city: prof.city || "",
+              avatar:
+                prof.avatarThumbnailUri ||
+                prof.avatarUri ||
+                getAvatarUrl(prof.name),
+              rating: Number(prof.rating) || 0,
+              phone: prof.phone || "",
+              type:
+                typeof prof.plan === "string"
+                  ? (prof.plan.toLowerCase() as "free" | "premium")
+                  : "free",
+              latitude: prof.latitude ? Number(prof.latitude) : null,
+              longitude: prof.longitude ? Number(prof.longitude) : null,
+            })
+          }
         >
-          <MaterialIcons name={favored ? "favorite" : "favorite-border"} size={22} color={favored ? "#EF4444" : "#FFF"} />
+          <MaterialIcons
+            name={favored ? "favorite" : "favorite-border"}
+            size={22}
+            color={favored ? "#EF4444" : "#FFF"}
+          />
         </Pressable>
         <Pressable
-          style={({ pressed }) => [styles.floatingBackBtn, { marginRight: 8 }, pressed && { opacity: 0.6 }]}
+          style={({ pressed }) => [
+            styles.floatingBackBtn,
+            { marginRight: 8 },
+            pressed && { opacity: 0.6 },
+          ]}
           onPress={handleOpenReportModal}
         >
           <MaterialIcons name="report" size={22} color="#FFF" />
         </Pressable>
         <Pressable
-          style={({ pressed }) => [styles.floatingBackBtn, pressed && { opacity: 0.6 }]}
+          style={({ pressed }) => [
+            styles.floatingBackBtn,
+            pressed && { opacity: 0.6 },
+          ]}
           onPress={() =>
             Share.share({
               message: `Confira ${prof.name} no app XamaJá!`,
@@ -318,7 +424,7 @@ export default function ProfessionalDetailScreen() {
             colors={["rgba(0,0,0,0.5)", "transparent", "rgba(0,0,0,0.7)"]}
             style={StyleSheet.absoluteFillObject}
           />
-          
+
           {/* Badges Overlays */}
           <View style={styles.badgeOverlayContainer}>
             {prof.onlineStatus && (
@@ -343,7 +449,12 @@ export default function ProfessionalDetailScreen() {
         </View>
 
         {/* Profile Card Overlay */}
-        <View style={[styles.profileCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <View
+          style={[
+            styles.profileCard,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+        >
           {/* Avatar floating */}
           <View style={styles.avatarContainer}>
             <Image
@@ -360,9 +471,11 @@ export default function ProfessionalDetailScreen() {
           {/* Professional Details */}
           <View style={styles.detailsContainer}>
             <View style={styles.titleRow}>
-              <Text style={[styles.name, { color: colors.foreground }]}>{prof.name}</Text>
+              <Text style={[styles.name, { color: colors.foreground }]}>
+                {prof.name}
+              </Text>
             </View>
-            
+
             {prof.isVerified && (
               <View style={styles.verifiedRow}>
                 <MaterialIcons name="check" size={12} color="#15803D" />
@@ -375,18 +488,50 @@ export default function ProfessionalDetailScreen() {
             </Text>
 
             <View style={[styles.locationContainer, { marginTop: 8, gap: 4 }]}>
-              <Text style={{ fontSize: 14, color: colors.foreground, textAlign: "center" }}>
-                📍 Bairro: <Text style={{ fontWeight: "700" }}>{prof.neighborhood || "Não informado"}</Text>
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: colors.foreground,
+                  textAlign: "center",
+                }}
+              >
+                📍 Bairro:{" "}
+                <Text style={{ fontWeight: "700" }}>
+                  {prof.neighborhood || "Não informado"}
+                </Text>
               </Text>
-              <Text style={{ fontSize: 14, color: colors.foreground, textAlign: "center" }}>
-                📍 Cidade: <Text style={{ fontWeight: "700" }}>{prof.city || "Não informada"}</Text>
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: colors.foreground,
+                  textAlign: "center",
+                }}
+              >
+                📍 Cidade:{" "}
+                <Text style={{ fontWeight: "700" }}>
+                  {prof.city || "Não informada"}
+                </Text>
               </Text>
               {distanceInfo ? (
-                <Text style={{ fontSize: 14, color: "#15803D", fontWeight: "700", textAlign: "center" }}>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    color: "#15803D",
+                    fontWeight: "700",
+                    textAlign: "center",
+                  }}
+                >
                   🚗 Distância até você: {distanceInfo.distanceText}
                 </Text>
               ) : (
-                <Text style={{ fontSize: 13, color: colors.muted, fontStyle: "italic", textAlign: "center" }}>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: colors.muted,
+                    fontStyle: "italic",
+                    textAlign: "center",
+                  }}
+                >
                   🚗 Distância até você: Indisponível (defina seu endereço)
                 </Text>
               )}
@@ -395,13 +540,32 @@ export default function ProfessionalDetailScreen() {
             {isCommerce && parseJsonArray(prof.tags).length > 0 && (
               <View style={styles.commerceTagsRow}>
                 {parseJsonArray(prof.tags).map((tag, idx) => (
-                  <View key={idx} style={[styles.commerceTagBadge, { backgroundColor: colors.primary + "15" }]}>
-                    <MaterialIcons 
-                      name={tag.toLowerCase().includes("delivery") ? "motorcycle" : tag.toLowerCase().includes("retirada") ? "store" : "check"} 
-                      size={13} 
-                      color={colors.primary} 
+                  <View
+                    key={idx}
+                    style={[
+                      styles.commerceTagBadge,
+                      { backgroundColor: colors.primary + "15" },
+                    ]}
+                  >
+                    <MaterialIcons
+                      name={
+                        tag.toLowerCase().includes("delivery")
+                          ? "motorcycle"
+                          : tag.toLowerCase().includes("retirada")
+                            ? "store"
+                            : "check"
+                      }
+                      size={13}
+                      color={colors.primary}
                     />
-                    <Text style={[styles.commerceTagText, { color: colors.primary }]}>{tag}</Text>
+                    <Text
+                      style={[
+                        styles.commerceTagText,
+                        { color: colors.primary },
+                      ]}
+                    >
+                      {tag}
+                    </Text>
                   </View>
                 ))}
               </View>
@@ -410,14 +574,21 @@ export default function ProfessionalDetailScreen() {
         </View>
 
         {/* Metric Grid (3 Columns) */}
-        <View style={[styles.metricGrid, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <View
+          style={[
+            styles.metricGrid,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+        >
           {/* Col 1: Rating */}
           <View style={styles.metricItem}>
             <MaterialIcons name="star" size={22} color="#F59E0B" />
             <Text style={[styles.metricValue, { color: colors.foreground }]}>
               {Number(prof.rating || 0).toFixed(1)}
             </Text>
-            <Text style={styles.metricLabel}>{prof.ratingCount || 0} avaliações</Text>
+            <Text style={styles.metricLabel}>
+              {prof.ratingCount || 0} avaliações
+            </Text>
           </View>
 
           <View style={styles.metricDivider} />
@@ -436,7 +607,10 @@ export default function ProfessionalDetailScreen() {
           {/* Col 3: Response Time */}
           <View style={styles.metricItem}>
             <MaterialIcons name="speed" size={22} color="#7C3AED" />
-            <Text style={[styles.metricValue, { color: colors.foreground }]} numberOfLines={1}>
+            <Text
+              style={[styles.metricValue, { color: colors.foreground }]}
+              numberOfLines={1}
+            >
               {prof.responseTime || "Rápido"}
             </Text>
             <Text style={styles.metricLabel}>Tempo resp.</Text>
@@ -446,12 +620,25 @@ export default function ProfessionalDetailScreen() {
         {/* Popular Services Section */}
         {parseJsonArray(prof.popularServices).length > 0 && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Serviços Mais Procurados</Text>
+            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+              Serviços Mais Procurados
+            </Text>
             <View style={styles.chipsContainer}>
               {parseJsonArray(prof.popularServices).map((service, index) => (
-                <View key={index} style={[styles.chip, { backgroundColor: colors.primary + "12", borderColor: colors.primary + "30" }]}>
+                <View
+                  key={index}
+                  style={[
+                    styles.chip,
+                    {
+                      backgroundColor: colors.primary + "12",
+                      borderColor: colors.primary + "30",
+                    },
+                  ]}
+                >
                   <MaterialIcons name="bolt" size={13} color={colors.primary} />
-                  <Text style={[styles.chipText, { color: colors.primary }]}>{service}</Text>
+                  <Text style={[styles.chipText, { color: colors.primary }]}>
+                    {service}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -462,36 +649,101 @@ export default function ProfessionalDetailScreen() {
         {isCommerce && prof.services && (
           <View style={styles.section}>
             <View style={styles.sectionHeaderRow}>
-              <Text style={[styles.sectionTitle, { color: colors.foreground, marginBottom: 0 }]}>Destaques do cardápio</Text>
-              <Pressable onPress={() => router.push(`/professional/${prof.id}/menu` as any)}>
-                <Text style={[styles.sectionHeaderLink, { color: colors.primary }]}>Ver cardápio completo</Text>
+              <Text
+                style={[
+                  styles.sectionTitle,
+                  { color: colors.foreground, marginBottom: 0 },
+                ]}
+              >
+                Destaques do cardápio
+              </Text>
+              <Pressable
+                onPress={() =>
+                  router.push(`/professional/${prof.id}/menu` as any)
+                }
+              >
+                <Text
+                  style={[styles.sectionHeaderLink, { color: colors.primary }]}
+                >
+                  Ver cardápio completo
+                </Text>
               </Pressable>
             </View>
             <View style={{ gap: 10, marginTop: 14 }}>
               {(() => {
                 let products = [];
                 try {
-                  products = typeof prof.services === "string" ? JSON.parse(prof.services) : (prof.services || []);
+                  products =
+                    typeof prof.services === "string"
+                      ? JSON.parse(prof.services)
+                      : prof.services || [];
                 } catch (e) {
                   products = [];
                 }
                 return products.slice(0, 3).map((prod: any) => (
-                  <Pressable 
-                    key={prod.id} 
-                    style={[styles.highlightProductCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                    onPress={() => router.push(`/professional/${prof.id}/menu` as any)}
+                  <Pressable
+                    key={prod.id}
+                    style={[
+                      styles.highlightProductCard,
+                      {
+                        backgroundColor: colors.surface,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                    onPress={() =>
+                      router.push(`/professional/${prof.id}/menu` as any)
+                    }
                   >
                     {prod.imageUri ? (
-                      <Image source={{ uri: prod.imageUri }} style={styles.highlightProductImage} />
+                      <Image
+                        source={{ uri: prod.imageUri }}
+                        style={styles.highlightProductImage}
+                      />
                     ) : (
-                      <View style={[styles.highlightProductImage, { alignItems: "center", justifyContent: "center", backgroundColor: colors.border + "40" }]}>
-                        <MaterialIcons name="restaurant" size={20} color={colors.muted} />
+                      <View
+                        style={[
+                          styles.highlightProductImage,
+                          {
+                            alignItems: "center",
+                            justifyContent: "center",
+                            backgroundColor: colors.border + "40",
+                          },
+                        ]}
+                      >
+                        <MaterialIcons
+                          name="restaurant"
+                          size={20}
+                          color={colors.muted}
+                        />
                       </View>
                     )}
                     <View style={styles.highlightProductInfo}>
-                      <Text style={[styles.highlightProductName, { color: colors.foreground }]} numberOfLines={1}>{prod.name}</Text>
-                      <Text style={[styles.highlightProductDesc, { color: colors.muted }]} numberOfLines={2}>{prod.description}</Text>
-                      <Text style={[styles.highlightProductPrice, { color: colors.primary }]}>R$ {Number(prod.price || 0).toFixed(2)}</Text>
+                      <Text
+                        style={[
+                          styles.highlightProductName,
+                          { color: colors.foreground },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {prod.name}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.highlightProductDesc,
+                          { color: colors.muted },
+                        ]}
+                        numberOfLines={2}
+                      >
+                        {prod.description}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.highlightProductPrice,
+                          { color: colors.primary },
+                        ]}
+                      >
+                        R$ {Number(prod.price || 0).toFixed(2)}
+                      </Text>
                     </View>
                   </Pressable>
                 ));
@@ -502,13 +754,20 @@ export default function ProfessionalDetailScreen() {
 
         {/* About Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Sobre o Prestador</Text>
-          <Text style={[styles.description, { color: colors.muted }]}>{prof.description || "Nenhuma descrição fornecida."}</Text>
-          
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+            Sobre o Prestador
+          </Text>
+          <Text style={[styles.description, { color: colors.muted }]}>
+            {prof.description || "Nenhuma descrição fornecida."}
+          </Text>
+
           {parseJsonArray(prof.tags).length > 0 && (
             <View style={[styles.chipsContainer, { marginTop: 12 }]}>
               {parseJsonArray(prof.tags).map((tag, index) => (
-                <View key={index} style={[styles.tagChip, { backgroundColor: "#F1F5F9" }]}>
+                <View
+                  key={index}
+                  style={[styles.tagChip, { backgroundColor: "#F1F5F9" }]}
+                >
                   <MaterialIcons name="check" size={12} color="#64748B" />
                   <Text style={styles.tagChipText}>{tag}</Text>
                 </View>
@@ -518,42 +777,83 @@ export default function ProfessionalDetailScreen() {
         </View>
 
         {/* Gallery */}
-        {prof.gallery && Array.isArray(prof.gallery) && prof.gallery.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeaderRow}>
-              <Text style={[styles.sectionTitle, { color: colors.foreground, marginBottom: 0 }]}>Galeria de Fotos</Text>
-              <Pressable onPress={() => setSelectedImage(prof.gallery?.[0] || null)}>
-                <Text style={[styles.sectionHeaderLink, { color: colors.primary }]}>Ver todas ({prof.gallery.length})</Text>
-              </Pressable>
-            </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: 20, paddingTop: 10 }}>
-              {prof.gallery.map((uri: string, idx: number) => (
-                <Pressable 
-                  key={idx} 
-                  onPress={() => setSelectedImage(uri)}
-                  style={({ pressed }) => [
-                    styles.galleryImageWrapper,
-                    { borderColor: colors.border, borderWidth: 1 },
-                    pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] }
+        {prof.gallery &&
+          Array.isArray(prof.gallery) &&
+          prof.gallery.length > 0 && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeaderRow}>
+                <Text
+                  style={[
+                    styles.sectionTitle,
+                    { color: colors.foreground, marginBottom: 0 },
                   ]}
                 >
-                  <Image source={{ uri }} style={styles.galleryImage} />
+                  Galeria de Fotos
+                </Text>
+                <Pressable
+                  onPress={() => setSelectedImage(prof.gallery?.[0] || null)}
+                >
+                  <Text
+                    style={[
+                      styles.sectionHeaderLink,
+                      { color: colors.primary },
+                    ]}
+                  >
+                    Ver todas ({prof.gallery.length})
+                  </Text>
                 </Pressable>
-              ))}
-            </ScrollView>
-          </View>
-        )}
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{
+                  gap: 12,
+                  paddingRight: 20,
+                  paddingTop: 10,
+                }}
+              >
+                {prof.gallery.map((uri: string, idx: number) => (
+                  <Pressable
+                    key={idx}
+                    onPress={() => setSelectedImage(uri)}
+                    style={({ pressed }) => [
+                      styles.galleryImageWrapper,
+                      { borderColor: colors.border, borderWidth: 1 },
+                      pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
+                    ]}
+                  >
+                    <Image source={{ uri }} style={styles.galleryImage} />
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+          )}
 
         {/* Bloco de Localização, Contato e Horários */}
-        <View style={[styles.infoList, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          
+        <View
+          style={[
+            styles.infoList,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+        >
           {/* Endereço */}
-          <Pressable 
-            style={[styles.infoItem, { borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 16 }]}
+          <Pressable
+            style={[
+              styles.infoItem,
+              {
+                borderBottomWidth: 1,
+                borderBottomColor: colors.border,
+                paddingBottom: 16,
+              },
+            ]}
             onPress={async () => {
-              const locationQuery = prof.latitude && prof.longitude
-                ? `${prof.latitude},${prof.longitude}`
-                : (prof.address || `${prof.neighborhood || ""}, ${prof.city || ""}`).trim();
+              const locationQuery =
+                prof.latitude && prof.longitude
+                  ? `${prof.latitude},${prof.longitude}`
+                  : (
+                      prof.address ||
+                      `${prof.neighborhood || ""}, ${prof.city || ""}`
+                    ).trim();
 
               if (locationQuery) {
                 if (prof.address && prof.address.startsWith("http")) {
@@ -570,22 +870,38 @@ export default function ProfessionalDetailScreen() {
                     if (url) {
                       await Linking.openURL(url);
                     } else {
-                      Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${encodedQuery}`);
+                      Linking.openURL(
+                        `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`,
+                      );
                     }
                   } catch (err) {
-                    Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${encodedQuery}`);
+                    Linking.openURL(
+                      `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`,
+                    );
                   }
                 }
               }
             }}
           >
-            <View style={[styles.infoIconWrap, { backgroundColor: colors.primary + "12" }]}>
-              <MaterialIcons name="location-on" size={20} color={colors.primary} />
+            <View
+              style={[
+                styles.infoIconWrap,
+                { backgroundColor: colors.primary + "12" },
+              ]}
+            >
+              <MaterialIcons
+                name="location-on"
+                size={20}
+                color={colors.primary}
+              />
             </View>
             <View style={styles.infoContent}>
-              <Text style={[styles.infoLabel, { color: colors.foreground }]}>Endereço</Text>
+              <Text style={[styles.infoLabel, { color: colors.foreground }]}>
+                Endereço
+              </Text>
               <Text style={[styles.infoValue, { color: colors.foreground }]}>
-                {prof.address || `${prof.neighborhood || ""}, ${prof.city || ""}`}
+                {prof.address ||
+                  `${prof.neighborhood || ""}, ${prof.city || ""}`}
               </Text>
               <Text style={styles.mapLinkText}>Toque para ver no mapa</Text>
             </View>
@@ -593,30 +909,56 @@ export default function ProfessionalDetailScreen() {
           </Pressable>
 
           {/* Contato */}
-          <Pressable 
-            style={[styles.infoItem, { borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: 16 }]}
+          <Pressable
+            style={[
+              styles.infoItem,
+              {
+                borderBottomWidth: 1,
+                borderBottomColor: colors.border,
+                paddingVertical: 16,
+              },
+            ]}
             onPress={handleOpenWhatsApp}
           >
-            <View style={[styles.infoIconWrap, { backgroundColor: "#25D36615" }]}>
+            <View
+              style={[styles.infoIconWrap, { backgroundColor: "#25D36615" }]}
+            >
               <MaterialIcons name="chat" size={20} color="#25D366" />
             </View>
             <View style={styles.infoContent}>
-              <Text style={[styles.infoLabel, { color: colors.foreground }]}>Contato</Text>
-              <Text style={[styles.infoValue, { color: colors.foreground, fontWeight: "600" }]}>
+              <Text style={[styles.infoLabel, { color: colors.foreground }]}>
+                Contato
+              </Text>
+              <Text
+                style={[
+                  styles.infoValue,
+                  { color: colors.foreground, fontWeight: "600" },
+                ]}
+              >
                 {prof.phone || prof.whatsapp || "Chamar no WhatsApp"}
               </Text>
-              <Text style={styles.whatsappSubText}>Clique para abrir conversa</Text>
+              <Text style={styles.whatsappSubText}>
+                Clique para abrir conversa
+              </Text>
             </View>
-            <MaterialIcons name="chevron-right" size={20} color={colors.muted} />
+            <MaterialIcons
+              name="chevron-right"
+              size={20}
+              color={colors.muted}
+            />
           </Pressable>
 
           {/* Horário de Atendimento */}
           <View style={[styles.infoItem, { paddingTop: 16 }]}>
-            <View style={[styles.infoIconWrap, { backgroundColor: "#7C3AED12" }]}>
+            <View
+              style={[styles.infoIconWrap, { backgroundColor: "#7C3AED12" }]}
+            >
               <MaterialIcons name="access-time" size={20} color="#7C3AED" />
             </View>
             <View style={styles.infoContent}>
-              <Text style={[styles.infoLabel, { color: colors.foreground }]}>Horário de atendimento</Text>
+              <Text style={[styles.infoLabel, { color: colors.foreground }]}>
+                Horário de atendimento
+              </Text>
               {(() => {
                 let weekdayHours = "";
                 let satHours = "";
@@ -626,7 +968,12 @@ export default function ProfessionalDetailScreen() {
                 if (prof.workingHours) {
                   try {
                     parsedObj = JSON.parse(prof.workingHours);
-                    if (parsedObj && (parsedObj.weekday || parsedObj.saturday || parsedObj.sunday)) {
+                    if (
+                      parsedObj &&
+                      (parsedObj.weekday ||
+                        parsedObj.saturday ||
+                        parsedObj.sunday)
+                    ) {
                       weekdayHours = parsedObj.weekday || "";
                       satHours = parsedObj.saturday || "";
                       sunHours = parsedObj.sunday || "";
@@ -636,28 +983,45 @@ export default function ProfessionalDetailScreen() {
                     weekdayHours = prof.workingHours;
                   }
                 }
-                
+
                 if (isJson) {
                   return (
                     <View style={{ gap: 2, marginTop: 2 }}>
                       {!!weekdayHours && (
-                        <Text style={styles.hoursText}>Segunda a Sexta: <Text style={styles.hoursValueText}>{weekdayHours}</Text></Text>
+                        <Text style={styles.hoursText}>
+                          Segunda a Sexta:{" "}
+                          <Text style={styles.hoursValueText}>
+                            {weekdayHours}
+                          </Text>
+                        </Text>
                       )}
                       {!!satHours && (
-                        <Text style={styles.hoursText}>Sábado: <Text style={styles.hoursValueText}>{satHours}</Text></Text>
+                        <Text style={styles.hoursText}>
+                          Sábado:{" "}
+                          <Text style={styles.hoursValueText}>{satHours}</Text>
+                        </Text>
                       )}
                       {!!sunHours && (
-                        <Text style={styles.hoursText}>Domingo: <Text style={styles.hoursValueText}>{sunHours}</Text></Text>
+                        <Text style={styles.hoursText}>
+                          Domingo:{" "}
+                          <Text style={styles.hoursValueText}>{sunHours}</Text>
+                        </Text>
                       )}
                     </View>
                   );
                 } else if (prof.workingHours) {
                   return (
-                    <Text style={[styles.infoValue, { color: colors.foreground }]}>{prof.workingHours}</Text>
+                    <Text
+                      style={[styles.infoValue, { color: colors.foreground }]}
+                    >
+                      {prof.workingHours}
+                    </Text>
                   );
                 }
                 return (
-                  <Text style={[styles.infoValue, { color: colors.muted }]}>Consultar disponibilidade via WhatsApp</Text>
+                  <Text style={[styles.infoValue, { color: colors.muted }]}>
+                    Consultar disponibilidade via WhatsApp
+                  </Text>
                 );
               })()}
             </View>
@@ -667,54 +1031,100 @@ export default function ProfessionalDetailScreen() {
         {/* Reviews Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
-            <Text style={[styles.sectionTitle, { color: colors.foreground, marginBottom: 0 }]}>
+            <Text
+              style={[
+                styles.sectionTitle,
+                { color: colors.foreground, marginBottom: 0 },
+              ]}
+            >
               Avaliações e Comentários
             </Text>
             <Pressable onPress={() => setShowReviewModal(true)}>
-              <Text style={[styles.sectionHeaderLink, { color: colors.primary }]}>Escrever avaliação</Text>
+              <Text
+                style={[styles.sectionHeaderLink, { color: colors.primary }]}
+              >
+                Escrever avaliação
+              </Text>
             </Pressable>
           </View>
 
           {reviews && reviews.length > 0 ? (
             <View style={{ gap: 16, marginTop: 14 }}>
               {reviews.slice(0, 5).map((rev: any) => (
-                <View key={rev.id} style={[styles.reviewCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <View
+                  key={rev.id}
+                  style={[
+                    styles.reviewCard,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
                   <View style={styles.reviewHeader}>
                     <Image
-                      source={{ uri: rev.userAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(rev.userName)}` }}
+                      source={{
+                        uri:
+                          rev.userAvatar ||
+                          `https://ui-avatars.com/api/?name=${encodeURIComponent(rev.userName)}`,
+                      }}
                       style={styles.reviewAvatar}
                     />
                     <View style={styles.reviewUserMeta}>
-                      <Text style={[styles.reviewUserName, { color: colors.foreground }]}>{rev.userName}</Text>
+                      <Text
+                        style={[
+                          styles.reviewUserName,
+                          { color: colors.foreground },
+                        ]}
+                      >
+                        {rev.userName}
+                      </Text>
                       <Text style={styles.reviewDate}>{rev.createdAt}</Text>
                     </View>
                     <View style={styles.reviewStars}>
                       <MaterialIcons name="star" size={14} color="#F59E0B" />
-                      <Text style={styles.reviewRatingText}>{Number(rev.rating).toFixed(1)}</Text>
+                      <Text style={styles.reviewRatingText}>
+                        {Number(rev.rating).toFixed(1)}
+                      </Text>
                     </View>
                   </View>
                   {!!rev.comment && (
-                    <Text style={[styles.reviewComment, { color: colors.muted }]}>
+                    <Text
+                      style={[styles.reviewComment, { color: colors.muted }]}
+                    >
                       {rev.comment}
                     </Text>
                   )}
                 </View>
               ))}
               {reviews.length > 5 && (
-                <Pressable 
+                <Pressable
                   style={styles.viewAllReviewsBtn}
                   onPress={() => router.push(`/reviews/${id}` as any)}
                 >
-                  <Text style={[styles.viewAllReviewsText, { color: colors.primary }]}>
+                  <Text
+                    style={[
+                      styles.viewAllReviewsText,
+                      { color: colors.primary },
+                    ]}
+                  >
                     Ver todas as {reviews.length} avaliações
                   </Text>
-                  <MaterialIcons name="arrow-forward" size={16} color={colors.primary} />
+                  <MaterialIcons
+                    name="arrow-forward"
+                    size={16}
+                    color={colors.primary}
+                  />
                 </Pressable>
               )}
             </View>
           ) : (
             <View style={styles.emptyReviews}>
-              <MaterialIcons name="rate-review" size={32} color={colors.muted} />
+              <MaterialIcons
+                name="rate-review"
+                size={32}
+                color={colors.muted}
+              />
               <Text style={[styles.emptyReviewsText, { color: colors.muted }]}>
                 Nenhuma avaliação ainda. Seja o primeiro a avaliar!
               </Text>
@@ -723,8 +1133,11 @@ export default function ProfessionalDetailScreen() {
         </View>
 
         {/* Report Link */}
-        <Pressable 
-          style={({ pressed }) => [styles.reportBtn, pressed && { opacity: 0.7 }]}
+        <Pressable
+          style={({ pressed }) => [
+            styles.reportBtn,
+            pressed && { opacity: 0.7 },
+          ]}
           onPress={handleOpenReportModal}
         >
           <MaterialIcons name="outlined-flag" size={18} color="#EF4444" />
@@ -733,18 +1146,36 @@ export default function ProfessionalDetailScreen() {
       </ScrollView>
 
       {/* Footer / Call to Action */}
-      <View style={[styles.footer, { backgroundColor: colors.surface, borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 16) }]}>
+      <View
+        style={[
+          styles.footer,
+          {
+            backgroundColor: colors.surface,
+            borderTopColor: colors.border,
+            paddingBottom: Math.max(insets.bottom, 16),
+          },
+        ]}
+      >
         <View style={styles.footerRow}>
           <Pressable
             style={({ pressed }) => [
               styles.reviewButton,
-              { borderColor: colors.primary, backgroundColor: colors.primary + "10" },
+              {
+                borderColor: colors.primary,
+                backgroundColor: colors.primary + "10",
+              },
               pressed && { opacity: 0.85 },
             ]}
             onPress={() => setShowReviewModal(true)}
           >
-            <MaterialIcons name="star-outline" size={20} color={colors.primary} />
-            <Text style={[styles.reviewButtonText, { color: colors.primary }]}>Avaliar</Text>
+            <MaterialIcons
+              name="star-outline"
+              size={20}
+              color={colors.primary}
+            />
+            <Text style={[styles.reviewButtonText, { color: colors.primary }]}>
+              Avaliar
+            </Text>
           </Pressable>
           <Pressable
             style={({ pressed }) => [
@@ -752,12 +1183,28 @@ export default function ProfessionalDetailScreen() {
               { backgroundColor: colors.primary },
               pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
             ]}
-            onPress={isCommerce ? () => router.push(`/professional/${prof.id}/menu` as any) : handleOpenWhatsApp}
+            onPress={
+              isCommerce
+                ? () => router.push(`/professional/${prof.id}/menu` as any)
+                : handleOpenWhatsApp
+            }
           >
-            <MaterialIcons name={isCommerce ? (isRealCommerce ? "restaurant" : "assignment") : "chat"} size={22} color="#FFFFFF" />
+            <MaterialIcons
+              name={
+                isCommerce
+                  ? isRealCommerce
+                    ? "restaurant"
+                    : "assignment"
+                  : "chat"
+              }
+              size={22}
+              color="#FFFFFF"
+            />
             <Text style={styles.whatsappButtonText}>
-              {isCommerce 
-                ? (isRealCommerce ? "Ver cardápio / Fazer pedido" : "Ver serviços e preços") 
+              {isCommerce
+                ? isRealCommerce
+                  ? "Ver cardápio / Fazer pedido"
+                  : "Ver serviços e preços"
                 : "Chamar no WhatsApp"}
             </Text>
           </Pressable>
@@ -772,45 +1219,49 @@ export default function ProfessionalDetailScreen() {
         onRequestClose={() => setSelectedImage(null)}
       >
         <View style={styles.modalBackground}>
-          <Pressable 
-            style={styles.modalOverlay} 
-            onPress={() => setSelectedImage(null)} 
+          <Pressable
+            style={styles.modalOverlay}
+            onPress={() => setSelectedImage(null)}
           />
           <View style={styles.modalContent}>
-            <Pressable 
-              style={styles.closeModalBtn} 
+            <Pressable
+              style={styles.closeModalBtn}
               onPress={() => setSelectedImage(null)}
             >
               <MaterialIcons name="close" size={28} color="#FFF" />
             </Pressable>
             {selectedImage && (
-              <Image 
-                source={{ uri: selectedImage }} 
-                style={styles.fullImage} 
-                contentFit="contain" 
+              <Image
+                source={{ uri: selectedImage }}
+                style={styles.fullImage}
+                contentFit="contain"
               />
             )}
-            
+
             {/* Gallery Navigation Controls */}
             {galleryImages.length > 1 && (
               <>
                 {currentImageIndex > 0 && (
-                  <Pressable 
-                    style={styles.modalLeftBtn} 
+                  <Pressable
+                    style={styles.modalLeftBtn}
                     onPress={handlePrevImage}
                   >
                     <MaterialIcons name="chevron-left" size={36} color="#FFF" />
                   </Pressable>
                 )}
                 {currentImageIndex < galleryImages.length - 1 && (
-                  <Pressable 
-                    style={styles.modalRightBtn} 
+                  <Pressable
+                    style={styles.modalRightBtn}
                     onPress={handleNextImage}
                   >
-                    <MaterialIcons name="chevron-right" size={36} color="#FFF" />
+                    <MaterialIcons
+                      name="chevron-right"
+                      size={36}
+                      color="#FFF"
+                    />
                   </Pressable>
                 )}
-                
+
                 {/* Image counter indicator */}
                 <View style={styles.imageCounter}>
                   <Text style={styles.imageCounterText}>
@@ -832,7 +1283,9 @@ export default function ProfessionalDetailScreen() {
           try {
             setIsSubmittingReview(true);
             const userName = user?.name || "Você";
-            const userAvatar = user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}`;
+            const userAvatar =
+              user?.avatar ||
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}`;
 
             await submitReview.mutateAsync({
               providerId: prof.id,
@@ -858,7 +1311,10 @@ export default function ProfessionalDetailScreen() {
             Alert.alert("Sucesso", "Sua avaliação foi registrada!");
           } catch (error) {
             console.error("Failed to submit review:", error);
-            Alert.alert("Erro", "Não foi possível enviar a avaliação. Tente novamente.");
+            Alert.alert(
+              "Erro",
+              "Não foi possível enviar a avaliação. Tente novamente.",
+            );
           } finally {
             setIsSubmittingReview(false);
           }
@@ -874,17 +1330,39 @@ export default function ProfessionalDetailScreen() {
         onRequestClose={() => setShowReportModal(false)}
       >
         <View style={styles.modalOverlayBackground}>
-          <View style={[styles.reportModalContent, { backgroundColor: colors.surface }]}>
+          <View
+            style={[
+              styles.reportModalContent,
+              { backgroundColor: colors.surface },
+            ]}
+          >
             <View style={styles.reportModalHeader}>
-              <Text style={[styles.reportModalTitle, { color: colors.foreground }]}>Denunciar Perfil</Text>
-              <Pressable onPress={() => setShowReportModal(false)} style={styles.closeReportBtn}>
-                <MaterialIcons name="close" size={24} color={colors.foreground} />
+              <Text
+                style={[styles.reportModalTitle, { color: colors.foreground }]}
+              >
+                Denunciar Perfil
+              </Text>
+              <Pressable
+                onPress={() => setShowReportModal(false)}
+                style={styles.closeReportBtn}
+              >
+                <MaterialIcons
+                  name="close"
+                  size={24}
+                  color={colors.foreground}
+                />
               </Pressable>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
-              <Text style={[styles.reportModalSubtitle, { color: colors.muted }]}>
-                Selecione o motivo mais adequado para a denúncia contra o perfil de <Text style={{ fontWeight: "700" }}>{prof.name}</Text>:
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 24 }}
+            >
+              <Text
+                style={[styles.reportModalSubtitle, { color: colors.muted }]}
+              >
+                Selecione o motivo mais adequado para a denúncia contra o perfil
+                de <Text style={{ fontWeight: "700" }}>{prof.name}</Text>:
               </Text>
 
               {/* Reasons selector */}
@@ -892,8 +1370,14 @@ export default function ProfessionalDetailScreen() {
                 [
                   { key: "perfil_falso", label: "Perfil falso / Clone" },
                   { key: "golpe", label: "Golpe / Tentativa de Fraude" },
-                  { key: "informacoes_incorretas", label: "Informações incorretas / Desatualizadas" },
-                  { key: "comportamento_inadequado", label: "Comportamento inadequado / Ofensivo" },
+                  {
+                    key: "informacoes_incorretas",
+                    label: "Informações incorretas / Desatualizadas",
+                  },
+                  {
+                    key: "comportamento_inadequado",
+                    label: "Comportamento inadequado / Ofensivo",
+                  },
                   { key: "outro", label: "Outro motivo" },
                 ] as const
               ).map((item) => {
@@ -904,34 +1388,64 @@ export default function ProfessionalDetailScreen() {
                     onPress={() => setReportReason(item.key)}
                     style={[
                       styles.reasonOption,
-                      { borderColor: isSelected ? colors.primary : colors.border },
-                      isSelected && { backgroundColor: colors.primary + "09" }
+                      {
+                        borderColor: isSelected
+                          ? colors.primary
+                          : colors.border,
+                      },
+                      isSelected && { backgroundColor: colors.primary + "09" },
                     ]}
                   >
-                    <View style={[
-                      styles.radioButton,
-                      { borderColor: isSelected ? colors.primary : colors.muted }
-                    ]}>
-                      {isSelected && <View style={[styles.radioButtonInner, { backgroundColor: colors.primary }]} />}
+                    <View
+                      style={[
+                        styles.radioButton,
+                        {
+                          borderColor: isSelected
+                            ? colors.primary
+                            : colors.muted,
+                        },
+                      ]}
+                    >
+                      {isSelected && (
+                        <View
+                          style={[
+                            styles.radioButtonInner,
+                            { backgroundColor: colors.primary },
+                          ]}
+                        />
+                      )}
                     </View>
-                    <Text style={[styles.reasonLabelText, { color: colors.foreground, fontWeight: isSelected ? "600" : "400" }]}>
+                    <Text
+                      style={[
+                        styles.reasonLabelText,
+                        {
+                          color: colors.foreground,
+                          fontWeight: isSelected ? "600" : "400",
+                        },
+                      ]}
+                    >
                       {item.label}
                     </Text>
                   </Pressable>
                 );
               })}
 
-              <Text style={[styles.detailsLabelText, { color: colors.foreground, marginTop: 16 }]}>
+              <Text
+                style={[
+                  styles.detailsLabelText,
+                  { color: colors.foreground, marginTop: 16 },
+                ]}
+              >
                 Mais detalhes (Opcional)
               </Text>
               <TextInput
                 style={[
-                  styles.detailsInput, 
-                  { 
-                    color: colors.foreground, 
+                  styles.detailsInput,
+                  {
+                    color: colors.foreground,
                     borderColor: colors.border,
-                    backgroundColor: colors.background 
-                  }
+                    backgroundColor: colors.background,
+                  },
                 ]}
                 placeholder="Explique detalhadamente o motivo da denúncia para nos ajudar a analisar o caso..."
                 placeholderTextColor={colors.muted}
@@ -942,20 +1456,35 @@ export default function ProfessionalDetailScreen() {
               />
             </ScrollView>
 
-            <View style={[styles.reportModalFooter, { borderTopColor: colors.border }]}>
+            <View
+              style={[
+                styles.reportModalFooter,
+                { borderTopColor: colors.border },
+              ]}
+            >
               <Pressable
-                style={[styles.reportModalCancelBtn, { borderColor: colors.border }]}
+                style={[
+                  styles.reportModalCancelBtn,
+                  { borderColor: colors.border },
+                ]}
                 onPress={() => setShowReportModal(false)}
                 disabled={isSubmittingReport}
               >
-                <Text style={[styles.reportCancelBtnText, { color: colors.foreground }]}>Cancelar</Text>
+                <Text
+                  style={[
+                    styles.reportCancelBtnText,
+                    { color: colors.foreground },
+                  ]}
+                >
+                  Cancelar
+                </Text>
               </Pressable>
-              
+
               <Pressable
                 style={[
-                  styles.reportModalSubmitBtn, 
+                  styles.reportModalSubmitBtn,
                   { backgroundColor: "#EF4444" },
-                  isSubmittingReport && { opacity: 0.7 }
+                  isSubmittingReport && { opacity: 0.7 },
                 ]}
                 onPress={handleSubmitReport}
                 disabled={isSubmittingReport}
@@ -963,7 +1492,9 @@ export default function ProfessionalDetailScreen() {
                 {isSubmittingReport ? (
                   <ActivityIndicator size="small" color="#FFF" />
                 ) : (
-                  <Text style={styles.reportSubmitBtnText}>Enviar Denúncia</Text>
+                  <Text style={styles.reportSubmitBtnText}>
+                    Enviar Denúncia
+                  </Text>
                 )}
               </Pressable>
             </View>
@@ -1439,8 +1970,11 @@ const styles = StyleSheet.create({
     borderRadius: 21,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05, shadowRadius: 5, elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
   },
   notFound: {
     flex: 1,

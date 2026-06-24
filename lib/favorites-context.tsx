@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "./auth-context";
 import { trpc } from "./trpc";
@@ -22,7 +28,9 @@ interface FavoritesContextType {
   toggleFavorite: (pro: FavoriteProfessional) => Promise<void>;
 }
 
-const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined);
+const FavoritesContext = createContext<FavoritesContextType | undefined>(
+  undefined,
+);
 
 const FAV_KEY = "@chamaja_favorites";
 
@@ -31,9 +39,12 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
   const [favorites, setFavorites] = useState<FavoriteProfessional[]>([]);
 
   // Fetch favorites from database when user is signed in
-  const { data: serverFavorites, refetch } = trpc.favorites.list.useQuery(undefined, {
-    enabled: isSignedIn,
-  });
+  const { data: serverFavorites, refetch } = trpc.favorites.list.useQuery(
+    undefined,
+    {
+      enabled: isSignedIn,
+    },
+  );
 
   const toggleMutation = trpc.favorites.toggle.useMutation();
 
@@ -69,12 +80,17 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
             if (localFavs.length > 0) {
               // Toggle each local favorite that is not already in serverFavorites
               for (const pro of localFavs) {
-                const isAlreadyServerFav = serverFavorites.some(f => f.id === pro.id);
+                const isAlreadyServerFav = serverFavorites.some(
+                  (f) => f.id === pro.id,
+                );
                 if (!isAlreadyServerFav) {
                   try {
                     await toggleMutation.mutateAsync({ providerId: pro.id });
                   } catch (e) {
-                    console.warn(`[FavoritesContext] Syncing provider ${pro.id} failed:`, e);
+                    console.warn(
+                      `[FavoritesContext] Syncing provider ${pro.id} failed:`,
+                      e,
+                    );
                   }
                 }
               }
@@ -84,7 +100,10 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
             }
           }
         } catch (err) {
-          console.warn("[FavoritesContext] Failed to sync local favorites to DB:", err);
+          console.warn(
+            "[FavoritesContext] Failed to sync local favorites to DB:",
+            err,
+          );
         }
       })();
     }
@@ -101,7 +120,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     } else {
       updated = [...favorites, pro];
     }
-    
+
     // 2. Set state immediately for smooth UI transition
     setFavorites(updated);
 
@@ -111,7 +130,10 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
         await toggleMutation.mutateAsync({ providerId: pro.id });
         refetch();
       } catch (err) {
-        console.error("[FavoritesContext] Failed to toggle favorite in database:", err);
+        console.error(
+          "[FavoritesContext] Failed to toggle favorite in database:",
+          err,
+        );
         // Rollback on error
         refetch();
       }
@@ -120,13 +142,18 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
       try {
         await AsyncStorage.setItem(FAV_KEY, JSON.stringify(updated));
       } catch (err) {
-        console.error("[FavoritesContext] Failed to write local favorites:", err);
+        console.error(
+          "[FavoritesContext] Failed to write local favorites:",
+          err,
+        );
       }
     }
   };
 
   return (
-    <FavoritesContext.Provider value={{ favorites, isFavorite, toggleFavorite }}>
+    <FavoritesContext.Provider
+      value={{ favorites, isFavorite, toggleFavorite }}
+    >
       {children}
     </FavoritesContext.Provider>
   );
@@ -134,6 +161,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
 
 export function useFavorites() {
   const ctx = useContext(FavoritesContext);
-  if (!ctx) throw new Error("useFavorites deve ser usado dentro de FavoritesProvider");
+  if (!ctx)
+    throw new Error("useFavorites deve ser usado dentro de FavoritesProvider");
   return ctx;
 }

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap");
 
 :root {
   /* HSL Sleek Dark Palette */
@@ -7,13 +7,17 @@
   --bg-surface: hsl(217, 33%, 17%);
   --bg-surface-hover: hsl(217, 33%, 22%);
   --border-color: hsl(217, 20%, 25%);
-  
+
   --text-primary: hsl(210, 40%, 98%);
   --text-secondary: hsl(215, 20%, 75%);
   --text-muted: hsl(215, 15%, 55%);
-  
+
   /* Accent Colors */
-  --accent-primary: hsl(142, 70%, 45%); /* ChamaJá Verde #25D366 (approx. green) */
+  --accent-primary: hsl(
+    142,
+    70%,
+    45%
+  ); /* ChamaJá Verde #25D366 (approx. green) */
   --accent-primary-hover: hsl(142, 70%, 38%);
   --accent-blue: hsl(217, 91%, 60%);
   --accent-purple: hsl(262, 83%, 58%);
@@ -21,11 +25,13 @@
   --accent-danger: hsl(350, 89%, 60%);
 
   --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -2px rgba(0, 0, 0, 0.6);
+  --shadow-md:
+    0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.5);
+  --shadow-lg:
+    0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -2px rgba(0, 0, 0, 0.6);
   --shadow-glow: 0 0 15px rgba(37, 211, 102, 0.15);
 
-  --font-sans: 'Plus Jakarta Sans', 'Outfit', system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", "Outfit", system-ui, sans-serif;
   --transition-fast: 0.15s ease;
   --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -37,19 +43,21 @@
   --bg-surface: hsl(0, 0%, 100%);
   --bg-surface-hover: hsl(210, 20%, 92%);
   --border-color: hsl(210, 14%, 89%);
-  
+
   --text-primary: hsl(222, 47%, 11%);
   --text-secondary: hsl(217, 19%, 35%);
   --text-muted: hsl(215, 16%, 47%);
-  
+
   --accent-primary: hsl(142, 70%, 40%);
   --accent-primary-hover: hsl(142, 70%, 32%);
   --accent-blue: hsl(221, 83%, 53%);
   --accent-purple: hsl(262, 70%, 50%);
-  
+
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+  --shadow-md:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg:
+    0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
   --shadow-glow: 0 0 10px rgba(37, 211, 102, 0.1);
 }
 
@@ -66,7 +74,9 @@ body {
   min-height: 100vh;
   line-height: 1.5;
   overflow-x: hidden;
-  transition: background-color var(--transition-normal), color var(--transition-normal);
+  transition:
+    background-color var(--transition-normal),
+    color var(--transition-normal);
 }
 
 /* Scrollbar Customization */
@@ -135,7 +145,11 @@ a:hover {
   position: absolute;
   width: 500px;
   height: 500px;
-  background: radial-gradient(circle, rgba(37, 211, 102, 0.1) 0%, rgba(37, 211, 102, 0) 70%);
+  background: radial-gradient(
+    circle,
+    rgba(37, 211, 102, 0.1) 0%,
+    rgba(37, 211, 102, 0) 70%
+  );
   top: -100px;
   right: -100px;
   pointer-events: none;
@@ -145,7 +159,11 @@ a:hover {
   position: absolute;
   width: 600px;
   height: 600px;
-  background: radial-gradient(circle, rgba(26, 115, 232, 0.08) 0%, rgba(26, 115, 232, 0) 70%);
+  background: radial-gradient(
+    circle,
+    rgba(26, 115, 232, 0.08) 0%,
+    rgba(26, 115, 232, 0) 70%
+  );
   bottom: -200px;
   left: -200px;
   pointer-events: none;
@@ -548,7 +566,7 @@ a:hover {
 }
 
 .kpi-card::after {
-  content: '';
+  content: "";
   position: absolute;
   width: 4px;
   height: 100%;
@@ -556,11 +574,21 @@ a:hover {
   top: 0;
 }
 
-.kpi-card.users::after { background-color: var(--accent-blue); }
-.kpi-card.providers::after { background-color: var(--accent-primary); }
-.kpi-card.commerce::after { background-color: var(--accent-orange); }
-.kpi-card.active-users::after { background-color: var(--accent-purple); }
-.kpi-card.active-ads::after { background-color: var(--accent-danger); }
+.kpi-card.users::after {
+  background-color: var(--accent-blue);
+}
+.kpi-card.providers::after {
+  background-color: var(--accent-primary);
+}
+.kpi-card.commerce::after {
+  background-color: var(--accent-orange);
+}
+.kpi-card.active-users::after {
+  background-color: var(--accent-purple);
+}
+.kpi-card.active-ads::after {
+  background-color: var(--accent-danger);
+}
 
 /* --- Table Styles --- */
 .section-container {
@@ -762,7 +790,9 @@ tbody tr:hover {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .theme-toggle-btn {
@@ -1050,7 +1080,7 @@ tbody tr:hover {
 }
 
 .timeline-item::after {
-  content: '';
+  content: "";
   position: absolute;
   width: 10px;
   height: 10px;
@@ -1149,4 +1179,3 @@ tbody tr:hover {
     grid-column: span 1;
   }
 }
-

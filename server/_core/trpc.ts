@@ -28,11 +28,11 @@ export const adminProcedure = t.procedure.use(
   t.middleware(async (opts) => {
     const { ctx, next } = opts;
 
-    const hasAdminAccess = ctx.user && (
-      ctx.user.role === "admin" ||
-      ctx.user.adminRole !== null ||
-      ctx.user.email === "pedroprezende33@gmail.com"
-    );
+    const hasAdminAccess =
+      ctx.user &&
+      (ctx.user.role === "admin" ||
+        ctx.user.adminRole !== null ||
+        ctx.user.email === "pedroprezende33@gmail.com");
 
     if (!hasAdminAccess) {
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
@@ -51,16 +51,19 @@ export const adminWriteProcedure = t.procedure.use(
   t.middleware(async (opts) => {
     const { ctx, next } = opts;
 
-    const isMasterOrWriteAdmin = ctx.user && (
-      ctx.user.role === "admin" && (
-        (ctx.user as any).adminRole === "principal" ||
+    const isMasterOrWriteAdmin =
+      ctx.user &&
+      ctx.user.role === "admin" &&
+      ((ctx.user as any).adminRole === "principal" ||
         (ctx.user as any).adminRole === "secundario" ||
-        ctx.user.email === "pedroprezende33@gmail.com"
-      )
-    );
+        ctx.user.email === "pedroprezende33@gmail.com");
 
     if (!isMasterOrWriteAdmin) {
-      throw new TRPCError({ code: "FORBIDDEN", message: "Permissão insuficiente. Requer nível Principal ou Secundário." });
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message:
+          "Permissão insuficiente. Requer nível Principal ou Secundário.",
+      });
     }
 
     return next({
@@ -76,15 +79,18 @@ export const adminMasterProcedure = t.procedure.use(
   t.middleware(async (opts) => {
     const { ctx, next } = opts;
 
-    const isMasterAdmin = ctx.user && (
-      ctx.user.role === "admin" && (
-        (ctx.user as any).adminRole === "principal" ||
-        ctx.user.email === "pedroprezende33@gmail.com"
-      )
-    );
+    const isMasterAdmin =
+      ctx.user &&
+      ctx.user.role === "admin" &&
+      ((ctx.user as any).adminRole === "principal" ||
+        ctx.user.email === "pedroprezende33@gmail.com");
 
     if (!isMasterAdmin) {
-      throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado. Apenas o administrador Principal tem permissão." });
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message:
+          "Acesso negado. Apenas o administrador Principal tem permissão.",
+      });
     }
 
     return next({

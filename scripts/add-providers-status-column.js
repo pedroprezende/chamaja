@@ -12,7 +12,9 @@ async function runMigration() {
   const sql = postgres(dbUrl, { max: 1 });
 
   try {
-    console.log("1. Adicionando coluna 'status' na tabela 'providers' se não existir...");
+    console.log(
+      "1. Adicionando coluna 'status' na tabela 'providers' se não existir...",
+    );
     await sql`ALTER TABLE public.providers ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'ativo';`;
     console.log("Migração concluída com sucesso!");
   } catch (error) {

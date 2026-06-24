@@ -17,7 +17,9 @@ export default function LogsMonitorScreen() {
   const { isAdmin } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [filter, setFilter] = useState<"ALL" | "error" | "warn" | "info">("ALL");
+  const [filter, setFilter] = useState<"ALL" | "error" | "warn" | "info">(
+    "ALL",
+  );
 
   const { data: logs, isLoading } = trpc.logs.list.useQuery(undefined, {
     enabled: isAdmin,
@@ -26,21 +28,28 @@ export default function LogsMonitorScreen() {
 
   if (!isAdmin) return null;
 
-  const filteredLogs = logs?.filter((l) => filter === "ALL" || l.level === filter) || [];
+  const filteredLogs =
+    logs?.filter((l) => filter === "ALL" || l.level === filter) || [];
 
   const getLevelColor = (level: string) => {
     switch (level) {
-      case "error": return "#EF4444";
-      case "warn": return "#F59E0B";
-      default: return "#3B82F6";
+      case "error":
+        return "#EF4444";
+      case "warn":
+        return "#F59E0B";
+      default:
+        return "#3B82F6";
     }
   };
 
   const getLevelIcon = (level: string) => {
     switch (level) {
-      case "error": return "error-outline";
-      case "warn": return "warning-amber";
-      default: return "info-outline";
+      case "error":
+        return "error-outline";
+      case "warn":
+        return "warning-amber";
+      default:
+        return "info-outline";
     }
   };
 
@@ -61,7 +70,12 @@ export default function LogsMonitorScreen() {
             style={[styles.filterChip, filter === f && styles.filterChipActive]}
             onPress={() => setFilter(f)}
           >
-            <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>
+            <Text
+              style={[
+                styles.filterText,
+                filter === f && styles.filterTextActive,
+              ]}
+            >
               {f === "ALL" ? "Todos" : f.toUpperCase()}
             </Text>
           </Pressable>
@@ -69,7 +83,11 @@ export default function LogsMonitorScreen() {
       </View>
 
       {isLoading ? (
-        <ActivityIndicator style={{ marginTop: 40 }} size="large" color="#25D366" />
+        <ActivityIndicator
+          style={{ marginTop: 40 }}
+          size="large"
+          color="#25D366"
+        />
       ) : (
         <FlatList
           data={filteredLogs}
@@ -78,13 +96,29 @@ export default function LogsMonitorScreen() {
           renderItem={({ item }) => (
             <View style={styles.logCard}>
               <View style={styles.logHeader}>
-                <View style={[styles.badge, { backgroundColor: getLevelColor(item.level) + "20" }]}>
-                  <MaterialIcons name={getLevelIcon(item.level) as any} size={14} color={getLevelColor(item.level)} />
-                  <Text style={[styles.badgeText, { color: getLevelColor(item.level) }]}>
+                <View
+                  style={[
+                    styles.badge,
+                    { backgroundColor: getLevelColor(item.level) + "20" },
+                  ]}
+                >
+                  <MaterialIcons
+                    name={getLevelIcon(item.level) as any}
+                    size={14}
+                    color={getLevelColor(item.level)}
+                  />
+                  <Text
+                    style={[
+                      styles.badgeText,
+                      { color: getLevelColor(item.level) },
+                    ]}
+                  >
                     {item.level.toUpperCase()}
                   </Text>
                 </View>
-                <Text style={styles.timestamp}>{new Date(item.createdAt).toLocaleString("pt-BR")}</Text>
+                <Text style={styles.timestamp}>
+                  {new Date(item.createdAt).toLocaleString("pt-BR")}
+                </Text>
               </View>
 
               <Text style={styles.category}>[{item.category}]</Text>
@@ -101,14 +135,20 @@ export default function LogsMonitorScreen() {
               <View style={styles.metaRow}>
                 {item.platform && (
                   <View style={styles.metaItem}>
-                    <MaterialIcons name="smartphone" size={12} color="#6B7280" />
+                    <MaterialIcons
+                      name="smartphone"
+                      size={12}
+                      color="#6B7280"
+                    />
                     <Text style={styles.metaText}>{item.platform}</Text>
                   </View>
                 )}
                 {item.userId && (
                   <View style={styles.metaItem}>
                     <MaterialIcons name="person" size={12} color="#6B7280" />
-                    <Text style={styles.metaText}>{item.userId.substring(0, 8)}...</Text>
+                    <Text style={styles.metaText}>
+                      {item.userId.substring(0, 8)}...
+                    </Text>
                   </View>
                 )}
               </View>
@@ -116,8 +156,14 @@ export default function LogsMonitorScreen() {
           )}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <MaterialIcons name="check-circle-outline" size={48} color="#10B981" />
-              <Text style={styles.emptyText}>Nenhum log encontrado para este filtro.</Text>
+              <MaterialIcons
+                name="check-circle-outline"
+                size={48}
+                color="#10B981"
+              />
+              <Text style={styles.emptyText}>
+                Nenhum log encontrado para este filtro.
+              </Text>
             </View>
           }
         />
@@ -138,7 +184,12 @@ const styles = StyleSheet.create({
     borderBottomColor: "#E5E7EB",
   },
   backBtn: { width: 40, height: 40, justifyContent: "center" },
-  headerTitle: { flex: 1, fontSize: 18, fontWeight: "700", textAlign: "center" },
+  headerTitle: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: "700",
+    textAlign: "center",
+  },
   filters: {
     flexDirection: "row",
     padding: 16,
@@ -168,13 +219,40 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E5E7EB",
   },
-  logHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
-  badge: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
+  logHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  badge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
   badgeText: { fontSize: 10, fontWeight: "800" },
   timestamp: { fontSize: 11, color: "#9CA3AF", fontWeight: "500" },
-  category: { fontSize: 11, fontWeight: "700", color: "#6B7280", marginBottom: 2 },
-  message: { fontSize: 14, color: "#111827", fontWeight: "600", marginBottom: 8 },
-  detailsBox: { backgroundColor: "#F3F4F6", padding: 10, borderRadius: 8, marginBottom: 10 },
+  category: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#6B7280",
+    marginBottom: 2,
+  },
+  message: {
+    fontSize: 14,
+    color: "#111827",
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  detailsBox: {
+    backgroundColor: "#F3F4F6",
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
   detailsText: { fontSize: 11, color: "#4B5563", fontFamily: "monospace" },
   metaRow: { flexDirection: "row", gap: 12, marginTop: 4 },
   metaItem: { flexDirection: "row", alignItems: "center", gap: 4 },

@@ -1,5 +1,5 @@
-import { ScrollViewStyleReset } from 'expo-router/html';
-import type { PropsWithChildren } from 'react';
+import { ScrollViewStyleReset } from "expo-router/html";
+import type { PropsWithChildren } from "react";
 
 /**
  * This file is web-only and used to configure the root HTML for every web page during static rendering.
@@ -11,23 +11,26 @@ export default function Root({ children }: PropsWithChildren) {
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover" />
-        
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover"
+        />
+
         {/* PWA iOS e Safari Support */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="XamaJá" />
         <meta name="theme-color" content="#25D366" />
-        
+
         {/* Ícone para iPhone */}
         <link rel="apple-touch-icon" href="/favicon.png" />
-        
+
         {/* O manifest gerado pelo Expo ou customizado (se criado em public/manifest.json) */}
         <link rel="manifest" href="/manifest.json" />
 
         {/* Reset styles para Expo Router Web */}
         <ScrollViewStyleReset />
-        
+
         {/* Scripts de inicialização */}
         <script
           dangerouslySetInnerHTML={{

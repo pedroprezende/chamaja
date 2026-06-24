@@ -115,8 +115,7 @@ export const adminProvidersDB = {
       .filter(
         (p) =>
           p.isActive &&
-          (p.subcategoryId === subcategoryId ||
-            p.serviceId === subcategoryId)
+          (p.subcategoryId === subcategoryId || p.serviceId === subcategoryId),
       )
       .sort((a, b) => a.displayOrder - b.displayOrder);
   },
@@ -138,7 +137,7 @@ export const adminProvidersDB = {
 
   async update(
     id: string,
-    updates: Partial<Omit<AdminProvider, "id" | "createdAt">>
+    updates: Partial<Omit<AdminProvider, "id" | "createdAt">>,
   ): Promise<AdminProvider | null> {
     await ensureLoaded();
     const idx = _providers.findIndex((p) => p.id === id);

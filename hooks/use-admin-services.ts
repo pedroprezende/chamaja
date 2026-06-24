@@ -15,12 +15,14 @@ export function useAdminServices(onlyHome = false) {
   const firstLoad = useRef(true);
 
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin" || user?.email === "pedroprezende33@gmail.com";
+  const isAdmin =
+    user?.role === "admin" || user?.email === "pedroprezende33@gmail.com";
 
   // tRPC Queries and Mutations (enabled only for admins)
-  const { data: serverServices, refetch: refetchServer } = trpc.services.all.useQuery(undefined, {
-    enabled: isAdmin,
-  });
+  const { data: serverServices, refetch: refetchServer } =
+    trpc.services.all.useQuery(undefined, {
+      enabled: isAdmin,
+    });
 
   const syncMutationCreate = trpc.services.create.useMutation();
   const syncMutationUpdate = trpc.services.update.useMutation();
@@ -51,7 +53,7 @@ export function useAdminServices(onlyHome = false) {
 
       try {
         const local = await adminDB.getAllServices();
-        
+
         // 1. Excluir no servidor os serviços que foram deletados localmente
         const deletedIds = await adminDB.getDeletedServiceIds();
         for (const delId of deletedIds) {
@@ -86,7 +88,9 @@ export function useAdminServices(onlyHome = false) {
             const serverTime = new Date(serverSvc.updatedAt).getTime();
 
             if (localTime > serverTime) {
-              console.log(`[Sync] Atualizando serviço ${localSvc.name} no servidor`);
+              console.log(
+                `[Sync] Atualizando serviço ${localSvc.name} no servidor`,
+              );
               await syncMutationUpdate.mutateAsync({
                 id: localSvc.id,
                 name: localSvc.name,
@@ -105,7 +109,9 @@ export function useAdminServices(onlyHome = false) {
                 displayOrder: localSvc.displayOrder,
               });
             } else if (serverTime > localTime) {
-              console.log(`[Sync] Atualizando serviço ${localSvc.name} localmente`);
+              console.log(
+                `[Sync] Atualizando serviço ${localSvc.name} localmente`,
+              );
               await adminDB.updateService(localSvc.id, {
                 name: serverSvc.name,
                 category: serverSvc.category,
@@ -133,7 +139,9 @@ export function useAdminServices(onlyHome = false) {
 
           const localSvc = local.find((s) => s.id === serverSvc.id);
           if (!localSvc) {
-            console.log(`[Sync] Baixando serviço ${serverSvc.name} para o local`);
+            console.log(
+              `[Sync] Baixando serviço ${serverSvc.name} para o local`,
+            );
             await adminDB.upsertServiceWithId(
               serverSvc.id,
               serverSvc.adminId,
@@ -144,7 +152,7 @@ export function useAdminServices(onlyHome = false) {
               serverSvc.imageUri || undefined,
               serverSvc.categoryId || undefined,
               serverSvc.showOnHome,
-              serverSvc.whatsapp || undefined
+              serverSvc.whatsapp || undefined,
             );
             await adminDB.updateService(serverSvc.id, {
               subcategoryId: serverSvc.subcategoryId || undefined,
@@ -168,7 +176,14 @@ export function useAdminServices(onlyHome = false) {
     };
 
     performSync();
-  }, [serverServices, isAdmin, syncMutationCreate, syncMutationUpdate, syncMutationDelete, onlyHome]);
+  }, [
+    serverServices,
+    isAdmin,
+    syncMutationCreate,
+    syncMutationUpdate,
+    syncMutationDelete,
+    onlyHome,
+  ]);
 
   useEffect(() => {
     load();

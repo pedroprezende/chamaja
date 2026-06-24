@@ -35,7 +35,6 @@
 - [x] Adicionar logout no perfil
 - [ ] Salvar preferências do usuário (favoritos, histórico)
 
-
 ## Sistema de Avaliações (Novo)
 
 - [x] Criar tipos TypeScript para avaliações (Rating, Review)
@@ -46,7 +45,6 @@
 - [x] Exibir média de avaliações na listagem de profissionais
 - [ ] Permitir filtrar avaliações por estrelas
 - [ ] Testar fluxo completo de avaliações
-
 
 ## Sistema de Cadastro de Prestadores (Novo)
 
@@ -60,7 +58,6 @@
 - [x] Destacar prestadores PREMIUM na home
 - [x] Permitir atualizar para PREMIUM no perfil do prestador
 - [x] Testar fluxo completo de cadastro e upgrade
-
 
 ## Firebase Authentication (Novo)
 
@@ -94,7 +91,6 @@
 - [x] Implementar busca e filtros em todas as seções
 - [x] Testar fluxo completo do painel
 
-
 ## Edição de Perfil e Autenticação de E-mail (Novo)
 
 - [x] Corrigir visibilidade do botão Apple no login
@@ -121,7 +117,6 @@
 - [x] Adicionar busca e filtros de locais
 - [x] Exibir estatísticas de prestadores por local
 
-
 ## Sistema de Roles e Permissões (Novo)
 
 - [x] Criar tipos de roles (Admin, Comerciante, Cliente)
@@ -134,7 +129,6 @@
 - [x] Implementar permissões granulares nas operações CRUD
 - [x] Testar fluxo de autenticação e permissões
 
-
 ## Sistema de Login Admin Funcional (Novo)
 
 - [x] Criar sistema de registro de admin com validação
@@ -145,7 +139,6 @@
 - [x] Implementar painel admin para criar serviços
 - [x] Implementar painel admin para gerenciar serviços
 - [x] Testar fluxo completo de login e criação de serviços
-
 
 ## Correção do Painel Admin (Novo)
 
@@ -206,7 +199,7 @@
 - [x] Tela notifications.tsx: notificações com marcação de lida
 - [x] Perfil atualizado: dados reais do usuário, badges de prestador/admin, stats reais (pedidos, favoritos, serviços)
 - [x] Menu do perfil: "Seja um prestador" ou "Minha área" conforme status
-- [x] Registrar todas as novas rotas no _layout.tsx
+- [x] Registrar todas as novas rotas no \_layout.tsx
 
 ## Painel Admin — Melhorias (Novo)
 
@@ -234,18 +227,22 @@
 - [x] Botão "Anúncios" na stats bar do dashboard-admin para acesso rápido
 
 ## Correções UI (27/04)
+
 - [x] Corrigir seletor de categoria no painel admin (stopPropagation no sheet + ScrollView para todas as 13 categorias)
 - [x] Ajustar imagens cortadas no carrossel de Destaques da Home (altura 210, dimensões explícitas)
 
 ## Correções Críticas Admin (27/04 - v2)
+
 - [x] Corrigir logout do painel admin (definitivo) — usa signOut() do AuthContext
 - [x] Corrigir seletor de categoria no painel admin — dropdown inline sem Modal aninhado
 
 ## Card "Em breve" automático (27/04)
+
 - [x] Exibir card "Em breve" em categorias sem prestadores cadastrados
 - [x] Ocultar "Em breve" automaticamente quando um prestador for adicionado (baseado nos dados reais)
 
 ## Tela de Gerenciamento de Serviços no Admin (27/04)
+
 - [x] Criar tela admin/services.tsx com layout da Home (seções por categoria)
 - [x] Cards horizontais com botões Editar e Excluir
 - [x] Modal de criação/edição de serviço (nome, categoria, imagem)
@@ -255,6 +252,7 @@
 - [x] Alterações refletem imediatamente na Home via useAdminServices
 
 ## Perfil e Notificações Funcionais (27/04)
+
 - [x] Edição de perfil: upload de foto da galeria (expo-image-picker, crop 1:1)
 - [x] Edição de perfil: alterar nome com persistência no AsyncStorage
 - [x] AuthContext: suporte a updateProfile (nome + avatar)
@@ -264,21 +262,25 @@
 - [x] Notificações de boas-vindas na primeira abertura do app
 
 ## Correções Status Bar e Sino (27/04)
+
 - [x] Corrigir sino de notificações na Home (adicionado onPress + badge real do NotificationsContext)
 - [x] Ajustar status bar para ícones do sistema visíveis sobre fundo branco (style="dark", translucent=false)
 
 ## Edição de Serviços Admin (27/04)
+
 - [x] Editar nome dos serviços existentes no gerenciador admin (mock e admin)
 - [x] Editar foto dos serviços existentes via galeria no gerenciador admin
 - [x] Editar categoria dos serviços existentes no gerenciador admin
 - [x] Modal de edição funcional para serviços novos e existentes (dropdown inline, sem Modal aninhado)
 
 ## Persistência de Dados Admin (27/04)
+
 - [x] Migrar adminDB (serviços) para AsyncStorage com carregamento na inicialização e resetCache
 - [x] adsDB (anúncios) já tinha persistência — verificado e correto
 - [x] Dados persistem ao reiniciar o app (AsyncStorage @chamaja_admin_services e @chamaja_ads)
 
 ## Correções e Melhorias (28/04)
+
 - [x] Ocultar serviço padrão quando houver versão personalizada no admin (ID override-{mockId})
 - [x] Corrigir mapeamento de categoryId no painel admin (upsertServiceWithId com ID correto)
 - [x] Persistência global dos prestadores cadastrados (providersDB + AsyncStorage @chamaja_providers)
@@ -286,17 +288,21 @@
 - [x] Listagem de profissionais por categoria inclui prestadores reais do providersDB
 
 ## Campo WhatsApp nos Serviços Admin (28/04)
+
 - [ ] Adicionar campo `whatsapp` na interface Service (admin-database.ts)
 - [ ] Adicionar input de WhatsApp no formulário de criação/edição do painel admin
 - [ ] Exibir botão "Chamar no WhatsApp" na tela de detalhe do serviço quando whatsapp estiver preenchido
 - [ ] Abrir WhatsApp com mensagem pré-definida ao tocar no botão
+
 ## Campo WhatsApp nos Serviços Admin (28/04)
+
 - [x] Adicionar campo `whatsapp` na interface Service (admin-database.ts)
 - [x] Adicionar input de WhatsApp no formulário de criação/edição do painel admin
 - [x] Exibir botão "Chamar no WhatsApp" na tela de detalhe do serviço quando whatsapp estiver preenchido
 - [x] Abrir WhatsApp com mensagem pré-definida ao tocar no botão
 
 ## Modo Edição Admin na Home (28/04)
+
 - [x] Botão discreto de ativação do Modo Edição no header (apenas para admin)
 - [x] Banner verde indicando que o Modo Edição está ativo
 - [x] Botão "+ Adicionar" serviço visível no Modo Edição
@@ -311,6 +317,7 @@
 - [x] Método reorderServices adicionado ao adminDB
 
 ## Bug Fix: Serviços admin por categoria (29/04)
+
 - [x] Corrigir tela categories/[section].tsx para buscar serviços do adminDB
 - [x] Filtro duplo: por categoryId (exato) + fallback por nome normalizado da categoria
 - [x] Serviços admin aparecem antes dos mock na listagem
@@ -320,6 +327,7 @@
 - [x] Estado de loading enquanto busca no adminDB
 
 ## Bug Fix + Melhoria: Serviço admin na busca e campos completos (29/04)
+
 - [x] Corrigir bug "Em breve" ao clicar em serviço admin na busca
 - [x] Garantir que busca navega para /admin-services/[serviceId] para serviços admin
 - [x] Adicionar campo descrição no formulário admin
@@ -330,6 +338,7 @@
 - [x] Atualizar formulário inline da Home com novos campos
 
 ## Sistema de Roles Admin/User (29/04)
+
 - [x] Adicionar campo role ("admin" | "user") na interface User do AuthContext
 - [x] Verificar role via admin-database ao fazer login (email match → admin)
 - [x] Expor isAdmin no AuthContext para uso em todo o app
@@ -339,6 +348,7 @@
 - [x] Verificação backend via adminProcedure no tRPC
 
 ## Estrutura 3 Níveis: Categoria → Subcategoria → Serviço (29/04)
+
 - [x] Adicionar tipo Subcategory e mapa subcategoriesByCategory no mock.ts
 - [x] Adicionar campo subcategoryId na interface Service do admin-database
 - [x] Atualizar createService e upsertServiceWithId para aceitar subcategoryId
@@ -349,12 +359,14 @@
 - [x] Corrigir "Em breve" para aparecer apenas quando não há serviços na subcategoria
 
 ## Fix: Dropdown de Prestador Vinculado nos Anúncios (30/04/2026)
+
 - [x] Carregar prestadores reais do providersDB no picker de anúncios
 - [x] Combinar prestadores mock + reais na lista de seleção
 - [x] Adicionar busca por nome no picker de prestadores
 - [x] Exibir foto, nome e categoria do prestador selecionado
 
 ## Layout Visual com Imagens nas Categorias (30/04/2026)
+
 - [ ] Adicionar campo imageUrl nas subcategorias do mock.ts com fotos reais via URL
 - [ ] Criar banco de imagens de subcategorias editável pelo admin (AsyncStorage)
 - [ ] Atualizar tela de categoria para exibir cards com imagem grande (estilo grid)
@@ -363,6 +375,7 @@
 - [ ] Exibir galeria de fotos do local na tela de detalhe do serviço
 
 ## Layout Visual com Imagens Reais (29/04/2026)
+
 - [x] Adicionar imageUrl em todas as subcategorias do mock.ts
 - [x] Criar subcategory-images-db.ts para overrides de imagem pelo admin
 - [x] Atualizar tela de categoria para cards com imagem grande (2 colunas)
@@ -373,10 +386,12 @@
 - [x] Adicionar botão "Imagens" no dashboard-admin para acessar a tela
 
 ## Correções e Melhorias (30/04/2026)
+
 - [x] Corrigir travamento no painel de anúncios (ads.tsx)
 - [x] Adicionar opção de galeria do celular nas imagens de subcategorias
 
 ## Sistema de Prestadores Admin (30/04)
+
 - [ ] Criar banco de dados de prestadores admin (providers-admin-db.ts)
 - [ ] Criar tela admin/providers.tsx com CRUD completo
 - [ ] Adicionar link no dashboard-admin para tela de prestadores
@@ -384,6 +399,7 @@
 - [ ] Atualizar picker de anúncios para incluir prestadores admin
 
 ## Sistema de Prestadores Admin (30/04/2026)
+
 - [x] Criar banco de dados admin-providers-db.ts com interface AdminProvider completa
 - [x] Criar tela admin/providers.tsx com CRUD completo (adicionar, editar, excluir)
 - [x] Adicionar botão "Prestadores" no dashboard-admin
@@ -392,6 +408,7 @@
 - [x] Prestadores admin aparecem na tela de subcategoria com badge verificado
 
 ## Sistema de Prestadores Admin (30/04/2026)
+
 - [x] Criar banco de dados admin-providers-db.ts com interface AdminProvider completa
 - [x] Criar tela admin/providers.tsx com CRUD completo (adicionar, editar, excluir)
 - [x] Adicionar botão "Prestadores" no dashboard-admin
@@ -400,6 +417,7 @@
 - [x] Prestadores admin aparecem na tela de subcategoria com badge verificado
 
 ## Melhorias de Sincronização e UI (30/04/2026)
+
 - [ ] Foto dos serviços admin nos resultados de busca
 - [ ] Scroll horizontal na stats bar do painel admin (acessar Prestadores)
 - [ ] Dropdown de serviço vinculado usa serviços do adminDB (editável)

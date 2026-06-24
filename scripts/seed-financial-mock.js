@@ -14,30 +14,63 @@ async function seed() {
   try {
     // 1. Fetch current users to see if we have some
     const currentUsers = await sql`SELECT open_id FROM public.users LIMIT 20;`;
-    
-    // 2. Fetch current providers
-    const currentProviders = await sql`SELECT id FROM public.providers LIMIT 20;`;
 
-    console.log(`Bando de dados possui atualmente ${currentUsers.length} usuários e ${currentProviders.length} profissionais.`);
+    // 2. Fetch current providers
+    const currentProviders =
+      await sql`SELECT id FROM public.providers LIMIT 20;`;
+
+    console.log(
+      `Bando de dados possui atualmente ${currentUsers.length} usuários e ${currentProviders.length} profissionais.`,
+    );
 
     // If there are no users/providers, let's create 10 mock users and professionals
     if (currentProviders.length === 0) {
-      console.log("Sem profissionais no banco. Criando profissionais mockados...");
+      console.log(
+        "Sem profissionais no banco. Criando profissionais mockados...",
+      );
       const mockNames = [
-        "Silva Pinturas", "Clínica Dentária Sorriso", "Mendes Encanamentos",
-        "João da Limpeza", "Carlos Eletricista", "Pet Shop Banho & Tosa",
-        "Dra. Maria Advocacia", "Salão de Beleza Glamour", "Mercado do Bairro",
-        "Auto Mecânica Express"
+        "Silva Pinturas",
+        "Clínica Dentária Sorriso",
+        "Mendes Encanamentos",
+        "João da Limpeza",
+        "Carlos Eletricista",
+        "Pet Shop Banho & Tosa",
+        "Dra. Maria Advocacia",
+        "Salão de Beleza Glamour",
+        "Mercado do Bairro",
+        "Auto Mecânica Express",
       ];
       const categories = [
-        "Construção", "Saúde", "Reformas", "Diarista", "Eletricista",
-        "Animais", "Serviços", "Beleza", "comercios", "Mecânica"
+        "Construção",
+        "Saúde",
+        "Reformas",
+        "Diarista",
+        "Eletricista",
+        "Animais",
+        "Serviços",
+        "Beleza",
+        "comercios",
+        "Mecânica",
       ];
       const categoryIds = [
-        "pintura", "saude", "encanador", "limpeza", "eletricista",
-        "petshop", "advogado", "salao", "comercios", "mecanica"
+        "pintura",
+        "saude",
+        "encanador",
+        "limpeza",
+        "eletricista",
+        "petshop",
+        "advogado",
+        "salao",
+        "comercios",
+        "mecanica",
       ];
-      const cities = ["Bragança Paulista", "Atibaia", "São Paulo", "Bragança Paulista", "Campinas"];
+      const cities = [
+        "Bragança Paulista",
+        "Atibaia",
+        "São Paulo",
+        "Bragança Paulista",
+        "Campinas",
+      ];
 
       for (let i = 0; i < mockNames.length; i++) {
         const openId = `mock_user_id_${i + 1}`;
@@ -71,13 +104,30 @@ async function seed() {
     }
 
     // Refresh list of providers
-    const providers = await sql`SELECT id, name, created_at FROM public.providers LIMIT 15;`;
+    const providers =
+      await sql`SELECT id, name, created_at FROM public.providers LIMIT 15;`;
 
     // 3. Make some providers Premium (monthly and annual)
     console.log("Atualizando planos de profissionais e criando assinaturas...");
-    const planTypes = ["monthly", "annual", "monthly", "monthly", "annual", "monthly", "free"];
-    const statuses = ["active", "active", "active", "past_due", "canceled", "active", "free"];
-    
+    const planTypes = [
+      "monthly",
+      "annual",
+      "monthly",
+      "monthly",
+      "annual",
+      "monthly",
+      "free",
+    ];
+    const statuses = [
+      "active",
+      "active",
+      "active",
+      "past_due",
+      "canceled",
+      "active",
+      "free",
+    ];
+
     const now = new Date();
 
     for (let i = 0; i < providers.length; i++) {
@@ -97,14 +147,21 @@ async function seed() {
       // Premium plans expires details
       let expiresAt;
       if (status === "active") {
-        expiresAt = new Date(now.getTime() + (plan === "annual" ? 180 : 20) * 24 * 60 * 60 * 1000);
+        expiresAt = new Date(
+          now.getTime() + (plan === "annual" ? 180 : 20) * 24 * 60 * 60 * 1000,
+        );
       } else if (status === "past_due") {
         expiresAt = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000); // expired 5 days ago
       } else {
         expiresAt = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000); // expired 60 days ago
       }
 
-      const providerStatus = status === "canceled" ? "inativo" : (status === "past_due" ? "ativo" : "ativo");
+      const providerStatus =
+        status === "canceled"
+          ? "inativo"
+          : status === "past_due"
+            ? "ativo"
+            : "ativo";
       const providerActive = status === "active";
 
       await sql`
@@ -115,7 +172,9 @@ async function seed() {
 
       // Create subscription record
       const priceCents = plan === "monthly" ? 2990 : 29900;
-      const periodStart = prov.created_at ? new Date(prov.created_at) : new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      const periodStart = prov.created_at
+        ? new Date(prov.created_at)
+        : new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
 
       // Clean existing subscription
       await sql`DELETE FROM public.subscriptions WHERE provider_id = ${prov.id};`;
@@ -126,25 +185,27 @@ async function seed() {
           gateway_customer_id, gateway_subscription_id, cancel_at_period_end, canceled_at
         ) VALUES (
           ${prov.id}, ${plan}, ${status}, ${priceCents}, ${periodStart}, ${expiresAt},
-          ${'cus_' + prov.id.substring(0, 10)}, ${'sub_' + prov.id.substring(0, 10)},
-          ${status === 'canceled'}, ${status === 'canceled' ? new Date(now.getTime() - 65 * 24 * 60 * 60 * 1000) : null}
+          ${"cus_" + prov.id.substring(0, 10)}, ${"sub_" + prov.id.substring(0, 10)},
+          ${status === "canceled"}, ${status === "canceled" ? new Date(now.getTime() - 65 * 24 * 60 * 60 * 1000) : null}
         );
       `;
 
       // 4. Create historical payments in pagamentos
-      console.log(`Gerando pagamentos históricos para o profissional ${prov.name}...`);
+      console.log(
+        `Gerando pagamentos históricos para o profissional ${prov.name}...`,
+      );
       // Clean existing payments for this provider to avoid duplicates
       await sql`DELETE FROM public.pagamentos WHERE prestador_id = ${prov.id};`;
 
       const numPayments = plan === "annual" ? 1 : 5; // Annual pays once, Monthly pays multiple times
-      const priceVal = plan === "monthly" ? 29.90 : 299.00;
+      const priceVal = plan === "monthly" ? 29.9 : 299.0;
 
       for (let j = 0; j < numPayments; j++) {
         // Space payments monthly
         const payDate = new Date(now.getTime() - j * 30 * 24 * 60 * 60 * 1000);
         // Skip if payment date is before provider creation date
         if (prov.created_at && payDate < new Date(prov.created_at)) continue;
-        
+
         await sql`
           INSERT INTO public.pagamentos (
             prestador_id, plano, valor, data_pagamento, metodo, nfc_enviada, criado_em

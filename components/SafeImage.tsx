@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { Image, ImageProps, View, StyleSheet, ActivityIndicator } from "react-native";
+import {
+  Image,
+  ImageProps,
+  View,
+  StyleSheet,
+  ActivityIndicator,
+} from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 
 interface SafeImageProps extends ImageProps {
@@ -18,7 +24,8 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   const [loading, setLoading] = useState(false);
 
   // Check if source is empty
-  const isEmpty = !source || (typeof source === "object" && !(source as any).uri);
+  const isEmpty =
+    !source || (typeof source === "object" && !(source as any).uri);
 
   if (error || isEmpty) {
     return (

@@ -1,5 +1,13 @@
 import React, { useEffect, useRef } from "react";
-import { View, Text, ActivityIndicator, StyleSheet, Animated, Easing, Platform } from "react-native";
+import {
+  View,
+  Text,
+  ActivityIndicator,
+  StyleSheet,
+  Animated,
+  Easing,
+  Platform,
+} from "react-native";
 import { StatusBar } from "expo-status-bar";
 
 export default function InitialLoadingScreen() {
@@ -22,7 +30,7 @@ export default function InitialLoadingScreen() {
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
-      ])
+      ]),
     ).start();
 
     // Animação de rotação contínua para o anel de carregamento se necessário
@@ -32,7 +40,7 @@ export default function InitialLoadingScreen() {
         duration: 2000,
         easing: Easing.linear,
         useNativeDriver: true,
-      })
+      }),
     ).start();
   }, []);
 
@@ -44,7 +52,7 @@ export default function InitialLoadingScreen() {
   return (
     <View style={styles.container}>
       <StatusBar style="light" translucent backgroundColor="transparent" />
-      
+
       {/* Círculos de luz de fundo estilizados (Glow Neon) */}
       <View style={styles.glowContainer}>
         <View style={styles.greenGlow} />
@@ -52,22 +60,32 @@ export default function InitialLoadingScreen() {
 
       <View style={styles.content}>
         {/* Logo / Texto Pulsante */}
-        <Animated.View style={[styles.logoContainer, { transform: [{ scale: pulseAnim }] }]}>
+        <Animated.View
+          style={[styles.logoContainer, { transform: [{ scale: pulseAnim }] }]}
+        >
           <Text style={styles.logoText}>XamaJá</Text>
           <Text style={styles.logoDot}>.</Text>
         </Animated.View>
 
         {/* Indicador de progresso circular premium */}
         <View style={styles.loaderContainer}>
-          <Animated.View style={[styles.spinner, { transform: [{ rotate: spin }] }]}>
+          <Animated.View
+            style={[styles.spinner, { transform: [{ rotate: spin }] }]}
+          >
             <View style={styles.spinnerArc} />
           </Animated.View>
-          <ActivityIndicator size="small" color="#25D366" style={styles.nativeIndicator} />
+          <ActivityIndicator
+            size="small"
+            color="#25D366"
+            style={styles.nativeIndicator}
+          />
         </View>
 
         {/* Textos Informativos */}
         <Text style={styles.loadingText}>Carregando XamaJá...</Text>
-        <Text style={styles.subtitleText}>Conectando você aos melhores profissionais</Text>
+        <Text style={styles.subtitleText}>
+          Conectando você aos melhores profissionais
+        </Text>
       </View>
     </View>
   );

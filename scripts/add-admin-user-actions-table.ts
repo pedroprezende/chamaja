@@ -11,14 +11,18 @@ async function runMigration() {
   }
 
   try {
-    console.log("1. Adicionando coluna 'status' na tabela 'users' se não existir...");
+    console.log(
+      "1. Adicionando coluna 'status' na tabela 'users' se não existir...",
+    );
     await connection.execute(
-      sql`ALTER TABLE public.users ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'ativo';`
+      sql`ALTER TABLE public.users ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'ativo';`,
     );
 
-    console.log("2. Adicionando coluna 'phone' na tabela 'users' se não existir...");
+    console.log(
+      "2. Adicionando coluna 'phone' na tabela 'users' se não existir...",
+    );
     await connection.execute(
-      sql`ALTER TABLE public.users ADD COLUMN IF NOT EXISTS phone VARCHAR(50);`
+      sql`ALTER TABLE public.users ADD COLUMN IF NOT EXISTS phone VARCHAR(50);`,
     );
 
     console.log("3. Criando tabela 'admin_user_actions' se não existir...");
@@ -32,7 +36,7 @@ async function runMigration() {
           admin_email VARCHAR(320) NOT NULL,
           created_at TIMESTAMP NOT NULL DEFAULT NOW()
         );
-      `
+      `,
     );
 
     console.log("Migração concluída com sucesso!");

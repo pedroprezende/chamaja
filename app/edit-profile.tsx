@@ -33,18 +33,24 @@ export default function EditProfileScreen() {
         await auth.signOut();
         router.replace("/auth/login");
       } catch (err) {
-        Alert.alert("Erro", "Sua conta foi excluída, mas não conseguimos fazer o logout automático. Por favor, reinicie o aplicativo.");
+        Alert.alert(
+          "Erro",
+          "Sua conta foi excluída, mas não conseguimos fazer o logout automático. Por favor, reinicie o aplicativo.",
+        );
       }
     },
     onError: (err) => {
-      Alert.alert("Erro", err.message || "Não foi possível excluir a sua conta.");
-    }
+      Alert.alert(
+        "Erro",
+        err.message || "Não foi possível excluir a sua conta.",
+      );
+    },
   });
 
   const handleDeleteAccount = () => {
     if (Platform.OS === "web") {
       const confirmed = window.confirm(
-        "Tem certeza que deseja excluir sua conta permanentemente? Esta ação é irreversível e todos os seus dados serão deletados para sempre."
+        "Tem certeza que deseja excluir sua conta permanentemente? Esta ação é irreversível e todos os seus dados serão deletados para sempre.",
       );
       if (confirmed) {
         deleteAccountMutation.mutate();
@@ -60,9 +66,9 @@ export default function EditProfileScreen() {
             style: "destructive",
             onPress: () => {
               deleteAccountMutation.mutate();
-            }
-          }
-        ]
+            },
+          },
+        ],
       );
     }
   };
@@ -80,7 +86,7 @@ export default function EditProfileScreen() {
     if (status !== "granted") {
       Alert.alert(
         "Permissão necessária",
-        "Permita o acesso à galeria para alterar sua foto de perfil."
+        "Permita o acesso à galeria para alterar sua foto de perfil.",
       );
       return;
     }
@@ -126,9 +132,11 @@ export default function EditProfileScreen() {
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
-      Alert.alert("Perfil atualizado", "Suas informações foram salvas com sucesso.", [
-        { text: "OK", onPress: () => router.back() },
-      ]);
+      Alert.alert(
+        "Perfil atualizado",
+        "Suas informações foram salvas com sucesso.",
+        [{ text: "OK", onPress: () => router.back() }],
+      );
     } catch (e: any) {
       Alert.alert("Erro", e.message || "Não foi possível salvar o perfil.");
     } finally {
@@ -145,14 +153,21 @@ export default function EditProfileScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Pressable
-            style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
+            style={({ pressed }) => [
+              styles.backBtn,
+              pressed && { opacity: 0.6 },
+            ]}
             onPress={() => router.back()}
           >
             <MaterialIcons name="arrow-back" size={24} color="#111827" />
           </Pressable>
           <Text style={styles.headerTitle}>Editar Perfil</Text>
           <Pressable
-            style={({ pressed }) => [styles.saveHeaderBtn, pressed && { opacity: 0.75 }, saving && { opacity: 0.5 }]}
+            style={({ pressed }) => [
+              styles.saveHeaderBtn,
+              pressed && { opacity: 0.75 },
+              saving && { opacity: 0.5 },
+            ]}
             onPress={handleSaveProfile}
             disabled={saving}
           >
@@ -164,11 +179,17 @@ export default function EditProfileScreen() {
           </Pressable>
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
           {/* Avatar */}
           <View style={styles.avatarSection}>
             <Pressable
-              style={({ pressed }) => [styles.avatarWrapper, pressed && { opacity: 0.85 }]}
+              style={({ pressed }) => [
+                styles.avatarWrapper,
+                pressed && { opacity: 0.85 },
+              ]}
               onPress={handlePickImage}
             >
               <Image source={{ uri: displayAvatar }} style={styles.avatar} />
@@ -186,7 +207,12 @@ export default function EditProfileScreen() {
             <View style={styles.field}>
               <Text style={styles.fieldLabel}>Nome completo</Text>
               <View style={styles.inputWrapper}>
-                <MaterialIcons name="person-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                <MaterialIcons
+                  name="person-outline"
+                  size={20}
+                  color="#9CA3AF"
+                  style={styles.inputIcon}
+                />
                 <TextInput
                   style={styles.input}
                   value={name}
@@ -203,7 +229,12 @@ export default function EditProfileScreen() {
             <View style={styles.field}>
               <Text style={styles.fieldLabel}>E-mail</Text>
               <View style={[styles.inputWrapper, styles.inputDisabled]}>
-                <MaterialIcons name="email" size={20} color="#D1D5DB" style={styles.inputIcon} />
+                <MaterialIcons
+                  name="email"
+                  size={20}
+                  color="#D1D5DB"
+                  style={styles.inputIcon}
+                />
                 <TextInput
                   style={[styles.input, { color: "#9CA3AF" }]}
                   value={user?.email || ""}
@@ -213,7 +244,9 @@ export default function EditProfileScreen() {
                 />
                 <MaterialIcons name="lock-outline" size={16} color="#D1D5DB" />
               </View>
-              <Text style={styles.fieldHint}>O e-mail não pode ser alterado.</Text>
+              <Text style={styles.fieldHint}>
+                O e-mail não pode ser alterado.
+              </Text>
             </View>
           </View>
 
@@ -243,7 +276,7 @@ export default function EditProfileScreen() {
               style={({ pressed }) => [
                 styles.deleteBtn,
                 pressed && { opacity: 0.8 },
-                deleteAccountMutation.isPending && { opacity: 0.6 }
+                deleteAccountMutation.isPending && { opacity: 0.6 },
               ]}
               onPress={handleDeleteAccount}
               disabled={deleteAccountMutation.isPending}
@@ -252,13 +285,18 @@ export default function EditProfileScreen() {
                 <ActivityIndicator size="small" color="#EF4444" />
               ) : (
                 <>
-                  <MaterialIcons name="delete-forever" size={20} color="#EF4444" />
+                  <MaterialIcons
+                    name="delete-forever"
+                    size={20}
+                    color="#EF4444"
+                  />
                   <Text style={styles.deleteBtnText}>Excluir minha conta</Text>
                 </>
               )}
             </Pressable>
             <Text style={styles.dangerText}>
-              A exclusão da conta é permanente e apagará todos os seus dados cadastrados, incluindo serviços e favoritos.
+              A exclusão da conta é permanente e apagará todos os seus dados
+              cadastrados, incluindo serviços e favoritos.
             </Text>
           </View>
 
@@ -281,7 +319,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#F3F4F6",
   },
-  backBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
+  backBtn: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   headerTitle: { fontSize: 17, fontWeight: "700", color: "#111827" },
   saveHeaderBtn: { paddingHorizontal: 12, paddingVertical: 6 },
   saveHeaderText: { fontSize: 15, fontWeight: "600", color: "#25D366" },
@@ -294,17 +337,25 @@ const styles = StyleSheet.create({
   },
   avatarWrapper: { position: "relative" },
   avatar: {
-    width: 100, height: 100, borderRadius: 50,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     backgroundColor: "#E5E7EB",
-    borderWidth: 3, borderColor: "#FFFFFF",
+    borderWidth: 3,
+    borderColor: "#FFFFFF",
   },
   avatarOverlay: {
     position: "absolute",
-    bottom: 0, right: 0,
-    width: 34, height: 34, borderRadius: 17,
+    bottom: 0,
+    right: 0,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: "#25D366",
-    alignItems: "center", justifyContent: "center",
-    borderWidth: 2, borderColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
   },
   avatarHint: { marginTop: 10, fontSize: 13, color: "#6B7280" },
   formSection: {
@@ -319,15 +370,31 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  sectionTitle: { fontSize: 13, fontWeight: "700", color: "#6B7280", marginBottom: 14, textTransform: "uppercase", letterSpacing: 0.5 },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#6B7280",
+    marginBottom: 14,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
   field: { marginBottom: 16 },
-  fieldLabel: { fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6 },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#374151",
+    marginBottom: 6,
+  },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 1.5, borderColor: "#E5E7EB",
-    borderRadius: 12, paddingHorizontal: 12, paddingVertical: 12,
-    backgroundColor: "#FAFAFA", gap: 8,
+    borderWidth: 1.5,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    backgroundColor: "#FAFAFA",
+    gap: 8,
   },
   inputDisabled: { backgroundColor: "#F9FAFB", borderColor: "#F3F4F6" },
   inputIcon: {},

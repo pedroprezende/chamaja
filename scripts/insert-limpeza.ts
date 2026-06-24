@@ -28,46 +28,55 @@ const targetCategory = {
 const subServicesToInsert = [
   {
     name: "Higienização de Sofá",
-    imageUrl: "https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=500&q=80",
+    imageUrl:
+      "https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=500&q=80",
   },
   {
     name: "Higienização de Colchão",
-    imageUrl: "https://images.unsplash.com/photo-1632829871576-47b2c01950f3?w=500&q=80",
+    imageUrl:
+      "https://images.unsplash.com/photo-1632829871576-47b2c01950f3?w=500&q=80",
   },
   {
     name: "Limpeza Pós-Obra",
-    imageUrl: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=500&q=80",
+    imageUrl:
+      "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=500&q=80",
   },
   {
     name: "Limpeza de Vidros",
-    imageUrl: "https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=500&q=80",
+    imageUrl:
+      "https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=500&q=80",
   },
   {
     name: "Lavagem de Tapetes",
-    imageUrl: "https://images.unsplash.com/photo-1600121848594-d8644e57abab?w=500&q=80",
+    imageUrl:
+      "https://images.unsplash.com/photo-1600121848594-d8644e57abab?w=500&q=80",
   },
   {
     name: "Impermeabilização",
-    imageUrl: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=500&q=80",
+    imageUrl:
+      "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=500&q=80",
   },
   {
     name: "Limpeza Comercial",
-    imageUrl: "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?w=500&q=80",
+    imageUrl:
+      "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?w=500&q=80",
   },
   {
     name: "Limpeza de Estofados",
-    imageUrl: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=500&q=80",
+    imageUrl:
+      "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=500&q=80",
   },
   {
     name: "Sanitização",
-    imageUrl: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=500&q=80",
+    imageUrl:
+      "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=500&q=80",
   },
 ];
 
 async function run() {
   try {
     console.log("Conectando ao banco de dados...");
-    
+
     // 1. Verificar se a categoria principal já existe
     const existingCat = await db
       .select()
@@ -80,7 +89,9 @@ async function run() {
       await db.insert(categories).values(targetCategory);
       console.log("Categoria principal inserida com sucesso!");
     } else {
-      console.log(`Categoria principal "${targetCategory.name}" já existe no banco.`);
+      console.log(
+        `Categoria principal "${targetCategory.name}" já existe no banco.`,
+      );
     }
 
     // 2. Inserir especialidades / sub-serviços
@@ -88,17 +99,15 @@ async function run() {
     for (let i = 0; i < subServicesToInsert.length; i++) {
       const item = subServicesToInsert[i];
       const subId = `${targetCategory.id}-${i}-${Date.now()}`;
-      
+
       // Evitar duplicidade pelo nome na mesma categoria
       const existingSub = await db
         .select()
         .from(subServices)
-        .where(
-          eq(subServices.categoryId, targetCategory.id)
-        );
-        
+        .where(eq(subServices.categoryId, targetCategory.id));
+
       const alreadyHas = existingSub.some(
-        (s) => s.name.toLowerCase() === item.name.toLowerCase()
+        (s) => s.name.toLowerCase() === item.name.toLowerCase(),
       );
 
       if (!alreadyHas) {
@@ -117,7 +126,9 @@ async function run() {
       }
     }
 
-    console.log("\n🚀 Todas as categorias e especialidades foram inseridas com sucesso no banco de dados!");
+    console.log(
+      "\n🚀 Todas as categorias e especialidades foram inseridas com sucesso no banco de dados!",
+    );
   } catch (error) {
     console.error("Erro durante a execução do script de semente:", error);
   } finally {

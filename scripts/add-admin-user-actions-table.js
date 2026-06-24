@@ -12,10 +12,14 @@ async function runMigration() {
   const sql = postgres(dbUrl, { max: 1 });
 
   try {
-    console.log("1. Adicionando coluna 'status' na tabela 'users' se não existir...");
+    console.log(
+      "1. Adicionando coluna 'status' na tabela 'users' se não existir...",
+    );
     await sql`ALTER TABLE public.users ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'ativo';`;
 
-    console.log("2. Adicionando coluna 'phone' na tabela 'users' se não existir...");
+    console.log(
+      "2. Adicionando coluna 'phone' na tabela 'users' se não existir...",
+    );
     await sql`ALTER TABLE public.users ADD COLUMN IF NOT EXISTS phone VARCHAR(50);`;
 
     console.log("3. Criando tabela 'admin_user_actions' se não existir...");

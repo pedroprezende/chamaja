@@ -1,12 +1,12 @@
-import postgres from 'postgres';
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import postgres from "postgres";
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -37,7 +37,7 @@ async function run() {
       `CREATE INDEX IF NOT EXISTS "favorites_user_id_idx" ON "favorites" ("user_id");`,
       `CREATE INDEX IF NOT EXISTS "favorites_provider_id_idx" ON "favorites" ("provider_id");`,
       `CREATE INDEX IF NOT EXISTS "app_events_prestador_id_idx" ON "app_events" ("prestador_id");`,
-      `CREATE INDEX IF NOT EXISTS "app_events_usuario_id_idx" ON "app_events" ("usuario_id");`
+      `CREATE INDEX IF NOT EXISTS "app_events_usuario_id_idx" ON "app_events" ("usuario_id");`,
     ];
 
     for (const query of indexes) {

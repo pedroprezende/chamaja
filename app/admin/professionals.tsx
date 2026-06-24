@@ -28,9 +28,9 @@ export default function AdminProfessionalsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "approved">(
-    "pending"
-  );
+  const [filterStatus, setFilterStatus] = useState<
+    "all" | "pending" | "approved"
+  >("pending");
 
   // Mock data
   const [professionals, setProfessionals] = useState<Professional[]>([
@@ -67,7 +67,8 @@ export default function AdminProfessionalsScreen() {
     const matchesSearch =
       prof.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       prof.category.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = filterStatus === "all" || prof.status === filterStatus;
+    const matchesStatus =
+      filterStatus === "all" || prof.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
 
@@ -80,8 +81,8 @@ export default function AdminProfessionalsScreen() {
         onPress: () => {
           setProfessionals(
             professionals.map((p) =>
-              p.id === profId ? { ...p, status: "approved" as const } : p
-            )
+              p.id === profId ? { ...p, status: "approved" as const } : p,
+            ),
           );
         },
       },
@@ -97,8 +98,8 @@ export default function AdminProfessionalsScreen() {
         onPress: () => {
           setProfessionals(
             professionals.map((p) =>
-              p.id === profId ? { ...p, status: "rejected" as const } : p
-            )
+              p.id === profId ? { ...p, status: "rejected" as const } : p,
+            ),
           );
         },
       },
@@ -187,7 +188,10 @@ export default function AdminProfessionalsScreen() {
       </View>
 
       {/* Professionals List */}
-      <ScrollView showsVerticalScrollIndicator={false} style={styles.listContainer}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        style={styles.listContainer}
+      >
         {filteredProfessionals.length === 0 ? (
           <View style={styles.emptyState}>
             <MaterialIcons name="person-off" size={48} color="#6B7280" />
@@ -197,13 +201,18 @@ export default function AdminProfessionalsScreen() {
           <View style={styles.profList}>
             {filteredProfessionals.map((prof) => (
               <View key={prof.id} style={styles.profCard}>
-                <Image source={{ uri: prof.avatar }} style={styles.profAvatar} />
+                <Image
+                  source={{ uri: prof.avatar }}
+                  style={styles.profAvatar}
+                />
 
                 <View style={styles.profInfo}>
                   <Text style={styles.profName}>{prof.name}</Text>
                   <Text style={styles.profCategory}>{prof.category}</Text>
                   <Text style={styles.profCity}>{prof.city}</Text>
-                  <Text style={styles.profDate}>Enviado: {prof.submittedAt}</Text>
+                  <Text style={styles.profDate}>
+                    Enviado: {prof.submittedAt}
+                  </Text>
                 </View>
 
                 <View style={styles.profStatus}>

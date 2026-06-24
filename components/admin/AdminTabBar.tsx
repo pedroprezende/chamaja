@@ -5,11 +5,36 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const TABS = [
   { key: "inicio", label: "Início", icon: "home", route: "/" },
-  { key: "dashboard", label: "Dashboard", icon: "dashboard", route: "/admin/dashboard-admin" },
-  { key: "regioes", label: "Regiões", icon: "location-on", route: "/admin/regioes" },
-  { key: "servicos", label: "Serviços", icon: "build", route: "/admin/servicos-admin" },
-  { key: "prestadores", label: "Prestadores", icon: "people", route: "/admin/prestadores-admin" },
-  { key: "mais", label: "Mais", icon: "more-horiz", route: "/admin/destaques-admin" },
+  {
+    key: "dashboard",
+    label: "Dashboard",
+    icon: "dashboard",
+    route: "/admin/dashboard-admin",
+  },
+  {
+    key: "regioes",
+    label: "Regiões",
+    icon: "location-on",
+    route: "/admin/regioes",
+  },
+  {
+    key: "servicos",
+    label: "Serviços",
+    icon: "build",
+    route: "/admin/servicos-admin",
+  },
+  {
+    key: "prestadores",
+    label: "Prestadores",
+    icon: "people",
+    route: "/admin/prestadores-admin",
+  },
+  {
+    key: "mais",
+    label: "Mais",
+    icon: "more-horiz",
+    route: "/admin/destaques-admin",
+  },
 ] as const;
 
 export function AdminTabBar() {
@@ -30,7 +55,9 @@ export function AdminTabBar() {
   const active = getActive();
 
   return (
-    <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+    <View
+      style={[styles.container, { paddingBottom: Math.max(insets.bottom, 8) }]}
+    >
       {TABS.map((tab) => {
         const isActive = active === tab.key;
         return (

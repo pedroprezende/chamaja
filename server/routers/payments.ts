@@ -8,7 +8,10 @@ export const paymentsRouter = router({
   listAll: adminWriteProcedure.query(async () => {
     const dbInstance = await db.getDb();
     if (!dbInstance) throw new Error("DB not found");
-    return dbInstance.select().from(payments).orderBy(desc(payments.dataPagamento));
+    return dbInstance
+      .select()
+      .from(payments)
+      .orderBy(desc(payments.dataPagamento));
   }),
 
   getByProvider: adminWriteProcedure
@@ -33,7 +36,7 @@ export const paymentsRouter = router({
         metodo: z.string(),
         nfcEnviada: z.boolean().default(false),
         dataEnvioNfc: z.string().optional().nullable(),
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       const dbInstance = await db.getDb();

@@ -14,7 +14,7 @@ interface AdminAuthContextType {
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(
-  undefined
+  undefined,
 );
 
 export function AdminAuthRealProvider({
@@ -68,11 +68,7 @@ export function AdminAuthRealProvider({
     }
   };
 
-  const register = async (
-    email: string,
-    password: string,
-    name: string
-  ) => {
+  const register = async (email: string, password: string, name: string) => {
     setError(null);
     try {
       const adminUser = await adminDB.createAdmin(email, password, name);
@@ -120,7 +116,7 @@ export function useAdminAuthReal() {
   const context = useContext(AdminAuthContext);
   if (context === undefined) {
     throw new Error(
-      "useAdminAuthReal deve ser usado dentro de AdminAuthRealProvider"
+      "useAdminAuthReal deve ser usado dentro de AdminAuthRealProvider",
     );
   }
   return context;

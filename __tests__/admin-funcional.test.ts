@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { adminDB, type AdminAccount, type Service } from "../lib/admin-database";
+import {
+  adminDB,
+  type AdminAccount,
+  type Service,
+} from "../lib/admin-database";
 describe("Admin Database - Funcional", () => {
   beforeEach(() => {
     adminDB.resetCache();
@@ -11,7 +15,7 @@ describe("Admin Database - Funcional", () => {
       const admin = await adminDB.createAdmin(
         email,
         "password123",
-        "Admin User"
+        "Admin User",
       );
 
       expect(admin.email).toBe(email);
@@ -45,7 +49,7 @@ describe("Admin Database - Funcional", () => {
       const created = await adminDB.createAdmin(
         email,
         "password123",
-        "Admin User"
+        "Admin User",
       );
 
       const admin = await adminDB.getAdminById(created.id);
@@ -86,7 +90,7 @@ describe("Admin Database - Funcional", () => {
         admin.id,
         "Eletricista",
         "Elétrica",
-        "Serviços de eletricidade residencial e comercial"
+        "Serviços de eletricidade residencial e comercial",
       );
 
       expect(service.name).toBe("Eletricista");
@@ -103,7 +107,7 @@ describe("Admin Database - Funcional", () => {
         admin.id,
         "Eletricista",
         "Elétrica",
-        "Serviços de eletricidade"
+        "Serviços de eletricidade",
       );
 
       const services = await adminDB.getServicesByAdminId(admin.id);
@@ -119,7 +123,7 @@ describe("Admin Database - Funcional", () => {
         admin.id,
         "Eletricista",
         "Elétrica",
-        "Serviços de eletricidade"
+        "Serviços de eletricidade",
       );
 
       const service = await adminDB.getServiceById(created.id);
@@ -135,7 +139,7 @@ describe("Admin Database - Funcional", () => {
         admin.id,
         "Eletricista",
         "Elétrica",
-        "Serviços de eletricidade"
+        "Serviços de eletricidade",
       );
 
       const updated = await adminDB.updateService(created.id, {
@@ -145,7 +149,7 @@ describe("Admin Database - Funcional", () => {
 
       expect(updated?.name).toBe("Eletricista Profissional");
       expect(updated?.description).toBe(
-        "Serviços de eletricidade profissional"
+        "Serviços de eletricidade profissional",
       );
     });
 
@@ -157,7 +161,7 @@ describe("Admin Database - Funcional", () => {
         admin.id,
         "Eletricista",
         "Elétrica",
-        "Serviços de eletricidade"
+        "Serviços de eletricidade",
       );
 
       const deleted = await adminDB.deleteService(created.id);
@@ -170,20 +174,28 @@ describe("Admin Database - Funcional", () => {
     it("should get all services", async () => {
       const email1 = `admin-${Date.now()}-12@example.com`;
       const email2 = `admin-${Date.now()}-13@example.com`;
-      const admin1 = await adminDB.createAdmin(email1, "password123", "Admin 1");
-      const admin2 = await adminDB.createAdmin(email2, "password123", "Admin 2");
+      const admin1 = await adminDB.createAdmin(
+        email1,
+        "password123",
+        "Admin 1",
+      );
+      const admin2 = await adminDB.createAdmin(
+        email2,
+        "password123",
+        "Admin 2",
+      );
 
       await adminDB.createService(
         admin1.id,
         "Eletricista",
         "Elétrica",
-        "Serviços de eletricidade"
+        "Serviços de eletricidade",
       );
       await adminDB.createService(
         admin2.id,
         "Encanador",
         "Hidráulica",
-        "Serviços de encanamento"
+        "Serviços de encanamento",
       );
 
       const allServices = await adminDB.getAllServices();
@@ -197,7 +209,7 @@ describe("Admin Database - Funcional", () => {
       const admin = await adminDB.createAdmin(
         email,
         "password123",
-        "Admin User"
+        "Admin User",
       );
 
       const updated = await adminDB.updateAdmin(admin.id, {

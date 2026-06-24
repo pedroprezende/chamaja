@@ -53,25 +53,39 @@ export interface Professional {
 
 function openWhatsApp(phone: string) {
   const message = encodeURIComponent(
-    "Olá, encontrei seu contato no app XamaJá e gostaria de um serviço."
+    "Olá, encontrei seu contato no app XamaJá e gostaria de um serviço.",
   );
   const url = `https://wa.me/${phone}?text=${message}`;
   Linking.openURL(url).catch(() =>
-    Alert.alert("Erro", "Não foi possível abrir o WhatsApp.")
+    Alert.alert("Erro", "Não foi possível abrir o WhatsApp."),
   );
 }
 
 // Converte o objeto do banco para o formato Professional do mock
-function dbToProfessional(p: any, userCoords?: { latitude: number; longitude: number } | null): Professional {
+function dbToProfessional(
+  p: any,
+  userCoords?: { latitude: number; longitude: number } | null,
+): Professional {
   let distance = "";
   let distanceKm: number | undefined = undefined;
   let drivingTime: string | undefined = undefined;
 
-  if (userCoords && p.latitude !== null && p.latitude !== undefined && p.longitude !== null && p.longitude !== undefined) {
+  if (
+    userCoords &&
+    p.latitude !== null &&
+    p.latitude !== undefined &&
+    p.longitude !== null &&
+    p.longitude !== undefined
+  ) {
     const lat = Number(p.latitude);
     const lon = Number(p.longitude);
     if (!isNaN(lat) && !isNaN(lon)) {
-      distanceKm = calculateHaversineDistance(userCoords.latitude, userCoords.longitude, lat, lon);
+      distanceKm = calculateHaversineDistance(
+        userCoords.latitude,
+        userCoords.longitude,
+        lat,
+        lon,
+      );
       distance = formatDistancePtBr(distanceKm);
       const timeMin = estimateDrivingTimeMinutes(distanceKm);
       drivingTime = formatDrivingTimePtBr(timeMin);
@@ -83,7 +97,10 @@ function dbToProfessional(p: any, userCoords?: { latitude: number; longitude: nu
     name: p.name,
     category: p.category,
     categoryId: p.categoryId || "",
-    type: p.plan === "premium" || p.plan === "monthly" || p.plan === "annual" ? "PREMIUM" : "FREE",
+    type:
+      p.plan === "premium" || p.plan === "monthly" || p.plan === "annual"
+        ? "PREMIUM"
+        : "FREE",
     rating: p.rating || 0,
     reviewCount: p.ratingCount || 0,
     phone: p.phone || p.whatsapp || "",
@@ -97,8 +114,14 @@ function dbToProfessional(p: any, userCoords?: { latitude: number; longitude: nu
     serviceArea: p.city || "",
     schedule: "Consultar disponibilidade",
     paymentMethods: "Consultar",
-    latitude: p.latitude !== null && p.latitude !== undefined ? Number(p.latitude) : undefined,
-    longitude: p.longitude !== null && p.longitude !== undefined ? Number(p.longitude) : undefined,
+    latitude:
+      p.latitude !== null && p.latitude !== undefined
+        ? Number(p.latitude)
+        : undefined,
+    longitude:
+      p.longitude !== null && p.longitude !== undefined
+        ? Number(p.longitude)
+        : undefined,
   };
 }
 
@@ -114,9 +137,9 @@ function ProfessionalCard({
       style={({ pressed }) => [styles.card, pressed && { opacity: 0.9 }]}
       onPress={onPress}
     >
-      <Image 
-        source={{ uri: item.avatar }} 
-        style={styles.avatar} 
+      <Image
+        source={{ uri: item.avatar }}
+        style={styles.avatar}
         contentFit="cover"
         transition={200}
       />
@@ -135,18 +158,26 @@ function ProfessionalCard({
           <MaterialIcons name="star" size={14} color="#F59E0B" />
           <Text style={styles.rating}>
             {item.rating.toFixed(1)}{" "}
-            <Text style={styles.reviewCount}>({item.reviewCount} avaliações)</Text>
+            <Text style={styles.reviewCount}>
+              ({item.reviewCount} avaliações)
+            </Text>
           </Text>
         </View>
         <View style={styles.locationRow}>
           <MaterialIcons name="location-on" size={13} color="#9CA3AF" />
           <Text style={styles.location} numberOfLines={1}>
-            {item.neighborhood || item.city || "Local não informado"}{item.distance ? ` • ${item.distance}${item.drivingTime ? ` (${item.drivingTime.replace("aproximadamente ", "")})` : ""}` : ""}
+            {item.neighborhood || item.city || "Local não informado"}
+            {item.distance
+              ? ` • ${item.distance}${item.drivingTime ? ` (${item.drivingTime.replace("aproximadamente ", "")})` : ""}`
+              : ""}
           </Text>
         </View>
       </View>
       <Pressable
-        style={({ pressed }) => [styles.whatsappBtn, pressed && { opacity: 0.8 }]}
+        style={({ pressed }) => [
+          styles.whatsappBtn,
+          pressed && { opacity: 0.8 },
+        ]}
         onPress={(e) => {
           e.stopPropagation();
           openWhatsApp(item.phone);
@@ -168,13 +199,15 @@ export default function ProfessionalsScreen() {
   const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState("");
   const { coords } = useLocation();
-  const [sortBy, setSortBy] = useState<"default" | "closest" | "farthest">("default");
+  const [sortBy, setSortBy] = useState<"default" | "closest" | "farthest">(
+    "default",
+  );
 
   // Carregar prestadores reais via tRPC
-  const { data: dbProviders = [], isLoading } = trpc.providers.getByCategory.useQuery(
-    category || "",
-    { enabled: !!category }
-  );
+  const { data: dbProviders = [], isLoading } =
+    trpc.providers.getByCategory.useQuery(category || "", {
+      enabled: !!category,
+    });
 
   const realProviders = useMemo(() => {
     return dbProviders.map((p) => dbToProfessional(p, coords));
@@ -215,7 +248,7 @@ export default function ProfessionalsScreen() {
         p.name.toLowerCase().includes(q) ||
         p.neighborhood.toLowerCase().includes(q) ||
         p.city?.toLowerCase().includes(q) ||
-        p.description?.toLowerCase().includes(q)
+        p.description?.toLowerCase().includes(q),
     );
   }, [allProfessionals, searchQuery]);
 
@@ -224,7 +257,7 @@ export default function ProfessionalsScreen() {
       Alert.alert(
         "Localização indisponível",
         "Não conseguimos acessar sua localização atual. Certifique-se de conceder a permissão de localização ao app.",
-        [{ text: "OK" }]
+        [{ text: "OK" }],
       );
       return;
     }
@@ -233,20 +266,26 @@ export default function ProfessionalsScreen() {
       "Ordenar por",
       "Escolha como deseja visualizar os profissionais:",
       [
-        { text: "Padrão (Destaques/Premium)", onPress: () => setSortBy("default") },
+        {
+          text: "Padrão (Destaques/Premium)",
+          onPress: () => setSortBy("default"),
+        },
         { text: "Mais próximos primeiro", onPress: () => setSortBy("closest") },
-        { text: "Mais distantes primeiro", onPress: () => setSortBy("farthest") },
-        { text: "Cancelar", style: "cancel" }
-      ]
+        {
+          text: "Mais distantes primeiro",
+          onPress: () => setSortBy("farthest"),
+        },
+        { text: "Cancelar", style: "cancel" },
+      ],
     );
   };
 
-  const filterLabel = !coords 
-    ? "Localização desativada" 
-    : sortBy === "default" 
-      ? "Ordenação: Padrão" 
-      : sortBy === "closest" 
-        ? "Mais próximos" 
+  const filterLabel = !coords
+    ? "Localização desativada"
+    : sortBy === "default"
+      ? "Ordenação: Padrão"
+      : sortBy === "closest"
+        ? "Mais próximos"
         : "Mais distantes";
 
   return (
@@ -283,19 +322,13 @@ export default function ProfessionalsScreen() {
             </Pressable>
           )}
         </View>
-        <Pressable 
-          style={styles.filterBtn}
-          onPress={handleSortPress}
-        >
+        <Pressable style={styles.filterBtn} onPress={handleSortPress}>
           <MaterialIcons name="filter-list" size={22} color="#374151" />
         </Pressable>
       </View>
 
       {/* Location filter */}
-      <Pressable 
-        style={styles.locationFilter}
-        onPress={handleSortPress}
-      >
+      <Pressable style={styles.locationFilter} onPress={handleSortPress}>
         <MaterialIcons name="location-on" size={16} color="#25D366" />
         <Text style={styles.locationFilterText}>{filterLabel}</Text>
         <MaterialIcons name="keyboard-arrow-down" size={18} color="#374151" />
@@ -305,7 +338,9 @@ export default function ProfessionalsScreen() {
       {!isLoading && filteredData.length > 0 && (
         <View style={styles.countRow}>
           <Text style={styles.countText}>
-            {filteredData.length} profissional{filteredData.length !== 1 ? "is" : ""} encontrado{filteredData.length !== 1 ? "s" : ""}
+            {filteredData.length} profissional
+            {filteredData.length !== 1 ? "is" : ""} encontrado
+            {filteredData.length !== 1 ? "s" : ""}
           </Text>
         </View>
       )}
@@ -323,15 +358,13 @@ export default function ProfessionalsScreen() {
         renderItem={({ item }) => (
           <ProfessionalCard
             item={item}
-            onPress={() =>
-              router.push(`/professional/${item.id}` as any)
-            }
+            onPress={() => router.push(`/professional/${item.id}` as any)}
           />
         )}
         ListHeaderComponent={
           isLoading ? (
             <View style={{ gap: 16 }}>
-              {[1, 2, 3].map(i => (
+              {[1, 2, 3].map((i) => (
                 <Skeleton key={i} height={140} borderRadius={24} />
               ))}
             </View>

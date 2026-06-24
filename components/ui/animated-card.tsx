@@ -1,13 +1,13 @@
-import React from 'react';
-import { Pressable, StyleSheet, ViewStyle } from 'react-native';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withSpring, 
+import React from "react";
+import { Pressable, StyleSheet, ViewStyle } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
   withTiming,
-  withDelay
-} from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+  withDelay,
+} from "react-native-reanimated";
+import * as Haptics from "expo-haptics";
 
 interface AnimatedCardProps {
   children: React.ReactNode;
@@ -18,22 +18,27 @@ interface AnimatedCardProps {
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-export function AnimatedCard({ children, onPress, style, delay = 0 }: AnimatedCardProps) {
+export function AnimatedCard({
+  children,
+  onPress,
+  style,
+  delay = 0,
+}: AnimatedCardProps) {
   const scale = useSharedValue(1);
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(20);
 
   React.useEffect(() => {
     opacity.value = withDelay(delay, withTiming(1, { duration: 600 }));
-    translateY.value = withDelay(delay, withSpring(0, { damping: 15, stiffness: 100 }));
+    translateY.value = withDelay(
+      delay,
+      withSpring(0, { damping: 15, stiffness: 100 }),
+    );
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
-    transform: [
-      { scale: scale.value },
-      { translateY: translateY.value }
-    ],
+    transform: [{ scale: scale.value }, { translateY: translateY.value }],
   }));
 
   const handlePressIn = () => {
@@ -59,9 +64,9 @@ export function AnimatedCard({ children, onPress, style, delay = 0 }: AnimatedCa
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 20,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
     shadowRadius: 12,

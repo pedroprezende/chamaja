@@ -1,7 +1,16 @@
 import { z } from "zod";
 import { adminProcedure, router } from "../_core/trpc";
 import * as db from "../db";
-import { providers, services, featuredAds, whatsappClicks, serviceViews, searchQueries, payments, appEvents } from "../../drizzle/schema";
+import {
+  providers,
+  services,
+  featuredAds,
+  whatsappClicks,
+  serviceViews,
+  searchQueries,
+  payments,
+  appEvents,
+} from "../../drizzle/schema";
 import { eq, desc, count, and, gt, isNotNull, ne } from "drizzle-orm";
 
 export const dashboardRouter = router({
@@ -34,8 +43,8 @@ export const dashboardRouter = router({
         and(
           eq(providers.plan, "monthly"),
           gt(providers.planExpiresAt, new Date()),
-          eq(providers.isActive, true)
-        )
+          eq(providers.isActive, true),
+        ),
       );
 
     // 2. Prestadores ativos no plano anual
@@ -46,14 +55,14 @@ export const dashboardRouter = router({
         and(
           eq(providers.plan, "annual"),
           gt(providers.planExpiresAt, new Date()),
-          eq(providers.isActive, true)
-        )
+          eq(providers.isActive, true),
+        ),
       );
 
     // 3. Receita Bruta Mensalizada
     const monthlyActive = monthlyActiveResult.value;
     const annualActive = annualActiveResult.value;
-    const mrr = (monthlyActive * 10.00) + (annualActive * 12.49);
+    const mrr = monthlyActive * 10.0 + annualActive * 12.49;
 
     // 4. Plaquinhas NFC pendentes (prestadores ativos do plano anual que não receberam a plaquinha)
     const activeAnnualList = await dbInstance
@@ -63,8 +72,8 @@ export const dashboardRouter = router({
         and(
           eq(providers.plan, "annual"),
           gt(providers.planExpiresAt, new Date()),
-          eq(providers.isActive, true)
-        )
+          eq(providers.isActive, true),
+        ),
       );
 
     let pendingNfcCount = 0;
@@ -73,14 +82,11 @@ export const dashboardRouter = router({
         .select()
         .from(payments)
         .where(
-          and(
-            eq(payments.prestadorId, prov.id),
-            eq(payments.plano, "anual")
-          )
+          and(eq(payments.prestadorId, prov.id), eq(payments.plano, "anual")),
         )
         .orderBy(desc(payments.dataPagamento))
         .limit(1);
-      
+
       if (latestPay.length === 0 || !latestPay[0].nfcEnviada) {
         pendingNfcCount++;
       }
@@ -91,15 +97,22 @@ export const dashboardRouter = router({
     const currentDate = new Date();
     for (let i = 5; i >= 0; i--) {
       // Get the 1st day of the month
-      const d = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      const d = new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth() - i,
+        1,
+      );
       const year = d.getFullYear();
       const monthIndex = d.getMonth();
-      
+
       const mStart = new Date(year, monthIndex, 1);
       const mEnd = new Date(year, monthIndex + 1, 0, 23, 59, 59, 999);
-      
+
       monthsData.push({
-        label: d.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" }),
+        label: d.toLocaleDateString("pt-BR", {
+          month: "short",
+          year: "2-digit",
+        }),
         start: mStart,
         end: mEnd,
         monthlySet: new Set<string>(),
@@ -117,10 +130,13 @@ export const dashboardRouter = router({
       } else {
         payEnd.setDate(payStart.getDate() + 365);
       }
-      
+
       for (const m of monthsData) {
         // If payment coverage overlaps with this month's range
-        if (payStart.getTime() <= m.end.getTime() && payEnd.getTime() >= m.start.getTime()) {
+        if (
+          payStart.getTime() <= m.end.getTime() &&
+          payEnd.getTime() >= m.start.getTime()
+        ) {
           if (pay.plano === "mensal") {
             m.monthlySet.add(pay.prestadorId);
           } else {
@@ -132,7 +148,7 @@ export const dashboardRouter = router({
 
     const mrrEvolution = monthsData.map((m) => ({
       month: m.label,
-      revenue: (m.monthlySet.size * 10.00) + (m.annualSet.size * 12.49),
+      revenue: m.monthlySet.size * 10.0 + m.annualSet.size * 12.49,
     }));
 
     // 6. Prestadores captados via tráfego (cadastros na tabela app_events que tenham utm_source preenchido)
@@ -143,15 +159,15 @@ export const dashboardRouter = router({
         and(
           eq(appEvents.tipoEvento, "cadastro"),
           isNotNull(appEvents.utmSource),
-          ne(appEvents.utmSource, "")
-        )
+          ne(appEvents.utmSource, ""),
+        ),
       );
 
     // Get Top Service from search Queries
     const topSearches = await dbInstance
       .select({
         query: searchQueries.query,
-        count: count()
+        count: count(),
       })
       .from(searchQueries)
       .groupBy(searchQueries.query)
@@ -167,8 +183,11 @@ export const dashboardRouter = router({
 
     if (topSearches.length > 0 && totalSearchesResult.value > 0) {
       topServiceName = topSearches[0].query;
-      topServicePercentage = Math.round((topSearches[0].count / totalSearchesResult.value) * 100);
-      topServiceName = topServiceName.charAt(0).toUpperCase() + topServiceName.slice(1);
+      topServicePercentage = Math.round(
+        (topSearches[0].count / totalSearchesResult.value) * 100,
+      );
+      topServiceName =
+        topServiceName.charAt(0).toUpperCase() + topServiceName.slice(1);
     }
 
     // Recent activity: Combine recent providers

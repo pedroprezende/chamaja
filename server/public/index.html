@@ -1,616 +1,1087 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR" class="dark">
-<head>
-  <script>
-    // Se o usuário cair na landing page vindo de um fluxo de login do Supabase (com o token no hash),
-    // redireciona ele automaticamente para dentro do aplicativo (/app) mantendo o token.
-    if (window.location.hash && (window.location.hash.indexOf('access_token=') !== -1 || window.location.hash.indexOf('error=') !== -1)) {
-      window.location.replace('/app/' + window.location.hash);
-    }
+  <head>
+    <script>
+      // Se o usuário cair na landing page vindo de um fluxo de login do Supabase (com o token no hash),
+      // redireciona ele automaticamente para dentro do aplicativo (/app) mantendo o token.
+      if (
+        window.location.hash &&
+        (window.location.hash.indexOf("access_token=") !== -1 ||
+          window.location.hash.indexOf("error=") !== -1)
+      ) {
+        window.location.replace("/app/" + window.location.hash);
+      }
 
-    // Capturar o código de indicação da URL (?ref=...) e salvar no localStorage
-    const urlParams = new URLSearchParams(window.location.search);
-    const refCode = urlParams.get('ref');
-    if (refCode) {
-      localStorage.setItem('ref_code', refCode);
-    }
-  </script>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>XamaJá - O que você precisa, perto de você</title>
-  <meta name="description" content="Encontre prestadores de serviços qualificados, autônomos e comércios locais próximos a você. Rápido, direto pelo WhatsApp e sem taxas!">
-  <link rel="icon" type="image/png" href="/favicon.png">
-  
-  <!-- Google Fonts - Inter & Montserrat -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  
-  <!-- Lucide Icons (CDN) -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        container: {
-          center: true,
-          padding: '1.5rem',
-          screens: {
-            '2xl': '1280px',
+      // Capturar o código de indicação da URL (?ref=...) e salvar no localStorage
+      const urlParams = new URLSearchParams(window.location.search);
+      const refCode = urlParams.get("ref");
+      if (refCode) {
+        localStorage.setItem("ref_code", refCode);
+      }
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>XamaJá - O que você precisa, perto de você</title>
+    <meta
+      name="description"
+      content="Encontre prestadores de serviços qualificados, autônomos e comércios locais próximos a você. Rápido, direto pelo WhatsApp e sem taxas!"
+    />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+
+    <!-- Google Fonts - Inter & Montserrat -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Lucide Icons (CDN) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          container: {
+            center: true,
+            padding: "1.5rem",
+            screens: {
+              "2xl": "1280px",
+            },
+          },
+          extend: {
+            colors: {
+              border: "#1F1F24",
+              input: "#0F0F12",
+              ring: "#CCFF00",
+              background: "#000000",
+              foreground: "#FFFFFF",
+              primary: {
+                DEFAULT: "#CCFF00",
+                foreground: "#000000",
+              },
+              secondary: {
+                DEFAULT: "#4A90E2",
+                foreground: "#FFFFFF",
+              },
+              destructive: {
+                DEFAULT: "#FF4444",
+                foreground: "#FFFFFF",
+              },
+              muted: {
+                DEFAULT: "#A0A0A0",
+                foreground: "#1F1F24",
+              },
+              accent: {
+                DEFAULT: "#CCFF00",
+                foreground: "#000000",
+              },
+              popover: {
+                DEFAULT: "#0E0E11",
+                foreground: "#FFFFFF",
+              },
+              card: {
+                DEFAULT: "#0E0E11",
+                foreground: "#FFFFFF",
+              },
+            },
+            borderRadius: {
+              lg: "0.65rem",
+              md: "calc(0.65rem - 2px)",
+              sm: "calc(0.65rem - 4px)",
+            },
+            fontFamily: {
+              title: ["Montserrat", "sans-serif"],
+              body: ["Inter", "sans-serif"],
+            },
           },
         },
-        extend: {
-          colors: {
-            border: '#1F1F24',
-            input: '#0F0F12',
-            ring: '#CCFF00',
-            background: '#000000',
-            foreground: '#FFFFFF',
-            primary: {
-              DEFAULT: '#CCFF00',
-              foreground: '#000000',
-            },
-            secondary: {
-              DEFAULT: '#4A90E2',
-              foreground: '#FFFFFF',
-            },
-            destructive: {
-              DEFAULT: '#FF4444',
-              foreground: '#FFFFFF',
-            },
-            muted: {
-              DEFAULT: '#A0A0A0',
-              foreground: '#1F1F24',
-            },
-            accent: {
-              DEFAULT: '#CCFF00',
-              foreground: '#000000',
-            },
-            popover: {
-              DEFAULT: '#0E0E11',
-              foreground: '#FFFFFF',
-            },
-            card: {
-              DEFAULT: '#0E0E11',
-              foreground: '#FFFFFF',
-            },
-          },
-          borderRadius: {
-            lg: '0.65rem',
-            md: 'calc(0.65rem - 2px)',
-            sm: 'calc(0.65rem - 4px)',
-          },
-          fontFamily: {
-            title: ['Montserrat', 'sans-serif'],
-            body: ['Inter', 'sans-serif'],
-          },
-        },
-      },
-    }
-  </script>
-  <link rel="stylesheet" href="/style.css">
-</head>
-<body class="bg-background text-foreground font-body antialiased selection:bg-primary selection:text-primary-foreground overflow-x-hidden">
-
-  <!-- Header -->
-  <header class="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border transition-all duration-300">
-    <div class="container mx-auto px-4 py-4 flex items-center justify-between">
-      <a href="/" class="flex items-center gap-3 group">
-        <img src="/assets/images/logo-xamaja.png" alt="XamaJá Logo" class="h-10 w-auto object-contain transition-transform group-hover:scale-105">
-      </a>
-      
-      <nav class="hidden md:flex items-center gap-8">
-        <a href="/" class="text-sm font-semibold text-primary transition-colors">Início</a>
-        <a href="#como-funciona" class="text-sm font-semibold text-muted hover:text-foreground transition-colors">Como funciona</a>
-        <a href="#para-prestadores" class="text-sm font-semibold text-muted hover:text-foreground transition-colors">Para prestadores</a>
-        <a href="#para-comercios" class="text-sm font-semibold text-muted hover:text-foreground transition-colors">Para comércios</a>
-        <a href="/parceiros" class="text-sm font-semibold text-primary hover:text-primary/80 transition-colors">Seja um Parceiro ✦</a>
-      </nav>
-      
-      <div class="hidden md:block">
-        <a href="/app" class="inline-flex items-center justify-center border border-primary text-primary hover:bg-primary hover:text-primary-foreground font-semibold px-6 py-2.5 rounded-lg text-sm transition-all shadow-md shadow-primary/5 hover:shadow-primary/20 hover:-translate-y-0.5">
-          Entrar
+      };
+    </script>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body
+    class="bg-background text-foreground font-body antialiased selection:bg-primary selection:text-primary-foreground overflow-x-hidden"
+  >
+    <!-- Header -->
+    <header
+      class="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border transition-all duration-300"
+    >
+      <div
+        class="container mx-auto px-4 py-4 flex items-center justify-between"
+      >
+        <a href="/" class="flex items-center gap-3 group">
+          <img
+            src="/assets/images/logo-xamaja.png"
+            alt="XamaJá Logo"
+            class="h-10 w-auto object-contain transition-transform group-hover:scale-105"
+          />
         </a>
-      </div>
-      
-      <div class="mobile-menu-btn md:hidden cursor-pointer text-foreground p-1 hover:text-primary transition-colors" id="mobile-menu-btn">
-        <i data-lucide="menu"></i>
-      </div>
-    </div>
-  </header>
 
-  <!-- Mobile Nav Drawer -->
-  <div class="mobile-nav" id="mobile-nav">
-    <div class="mobile-nav-close cursor-pointer text-muted hover:text-foreground transition-colors" id="mobile-nav-close">
-      <i data-lucide="x"></i>
-    </div>
-    <a href="/" class="mobile-link text-lg font-bold text-primary">Início</a>
-    <a href="#como-funciona" class="mobile-link text-lg font-bold text-foreground hover:text-primary transition-colors">Como funciona</a>
-    <a href="#para-prestadores" class="mobile-link text-lg font-bold text-foreground hover:text-primary transition-colors">Para prestadores</a>
-    <a href="#para-comercios" class="mobile-link text-lg font-bold text-foreground hover:text-primary transition-colors">Para comércios</a>
-    
-    <a href="/app" class="btn-secondary-drawer mt-4 flex items-center justify-center gap-2 border border-primary text-primary hover:bg-primary hover:text-primary-foreground font-semibold px-6 py-3 rounded-xl transition-all">
-      <i data-lucide="layout"></i> Entrar no App
-    </a>
-    <a href="#cadastro" class="btn-primary-drawer flex items-center justify-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-6 py-3 rounded-xl transition-all shadow-lg shadow-primary/25">
-      Cadastre-se
-    </a>
-  </div>
+        <nav class="hidden md:flex items-center gap-8">
+          <a
+            href="/"
+            class="text-sm font-semibold text-primary transition-colors"
+            >Início</a
+          >
+          <a
+            href="#como-funciona"
+            class="text-sm font-semibold text-muted hover:text-foreground transition-colors"
+            >Como funciona</a
+          >
+          <a
+            href="#para-prestadores"
+            class="text-sm font-semibold text-muted hover:text-foreground transition-colors"
+            >Para prestadores</a
+          >
+          <a
+            href="#para-comercios"
+            class="text-sm font-semibold text-muted hover:text-foreground transition-colors"
+            >Para comércios</a
+          >
+          <a
+            href="/parceiros"
+            class="text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
+            >Seja um Parceiro ✦</a
+          >
+        </nav>
 
-  <!-- Hero Section -->
-  <section class="py-16 md:py-24 bg-gradient-to-b from-background to-background/50 border-b border-border relative">
-    <div class="container mx-auto px-4 relative z-10">
-      <div class="grid md:grid-cols-12 gap-12 items-center">
-        <!-- Left Content -->
-        <div class="md:col-span-6 space-y-8">
-          <div class="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/30 rounded-full">
-            <span class="text-primary text-xs md:text-sm font-semibold tracking-wider uppercase">✦ PLATAFORMA COMPLETA</span>
+        <div class="hidden md:block">
+          <a
+            href="/app"
+            class="inline-flex items-center justify-center border border-primary text-primary hover:bg-primary hover:text-primary-foreground font-semibold px-6 py-2.5 rounded-lg text-sm transition-all shadow-md shadow-primary/5 hover:shadow-primary/20 hover:-translate-y-0.5"
+          >
+            Entrar
+          </a>
+        </div>
+
+        <div
+          class="mobile-menu-btn md:hidden cursor-pointer text-foreground p-1 hover:text-primary transition-colors"
+          id="mobile-menu-btn"
+        >
+          <i data-lucide="menu"></i>
+        </div>
+      </div>
+    </header>
+
+    <!-- Mobile Nav Drawer -->
+    <div class="mobile-nav" id="mobile-nav">
+      <div
+        class="mobile-nav-close cursor-pointer text-muted hover:text-foreground transition-colors"
+        id="mobile-nav-close"
+      >
+        <i data-lucide="x"></i>
+      </div>
+      <a href="/" class="mobile-link text-lg font-bold text-primary">Início</a>
+      <a
+        href="#como-funciona"
+        class="mobile-link text-lg font-bold text-foreground hover:text-primary transition-colors"
+        >Como funciona</a
+      >
+      <a
+        href="#para-prestadores"
+        class="mobile-link text-lg font-bold text-foreground hover:text-primary transition-colors"
+        >Para prestadores</a
+      >
+      <a
+        href="#para-comercios"
+        class="mobile-link text-lg font-bold text-foreground hover:text-primary transition-colors"
+        >Para comércios</a
+      >
+
+      <a
+        href="/app"
+        class="btn-secondary-drawer mt-4 flex items-center justify-center gap-2 border border-primary text-primary hover:bg-primary hover:text-primary-foreground font-semibold px-6 py-3 rounded-xl transition-all"
+      >
+        <i data-lucide="layout"></i> Entrar no App
+      </a>
+      <a
+        href="#cadastro"
+        class="btn-primary-drawer flex items-center justify-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-6 py-3 rounded-xl transition-all shadow-lg shadow-primary/25"
+      >
+        Cadastre-se
+      </a>
+    </div>
+
+    <!-- Hero Section -->
+    <section
+      class="py-16 md:py-24 bg-gradient-to-b from-background to-background/50 border-b border-border relative"
+    >
+      <div class="container mx-auto px-4 relative z-10">
+        <div class="grid md:grid-cols-12 gap-12 items-center">
+          <!-- Left Content -->
+          <div class="md:col-span-6 space-y-8">
+            <div
+              class="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/30 rounded-full"
+            >
+              <span
+                class="text-primary text-xs md:text-sm font-semibold tracking-wider uppercase"
+                >✦ PLATAFORMA COMPLETA</span
+              >
+            </div>
+
+            <div class="space-y-4">
+              <h1
+                class="text-4xl md:text-6xl font-black font-title tracking-tight text-white leading-tight"
+              >
+                A solução mais<br />
+                rápida para conectar<br />
+                <span class="text-primary">você ao que precisa.</span>
+              </h1>
+
+              <p
+                class="text-base md:text-lg text-muted max-w-lg leading-relaxed"
+              >
+                Encontre prestadores de serviços e comércios perto de você com
+                praticidade, segurança e confiança.
+              </p>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4 pt-2">
+              <a
+                href="#cadastro"
+                class="inline-flex items-center justify-center bg-primary text-primary-foreground hover:bg-primary/90 font-extrabold px-8 py-4 rounded-xl text-base transition-all shadow-lg shadow-primary/20 hover:-translate-y-0.5"
+              >
+                Cadastrar agora
+                <i data-lucide="arrow-right" class="ml-2 w-5 h-5"></i>
+              </a>
+              <a
+                href="#como-funciona"
+                class="inline-flex items-center justify-center border border-border text-foreground hover:bg-card px-8 py-4 rounded-xl text-base font-semibold transition-all"
+              >
+                Quero ser prestador
+              </a>
+            </div>
+
+            <!-- Stats Grid -->
+            <div
+              class="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-border"
+            >
+              <div class="flex flex-col gap-1.5">
+                <div class="flex items-center gap-2 text-primary">
+                  <i data-lucide="users" class="w-5 h-5"></i>
+                  <span class="text-lg font-bold text-white"
+                    >Mais clientes</span
+                  >
+                </div>
+                <p class="text-xs text-muted">da sua região</p>
+              </div>
+              <div class="flex flex-col gap-1.5">
+                <div class="flex items-center gap-2 text-primary">
+                  <i data-lucide="wrench" class="w-5 h-5"></i>
+                  <span class="text-lg font-bold text-white">Serviços</span>
+                </div>
+                <p class="text-xs text-muted">diversificados</p>
+              </div>
+              <div class="flex flex-col gap-1.5">
+                <div class="flex items-center gap-2 text-primary">
+                  <i data-lucide="shield-check" class="w-5 h-5"></i>
+                  <span class="text-lg font-bold text-white">Pagamentos</span>
+                </div>
+                <p class="text-xs text-muted">seguros</p>
+              </div>
+              <div class="flex flex-col gap-1.5">
+                <div class="flex items-center gap-2 text-primary">
+                  <i data-lucide="trending-up" class="w-5 h-5"></i>
+                  <span class="text-lg font-bold text-white">Cresça seu</span>
+                </div>
+                <p class="text-xs text-muted">negócio</p>
+              </div>
+            </div>
           </div>
 
-          <div class="space-y-4">
-            <h1 class="text-4xl md:text-6xl font-black font-title tracking-tight text-white leading-tight">
-              A solução mais<br>
-              rápida para conectar<br>
-              <span class="text-primary">você ao que precisa.</span>
-            </h1>
+          <!-- Right Content - Cropped Hero Mockup Image -->
+          <div class="md:col-span-6 flex justify-center relative">
+            <div
+              class="absolute inset-0 bg-primary/10 rounded-full blur-3xl filter opacity-40 pointer-events-none"
+            ></div>
+            <img
+              src="/assets/images/hero_mockup_right.png"
+              alt="App XamaJá Mockup"
+              class="w-full max-w-[650px] h-auto object-contain drop-shadow-2xl relative z-10 animate-float hero-mask mb-6 md:mb-0"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
 
-            <p class="text-base md:text-lg text-muted max-w-lg leading-relaxed">
-              Encontre prestadores de serviços e comércios perto de você com praticidade, segurança e confiança.
+    <!-- Como Funciona Section -->
+    <section id="como-funciona" class="py-20 bg-card/30 border-b border-border">
+      <div class="container mx-auto px-4">
+        <div class="text-center max-w-2xl mx-auto mb-16 space-y-4">
+          <h2 class="text-3xl md:text-5xl font-black font-title text-white">
+            Como <span class="text-primary">funciona</span>
+          </h2>
+          <p class="text-base md:text-lg text-muted">
+            É simples, rápido e funcional
+          </p>
+        </div>
+
+        <div class="grid md:grid-cols-4 gap-8">
+          <!-- Step 1 -->
+          <div class="flex flex-col items-center text-center space-y-4 group">
+            <div
+              class="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-black font-title text-lg shadow-lg shadow-primary/20 transition-transform group-hover:scale-110"
+            >
+              1
+            </div>
+            <div
+              class="relative overflow-hidden rounded-2xl bg-background border border-border p-2"
+            >
+              <img
+                src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-how-it-works-1-YELFGGwpwvDRAB5gWkGeRy.webp"
+                alt="Você busca"
+                class="w-[200px] h-auto object-cover rounded-xl transition-transform duration-300 group-hover:scale-105"
+              />
+            </div>
+            <div class="space-y-2">
+              <h3 class="text-xl font-bold text-white font-title">
+                Você busca
+              </h3>
+              <p class="text-sm text-muted max-w-[220px] mx-auto">
+                Encontre o serviço ou comércio que precisa perto de você.
+              </p>
+            </div>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="flex flex-col items-center text-center space-y-4 group">
+            <div
+              class="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-black font-title text-lg shadow-lg shadow-primary/20 transition-transform group-hover:scale-110"
+            >
+              2
+            </div>
+            <div
+              class="relative overflow-hidden rounded-2xl bg-background border border-border p-2"
+            >
+              <img
+                src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-how-it-works-2-gddMe4gnuUmsyxDMDXEV8Y.webp"
+                alt="Encontre e escolha"
+                class="w-[200px] h-auto object-cover rounded-xl transition-transform duration-300 group-hover:scale-105"
+              />
+            </div>
+            <div class="space-y-2">
+              <h3 class="text-xl font-bold text-white font-title">
+                Encontre e escolha
+              </h3>
+              <p class="text-sm text-muted max-w-[220px] mx-auto">
+                Veja avaliações, localização e escolha a melhor para você.
+              </p>
+            </div>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="flex flex-col items-center text-center space-y-4 group">
+            <div
+              class="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-black font-title text-lg shadow-lg shadow-primary/20 transition-transform group-hover:scale-110"
+            >
+              3
+            </div>
+            <div
+              class="relative overflow-hidden rounded-2xl bg-background border border-border p-2"
+            >
+              <img
+                src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-how-it-works-3-R4296w5gJuujeFURG4oyzj.webp"
+                alt="Fale no WhatsApp"
+                class="w-[200px] h-auto object-cover rounded-xl transition-transform duration-300 group-hover:scale-105"
+              />
+            </div>
+            <div class="space-y-2">
+              <h3 class="text-xl font-bold text-white font-title">
+                Fale no WhatsApp
+              </h3>
+              <p class="text-sm text-muted max-w-[220px] mx-auto">
+                Chame no WhatsApp e resolva tudo de forma rápida.
+              </p>
+            </div>
+          </div>
+
+          <!-- Step 4 -->
+          <div class="flex flex-col items-center text-center space-y-4 group">
+            <div
+              class="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-black font-title text-lg shadow-lg shadow-primary/20 transition-transform group-hover:scale-110"
+            >
+              4
+            </div>
+            <div
+              class="relative overflow-hidden rounded-2xl bg-background border border-border p-2"
+            >
+              <img
+                src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-how-it-works-4-9A3jbMW432PLGGSxpUuDVa.webp"
+                alt="Problema resolvido"
+                class="w-[200px] h-auto object-cover rounded-xl transition-transform duration-300 group-hover:scale-105"
+              />
+            </div>
+            <div class="space-y-2">
+              <h3 class="text-xl font-bold text-white font-title">
+                Problema resolvido!
+              </h3>
+              <p class="text-sm text-muted max-w-[220px] mx-auto">
+                Tudo que você precisa, em um só lugar.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Para Prestadores Section -->
+    <section id="para-prestadores" class="py-20 border-b border-border">
+      <div class="container mx-auto px-4">
+        <div class="grid md:grid-cols-2 gap-12 items-center">
+          <!-- Left Column -->
+          <div class="space-y-8">
+            <div class="space-y-4">
+              <h2
+                class="text-3xl md:text-5xl font-black font-title text-white leading-tight"
+              >
+                Para prestadores<br />
+                <span class="text-primary">de serviços</span>
+              </h2>
+              <p class="text-base md:text-lg text-muted max-w-md">
+                Mais visibilidade. Mais clientes. Mais ganhos.
+              </p>
+            </div>
+
+            <ul class="space-y-4">
+              <li class="flex items-start gap-3">
+                <i
+                  data-lucide="check-circle-2"
+                  class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"
+                ></i>
+                <span class="text-base text-foreground"
+                  >Receba clientes perto de você</span
+                >
+              </li>
+              <li class="flex items-start gap-3">
+                <i
+                  data-lucide="check-circle-2"
+                  class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"
+                ></i>
+                <span class="text-base text-foreground"
+                  >Gerencie seus serviços e visibilidade</span
+                >
+              </li>
+              <li class="flex items-start gap-3">
+                <i
+                  data-lucide="check-circle-2"
+                  class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"
+                ></i>
+                <span class="text-base text-foreground"
+                  >Receba avaliações e conquiste mais confiança</span
+                >
+              </li>
+              <li class="flex items-start gap-3">
+                <i
+                  data-lucide="check-circle-2"
+                  class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"
+                ></i>
+                <span class="text-base text-foreground"
+                  >Tenha mais oportunidades todos os dias</span
+                >
+              </li>
+            </ul>
+
+            <a
+              href="#cadastro"
+              class="inline-flex items-center justify-center bg-primary text-primary-foreground hover:bg-primary/90 font-extrabold px-8 py-4 rounded-xl text-base transition-all shadow-lg shadow-primary/20 hover:-translate-y-0.5"
+            >
+              Quero ser encontrado
+            </a>
+          </div>
+
+          <!-- Right Column -->
+          <div class="flex justify-center relative">
+            <div
+              class="absolute inset-0 bg-primary/10 rounded-full blur-3xl filter opacity-30 pointer-events-none"
+            ></div>
+            <img
+              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-service-provider-Md5EygbsDPWs42ZSrzGGp6.webp"
+              alt="Para Prestadores"
+              class="w-full max-w-[340px] h-auto object-contain drop-shadow-2xl relative z-10"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Para Comércios Section -->
+    <section
+      id="para-comercios"
+      class="py-20 bg-card/10 border-b border-border"
+    >
+      <div class="container mx-auto px-4">
+        <div class="grid md:grid-cols-2 gap-12 items-center">
+          <!-- Left Column -->
+          <div class="flex justify-center order-2 md:order-1 relative">
+            <div
+              class="absolute inset-0 bg-primary/10 rounded-full blur-3xl filter opacity-30 pointer-events-none"
+            ></div>
+            <img
+              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-commerce-kCETcfMaD2NsM9wbVS6gvi.webp"
+              alt="Para Comércios"
+              class="w-full max-w-[340px] h-auto object-contain drop-shadow-2xl relative z-10"
+            />
+          </div>
+
+          <!-- Right Column -->
+          <div class="space-y-8 order-1 md:order-2">
+            <div class="space-y-4">
+              <h2
+                class="text-3xl md:text-5xl font-black font-title text-white leading-tight"
+              >
+                Para comércios<br />
+                <span class="text-primary">locais</span>
+              </h2>
+              <p class="text-base md:text-lg text-muted max-w-md">
+                Seu negócio em destaque na sua comunidade.
+              </p>
+            </div>
+
+            <ul class="space-y-4">
+              <li class="flex items-start gap-3">
+                <i
+                  data-lucide="check-circle-2"
+                  class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"
+                ></i>
+                <span class="text-base text-foreground"
+                  >Divulgue seu cardápio ou produtos</span
+                >
+              </li>
+              <li class="flex items-start gap-3">
+                <i
+                  data-lucide="check-circle-2"
+                  class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"
+                ></i>
+                <span class="text-base text-foreground"
+                  >Receba pedidos direto no WhatsApp</span
+                >
+              </li>
+              <li class="flex items-start gap-3">
+                <i
+                  data-lucide="check-circle-2"
+                  class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"
+                ></i>
+                <span class="text-base text-foreground"
+                  >Aumente seus pedidos e vendas</span
+                >
+              </li>
+              <li class="flex items-start gap-3">
+                <i
+                  data-lucide="check-circle-2"
+                  class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"
+                ></i>
+                <span class="text-base text-foreground"
+                  >Plataforma sem taxas por pedido</span
+                >
+              </li>
+            </ul>
+
+            <a
+              href="#cadastro"
+              class="inline-flex items-center justify-center bg-primary text-primary-foreground hover:bg-primary/90 font-extrabold px-8 py-4 rounded-xl text-base transition-all shadow-lg shadow-primary/20 hover:-translate-y-0.5"
+            >
+              Quero meu comércio no XamaJá
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- O App na Prática Section -->
+    <section class="py-20 bg-card/30 border-b border-border">
+      <div class="container mx-auto px-4">
+        <div class="text-center max-w-2xl mx-auto mb-16 space-y-4">
+          <h2 class="text-3xl md:text-5xl font-black font-title text-white">
+            O app na <span class="text-primary">prática</span>
+          </h2>
+          <p class="text-base md:text-lg text-muted">
+            Tudo que você precisa, em um só lugar.
+          </p>
+        </div>
+
+        <div class="flex flex-wrap justify-center gap-8 pb-4">
+          <!-- Categorias -->
+          <div class="flex flex-col items-center gap-4 group">
+            <div
+              class="w-[220px] h-[450px] md:w-[280px] md:h-[580px] rounded-2xl bg-[#09090b] border border-zinc-800/80 p-0 flex items-center justify-center shadow-2xl transition-all duration-300 hover:border-primary/55 hover:scale-[1.02] overflow-hidden"
+            >
+              <img
+                src="/assets/images/xj/categorias_mockup.png"
+                alt="Categorias"
+                class="w-full h-full object-contain"
+              />
+            </div>
+            <span
+              class="text-zinc-400 text-lg font-medium tracking-wide transition-colors group-hover:text-primary"
+              >Categorias</span
+            >
+          </div>
+          <!-- Perfil -->
+          <div class="flex flex-col items-center gap-4 group">
+            <div
+              class="w-[220px] h-[450px] md:w-[280px] md:h-[580px] rounded-2xl bg-[#09090b] border border-zinc-800/80 p-0 flex items-center justify-center shadow-2xl transition-all duration-300 hover:border-primary/55 hover:scale-[1.02] overflow-hidden"
+            >
+              <img
+                src="/assets/images/xj/prestador_mockup.png"
+                alt="Perfil"
+                class="w-full h-full object-contain"
+              />
+            </div>
+            <span
+              class="text-zinc-400 text-lg font-medium tracking-wide transition-colors group-hover:text-primary"
+              >Perfil</span
+            >
+          </div>
+          <!-- App -->
+          <div class="flex flex-col items-center gap-4 group">
+            <div
+              class="w-[220px] h-[450px] md:w-[280px] md:h-[580px] rounded-2xl bg-[#09090b] border border-zinc-800/80 p-0 flex items-center justify-center shadow-2xl transition-all duration-300 hover:border-primary/55 hover:scale-[1.02] overflow-hidden"
+            >
+              <img
+                src="/assets/images/xj/app_mockup.png"
+                alt="App"
+                class="w-full h-full object-contain"
+              />
+            </div>
+            <span
+              class="text-zinc-400 text-lg font-medium tracking-wide transition-colors group-hover:text-primary"
+              >App</span
+            >
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Form Section (Registration) -->
+    <section id="cadastro" class="py-20 bg-card/10 border-b border-border">
+      <div class="container mx-auto px-4 max-w-4xl">
+        <div class="text-center max-w-2xl mx-auto mb-12 space-y-4">
+          <h2 class="text-3xl md:text-5xl font-black font-title text-white">
+            Cadastre seu <span class="text-primary">Serviço</span> ou
+            <span class="text-primary">Negócio</span>
+          </h2>
+          <p class="text-sm md:text-base text-muted">
+            Preencha o formulário abaixo com as informações do seu negócio ou
+            serviço. Nossa equipe fará a verificação e entrará em contato para
+            ativar seu perfil.
+          </p>
+        </div>
+
+        <div
+          class="bg-card border border-border rounded-3xl p-8 md:p-12 shadow-2xl relative"
+        >
+          <form id="provider-form" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="flex flex-col gap-2">
+                <label for="name" class="text-sm font-semibold text-white"
+                  >Nome do Profissional ou Negócio *</label
+                >
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  placeholder="Ex: João Silva ou Pinturas Silva"
+                  required
+                  class="bg-background border border-border text-foreground rounded-xl px-4 py-3.5 focus:border-primary focus:outline-none transition text-sm"
+                />
+              </div>
+              <div class="flex flex-col gap-2">
+                <label for="email" class="text-sm font-semibold text-white"
+                  >E-mail *</label
+                >
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  placeholder="Ex: joao@gmail.com"
+                  required
+                  class="bg-background border border-border text-foreground rounded-xl px-4 py-3.5 focus:border-primary focus:outline-none transition text-sm"
+                />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="flex flex-col gap-2">
+                <label for="phone" class="text-sm font-semibold text-white"
+                  >Telefone / WhatsApp *</label
+                >
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  placeholder="Ex: (11) 99999-9999"
+                  required
+                  class="bg-background border border-border text-foreground rounded-xl px-4 py-3.5 focus:border-primary focus:outline-none transition text-sm"
+                />
+              </div>
+              <div class="flex flex-col gap-2">
+                <label for="categoryId" class="text-sm font-semibold text-white"
+                  >Categoria Principal *</label
+                >
+                <select
+                  id="categoryId"
+                  name="categoryId"
+                  required
+                  class="bg-background border border-border text-foreground rounded-xl px-4 py-3.5 focus:border-primary focus:outline-none transition text-sm"
+                >
+                  <option value="" class="bg-card">
+                    Selecione uma categoria...
+                  </option>
+                  <option value="reformas-reparos" class="bg-card">
+                    Reformas e Reparos
+                  </option>
+                  <option value="assistencia-tecnica" class="bg-card">
+                    Assistência Técnica
+                  </option>
+                  <option value="servicos-domesticos" class="bg-card">
+                    Serviços Domésticos
+                  </option>
+                  <option value="servicos-externos" class="bg-card">
+                    Serviços Externos
+                  </option>
+                  <option value="automotivo" class="bg-card">Automotivo</option>
+                  <option value="beleza-estetica" class="bg-card">
+                    Beleza e Estética
+                  </option>
+                  <option value="servicos-profissionais" class="bg-card">
+                    Serviços Profissionais
+                  </option>
+                  <option value="saude" class="bg-card">Saúde</option>
+                  <option value="eventos" class="bg-card">Eventos</option>
+                  <option value="logistica" class="bg-card">Logística</option>
+                  <option value="educacao" class="bg-card">Educação</option>
+                  <option value="comercios" class="bg-card">
+                    Comércios / Lojas
+                  </option>
+                  <option value="mobilidade" class="bg-card">Mobilidade</option>
+                  <option value="outro" class="bg-card">
+                    Outro (Especificar)...
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div
+              class="flex flex-col gap-2"
+              id="other-category-group"
+              style="display: none"
+            >
+              <label
+                for="otherCategory"
+                class="text-sm font-semibold text-white"
+                >Especifique a Categoria *</label
+              >
+              <input
+                type="text"
+                id="otherCategory"
+                name="otherCategory"
+                placeholder="Ex: Pet Shop, Consultoria, etc."
+                class="bg-background border border-border text-foreground rounded-xl px-4 py-3.5 focus:border-primary focus:outline-none transition text-sm"
+              />
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="flex flex-col gap-2">
+                <label for="city" class="text-sm font-semibold text-white"
+                  >Cidade *</label
+                >
+                <input
+                  type="text"
+                  id="city"
+                  name="city"
+                  placeholder="Ex: Bragança Paulista"
+                  required
+                  class="bg-background border border-border text-foreground rounded-xl px-4 py-3.5 focus:border-primary focus:outline-none transition text-sm"
+                />
+              </div>
+              <div class="flex flex-col gap-2">
+                <label
+                  for="neighborhood"
+                  class="text-sm font-semibold text-white"
+                  >Bairro *</label
+                >
+                <input
+                  type="text"
+                  id="neighborhood"
+                  name="neighborhood"
+                  placeholder="Ex: Centro"
+                  required
+                  class="bg-background border border-border text-foreground rounded-xl px-4 py-3.5 focus:border-primary focus:outline-none transition text-sm"
+                />
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label for="description" class="text-sm font-semibold text-white"
+                >Descrição do seu negócio, produtos ou serviços *</label
+              >
+              <textarea
+                id="description"
+                name="description"
+                rows="4"
+                placeholder="Descreva brevemente o seu comércio, loja, os produtos que vende ou serviços que oferece..."
+                required
+                class="bg-background border border-border text-foreground rounded-xl px-4 py-3.5 focus:border-primary focus:outline-none transition text-sm resize-none"
+              ></textarea>
+            </div>
+
+            <!-- Status Messages -->
+            <div
+              id="form-success"
+              class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl p-4 gap-3 text-sm items-start"
+              style="display: none"
+            >
+              <i
+                data-lucide="check-circle"
+                class="w-5 h-5 flex-shrink-0 mt-0.5"
+              ></i>
+              <div>
+                <strong>Cadastro enviado com sucesso!</strong> Recebemos suas
+                informações. Analisaremos os dados e entraremos em contato para
+                ativar o seu perfil no app XamaJá.
+              </div>
+            </div>
+
+            <div
+              id="form-error"
+              class="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-4 gap-3 text-sm items-start"
+              style="display: none"
+            >
+              <i
+                data-lucide="alert-triangle"
+                class="w-5 h-5 flex-shrink-0 mt-0.5"
+              ></i>
+              <span id="error-message"
+                >Houve um erro ao processar seu cadastro. Tente novamente.</span
+              >
+            </div>
+
+            <button
+              type="submit"
+              class="w-full flex items-center justify-center gap-3 bg-primary text-primary-foreground font-black font-title py-4 rounded-xl hover:bg-primary/90 transition shadow-lg shadow-primary/20 hover:-translate-y-0.5 disabled:opacity-75 disabled:cursor-not-allowed"
+              id="btn-submit"
+            >
+              <span>Enviar Formulário</span>
+              <div
+                class="loader-form w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"
+                id="form-loader"
+                style="display: none"
+              ></div>
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- Partners Banner Section -->
+    <section
+      class="py-16 bg-card border-y border-border relative overflow-hidden"
+    >
+      <div
+        class="absolute inset-0 bg-primary/5 blur-3xl filter opacity-30 pointer-events-none"
+      ></div>
+      <div class="container mx-auto px-4 max-w-5xl relative z-10">
+        <div
+          class="bg-[#09090b]/80 border border-primary/20 rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 backdrop-blur-sm"
+        >
+          <div class="space-y-4 max-w-xl text-left">
+            <div
+              class="inline-block px-3 py-1 bg-primary/10 border border-primary/30 rounded-full"
+            >
+              <span
+                class="text-primary text-xs font-semibold uppercase tracking-wider"
+                >✦ Indicações & Parceiros</span
+              >
+            </div>
+            <h2
+              class="text-3xl md:text-4xl font-bold font-title text-white tracking-tight"
+            >
+              Ganhe Indicando Prestadores e Comércios!
+            </h2>
+            <p class="text-muted text-sm md:text-base leading-relaxed">
+              Indique profissionais e comércios locais para a nossa plataforma.
+              Cadastre-se como parceiro, obtenha seu código de indicação
+              exclusivo e acompanhe todos os seus leads pelo painel de controle.
             </p>
           </div>
-
-          <div class="flex flex-col sm:flex-row gap-4 pt-2">
-            <a href="#cadastro" class="inline-flex items-center justify-center bg-primary text-primary-foreground hover:bg-primary/90 font-extrabold px-8 py-4 rounded-xl text-base transition-all shadow-lg shadow-primary/20 hover:-translate-y-0.5">
-              Cadastrar agora <i data-lucide="arrow-right" class="ml-2 w-5 h-5"></i>
+          <div class="flex-shrink-0 w-full md:w-auto">
+            <a
+              href="/parceiros"
+              class="inline-flex w-full md:w-auto items-center justify-center bg-primary text-primary-foreground hover:bg-primary/90 font-extrabold px-8 py-4 rounded-xl text-base transition-all shadow-lg shadow-primary/20 hover:-translate-y-0.5"
+            >
+              <span>Ser um Parceiro</span>
+              <i data-lucide="arrow-right" class="ml-2 w-5 h-5"></i>
             </a>
-            <a href="#como-funciona" class="inline-flex items-center justify-center border border-border text-foreground hover:bg-card px-8 py-4 rounded-xl text-base font-semibold transition-all">
-              Quero ser prestador
-            </a>
-          </div>
-
-          <!-- Stats Grid -->
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-border">
-            <div class="flex flex-col gap-1.5">
-              <div class="flex items-center gap-2 text-primary">
-                <i data-lucide="users" class="w-5 h-5"></i>
-                <span class="text-lg font-bold text-white">Mais clientes</span>
-              </div>
-              <p class="text-xs text-muted">da sua região</p>
-            </div>
-            <div class="flex flex-col gap-1.5">
-              <div class="flex items-center gap-2 text-primary">
-                <i data-lucide="wrench" class="w-5 h-5"></i>
-                <span class="text-lg font-bold text-white">Serviços</span>
-              </div>
-              <p class="text-xs text-muted">diversificados</p>
-            </div>
-            <div class="flex flex-col gap-1.5">
-              <div class="flex items-center gap-2 text-primary">
-                <i data-lucide="shield-check" class="w-5 h-5"></i>
-                <span class="text-lg font-bold text-white">Pagamentos</span>
-              </div>
-              <p class="text-xs text-muted">seguros</p>
-            </div>
-            <div class="flex flex-col gap-1.5">
-              <div class="flex items-center gap-2 text-primary">
-                <i data-lucide="trending-up" class="w-5 h-5"></i>
-                <span class="text-lg font-bold text-white">Cresça seu</span>
-              </div>
-              <p class="text-xs text-muted">negócio</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Right Content - Cropped Hero Mockup Image -->
-        <div class="md:col-span-6 flex justify-center relative">
-          <div class="absolute inset-0 bg-primary/10 rounded-full blur-3xl filter opacity-40 pointer-events-none"></div>
-          <img src="/assets/images/hero_mockup_right.png" alt="App XamaJá Mockup" class="w-full max-w-[650px] h-auto object-contain drop-shadow-2xl relative z-10 animate-float hero-mask mb-6 md:mb-0">
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Como Funciona Section -->
-  <section id="como-funciona" class="py-20 bg-card/30 border-b border-border">
-    <div class="container mx-auto px-4">
-      <div class="text-center max-w-2xl mx-auto mb-16 space-y-4">
-        <h2 class="text-3xl md:text-5xl font-black font-title text-white">
-          Como <span class="text-primary">funciona</span>
-        </h2>
-        <p class="text-base md:text-lg text-muted">É simples, rápido e funcional</p>
-      </div>
-
-      <div class="grid md:grid-cols-4 gap-8">
-        <!-- Step 1 -->
-        <div class="flex flex-col items-center text-center space-y-4 group">
-          <div class="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-black font-title text-lg shadow-lg shadow-primary/20 transition-transform group-hover:scale-110">
-            1
-          </div>
-          <div class="relative overflow-hidden rounded-2xl bg-background border border-border p-2">
-            <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-how-it-works-1-YELFGGwpwvDRAB5gWkGeRy.webp" alt="Você busca" class="w-[200px] h-auto object-cover rounded-xl transition-transform duration-300 group-hover:scale-105">
-          </div>
-          <div class="space-y-2">
-            <h3 class="text-xl font-bold text-white font-title">Você busca</h3>
-            <p class="text-sm text-muted max-w-[220px] mx-auto">Encontre o serviço ou comércio que precisa perto de você.</p>
-          </div>
-        </div>
-
-        <!-- Step 2 -->
-        <div class="flex flex-col items-center text-center space-y-4 group">
-          <div class="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-black font-title text-lg shadow-lg shadow-primary/20 transition-transform group-hover:scale-110">
-            2
-          </div>
-          <div class="relative overflow-hidden rounded-2xl bg-background border border-border p-2">
-            <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-how-it-works-2-gddMe4gnuUmsyxDMDXEV8Y.webp" alt="Encontre e escolha" class="w-[200px] h-auto object-cover rounded-xl transition-transform duration-300 group-hover:scale-105">
-          </div>
-          <div class="space-y-2">
-            <h3 class="text-xl font-bold text-white font-title">Encontre e escolha</h3>
-            <p class="text-sm text-muted max-w-[220px] mx-auto">Veja avaliações, localização e escolha a melhor para você.</p>
-          </div>
-        </div>
-
-        <!-- Step 3 -->
-        <div class="flex flex-col items-center text-center space-y-4 group">
-          <div class="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-black font-title text-lg shadow-lg shadow-primary/20 transition-transform group-hover:scale-110">
-            3
-          </div>
-          <div class="relative overflow-hidden rounded-2xl bg-background border border-border p-2">
-            <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-how-it-works-3-R4296w5gJuujeFURG4oyzj.webp" alt="Fale no WhatsApp" class="w-[200px] h-auto object-cover rounded-xl transition-transform duration-300 group-hover:scale-105">
-          </div>
-          <div class="space-y-2">
-            <h3 class="text-xl font-bold text-white font-title">Fale no WhatsApp</h3>
-            <p class="text-sm text-muted max-w-[220px] mx-auto">Chame no WhatsApp e resolva tudo de forma rápida.</p>
-          </div>
-        </div>
-
-        <!-- Step 4 -->
-        <div class="flex flex-col items-center text-center space-y-4 group">
-          <div class="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-black font-title text-lg shadow-lg shadow-primary/20 transition-transform group-hover:scale-110">
-            4
-          </div>
-          <div class="relative overflow-hidden rounded-2xl bg-background border border-border p-2">
-            <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-how-it-works-4-9A3jbMW432PLGGSxpUuDVa.webp" alt="Problema resolvido" class="w-[200px] h-auto object-cover rounded-xl transition-transform duration-300 group-hover:scale-105">
-          </div>
-          <div class="space-y-2">
-            <h3 class="text-xl font-bold text-white font-title">Problema resolvido!</h3>
-            <p class="text-sm text-muted max-w-[220px] mx-auto">Tudo que você precisa, em um só lugar.</p>
           </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Para Prestadores Section -->
-  <section id="para-prestadores" class="py-20 border-b border-border">
-    <div class="container mx-auto px-4">
-      <div class="grid md:grid-cols-2 gap-12 items-center">
-        <!-- Left Column -->
-        <div class="space-y-8">
-          <div class="space-y-4">
-            <h2 class="text-3xl md:text-5xl font-black font-title text-white leading-tight">
-              Para prestadores<br>
-              <span class="text-primary">de serviços</span>
+    <!-- CTA Final Section -->
+    <section
+      class="py-20 border-b border-border bg-gradient-to-r from-primary/5 to-primary/0"
+    >
+      <div class="container mx-auto px-4">
+        <div class="grid md:grid-cols-2 gap-12 items-center">
+          <div class="flex justify-center relative">
+            <div
+              class="absolute inset-0 bg-primary/10 rounded-full blur-3xl filter opacity-30 pointer-events-none"
+            ></div>
+            <img
+              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/mascote-parrot-WdeTpQk76sVEPj2emyYAPr.webp"
+              alt="Mascote XamaJá"
+              class="w-full max-w-[340px] h-auto object-contain relative z-10 animate-float"
+            />
+          </div>
+
+          <div class="space-y-8">
+            <h2
+              class="text-3xl md:text-5xl font-black font-title text-white leading-tight"
+            >
+              Pronto para crescer com o XamaJá?
             </h2>
             <p class="text-base md:text-lg text-muted max-w-md">
-              Mais visibilidade. Mais clientes. Mais ganhos.
+              Cadastre-se agora e comece a receber mais clientes ou encontre os
+              melhores prestadores perto de você.
             </p>
+
+            <a
+              href="#cadastro"
+              class="inline-flex items-center justify-center bg-primary text-primary-foreground hover:bg-primary/90 font-extrabold px-8 py-4 rounded-xl text-base transition-all shadow-lg shadow-primary/20 hover:-translate-y-0.5"
+            >
+              Cadastrar agora
+              <i data-lucide="arrow-right" class="ml-2 w-5 h-5"></i>
+            </a>
           </div>
-
-          <ul class="space-y-4">
-            <li class="flex items-start gap-3">
-              <i data-lucide="check-circle-2" class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"></i>
-              <span class="text-base text-foreground">Receba clientes perto de você</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <i data-lucide="check-circle-2" class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"></i>
-              <span class="text-base text-foreground">Gerencie seus serviços e visibilidade</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <i data-lucide="check-circle-2" class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"></i>
-              <span class="text-base text-foreground">Receba avaliações e conquiste mais confiança</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <i data-lucide="check-circle-2" class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"></i>
-              <span class="text-base text-foreground">Tenha mais oportunidades todos os dias</span>
-            </li>
-          </ul>
-
-          <a href="#cadastro" class="inline-flex items-center justify-center bg-primary text-primary-foreground hover:bg-primary/90 font-extrabold px-8 py-4 rounded-xl text-base transition-all shadow-lg shadow-primary/20 hover:-translate-y-0.5">
-            Quero ser encontrado
-          </a>
-        </div>
-
-        <!-- Right Column -->
-        <div class="flex justify-center relative">
-          <div class="absolute inset-0 bg-primary/10 rounded-full blur-3xl filter opacity-30 pointer-events-none"></div>
-          <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-service-provider-Md5EygbsDPWs42ZSrzGGp6.webp" alt="Para Prestadores" class="w-full max-w-[340px] h-auto object-contain drop-shadow-2xl relative z-10">
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Para Comércios Section -->
-  <section id="para-comercios" class="py-20 bg-card/10 border-b border-border">
-    <div class="container mx-auto px-4">
-      <div class="grid md:grid-cols-2 gap-12 items-center">
-        <!-- Left Column -->
-        <div class="flex justify-center order-2 md:order-1 relative">
-          <div class="absolute inset-0 bg-primary/10 rounded-full blur-3xl filter opacity-30 pointer-events-none"></div>
-          <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-commerce-kCETcfMaD2NsM9wbVS6gvi.webp" alt="Para Comércios" class="w-full max-w-[340px] h-auto object-contain drop-shadow-2xl relative z-10">
-        </div>
-
-        <!-- Right Column -->
-        <div class="space-y-8 order-1 md:order-2">
+    <!-- Footer -->
+    <footer class="bg-background border-t border-border py-16">
+      <div class="container mx-auto px-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
           <div class="space-y-4">
-            <h2 class="text-3xl md:text-5xl font-black font-title text-white leading-tight">
-              Para comércios<br>
-              <span class="text-primary">locais</span>
-            </h2>
-            <p class="text-base md:text-lg text-muted max-w-md">
-              Seu negócio em destaque na sua comunidade.
+            <h3
+              class="font-bold font-title text-white text-sm uppercase tracking-wider"
+            >
+              Navegação
+            </h3>
+            <ul class="space-y-2 text-sm text-muted">
+              <li>
+                <a href="/" class="hover:text-primary transition-colors"
+                  >Início</a
+                >
+              </li>
+              <li>
+                <a
+                  href="#como-funciona"
+                  class="hover:text-primary transition-colors"
+                  >Como funciona</a
+                >
+              </li>
+              <li>
+                <a
+                  href="#para-prestadores"
+                  class="hover:text-primary transition-colors"
+                  >Para prestadores</a
+                >
+              </li>
+              <li>
+                <a
+                  href="#para-comercios"
+                  class="hover:text-primary transition-colors"
+                  >Para comércios</a
+                >
+              </li>
+              <li>
+                <a
+                  href="/parceiros"
+                  class="text-primary hover:text-primary/80 transition-colors font-semibold"
+                  >Seja um Parceiro ✦</a
+                >
+              </li>
+            </ul>
+          </div>
+
+          <div class="space-y-4">
+            <h3
+              class="font-bold font-title text-white text-sm uppercase tracking-wider"
+            >
+              Suporte
+            </h3>
+            <ul class="space-y-2 text-sm text-muted">
+              <li>
+                <a
+                  href="mailto:suporte.xamaja@gmail.com"
+                  class="hover:text-primary transition-colors"
+                  >Contato</a
+                >
+              </li>
+              <li>
+                <a
+                  href="mailto:suporte.xamaja@gmail.com"
+                  class="hover:text-primary transition-colors"
+                  >Suporte Técnico</a
+                >
+              </li>
+            </ul>
+          </div>
+
+          <div class="space-y-4">
+            <h3
+              class="font-bold font-title text-white text-sm uppercase tracking-wider"
+            >
+              Legal
+            </h3>
+            <ul class="space-y-2 text-sm text-muted">
+              <li>
+                <a
+                  href="/politica-de-privacidade"
+                  class="hover:text-primary transition-colors"
+                  >Política de Privacidade</a
+                >
+              </li>
+              <li>
+                <a
+                  href="/exclusao-conta"
+                  class="hover:text-primary transition-colors"
+                  >Excluir Conta</a
+                >
+              </li>
+            </ul>
+          </div>
+
+          <div class="space-y-4">
+            <h3
+              class="font-bold font-title text-white text-sm uppercase tracking-wider"
+            >
+              XamaJá
+            </h3>
+            <p class="text-xs text-muted leading-relaxed">
+              Plataforma digital para conectar comércios locais e prestadores de
+              serviços de forma ágil, segura e sem custos de intermediários.
             </p>
           </div>
+        </div>
 
-          <ul class="space-y-4">
-            <li class="flex items-start gap-3">
-              <i data-lucide="check-circle-2" class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"></i>
-              <span class="text-base text-foreground">Divulgue seu cardápio ou produtos</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <i data-lucide="check-circle-2" class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"></i>
-              <span class="text-base text-foreground">Receba pedidos direto no WhatsApp</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <i data-lucide="check-circle-2" class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"></i>
-              <span class="text-base text-foreground">Aumente seus pedidos e vendas</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <i data-lucide="check-circle-2" class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"></i>
-              <span class="text-base text-foreground">Plataforma sem taxas por pedido</span>
-            </li>
-          </ul>
-
-          <a href="#cadastro" class="inline-flex items-center justify-center bg-primary text-primary-foreground hover:bg-primary/90 font-extrabold px-8 py-4 rounded-xl text-base transition-all shadow-lg shadow-primary/20 hover:-translate-y-0.5">
-            Quero meu comércio no XamaJá
-          </a>
+        <div
+          class="border-t border-border pt-8 text-center text-xs text-muted flex flex-col sm:flex-row items-center justify-between gap-4"
+        >
+          <p>&copy; 2026 XamaJá. Todos os direitos reservados.</p>
+          <p class="flex items-center gap-1.5">O X MARCA O LOCAL.</p>
         </div>
       </div>
-    </div>
-  </section>
+    </footer>
 
-  <!-- O App na Prática Section -->
-  <section class="py-20 bg-card/30 border-b border-border">
-    <div class="container mx-auto px-4">
-      <div class="text-center max-w-2xl mx-auto mb-16 space-y-4">
-        <h2 class="text-3xl md:text-5xl font-black font-title text-white">
-          O app na <span class="text-primary">prática</span>
-        </h2>
-        <p class="text-base md:text-lg text-muted">Tudo que você precisa, em um só lugar.</p>
-      </div>
-
-      <div class="flex flex-wrap justify-center gap-8 pb-4">
-        <!-- Categorias -->
-        <div class="flex flex-col items-center gap-4 group">
-          <div class="w-[220px] h-[450px] md:w-[280px] md:h-[580px] rounded-2xl bg-[#09090b] border border-zinc-800/80 p-0 flex items-center justify-center shadow-2xl transition-all duration-300 hover:border-primary/55 hover:scale-[1.02] overflow-hidden">
-            <img src="/assets/images/xj/categorias_mockup.png" alt="Categorias" class="w-full h-full object-contain">
-          </div>
-          <span class="text-zinc-400 text-lg font-medium tracking-wide transition-colors group-hover:text-primary">Categorias</span>
-        </div>
-        <!-- Perfil -->
-        <div class="flex flex-col items-center gap-4 group">
-          <div class="w-[220px] h-[450px] md:w-[280px] md:h-[580px] rounded-2xl bg-[#09090b] border border-zinc-800/80 p-0 flex items-center justify-center shadow-2xl transition-all duration-300 hover:border-primary/55 hover:scale-[1.02] overflow-hidden">
-            <img src="/assets/images/xj/prestador_mockup.png" alt="Perfil" class="w-full h-full object-contain">
-          </div>
-          <span class="text-zinc-400 text-lg font-medium tracking-wide transition-colors group-hover:text-primary">Perfil</span>
-        </div>
-        <!-- App -->
-        <div class="flex flex-col items-center gap-4 group">
-          <div class="w-[220px] h-[450px] md:w-[280px] md:h-[580px] rounded-2xl bg-[#09090b] border border-zinc-800/80 p-0 flex items-center justify-center shadow-2xl transition-all duration-300 hover:border-primary/55 hover:scale-[1.02] overflow-hidden">
-            <img src="/assets/images/xj/app_mockup.png" alt="App" class="w-full h-full object-contain">
-          </div>
-          <span class="text-zinc-400 text-lg font-medium tracking-wide transition-colors group-hover:text-primary">App</span>
-        </div>
-      </div>
-    </div>
-  </section>
-
-
-
-  <!-- Form Section (Registration) -->
-  <section id="cadastro" class="py-20 bg-card/10 border-b border-border">
-    <div class="container mx-auto px-4 max-w-4xl">
-      <div class="text-center max-w-2xl mx-auto mb-12 space-y-4">
-        <h2 class="text-3xl md:text-5xl font-black font-title text-white">Cadastre seu <span class="text-primary">Serviço</span> ou <span class="text-primary">Negócio</span></h2>
-        <p class="text-sm md:text-base text-muted">Preencha o formulário abaixo com as informações do seu negócio ou serviço. Nossa equipe fará a verificação e entrará em contato para ativar seu perfil.</p>
-      </div>
-
-      <div class="bg-card border border-border rounded-3xl p-8 md:p-12 shadow-2xl relative">
-        <form id="provider-form" class="space-y-6">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="flex flex-col gap-2">
-              <label for="name" class="text-sm font-semibold text-white">Nome do Profissional ou Negócio *</label>
-              <input type="text" id="name" name="name" placeholder="Ex: João Silva ou Pinturas Silva" required class="bg-background border border-border text-foreground rounded-xl px-4 py-3.5 focus:border-primary focus:outline-none transition text-sm">
-            </div>
-            <div class="flex flex-col gap-2">
-              <label for="email" class="text-sm font-semibold text-white">E-mail *</label>
-              <input type="email" id="email" name="email" placeholder="Ex: joao@gmail.com" required class="bg-background border border-border text-foreground rounded-xl px-4 py-3.5 focus:border-primary focus:outline-none transition text-sm">
-            </div>
-          </div>
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="flex flex-col gap-2">
-              <label for="phone" class="text-sm font-semibold text-white">Telefone / WhatsApp *</label>
-              <input type="tel" id="phone" name="phone" placeholder="Ex: (11) 99999-9999" required class="bg-background border border-border text-foreground rounded-xl px-4 py-3.5 focus:border-primary focus:outline-none transition text-sm">
-            </div>
-            <div class="flex flex-col gap-2">
-              <label for="categoryId" class="text-sm font-semibold text-white">Categoria Principal *</label>
-              <select id="categoryId" name="categoryId" required class="bg-background border border-border text-foreground rounded-xl px-4 py-3.5 focus:border-primary focus:outline-none transition text-sm">
-                <option value="" class="bg-card">Selecione uma categoria...</option>
-                <option value="reformas-reparos" class="bg-card">Reformas e Reparos</option>
-                <option value="assistencia-tecnica" class="bg-card">Assistência Técnica</option>
-                <option value="servicos-domesticos" class="bg-card">Serviços Domésticos</option>
-                <option value="servicos-externos" class="bg-card">Serviços Externos</option>
-                <option value="automotivo" class="bg-card">Automotivo</option>
-                <option value="beleza-estetica" class="bg-card">Beleza e Estética</option>
-                <option value="servicos-profissionais" class="bg-card">Serviços Profissionais</option>
-                <option value="saude" class="bg-card">Saúde</option>
-                <option value="eventos" class="bg-card">Eventos</option>
-                <option value="logistica" class="bg-card">Logística</option>
-                <option value="educacao" class="bg-card">Educação</option>
-                <option value="comercios" class="bg-card">Comércios / Lojas</option>
-                <option value="mobilidade" class="bg-card">Mobilidade</option>
-                <option value="outro" class="bg-card">Outro (Especificar)...</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="flex flex-col gap-2" id="other-category-group" style="display: none;">
-            <label for="otherCategory" class="text-sm font-semibold text-white">Especifique a Categoria *</label>
-            <input type="text" id="otherCategory" name="otherCategory" placeholder="Ex: Pet Shop, Consultoria, etc." class="bg-background border border-border text-foreground rounded-xl px-4 py-3.5 focus:border-primary focus:outline-none transition text-sm">
-          </div>
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="flex flex-col gap-2">
-              <label for="city" class="text-sm font-semibold text-white">Cidade *</label>
-              <input type="text" id="city" name="city" placeholder="Ex: Bragança Paulista" required class="bg-background border border-border text-foreground rounded-xl px-4 py-3.5 focus:border-primary focus:outline-none transition text-sm">
-            </div>
-            <div class="flex flex-col gap-2">
-              <label for="neighborhood" class="text-sm font-semibold text-white">Bairro *</label>
-              <input type="text" id="neighborhood" name="neighborhood" placeholder="Ex: Centro" required class="bg-background border border-border text-foreground rounded-xl px-4 py-3.5 focus:border-primary focus:outline-none transition text-sm">
-            </div>
-          </div>
-          
-          <div class="flex flex-col gap-2">
-            <label for="description" class="text-sm font-semibold text-white">Descrição do seu negócio, produtos ou serviços *</label>
-            <textarea id="description" name="description" rows="4" placeholder="Descreva brevemente o seu comércio, loja, os produtos que vende ou serviços que oferece..." required class="bg-background border border-border text-foreground rounded-xl px-4 py-3.5 focus:border-primary focus:outline-none transition text-sm resize-none"></textarea>
-          </div>
-          
-          <!-- Status Messages -->
-          <div id="form-success" class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl p-4 gap-3 text-sm items-start" style="display: none;">
-            <i data-lucide="check-circle" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>
-            <div>
-              <strong>Cadastro enviado com sucesso!</strong> Recebemos suas informações. Analisaremos os dados e entraremos em contato para ativar o seu perfil no app XamaJá.
-            </div>
-          </div>
-          
-          <div id="form-error" class="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-4 gap-3 text-sm items-start" style="display: none;">
-            <i data-lucide="alert-triangle" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>
-            <span id="error-message">Houve um erro ao processar seu cadastro. Tente novamente.</span>
-          </div>
-          
-          <button type="submit" class="w-full flex items-center justify-center gap-3 bg-primary text-primary-foreground font-black font-title py-4 rounded-xl hover:bg-primary/90 transition shadow-lg shadow-primary/20 hover:-translate-y-0.5 disabled:opacity-75 disabled:cursor-not-allowed" id="btn-submit">
-            <span>Enviar Formulário</span>
-            <div class="loader-form w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" id="form-loader" style="display: none;"></div>
-          </button>
-        </form>
-      </div>
-    </div>
-  </section>
-
-  <!-- Partners Banner Section -->
-  <section class="py-16 bg-card border-y border-border relative overflow-hidden">
-    <div class="absolute inset-0 bg-primary/5 blur-3xl filter opacity-30 pointer-events-none"></div>
-    <div class="container mx-auto px-4 max-w-5xl relative z-10">
-      <div class="bg-[#09090b]/80 border border-primary/20 rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 backdrop-blur-sm">
-        <div class="space-y-4 max-w-xl text-left">
-          <div class="inline-block px-3 py-1 bg-primary/10 border border-primary/30 rounded-full">
-            <span class="text-primary text-xs font-semibold uppercase tracking-wider">✦ Indicações & Parceiros</span>
-          </div>
-          <h2 class="text-3xl md:text-4xl font-bold font-title text-white tracking-tight">
-            Ganhe Indicando Prestadores e Comércios!
-          </h2>
-          <p class="text-muted text-sm md:text-base leading-relaxed">
-            Indique profissionais e comércios locais para a nossa plataforma. Cadastre-se como parceiro, obtenha seu código de indicação exclusivo e acompanhe todos os seus leads pelo painel de controle.
-          </p>
-        </div>
-        <div class="flex-shrink-0 w-full md:w-auto">
-          <a href="/parceiros" class="inline-flex w-full md:w-auto items-center justify-center bg-primary text-primary-foreground hover:bg-primary/90 font-extrabold px-8 py-4 rounded-xl text-base transition-all shadow-lg shadow-primary/20 hover:-translate-y-0.5">
-            <span>Ser um Parceiro</span>
-            <i data-lucide="arrow-right" class="ml-2 w-5 h-5"></i>
-          </a>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- CTA Final Section -->
-  <section class="py-20 border-b border-border bg-gradient-to-r from-primary/5 to-primary/0">
-    <div class="container mx-auto px-4">
-      <div class="grid md:grid-cols-2 gap-12 items-center">
-        <div class="flex justify-center relative">
-          <div class="absolute inset-0 bg-primary/10 rounded-full blur-3xl filter opacity-30 pointer-events-none"></div>
-          <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/mascote-parrot-WdeTpQk76sVEPj2emyYAPr.webp" alt="Mascote XamaJá" class="w-full max-w-[340px] h-auto object-contain relative z-10 animate-float">
-        </div>
-
-        <div class="space-y-8">
-          <h2 class="text-3xl md:text-5xl font-black font-title text-white leading-tight">
-            Pronto para crescer com o XamaJá?
-          </h2>
-          <p class="text-base md:text-lg text-muted max-w-md">
-            Cadastre-se agora e comece a receber mais clientes ou encontre os melhores prestadores perto de você.
-          </p>
-
-          <a href="#cadastro" class="inline-flex items-center justify-center bg-primary text-primary-foreground hover:bg-primary/90 font-extrabold px-8 py-4 rounded-xl text-base transition-all shadow-lg shadow-primary/20 hover:-translate-y-0.5">
-            Cadastrar agora <i data-lucide="arrow-right" class="ml-2 w-5 h-5"></i>
-          </a>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Footer -->
-  <footer class="bg-background border-t border-border py-16">
-    <div class="container mx-auto px-4">
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
-        <div class="space-y-4">
-          <h3 class="font-bold font-title text-white text-sm uppercase tracking-wider">Navegação</h3>
-          <ul class="space-y-2 text-sm text-muted">
-            <li><a href="/" class="hover:text-primary transition-colors">Início</a></li>
-            <li><a href="#como-funciona" class="hover:text-primary transition-colors">Como funciona</a></li>
-            <li><a href="#para-prestadores" class="hover:text-primary transition-colors">Para prestadores</a></li>
-            <li><a href="#para-comercios" class="hover:text-primary transition-colors">Para comércios</a></li>
-            <li><a href="/parceiros" class="text-primary hover:text-primary/80 transition-colors font-semibold">Seja um Parceiro ✦</a></li>
-          </ul>
-        </div>
-
-        <div class="space-y-4">
-          <h3 class="font-bold font-title text-white text-sm uppercase tracking-wider">Suporte</h3>
-          <ul class="space-y-2 text-sm text-muted">
-            <li><a href="mailto:suporte.xamaja@gmail.com" class="hover:text-primary transition-colors">Contato</a></li>
-            <li><a href="mailto:suporte.xamaja@gmail.com" class="hover:text-primary transition-colors">Suporte Técnico</a></li>
-          </ul>
-        </div>
-
-        <div class="space-y-4">
-          <h3 class="font-bold font-title text-white text-sm uppercase tracking-wider">Legal</h3>
-          <ul class="space-y-2 text-sm text-muted">
-            <li><a href="/politica-de-privacidade" class="hover:text-primary transition-colors">Política de Privacidade</a></li>
-            <li><a href="/exclusao-conta" class="hover:text-primary transition-colors">Excluir Conta</a></li>
-          </ul>
-        </div>
-
-        <div class="space-y-4">
-          <h3 class="font-bold font-title text-white text-sm uppercase tracking-wider">XamaJá</h3>
-          <p class="text-xs text-muted leading-relaxed">
-            Plataforma digital para conectar comércios locais e prestadores de serviços de forma ágil, segura e sem custos de intermediários.
-          </p>
-        </div>
-      </div>
-
-      <div class="border-t border-border pt-8 text-center text-xs text-muted flex flex-col sm:flex-row items-center justify-between gap-4">
-        <p>&copy; 2026 XamaJá. Todos os direitos reservados.</p>
-        <p class="flex items-center gap-1.5">O X MARCA O LOCAL.</p>
-      </div>
-    </div>
-  </footer>
-
-  <script src="/script.js"></script>
-  <script>
-    // Initialize Lucide Icons
-    lucide.createIcons();
-  </script>
-</body>
+    <script src="/script.js"></script>
+    <script>
+      // Initialize Lucide Icons
+      lucide.createIcons();
+    </script>
+  </body>
 </html>

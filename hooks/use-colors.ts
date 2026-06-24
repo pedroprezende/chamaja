@@ -1,10 +1,16 @@
-import { Colors, type ColorScheme, type ThemeColorPalette } from "@/constants/theme";
+import {
+  Colors,
+  type ColorScheme,
+  type ThemeColorPalette,
+} from "@/constants/theme";
 import { useThemeContext } from "@/lib/theme-provider";
 
 /**
  * Returns the current theme's color palette.
  */
-export function useColors(colorSchemeOverride?: ColorScheme): ThemeColorPalette {
+export function useColors(
+  colorSchemeOverride?: ColorScheme,
+): ThemeColorPalette {
   if (colorSchemeOverride) {
     return Colors[colorSchemeOverride];
   }

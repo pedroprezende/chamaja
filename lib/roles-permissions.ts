@@ -82,18 +82,18 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
 export function hasPermission(
   role: UserRole,
   resource: string,
-  action: "create" | "read" | "update" | "delete"
+  action: "create" | "read" | "update" | "delete",
 ): boolean {
   const rolePerms = ROLE_PERMISSIONS[role];
   return rolePerms.permissions.some(
-    (p) => p.resource === resource && p.action === action
+    (p) => p.resource === resource && p.action === action,
   );
 }
 
 export function canManageCommerce(
   role: UserRole,
   commerceOwnerId: string,
-  currentUserId: string
+  currentUserId: string,
 ): boolean {
   // Admin pode gerenciar qualquer comércio
   if (role === "admin") {
@@ -112,7 +112,7 @@ export function canManageCommerce(
 export function canManageComerciant(
   role: UserRole,
   comerciantId: string,
-  currentUserId: string
+  currentUserId: string,
 ): boolean {
   // Admin pode gerenciar qualquer comerciante
   if (role === "admin") {

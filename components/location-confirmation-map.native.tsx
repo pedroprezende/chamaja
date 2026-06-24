@@ -35,7 +35,10 @@ export default function LocationConfirmationMapNative({
         <Pressable style={styles.cancelBtn} onPress={onCancel}>
           <Text style={styles.cancelText}>Cancelar</Text>
         </Pressable>
-        <Pressable style={styles.confirmBtn} onPress={() => onConfirm(markerCoords)}>
+        <Pressable
+          style={styles.confirmBtn}
+          onPress={() => onConfirm(markerCoords)}
+        >
           <Text style={styles.confirmText}>Confirmar Localização</Text>
         </Pressable>
       </View>

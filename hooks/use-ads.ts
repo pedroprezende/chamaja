@@ -34,14 +34,18 @@ export function useAds(onlyActive = true): UseAdsResult {
       .catch((err) => console.warn("Failed to load cached ads:", err));
   }, []);
 
-  const { data = cachedData, isLoading, refetch } = trpc.featuredAds.list.useQuery(undefined, {
+  const {
+    data = cachedData,
+    isLoading,
+    refetch,
+  } = trpc.featuredAds.list.useQuery(undefined, {
     placeholderData: cachedData.length > 0 ? cachedData : undefined,
   });
 
   useEffect(() => {
     if (data && data.length > 0 && data !== cachedData) {
-      AsyncStorage.setItem("@chamaja_cached_ads", JSON.stringify(data)).catch((err) =>
-        console.warn("Failed to save cached ads:", err)
+      AsyncStorage.setItem("@chamaja_cached_ads", JSON.stringify(data)).catch(
+        (err) => console.warn("Failed to save cached ads:", err),
       );
     }
   }, [data, cachedData]);
@@ -58,13 +62,13 @@ export function useAds(onlyActive = true): UseAdsResult {
   }, [data]);
 
   const ads = useMemo(() => {
-    return allAds.filter(a => a.isFeatured);
+    return allAds.filter((a) => a.isFeatured);
   }, [allAds]);
 
-  return { 
-    ads: onlyActive ? ads : allAds, 
-    allAds, 
-    isLoading: isLoading && cachedData.length === 0, 
-    refresh: refetch 
+  return {
+    ads: onlyActive ? ads : allAds,
+    allAds,
+    isLoading: isLoading && cachedData.length === 0,
+    refresh: refetch,
   };
 }

@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocation } from "./location-context";
 
@@ -24,7 +30,12 @@ interface CartContextType {
   deliveryAddress: string;
   setNotes: (notes: string) => void;
   setDeliveryAddress: (address: string) => void;
-  addToCart: (merchantId: string, product: CartProduct, quantity?: number, force?: boolean) => boolean;
+  addToCart: (
+    merchantId: string,
+    product: CartProduct,
+    quantity?: number,
+    force?: boolean,
+  ) => boolean;
   removeFromCart: (itemId: string) => void;
   updateQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
@@ -72,13 +83,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Salva no AsyncStorage quando houver mudanças
-  const saveCart = async (newItems: CartItem[], newMerchantId: string | null, newNotes: string, newAddress: string) => {
+  const saveCart = async (
+    newItems: CartItem[],
+    newMerchantId: string | null,
+    newNotes: string,
+    newAddress: string,
+  ) => {
     try {
       const payload = {
         items: newItems,
         merchantId: newMerchantId,
         notes: newNotes,
-        deliveryAddress: newAddress
+        deliveryAddress: newAddress,
       };
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     } catch (e) {
@@ -90,7 +106,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     targetMerchantId: string,
     product: CartProduct,
     quantity: number = 1,
-    force: boolean = false
+    force: boolean = false,
   ): boolean => {
     // Se já existem itens e são de outro comerciante
     if (items.length > 0 && merchantId !== targetMerchantId) {
@@ -103,7 +119,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         name: product.name,
         price: product.price,
         quantity,
-        imageUri: product.imageUri
+        imageUri: product.imageUri,
       };
       const newItems = [newItem];
       setItems(newItems);
@@ -125,7 +141,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         name: product.name,
         price: product.price,
         quantity,
-        imageUri: product.imageUri
+        imageUri: product.imageUri,
       });
     }
 
@@ -138,7 +154,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const removeFromCart = (itemId: string) => {
     const newItems = items.filter((item) => item.id !== itemId);
     const newMerchantId = newItems.length === 0 ? null : merchantId;
-    
+
     setItems(newItems);
     setMerchantId(newMerchantId);
     saveCart(newItems, newMerchantId, notes, deliveryAddress);
@@ -150,7 +166,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return;
     }
     const newItems = items.map((item) =>
-      item.id === itemId ? { ...item, quantity } : item
+      item.id === itemId ? { ...item, quantity } : item,
     );
     setItems(newItems);
     saveCart(newItems, merchantId, notes, deliveryAddress);
@@ -173,7 +189,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     saveCart(items, merchantId, notes, val);
   };
 
-  const cartTotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const cartTotal = items.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0,
+  );
   const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
@@ -190,7 +209,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         updateQuantity,
         clearCart,
         cartTotal,
-        cartCount
+        cartCount,
       }}
     >
       {children}

@@ -30,7 +30,11 @@ describe("Roles and Permissions", () => {
     });
 
     it("admin should be able to manage any comerciant", () => {
-      const canManage = canManageComerciant("admin", "comerciant-123", "user-456");
+      const canManage = canManageComerciant(
+        "admin",
+        "comerciant-123",
+        "user-456",
+      );
       expect(canManage).toBe(true);
     });
   });
@@ -67,7 +71,11 @@ describe("Roles and Permissions", () => {
     it("comerciante should NOT manage other commerce", () => {
       const otherCommerceId = "commerce-456";
       const userId = "comerciant-123";
-      const canManage = canManageCommerce("comerciante", otherCommerceId, userId);
+      const canManage = canManageCommerce(
+        "comerciante",
+        otherCommerceId,
+        userId,
+      );
       expect(canManage).toBe(false);
     });
 
@@ -109,7 +117,11 @@ describe("Roles and Permissions", () => {
     });
 
     it("cliente should NOT manage any commerce", () => {
-      const canManage = canManageCommerce("cliente", "commerce-123", "user-456");
+      const canManage = canManageCommerce(
+        "cliente",
+        "commerce-123",
+        "user-456",
+      );
       expect(canManage).toBe(false);
     });
   });
@@ -137,7 +149,7 @@ describe("Roles and Permissions", () => {
 
       resources.forEach((resource) => {
         const hasRead = adminPerms.permissions.some(
-          (p) => p.resource === resource && p.action === "read"
+          (p) => p.resource === resource && p.action === "read",
         );
         expect(hasRead).toBe(true);
       });

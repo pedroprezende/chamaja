@@ -51,7 +51,7 @@ export default function SignupScreen() {
 
       setIsLoading(true);
       const result = await auth.signUpWithEmail(email, password, name);
-      
+
       if (result.needsConfirmation) {
         Alert.alert(
           "Cadastro Realizado!",
@@ -61,27 +61,25 @@ export default function SignupScreen() {
               text: "Entendi",
               onPress: () => router.replace("/auth/login" as any),
             },
-          ]
+          ],
         );
       } else {
         // Redirecionamento explícito
-        Alert.alert(
-          "Sucesso!",
-          "Conta criada com sucesso!",
-          [
-            {
-              text: "Avançar",
-              onPress: async () => {
-                const isBusinessFlag = await AsyncStorage.getItem("@chamaja_login_as_business");
-                if (isBusinessFlag === "true") {
-                  router.replace("/register-professional" as any);
-                } else {
-                  router.replace("/(tabs)" as any);
-                }
-              },
+        Alert.alert("Sucesso!", "Conta criada com sucesso!", [
+          {
+            text: "Avançar",
+            onPress: async () => {
+              const isBusinessFlag = await AsyncStorage.getItem(
+                "@chamaja_login_as_business",
+              );
+              if (isBusinessFlag === "true") {
+                router.replace("/register-professional" as any);
+              } else {
+                router.replace("/(tabs)" as any);
+              }
             },
-          ]
-        );
+          },
+        ]);
       }
     } catch (error: any) {
       Alert.alert("Erro", error.message || "Não foi possível criar a conta");
@@ -99,21 +97,41 @@ export default function SignupScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Pressable
-            style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
+            style={({ pressed }) => [
+              styles.backBtn,
+              pressed && { opacity: 0.6 },
+            ]}
             onPress={() => router.back()}
           >
-            <MaterialIcons name="arrow-back" size={24} color={colors.foreground} />
+            <MaterialIcons
+              name="arrow-back"
+              size={24}
+              color={colors.foreground}
+            />
           </Pressable>
-          <Text style={[styles.title, { color: colors.foreground }]}>Criar Conta</Text>
+          <Text style={[styles.title, { color: colors.foreground }]}>
+            Criar Conta
+          </Text>
         </View>
 
         {/* Form */}
         <View style={styles.form}>
           {/* Name Input */}
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.foreground }]}>Nome completo</Text>
-            <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <MaterialIcons name="person-outline" size={18} color={colors.muted} />
+            <Text style={[styles.label, { color: colors.foreground }]}>
+              Nome completo
+            </Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
+            >
+              <MaterialIcons
+                name="person-outline"
+                size={18}
+                color={colors.muted}
+              />
               <TextInput
                 style={[styles.input, { color: colors.foreground }]}
                 placeholder="Seu nome"
@@ -130,9 +148,20 @@ export default function SignupScreen() {
 
           {/* Email Input */}
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.foreground }]}>Email</Text>
-            <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <MaterialIcons name="mail-outline" size={18} color={colors.muted} />
+            <Text style={[styles.label, { color: colors.foreground }]}>
+              Email
+            </Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
+            >
+              <MaterialIcons
+                name="mail-outline"
+                size={18}
+                color={colors.muted}
+              />
               <TextInput
                 style={[styles.input, { color: colors.foreground }]}
                 placeholder="seu@email.com"
@@ -152,9 +181,20 @@ export default function SignupScreen() {
 
           {/* Password Input */}
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.foreground }]}>Senha</Text>
-            <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <MaterialIcons name="lock-outline" size={18} color={colors.muted} />
+            <Text style={[styles.label, { color: colors.foreground }]}>
+              Senha
+            </Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
+            >
+              <MaterialIcons
+                name="lock-outline"
+                size={18}
+                color={colors.muted}
+              />
               <TextInput
                 style={[styles.input, { color: colors.foreground }]}
                 placeholder="Mínimo 6 caracteres"
@@ -180,9 +220,20 @@ export default function SignupScreen() {
 
           {/* Confirm Password Input */}
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.foreground }]}>Confirmar senha</Text>
-            <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <MaterialIcons name="lock-outline" size={18} color={colors.muted} />
+            <Text style={[styles.label, { color: colors.foreground }]}>
+              Confirmar senha
+            </Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
+            >
+              <MaterialIcons
+                name="lock-outline"
+                size={18}
+                color={colors.muted}
+              />
               <TextInput
                 style={[styles.input, { color: colors.foreground }]}
                 placeholder="Confirme sua senha"
@@ -218,9 +269,13 @@ export default function SignupScreen() {
 
           {/* Login Link */}
           <View style={styles.loginContainer}>
-            <Text style={[styles.loginText, { color: colors.muted }]}>Já tem conta? </Text>
+            <Text style={[styles.loginText, { color: colors.muted }]}>
+              Já tem conta?{" "}
+            </Text>
             <Pressable onPress={() => router.back()} disabled={isLoading}>
-              <Text style={[styles.loginLink, { color: colors.primary }]}>Faça login</Text>
+              <Text style={[styles.loginLink, { color: colors.primary }]}>
+                Faça login
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -228,7 +283,8 @@ export default function SignupScreen() {
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={[styles.footerText, { color: colors.muted }]}>
-            Ao criar uma conta, você concorda com nossos Termos de Serviço e Política de Privacidade
+            Ao criar uma conta, você concorda com nossos Termos de Serviço e
+            Política de Privacidade
           </Text>
         </View>
       </ScrollView>

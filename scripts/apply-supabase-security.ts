@@ -178,9 +178,13 @@ async function applySecurity() {
   const sql = postgres(dbUrl, { max: 1 });
 
   try {
-    console.log("Executando transação de endurecimento de segurança no Supabase...");
+    console.log(
+      "Executando transação de endurecimento de segurança no Supabase...",
+    );
     await sql.unsafe(SQL_SCRIPT);
-    console.log("🎉 SUCESSO! Row Level Security, Políticas de Acesso, Search Path de Funções e Políticas de Buckets aplicados perfeitamente!");
+    console.log(
+      "🎉 SUCESSO! Row Level Security, Políticas de Acesso, Search Path de Funções e Políticas de Buckets aplicados perfeitamente!",
+    );
   } catch (error) {
     console.error("❌ ERRO crítico ao aplicar segurança:", error);
     process.exit(1);

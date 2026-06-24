@@ -28,9 +28,12 @@ export default function WhatsappOrderScreen() {
   const { items, notes, deliveryAddress, cartTotal, clearCart } = useCart();
 
   // Busca detalhes do comércio para obter o número do WhatsApp
-  const { data: professional, isLoading } = trpc.providers.getById.useQuery(id as string, {
-    enabled: !!id,
-  });
+  const { data: professional, isLoading } = trpc.providers.getById.useQuery(
+    id as string,
+    {
+      enabled: !!id,
+    },
+  );
 
   const isFood = (professional?.businessType || "servicos") === "alimentacao";
 
@@ -63,7 +66,7 @@ export default function WhatsappOrderScreen() {
       msg += "📝 Observação:\n";
       msg += `${notes.trim() ? notes.trim() : "(sem observações)"}\n\n`;
     }
-    
+
     msg += "Aguardo confirmação, obrigado! 😊";
 
     return msg;
@@ -75,7 +78,10 @@ export default function WhatsappOrderScreen() {
 
     const phone = professional.phone || professional.whatsapp || "";
     if (!phone) {
-      Alert.alert("Erro", "Este estabelecimento não possui um telefone cadastrado.");
+      Alert.alert(
+        "Erro",
+        "Este estabelecimento não possui um telefone cadastrado.",
+      );
       return;
     }
 
@@ -93,7 +99,7 @@ export default function WhatsappOrderScreen() {
         clearCart();
         router.replace({
           pathname: "/professional/[id]" as any,
-          params: { id: id }
+          params: { id: id },
         });
       })
       .catch(() => {
@@ -103,20 +109,30 @@ export default function WhatsappOrderScreen() {
             clearCart();
             router.replace({
               pathname: "/professional/[id]" as any,
-              params: { id: id }
+              params: { id: id },
             });
           })
           .catch(() => {
-            Alert.alert("Erro", "Não foi possível abrir o WhatsApp. Certifique-se de que ele está instalado no dispositivo.");
+            Alert.alert(
+              "Erro",
+              "Não foi possível abrir o WhatsApp. Certifique-se de que ele está instalado no dispositivo.",
+            );
           });
       });
   };
 
   if (isLoading) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+      <View
+        style={[
+          styles.loadingContainer,
+          { backgroundColor: colors.background },
+        ]}
+      >
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.muted }]}>Carregando dados do pedido...</Text>
+        <Text style={[styles.loadingText, { color: colors.muted }]}>
+          Carregando dados do pedido...
+        </Text>
       </View>
     );
   }
@@ -124,9 +140,22 @@ export default function WhatsappOrderScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8, backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+      <View
+        style={[
+          styles.header,
+          {
+            paddingTop: insets.top + 8,
+            backgroundColor: colors.surface,
+            borderBottomColor: colors.border,
+          },
+        ]}
+      >
         <Pressable onPress={() => router.back()} style={styles.headerBackBtn}>
-          <MaterialIcons name="arrow-back" size={24} color={colors.foreground} />
+          <MaterialIcons
+            name="arrow-back"
+            size={24}
+            color={colors.foreground}
+          />
         </Pressable>
         <View style={styles.headerTitleContainer}>
           <Text style={[styles.headerTitle, { color: colors.foreground }]}>
@@ -136,7 +165,10 @@ export default function WhatsappOrderScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
         <Text style={[styles.infoLabel, { color: colors.muted }]}>
           Confira como seu pedido será enviado:
         </Text>
@@ -147,34 +179,51 @@ export default function WhatsappOrderScreen() {
             <View style={styles.whatsappHeader}>
               <Text style={styles.whatsappHeaderTitle}>Você</Text>
               <Text style={styles.whatsappTime}>
-                {new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                {new Date().toLocaleTimeString("pt-BR", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
               </Text>
             </View>
             <Text style={styles.whatsappText}>
               Olá! 👋{"\n"}
               Encontrei vocês pelo XamaJá e gostaria de fazer um pedido:{"\n\n"}
-              <Text style={{ fontWeight: "700" }}>🖥️ MEU PEDIDO:</Text>{"\n"}
+              <Text style={{ fontWeight: "700" }}>🖥️ MEU PEDIDO:</Text>
+              {"\n"}
               {items.map((item) => {
                 const maxLen = 22;
                 const itemName = item.name || "Produto";
                 const namePart = itemName.substring(0, maxLen);
-                const padding = ".".repeat(Math.max(2, maxLen - namePart.length + 4));
+                const padding = ".".repeat(
+                  Math.max(2, maxLen - namePart.length + 4),
+                );
                 const itemQuantity = item.quantity || 1;
                 const itemPrice = item.price || 0;
                 return (
                   <Text key={item.id}>
-                    • {itemQuantity}x {namePart} {padding} R$ ${(itemPrice * itemQuantity).toFixed(2)}{"\n"}
+                    • {itemQuantity}x {namePart} {padding} R$ $
+                    {(itemPrice * itemQuantity).toFixed(2)}
+                    {"\n"}
                   </Text>
                 );
               })}
               {"\n"}
-              <Text style={{ fontWeight: "700" }}>💰 Total: R$ {cartTotal.toFixed(2)}</Text>{"\n\n"}
-              <Text style={{ fontWeight: "700" }}>{isFood ? "📍 Entrega" : "📍 Local do Atendimento"}</Text>{"\n"}
-              {deliveryAddress}{"\n\n"}
+              <Text style={{ fontWeight: "700" }}>
+                💰 Total: R$ {cartTotal.toFixed(2)}
+              </Text>
+              {"\n\n"}
+              <Text style={{ fontWeight: "700" }}>
+                {isFood ? "📍 Entrega" : "📍 Local do Atendimento"}
+              </Text>
+              {"\n"}
+              {deliveryAddress}
+              {"\n\n"}
               {isFood && (
                 <>
-                  <Text style={{ fontWeight: "700" }}>📝 Observação:</Text>{"\n"}
-                  {notes.trim() ? notes.trim() : "(sem observações)"}{"\n\n"}
+                  <Text style={{ fontWeight: "700" }}>📝 Observação:</Text>
+                  {"\n"}
+                  {notes.trim() ? notes.trim() : "(sem observações)"}
+                  {"\n\n"}
                 </>
               )}
               Aguardo confirmação, obrigado! 😊
@@ -186,21 +235,36 @@ export default function WhatsappOrderScreen() {
         </View>
 
         {/* Banner de Aviso */}
-        <View style={[styles.warningBanner, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <View
+          style={[
+            styles.warningBanner,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+        >
           <MaterialIcons name="info-outline" size={20} color={colors.primary} />
           <Text style={[styles.warningText, { color: colors.muted }]}>
-            Ao enviar, você será direcionado para o WhatsApp do estabelecimento para finalizar seu pedido.
+            Ao enviar, você será direcionado para o WhatsApp do estabelecimento
+            para finalizar seu pedido.
           </Text>
         </View>
       </ScrollView>
 
       {/* Footer Checkout CTA */}
-      <View style={[styles.footer, { backgroundColor: colors.surface, borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 16) }]}>
+      <View
+        style={[
+          styles.footer,
+          {
+            backgroundColor: colors.surface,
+            borderTopColor: colors.border,
+            paddingBottom: Math.max(insets.bottom, 16),
+          },
+        ]}
+      >
         <Pressable
           style={({ pressed }) => [
             styles.checkoutBtn,
             { backgroundColor: colors.primary },
-            pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] }
+            pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
           ]}
           onPress={handleSendOrder}
         >

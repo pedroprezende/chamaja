@@ -14,11 +14,24 @@ import { useRouter, usePathname } from "expo-router";
 const TABS = [
   { key: "inicio", label: "Início", icon: "home", route: "/" },
   { key: "buscar", label: "Buscar", icon: "search", route: "/search" },
-  { key: "favoritos", label: "Favoritos", icon: "favorite-border", route: "/favorites" },
+  {
+    key: "favoritos",
+    label: "Favoritos",
+    icon: "favorite-border",
+    route: "/favorites",
+  },
   { key: "perfil", label: "Perfil", icon: "person-outline", route: "/profile" },
 ] as const;
 
-function DecoupledTabBar({ colors, insets, unreadCount }: { colors: any; insets: any; unreadCount: number }) {
+function DecoupledTabBar({
+  colors,
+  insets,
+  unreadCount,
+}: {
+  colors: any;
+  insets: any;
+  unreadCount: number;
+}) {
   const router = useRouter();
   const pathname = usePathname();
 
@@ -33,7 +46,16 @@ function DecoupledTabBar({ colors, insets, unreadCount }: { colors: any; insets:
   const active = getActive();
 
   return (
-    <View style={[styles.tabBarContainer, { backgroundColor: colors.surface, borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 8) }]}>
+    <View
+      style={[
+        styles.tabBarContainer,
+        {
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
+          paddingBottom: Math.max(insets.bottom, 8),
+        },
+      ]}
+    >
       {TABS.map((tab) => {
         const isActive = active === tab.key;
         return (
@@ -53,7 +75,13 @@ function DecoupledTabBar({ colors, insets, unreadCount }: { colors: any; insets:
               size={24}
               color={isActive ? colors.primary : colors.muted}
             />
-            <Text style={[styles.label, { color: isActive ? colors.primary : colors.muted }, isActive && styles.labelActive]}>
+            <Text
+              style={[
+                styles.label,
+                { color: isActive ? colors.primary : colors.muted },
+                isActive && styles.labelActive,
+              ]}
+            >
               {tab.label}
             </Text>
             {tab.key === "perfil" && unreadCount > 0 && (
@@ -74,21 +102,28 @@ export default function TabLayout() {
   const { unreadCount } = useNotifications();
 
   return (
-    <View className="chama-tabs-container" style={{ flex: 1, overflow: 'visible' }}>
-      <Tabs
-      tabBar={() => null}
-      screenOptions={{
-        headerShown: false,
-      }}
+    <View
+      className="chama-tabs-container"
+      style={{ flex: 1, overflow: "visible" }}
     >
-      <Tabs.Screen name="index" options={{ title: "Início" }} />
-      <Tabs.Screen name="search" options={{ title: "Buscar" }} />
-      <Tabs.Screen name="favorites" options={{ title: "Favoritos" }} />
-      <Tabs.Screen name="profile" options={{ title: "Perfil" }} />
+      <Tabs
+        tabBar={() => null}
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
+        <Tabs.Screen name="index" options={{ title: "Início" }} />
+        <Tabs.Screen name="search" options={{ title: "Buscar" }} />
+        <Tabs.Screen name="favorites" options={{ title: "Favoritos" }} />
+        <Tabs.Screen name="profile" options={{ title: "Perfil" }} />
       </Tabs>
-      
+
       {/* Navbar Desacoplada com a exata mesma estrutura do AdminTabBar */}
-      <DecoupledTabBar colors={colors} insets={insets} unreadCount={unreadCount} />
+      <DecoupledTabBar
+        colors={colors}
+        insets={insets}
+        unreadCount={unreadCount}
+      />
     </View>
   );
 }
@@ -132,5 +167,5 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 10,
     fontWeight: "bold",
-  }
+  },
 });

@@ -44,13 +44,13 @@ export interface Service {
 
 // ── Chaves do AsyncStorage ──────────────────────────────────────────────────
 const STORAGE_KEY_SERVICES = "@chamaja_admin_services";
-const STORAGE_KEY_ADMINS   = "@chamaja_admin_accounts";
+const STORAGE_KEY_ADMINS = "@chamaja_admin_accounts";
 
 // ── Estado em memória (cache) ───────────────────────────────────────────────
 let _servicesInitialized = false;
-let _adminsInitialized   = false;
-let _services: Service[]      = [];
-let _admins:   AdminAccount[] = [];
+let _adminsInitialized = false;
+let _services: Service[] = [];
+let _admins: AdminAccount[] = [];
 
 // ── Admin padrão ────────────────────────────────────────────────────────────
 const DEFAULT_ADMIN: AdminAccount = {
@@ -124,7 +124,7 @@ export const adminDB = {
     email: string,
     password: string,
     name: string,
-    role: UserRole = "CONTRACTOR"
+    role: UserRole = "CONTRACTOR",
   ): Promise<AdminAccount> => {
     await ensureAdminsLoaded();
     const existing = _admins.find((a) => a.email === email);
@@ -159,7 +159,7 @@ export const adminDB = {
 
   updateAdmin: async (
     id: string,
-    updates: Partial<AdminAccount>
+    updates: Partial<AdminAccount>,
   ): Promise<AdminAccount> => {
     await ensureAdminsLoaded();
     const idx = _admins.findIndex((a) => a.id === id);
@@ -200,10 +200,13 @@ export const adminDB = {
     address?: string,
     gallery?: string[],
     subcategoryId?: string,
-    subcategoryName?: string
+    subcategoryName?: string,
   ): Promise<Service> => {
     await ensureServicesLoaded();
-    const maxOrder = _services.length > 0 ? Math.max(..._services.map((s) => s.displayOrder ?? 0)) : -1;
+    const maxOrder =
+      _services.length > 0
+        ? Math.max(..._services.map((s) => s.displayOrder ?? 0))
+        : -1;
     const service: Service = {
       id: `service-${Date.now()}`,
       adminId,
@@ -256,7 +259,7 @@ export const adminDB = {
 
   updateService: async (
     id: string,
-    updates: Partial<Service>
+    updates: Partial<Service>,
   ): Promise<Service> => {
     await ensureServicesLoaded();
     const idx = _services.findIndex((s) => s.id === id);
@@ -281,11 +284,16 @@ export const adminDB = {
       await persistServices();
       // Track the deleted ID locally for server sync
       try {
-        const raw = await AsyncStorage.getItem("@chamaja_admin_deleted_services");
+        const raw = await AsyncStorage.getItem(
+          "@chamaja_admin_deleted_services",
+        );
         const current: string[] = raw ? JSON.parse(raw) : [];
         if (!current.includes(id)) {
           current.push(id);
-          await AsyncStorage.setItem("@chamaja_admin_deleted_services", JSON.stringify(current));
+          await AsyncStorage.setItem(
+            "@chamaja_admin_deleted_services",
+            JSON.stringify(current),
+          );
         }
       } catch (e) {
         console.warn("Failed to track deleted service ID locally:", e);
@@ -302,7 +310,9 @@ export const adminDB = {
       ...s,
       displayOrder: s.displayOrder ?? i,
     }));
-    return [..._services].sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+    return [..._services].sort(
+      (a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0),
+    );
   },
 
   /**
@@ -319,7 +329,7 @@ export const adminDB = {
     imageUri?: string,
     categoryId?: string,
     showOnHome?: boolean,
-    whatsapp?: string
+    whatsapp?: string,
   ): Promise<Service> => {
     await ensureServicesLoaded();
     const existingIdx = _services.findIndex((s) => s.id === id);
@@ -341,7 +351,10 @@ export const adminDB = {
       return _services[existingIdx];
     }
     // Criar novo com ID customizado
-    const maxOrder2 = _services.length > 0 ? Math.max(..._services.map((s) => s.displayOrder ?? 0)) : -1;
+    const maxOrder2 =
+      _services.length > 0
+        ? Math.max(..._services.map((s) => s.displayOrder ?? 0))
+        : -1;
     const service: Service = {
       id,
       adminId,
@@ -366,7 +379,7 @@ export const adminDB = {
   // Verificar permissão
   canManageService: async (
     userId: string,
-    serviceId: string
+    serviceId: string,
   ): Promise<boolean> => {
     const user = await adminDB.getAdminById(userId);
     if (!user) return false;
@@ -385,9 +398,9 @@ export const adminDB = {
    */
   resetCache: (): void => {
     _servicesInitialized = false;
-    _adminsInitialized   = false;
+    _adminsInitialized = false;
     _services = [];
-    _admins   = [];
+    _admins = [];
   },
 
   // ── Rastreamento de exclusões para sincronização ─────────────────────────────
@@ -406,7 +419,10 @@ export const adminDB = {
       const current: string[] = raw ? JSON.parse(raw) : [];
       if (!current.includes(id)) {
         current.push(id);
-        await AsyncStorage.setItem("@chamaja_admin_deleted_services", JSON.stringify(current));
+        await AsyncStorage.setItem(
+          "@chamaja_admin_deleted_services",
+          JSON.stringify(current),
+        );
       }
     } catch {}
   },

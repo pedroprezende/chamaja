@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ScrollView,
+  ActivityIndicator,
+} from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -25,7 +32,9 @@ export default function LocationDebugScreen() {
   const loadDebugInfo = async () => {
     setLoading(true);
     try {
-      const raw = await AsyncStorage.getItem("@chamaja_last_geocoded_debug_info");
+      const raw = await AsyncStorage.getItem(
+        "@chamaja_last_geocoded_debug_info",
+      );
       if (raw) {
         setDebugInfo(JSON.parse(raw));
       } else {
@@ -47,7 +56,12 @@ export default function LocationDebugScreen() {
     return val.toFixed(7);
   };
 
-  const getDifferenceInMeters = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const getDifferenceInMeters = (
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number,
+  ) => {
     const R = 6371e3; // metres
     const phi1 = (lat1 * Math.PI) / 180;
     const phi2 = (lat2 * Math.PI) / 180;
@@ -56,7 +70,10 @@ export default function LocationDebugScreen() {
 
     const a =
       Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
-      Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+      Math.cos(phi1) *
+        Math.cos(phi2) *
+        Math.sin(deltaLambda / 2) *
+        Math.sin(deltaLambda / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
     const d = R * c; // in metres
@@ -64,7 +81,12 @@ export default function LocationDebugScreen() {
   };
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+    <View
+      style={[
+        styles.root,
+        { backgroundColor: colors.background, paddingTop: insets.top },
+      ]}
+    >
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <Pressable
@@ -72,14 +94,25 @@ export default function LocationDebugScreen() {
           onPress={() => router.back()}
           hitSlop={8}
         >
-          <MaterialIcons name="arrow-back" size={22} color={colors.foreground} />
+          <MaterialIcons
+            name="arrow-back"
+            size={22}
+            color={colors.foreground}
+          />
         </Pressable>
         <View style={styles.headerCenter}>
-          <Text style={[styles.headerTitle, { color: colors.foreground }]}>Debug de Geolocalização</Text>
-          <Text style={[styles.headerSub, { color: colors.muted }]}>Último endereço geocodificado</Text>
+          <Text style={[styles.headerTitle, { color: colors.foreground }]}>
+            Debug de Geolocalização
+          </Text>
+          <Text style={[styles.headerSub, { color: colors.muted }]}>
+            Último endereço geocodificado
+          </Text>
         </View>
         <Pressable
-          style={({ pressed }) => [styles.refreshBtn, pressed && { opacity: 0.6 }]}
+          style={({ pressed }) => [
+            styles.refreshBtn,
+            pressed && { opacity: 0.6 },
+          ]}
           onPress={loadDebugInfo}
           hitSlop={8}
         >
@@ -93,79 +126,167 @@ export default function LocationDebugScreen() {
         </View>
       ) : !debugInfo ? (
         <View style={styles.emptyState}>
-          <MaterialIcons name="location-off" size={48} color={colors.muted} style={{ marginBottom: 12 }} />
-          <Text style={[styles.emptyTitle, { color: colors.foreground }]}>Nenhum dado registrado</Text>
+          <MaterialIcons
+            name="location-off"
+            size={48}
+            color={colors.muted}
+            style={{ marginBottom: 12 }}
+          />
+          <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
+            Nenhum dado registrado
+          </Text>
           <Text style={[styles.emptySubtitle, { color: colors.muted }]}>
-            Adicione ou edite um endereço no mapa para registrar as estatísticas de debug.
+            Adicione ou edite um endereço no mapa para registrar as estatísticas
+            de debug.
           </Text>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Endereço Informado */}
-          <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
             <View style={styles.cardHeader}>
               <MaterialIcons name="place" size={20} color={colors.primary} />
-              <Text style={[styles.cardTitle, { color: colors.foreground }]}>Endereço Informado</Text>
+              <Text style={[styles.cardTitle, { color: colors.foreground }]}>
+                Endereço Informado
+              </Text>
             </View>
             <Text style={[styles.addressText, { color: colors.foreground }]}>
               {debugInfo.inputtedAddress}
             </Text>
             <Text style={[styles.timestampText, { color: colors.muted }]}>
-              Registrado em: {new Date(debugInfo.timestamp).toLocaleString("pt-BR")}
+              Registrado em:{" "}
+              {new Date(debugInfo.timestamp).toLocaleString("pt-BR")}
             </Text>
           </View>
 
           {/* Coordenadas Retornadas pela Geocodificação */}
-          <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
             <View style={styles.cardHeader}>
               <MaterialIcons name="satellite" size={20} color="#F59E0B" />
-              <Text style={[styles.cardTitle, { color: colors.foreground }]}>Retorno OSM (Nominatim)</Text>
+              <Text style={[styles.cardTitle, { color: colors.foreground }]}>
+                Retorno OSM (Nominatim)
+              </Text>
             </View>
             <View style={styles.coordRow}>
-              <Text style={[styles.coordLabel, { color: colors.muted }]}>Latitude:</Text>
-              <Text style={[styles.coordValue, { color: colors.foreground }]}>{formatCoord(debugInfo.geocodedLat)}</Text>
+              <Text style={[styles.coordLabel, { color: colors.muted }]}>
+                Latitude:
+              </Text>
+              <Text style={[styles.coordValue, { color: colors.foreground }]}>
+                {formatCoord(debugInfo.geocodedLat)}
+              </Text>
             </View>
             <View style={styles.coordRow}>
-              <Text style={[styles.coordLabel, { color: colors.muted }]}>Longitude:</Text>
-              <Text style={[styles.coordValue, { color: colors.foreground }]}>{formatCoord(debugInfo.geocodedLng)}</Text>
+              <Text style={[styles.coordLabel, { color: colors.muted }]}>
+                Longitude:
+              </Text>
+              <Text style={[styles.coordValue, { color: colors.foreground }]}>
+                {formatCoord(debugInfo.geocodedLng)}
+              </Text>
             </View>
           </View>
 
           {/* Coordenadas Finais Confirmadas */}
-          <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, borderLeftColor: colors.primary, borderLeftWidth: 4 }]}>
+          <View
+            style={[
+              styles.card,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                borderLeftColor: colors.primary,
+                borderLeftWidth: 4,
+              },
+            ]}
+          >
             <View style={styles.cardHeader}>
-              <MaterialIcons name="check-circle" size={20} color={colors.primary} />
-              <Text style={[styles.cardTitle, { color: colors.foreground, fontWeight: "700" }]}>Confirmado pelo Usuário</Text>
+              <MaterialIcons
+                name="check-circle"
+                size={20}
+                color={colors.primary}
+              />
+              <Text
+                style={[
+                  styles.cardTitle,
+                  { color: colors.foreground, fontWeight: "700" },
+                ]}
+              >
+                Confirmado pelo Usuário
+              </Text>
             </View>
             <View style={styles.coordRow}>
-              <Text style={[styles.coordLabel, { color: colors.muted }]}>Latitude final:</Text>
-              <Text style={[styles.coordValue, { color: colors.primary, fontWeight: "700" }]}>{formatCoord(debugInfo.finalSavedLat)}</Text>
+              <Text style={[styles.coordLabel, { color: colors.muted }]}>
+                Latitude final:
+              </Text>
+              <Text
+                style={[
+                  styles.coordValue,
+                  { color: colors.primary, fontWeight: "700" },
+                ]}
+              >
+                {formatCoord(debugInfo.finalSavedLat)}
+              </Text>
             </View>
             <View style={styles.coordRow}>
-              <Text style={[styles.coordLabel, { color: colors.muted }]}>Longitude final:</Text>
-              <Text style={[styles.coordValue, { color: colors.primary, fontWeight: "700" }]}>{formatCoord(debugInfo.finalSavedLng)}</Text>
+              <Text style={[styles.coordLabel, { color: colors.muted }]}>
+                Longitude final:
+              </Text>
+              <Text
+                style={[
+                  styles.coordValue,
+                  { color: colors.primary, fontWeight: "700" },
+                ]}
+              >
+                {formatCoord(debugInfo.finalSavedLng)}
+              </Text>
             </View>
           </View>
 
           {/* Diferença e Precisão */}
-          <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
             <View style={styles.cardHeader}>
               <MaterialIcons name="insights" size={20} color="#3b82f6" />
-              <Text style={[styles.cardTitle, { color: colors.foreground }]}>Ajuste Manual do Usuário</Text>
+              <Text style={[styles.cardTitle, { color: colors.foreground }]}>
+                Ajuste Manual do Usuário
+              </Text>
             </View>
             <View style={styles.coordRow}>
-              <Text style={[styles.coordLabel, { color: colors.muted }]}>Diferença (m):</Text>
-              <Text style={[styles.coordValue, { color: colors.foreground, fontWeight: "700" }]}>
+              <Text style={[styles.coordLabel, { color: colors.muted }]}>
+                Diferença (m):
+              </Text>
+              <Text
+                style={[
+                  styles.coordValue,
+                  { color: colors.foreground, fontWeight: "700" },
+                ]}
+              >
                 {getDifferenceInMeters(
                   debugInfo.geocodedLat,
                   debugInfo.geocodedLng,
                   debugInfo.finalSavedLat,
-                  debugInfo.finalSavedLng
+                  debugInfo.finalSavedLng,
                 )}
               </Text>
             </View>
             <Text style={[styles.infoHintText, { color: colors.muted }]}>
-              Esta distância representa a correção manual feita no mapa em relação ao ponto inicial sugerido pela busca do OpenStreetMap.
+              Esta distância representa a correção manual feita no mapa em
+              relação ao ponto inicial sugerido pela busca do OpenStreetMap.
             </Text>
           </View>
         </ScrollView>

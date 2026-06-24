@@ -47,10 +47,19 @@ interface GeocodedAddress {
   cep?: string;
 }
 
-export default function AddressSelectorModal({ visible, onClose }: AddressSelectorModalProps) {
-  const { coords, addressName, updateLocation, useGpsLocation, loading: locationLoading } = useLocation();
+export default function AddressSelectorModal({
+  visible,
+  onClose,
+}: AddressSelectorModalProps) {
+  const {
+    coords,
+    addressName,
+    updateLocation,
+    useGpsLocation,
+    loading: locationLoading,
+  } = useLocation();
   const { user } = useAuth();
-  
+
   const userId = user?.id || "guest";
   const storageKey = `@chamaja_saved_user_addresses_${userId}`;
 
@@ -62,10 +71,13 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
 
   // Saved Addresses State
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
-  
-  const [selectedSearchAddress, setSelectedSearchAddress] = useState<GeocodedAddress | null>(null);
+
+  const [selectedSearchAddress, setSelectedSearchAddress] =
+    useState<GeocodedAddress | null>(null);
   const [customLabel, setCustomLabel] = useState("");
-  const [activeLabelType, setActiveLabelType] = useState<"casa" | "trabalho" | "outro">("casa");
+  const [activeLabelType, setActiveLabelType] = useState<
+    "casa" | "trabalho" | "outro"
+  >("casa");
   const [saving, setSaving] = useState(false);
   const [customNumber, setCustomNumber] = useState("");
   const [customComplement, setCustomComplement] = useState("");
@@ -77,8 +89,14 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
 
   // Confirmation Map States
   const [showConfirmationMap, setShowConfirmationMap] = useState(false);
-  const [tempGeocodedCoords, setTempGeocodedCoords] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [initialGeocodedCoords, setInitialGeocodedCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [tempGeocodedCoords, setTempGeocodedCoords] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+  const [initialGeocodedCoords, setInitialGeocodedCoords] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
 
   // Load saved addresses on open/mount
   const loadSavedAddresses = async () => {
@@ -126,7 +144,9 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
       const cleanInput = addressInput.trim().replace(/\D/g, "");
       if (cleanInput.length === 8) {
         try {
-          const res = await fetch(`https://viacep.com.br/ws/${cleanInput}/json/`);
+          const res = await fetch(
+            `https://viacep.com.br/ws/${cleanInput}/json/`,
+          );
           const viaCepData = await res.json();
           if (viaCepData && !viaCepData.erro) {
             const street = viaCepData.logradouro;
@@ -141,18 +161,19 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
             setCustomCep(viaCepData.cep);
 
             // Fetch coordinates for the street as fallback, including CEP
-            let lat = coords?.latitude ?? -22.9520;
-            let lon = coords?.longitude ?? -46.5420;
+            let lat = coords?.latitude ?? -22.952;
+            let lon = coords?.longitude ?? -46.542;
             try {
               const nomRes = await fetch(
                 `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
-                  `${street}, ${neighborhood}, ${city}, ${viaCepData.cep}, Brasil`
+                  `${street}, ${neighborhood}, ${city}, ${viaCepData.cep}, Brasil`,
                 )}&format=json&limit=1`,
                 {
                   headers: {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                    "User-Agent":
+                      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                   },
-                }
+                },
               );
               const nomData = await nomRes.json();
               if (Array.isArray(nomData) && nomData.length > 0) {
@@ -194,13 +215,14 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
         try {
           const res = await fetch(
             `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
-              q
+              q,
             )}&format=json&limit=5&addressdetails=1&countrycodes=br`,
             {
               headers: {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "User-Agent":
+                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
               },
-            }
+            },
           );
           return await res.json();
         } catch (e) {
@@ -212,48 +234,75 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
       let data = await fetchNominatim(queryStr);
 
       // Fallback 1: Try fuzzy spelling replacement for common typos like sabela -> sabella
-      if ((!Array.isArray(data) || data.length === 0) && queryStr.toLowerCase().includes("sabela")) {
+      if (
+        (!Array.isArray(data) || data.length === 0) &&
+        queryStr.toLowerCase().includes("sabela")
+      ) {
         const fuzzyQuery = queryStr.replace(/sabela/gi, "sabella");
         data = await fetchNominatim(fuzzyQuery);
       }
 
       // Fallback 2: Try stripping the house number (e.g. "rua vicente sabela 997" -> "rua vicente sabela")
       if (!Array.isArray(data) || data.length === 0) {
-        const queryWithoutNumber = queryStr.replace(/\b\d+\b/g, "").replace(/\s+,/g, ",").trim();
+        const queryWithoutNumber = queryStr
+          .replace(/\b\d+\b/g, "")
+          .replace(/\s+,/g, ",")
+          .trim();
         if (queryWithoutNumber !== queryStr) {
           data = await fetchNominatim(queryWithoutNumber);
-          if ((!Array.isArray(data) || data.length === 0) && queryWithoutNumber.toLowerCase().includes("sabela")) {
-            const fuzzyQueryWithoutNumber = queryWithoutNumber.replace(/sabela/gi, "sabella");
+          if (
+            (!Array.isArray(data) || data.length === 0) &&
+            queryWithoutNumber.toLowerCase().includes("sabela")
+          ) {
+            const fuzzyQueryWithoutNumber = queryWithoutNumber.replace(
+              /sabela/gi,
+              "sabella",
+            );
             data = await fetchNominatim(fuzzyQueryWithoutNumber);
           }
         }
       }
-      
-      if (Array.isArray(data) && data.length > 0) {
-        const formatted: GeocodedAddress[] = data.map((item: any, idx: number) => {
-          const { road, house_number, suburb, city, town, village, state, postcode } = item.address || {};
-          const streetPart = road ? (house_number ? `${road}, ${house_number}` : road) : "";
-          const neighborhoodPart = suburb || "";
-          const cityPart = city || town || village || "";
-          const statePart = state || "SP";
-          
-          const parts = [];
-          if (streetPart) parts.push(streetPart);
-          if (neighborhoodPart) parts.push(neighborhoodPart);
-          if (cityPart) parts.push(`${cityPart} - ${statePart}`);
-          
-          const finalName = parts.join(", ") || item.display_name;
 
-          return {
-            id: `${item.place_id}-${idx}`,
-            displayName: finalName,
-            latitude: parseFloat(item.lat),
-            longitude: parseFloat(item.lon),
-            neighborhood: neighborhoodPart || undefined,
-            city: cityPart || undefined,
-            cep: postcode || undefined,
-          };
-        });
+      if (Array.isArray(data) && data.length > 0) {
+        const formatted: GeocodedAddress[] = data.map(
+          (item: any, idx: number) => {
+            const {
+              road,
+              house_number,
+              suburb,
+              city,
+              town,
+              village,
+              state,
+              postcode,
+            } = item.address || {};
+            const streetPart = road
+              ? house_number
+                ? `${road}, ${house_number}`
+                : road
+              : "";
+            const neighborhoodPart = suburb || "";
+            const cityPart = city || town || village || "";
+            const statePart = state || "SP";
+
+            const parts = [];
+            if (streetPart) parts.push(streetPart);
+            if (neighborhoodPart) parts.push(neighborhoodPart);
+            if (cityPart) parts.push(`${cityPart} - ${statePart}`);
+
+            const finalName = parts.join(", ") || item.display_name;
+
+            return {
+              id: `${item.place_id}-${idx}`,
+              displayName: finalName,
+              latitude: parseFloat(item.lat),
+              longitude: parseFloat(item.lon),
+              neighborhood: neighborhoodPart || undefined,
+              city: cityPart || undefined,
+              cep: postcode || undefined,
+            };
+          },
+        );
         setResults(formatted);
       } else {
         setResults([]);
@@ -284,12 +333,13 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
   // Triggers selection of searched result and prompts for custom label
   const handleSelectSearchAddress = (item: GeocodedAddress) => {
     setSelectedSearchAddress(item);
-    
+
     const parts = item.displayName.split(", ");
     const street = parts[0] || "";
     const neighborhood = item.neighborhood || parts[1] || "";
-    const city = item.city || (parts[2] ? parts[2].split(" - ")[0] : "Bragança Paulista");
-    
+    const city =
+      item.city || (parts[2] ? parts[2].split(" - ")[0] : "Bragança Paulista");
+
     // Parse house number from search input if present
     let parsedNumber = "";
     const numberMatch = addressInput.match(/\b\d+\b/);
@@ -317,7 +367,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
     setCustomNeighborhood(item.neighborhood || "");
     setCustomCity(item.city || "Bragança Paulista");
     setCustomCep(item.cep || "");
-    
+
     setSelectedSearchAddress({
       id: `edit-${item.id}`,
       displayName: item.addressName,
@@ -327,8 +377,16 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
       city: item.city,
     });
 
-    setCustomLabel(item.label === "Casa" || item.label === "Trabalho" ? "" : item.label);
-    setActiveLabelType(item.label === "Casa" ? "casa" : item.label === "Trabalho" ? "trabalho" : "outro");
+    setCustomLabel(
+      item.label === "Casa" || item.label === "Trabalho" ? "" : item.label,
+    );
+    setActiveLabelType(
+      item.label === "Casa"
+        ? "casa"
+        : item.label === "Trabalho"
+          ? "trabalho"
+          : "outro",
+    );
   };
 
   // Saves a new address to the saved addresses list and updates location
@@ -368,13 +426,14 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
         try {
           const res = await fetch(
             `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
-              q
+              q,
             )}&format=json&limit=1&addressdetails=1&countrycodes=br`,
             {
               headers: {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "User-Agent":
+                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
               },
-            }
+            },
           );
           const data = await res.json();
           return Array.isArray(data) && data.length > 0 ? data[0] : null;
@@ -446,7 +505,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
       if (result) {
         resolvedCoords.latitude = parseFloat(result.lat);
         resolvedCoords.longitude = parseFloat(result.lon);
-        
+
         const { suburb, city, town, village } = result.address || {};
         if (suburb && !customNeighborhood.trim()) {
           setCustomNeighborhood(suburb);
@@ -466,7 +525,10 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
     setShowConfirmationMap(true);
   };
 
-  const handleConfirmLocation = async (finalCoords: { latitude: number; longitude: number }) => {
+  const handleConfirmLocation = async (finalCoords: {
+    latitude: number;
+    longitude: number;
+  }) => {
     setShowConfirmationMap(false);
     setSaving(true);
 
@@ -481,7 +543,10 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
       timestamp: new Date().toISOString(),
     };
     try {
-      await AsyncStorage.setItem("@chamaja_last_geocoded_debug_info", JSON.stringify(debugInfo));
+      await AsyncStorage.setItem(
+        "@chamaja_last_geocoded_debug_info",
+        JSON.stringify(debugInfo),
+      );
     } catch (e) {
       console.warn("Failed to save debug info:", e);
     }
@@ -506,7 +571,10 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
     }
     if (customCity.trim()) {
       finalAddressName += `, ${customCity.trim()}`;
-      if (!customCity.toLowerCase().includes("sp") && !customCity.toLowerCase().includes("estado")) {
+      if (
+        !customCity.toLowerCase().includes("sp") &&
+        !customCity.toLowerCase().includes("estado")
+      ) {
         finalAddressName += ` - SP`;
       }
     }
@@ -515,7 +583,9 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
     }
 
     const newAddress: SavedAddress = {
-      id: editingAddressId || `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      id:
+        editingAddressId ||
+        `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       label: finalLabel,
       addressName: finalAddressName,
       latitude: finalCoords.latitude,
@@ -530,21 +600,20 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
 
     let updatedAddresses;
     if (editingAddressId) {
-      updatedAddresses = savedAddresses.map((addr) => addr.id === editingAddressId ? newAddress : addr);
+      updatedAddresses = savedAddresses.map((addr) =>
+        addr.id === editingAddressId ? newAddress : addr,
+      );
     } else {
       updatedAddresses = [newAddress, ...savedAddresses];
     }
     setSavedAddresses(updatedAddresses);
 
     try {
-      await AsyncStorage.setItem(
-        storageKey,
-        JSON.stringify(updatedAddresses)
-      );
+      await AsyncStorage.setItem(storageKey, JSON.stringify(updatedAddresses));
       // Set active
       await updateLocation(
         { latitude: newAddress.latitude, longitude: newAddress.longitude },
-        newAddress.addressName
+        newAddress.addressName,
       );
       onClose();
     } catch (e) {
@@ -558,7 +627,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
   const handleSelectSavedAddress = async (item: SavedAddress) => {
     await updateLocation(
       { latitude: item.latitude, longitude: item.longitude },
-      item.addressName
+      item.addressName,
     );
     onClose();
   };
@@ -591,7 +660,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
     >
       <View style={styles.modalOverlay}>
         <Pressable style={styles.dismissOverlay} onPress={onClose} />
-        
+
         <View style={styles.modalContent}>
           <View style={styles.dragIndicator} />
 
@@ -613,7 +682,15 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
 
           {/* Fluxo de Formulário de Rótulo / Rótulo de Endereço */}
           {showConfirmationMap && tempGeocodedCoords ? (
-            <View style={{ flex: 1, minHeight: 350, width: "100%", borderRadius: 14, overflow: "hidden" }}>
+            <View
+              style={{
+                flex: 1,
+                minHeight: 350,
+                width: "100%",
+                borderRadius: 14,
+                overflow: "hidden",
+              }}
+            >
               <LocationConfirmationMap
                 initialCoords={tempGeocodedCoords}
                 onConfirm={handleConfirmLocation}
@@ -622,7 +699,9 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
             </View>
           ) : selectedSearchAddress ? (
             <View style={styles.labelFormContainer}>
-              <Text style={styles.labelFormTitle}>Como quer salvar esse endereço?</Text>
+              <Text style={styles.labelFormTitle}>
+                Como quer salvar esse endereço?
+              </Text>
               <Text style={styles.labelFormSubtitle} numberOfLines={2}>
                 {selectedSearchAddress.displayName}
               </Text>
@@ -639,7 +718,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
                     onChangeText={setCustomStreet}
                   />
                 </View>
-                
+
                 <View style={styles.inputRow}>
                   <View style={styles.inputHalf}>
                     <Text style={styles.inputLabel}>Bairro</Text>
@@ -713,7 +792,8 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
                   <Text
                     style={[
                       styles.labelChoiceText,
-                      activeLabelType === "casa" && styles.labelChoiceTextActive,
+                      activeLabelType === "casa" &&
+                        styles.labelChoiceTextActive,
                     ]}
                   >
                     Casa
@@ -724,18 +804,22 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
                   onPress={() => setActiveLabelType("trabalho")}
                   style={[
                     styles.labelChoiceBtn,
-                    activeLabelType === "trabalho" && styles.labelChoiceBtnActive,
+                    activeLabelType === "trabalho" &&
+                      styles.labelChoiceBtnActive,
                   ]}
                 >
                   <MaterialIcons
                     name="work"
                     size={18}
-                    color={activeLabelType === "trabalho" ? "#FFFFFF" : "#9CA3AF"}
+                    color={
+                      activeLabelType === "trabalho" ? "#FFFFFF" : "#9CA3AF"
+                    }
                   />
                   <Text
                     style={[
                       styles.labelChoiceText,
-                      activeLabelType === "trabalho" && styles.labelChoiceTextActive,
+                      activeLabelType === "trabalho" &&
+                        styles.labelChoiceTextActive,
                     ]}
                   >
                     Trabalho
@@ -757,7 +841,8 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
                   <Text
                     style={[
                       styles.labelChoiceText,
-                      activeLabelType === "outro" && styles.labelChoiceTextActive,
+                      activeLabelType === "outro" &&
+                        styles.labelChoiceTextActive,
                     ]}
                   >
                     Outro
@@ -783,16 +868,21 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
                 >
                   <Text style={styles.labelFormCancelBtnText}>Voltar</Text>
                 </Pressable>
-                
+
                 <Pressable
                   onPress={handleSaveAndUseAddress}
-                  style={[styles.labelFormConfirmBtn, saving && { opacity: 0.7 }]}
+                  style={[
+                    styles.labelFormConfirmBtn,
+                    saving && { opacity: 0.7 },
+                  ]}
                   disabled={saving}
                 >
                   {saving ? (
                     <ActivityIndicator size="small" color="#FFFFFF" />
                   ) : (
-                    <Text style={styles.labelFormConfirmBtnText}>Salvar e Usar</Text>
+                    <Text style={styles.labelFormConfirmBtnText}>
+                      Salvar e Usar
+                    </Text>
                   )}
                 </Pressable>
               </View>
@@ -830,8 +920,8 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
                     const manualItem: GeocodedAddress = {
                       id: `manual-${Date.now()}`,
                       displayName: addressInput.trim(),
-                      latitude: coords?.latitude ?? -22.9520,
-                      longitude: coords?.longitude ?? -46.5420,
+                      latitude: coords?.latitude ?? -22.952,
+                      longitude: coords?.longitude ?? -46.542,
                     };
                     setSelectedSearchAddress(manualItem);
                     setCustomStreet(addressInput.trim());
@@ -845,7 +935,11 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
                   }}
                   style={styles.manualAddRow}
                 >
-                  <MaterialIcons name="add-location" size={20} color="#22C55E" />
+                  <MaterialIcons
+                    name="add-location"
+                    size={20}
+                    color="#22C55E"
+                  />
                   <Text style={styles.manualAddText} numberOfLines={1}>
                     Adicionar "{addressInput.trim()}" manualmente
                   </Text>
@@ -875,11 +969,17 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
                 {searching ? (
                   <View style={styles.centerSpinner}>
                     <ActivityIndicator size="large" color="#22C55E" />
-                    <Text style={styles.spinnerText}>Procurando endereços...</Text>
+                    <Text style={styles.spinnerText}>
+                      Procurando endereços...
+                    </Text>
                   </View>
                 ) : errorMsg ? (
                   <View style={styles.errorContainer}>
-                    <MaterialIcons name="error-outline" size={32} color="#EF4444" />
+                    <MaterialIcons
+                      name="error-outline"
+                      size={32}
+                      color="#EF4444"
+                    />
                     <Text style={styles.errorText}>{errorMsg}</Text>
                   </View>
                 ) : results.length > 0 ? (
@@ -895,7 +995,11 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
                         style={styles.resultRow}
                       >
                         <View style={styles.resultIconBox}>
-                          <MaterialIcons name="location-on" size={20} color="#9CA3AF" />
+                          <MaterialIcons
+                            name="location-on"
+                            size={20}
+                            color="#9CA3AF"
+                          />
                         </View>
                         <View style={styles.resultInfoBox}>
                           <Text style={styles.resultTitle} numberOfLines={1}>
@@ -913,9 +1017,11 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
                   /* EXIBE MEUS ENDEREÇOS SALVOS (ESTILO IFOOD) */
                   <ScrollView showsVerticalScrollIndicator={false}>
                     {savedAddresses.length > 0 && (
-                      <Text style={styles.savedSectionTitle}>Meus endereços salvos</Text>
+                      <Text style={styles.savedSectionTitle}>
+                        Meus endereços salvos
+                      </Text>
                     )}
-                    
+
                     <FlatList
                       data={savedAddresses}
                       keyExtractor={(item) => item.id}
@@ -934,33 +1040,51 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
                           </View>
                           <View style={styles.savedInfoBox}>
                             <Text style={styles.savedLabel}>{item.label}</Text>
-                            <Text style={styles.savedAddressName} numberOfLines={1}>
+                            <Text
+                              style={styles.savedAddressName}
+                              numberOfLines={1}
+                            >
                               {item.addressName}
                             </Text>
                           </View>
-                          
+
                           {/* Botão de Editar */}
                           <Pressable
                             onPress={(e) => handleEditSavedAddress(item, e)}
                             style={styles.editRowBtn}
                           >
-                            <MaterialIcons name="edit" size={20} color="#22C55E" />
+                            <MaterialIcons
+                              name="edit"
+                              size={20}
+                              color="#22C55E"
+                            />
                           </Pressable>
 
                           {/* Botão de Excluir */}
                           <Pressable
-                            onPress={(e) => handleDeleteSavedAddress(item.id, e)}
+                            onPress={(e) =>
+                              handleDeleteSavedAddress(item.id, e)
+                            }
                             style={styles.deleteRowBtn}
                           >
-                            <MaterialIcons name="delete-outline" size={20} color="#EF4444" />
+                            <MaterialIcons
+                              name="delete-outline"
+                              size={20}
+                              color="#EF4444"
+                            />
                           </Pressable>
                         </Pressable>
                       )}
                       ListEmptyComponent={
                         <View style={styles.emptyResults}>
-                          <MaterialIcons name="place" size={48} color="#374151" />
+                          <MaterialIcons
+                            name="place"
+                            size={48}
+                            color="#374151"
+                          />
                           <Text style={styles.emptyResultsText}>
-                            Nenhum endereço salvo ainda. Busque e salve um endereço para começar!
+                            Nenhum endereço salvo ainda. Busque e salve um
+                            endereço para começar!
                           </Text>
                         </View>
                       }

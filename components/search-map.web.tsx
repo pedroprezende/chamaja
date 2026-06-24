@@ -1,4 +1,9 @@
-import React, { forwardRef, useImperativeHandle, useRef, useEffect } from "react";
+import React, {
+  forwardRef,
+  useImperativeHandle,
+  useRef,
+  useEffect,
+} from "react";
 import { View, StyleSheet } from "react-native";
 import { SearchMapProps } from "./search-map";
 
@@ -256,7 +261,13 @@ const MAP_HTML = `
 `;
 
 const SearchMapWeb = forwardRef<any, SearchMapProps>((props, ref) => {
-  const { providers, userCoords, selectedProviderId, onSelectProvider, onMapCenterChange } = props;
+  const {
+    providers,
+    userCoords,
+    selectedProviderId,
+    onSelectProvider,
+    onMapCenterChange,
+  } = props;
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const isReadyRef = useRef(false);
 
@@ -304,7 +315,14 @@ const SearchMapWeb = forwardRef<any, SearchMapProps>((props, ref) => {
     };
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [centerLat, centerLng, providers, selectedProviderId, onSelectProvider, onMapCenterChange]);
+  }, [
+    centerLat,
+    centerLng,
+    providers,
+    selectedProviderId,
+    onSelectProvider,
+    onMapCenterChange,
+  ]);
 
   useEffect(() => {
     if (isReadyRef.current && userCoords) {

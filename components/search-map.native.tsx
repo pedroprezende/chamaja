@@ -1,4 +1,9 @@
-import React, { forwardRef, useImperativeHandle, useRef, useEffect } from "react";
+import React, {
+  forwardRef,
+  useImperativeHandle,
+  useRef,
+  useEffect,
+} from "react";
 import { View, StyleSheet, Image } from "react-native";
 import MapView, { Marker, Circle } from "react-native-maps";
 import { SearchMapProps } from "./search-map";
@@ -6,123 +11,129 @@ import { SearchMapProps } from "./search-map";
 // Premium dark mode map theme JSON (Google Maps style)
 const DARK_MAP_STYLE = [
   {
-    "elementType": "geometry",
-    "stylers": [
+    elementType: "geometry",
+    stylers: [
       {
-        "color": "#111827"
-      }
-    ]
+        color: "#111827",
+      },
+    ],
   },
   {
-    "elementType": "labels.text.fill",
-    "stylers": [
+    elementType: "labels.text.fill",
+    stylers: [
       {
-        "color": "#9ca3af"
-      }
-    ]
+        color: "#9ca3af",
+      },
+    ],
   },
   {
-    "elementType": "labels.text.stroke",
-    "stylers": [
+    elementType: "labels.text.stroke",
+    stylers: [
       {
-        "color": "#111827"
-      }
-    ]
+        color: "#111827",
+      },
+    ],
   },
   {
-    "featureType": "administrative",
-    "elementType": "geometry.stroke",
-    "stylers": [
+    featureType: "administrative",
+    elementType: "geometry.stroke",
+    stylers: [
       {
-        "color": "#374151"
-      }
-    ]
+        color: "#374151",
+      },
+    ],
   },
   {
-    "featureType": "landscape.natural",
-    "elementType": "geometry",
-    "stylers": [
+    featureType: "landscape.natural",
+    elementType: "geometry",
+    stylers: [
       {
-        "color": "#1f2937"
-      }
-    ]
+        color: "#1f2937",
+      },
+    ],
   },
   {
-    "featureType": "poi",
-    "elementType": "geometry",
-    "stylers": [
+    featureType: "poi",
+    elementType: "geometry",
+    stylers: [
       {
-        "color": "#111827"
-      }
-    ]
+        color: "#111827",
+      },
+    ],
   },
   {
-    "featureType": "poi",
-    "elementType": "labels.text.fill",
-    "stylers": [
+    featureType: "poi",
+    elementType: "labels.text.fill",
+    stylers: [
       {
-        "color": "#9ca3af"
-      }
-    ]
+        color: "#9ca3af",
+      },
+    ],
   },
   {
-    "featureType": "road",
-    "elementType": "geometry",
-    "stylers": [
+    featureType: "road",
+    elementType: "geometry",
+    stylers: [
       {
-        "color": "#1f2937"
-      }
-    ]
+        color: "#1f2937",
+      },
+    ],
   },
   {
-    "featureType": "road",
-    "elementType": "geometry.stroke",
-    "stylers": [
+    featureType: "road",
+    elementType: "geometry.stroke",
+    stylers: [
       {
-        "color": "#111827"
-      }
-    ]
+        color: "#111827",
+      },
+    ],
   },
   {
-    "featureType": "road.highway",
-    "elementType": "geometry",
-    "stylers": [
+    featureType: "road.highway",
+    elementType: "geometry",
+    stylers: [
       {
-        "color": "#374151"
-      }
-    ]
+        color: "#374151",
+      },
+    ],
   },
   {
-    "featureType": "road.highway",
-    "elementType": "geometry.stroke",
-    "stylers": [
+    featureType: "road.highway",
+    elementType: "geometry.stroke",
+    stylers: [
       {
-        "color": "#111827"
-      }
-    ]
+        color: "#111827",
+      },
+    ],
   },
   {
-    "featureType": "water",
-    "elementType": "geometry",
-    "stylers": [
+    featureType: "water",
+    elementType: "geometry",
+    stylers: [
       {
-        "color": "#0f172a"
-      }
-    ]
+        color: "#0f172a",
+      },
+    ],
   },
   {
-    "featureType": "water",
-    "elementType": "labels.text.fill",
-    "stylers": [
+    featureType: "water",
+    elementType: "labels.text.fill",
+    stylers: [
       {
-        "color": "#4b5563"
-      }
-    ]
-  }
+        color: "#4b5563",
+      },
+    ],
+  },
 ];
 
 const SearchMapNative = forwardRef<any, SearchMapProps>((props, ref) => {
-  const { providers, userCoords, selectedProviderId, onSelectProvider, onMapCenterChange } = props;
+  const {
+    providers,
+    userCoords,
+    selectedProviderId,
+    onSelectProvider,
+    onMapCenterChange,
+  } = props;
   const mapRef = useRef<MapView>(null);
 
   const centerLat = userCoords?.latitude ?? -22.9519;
@@ -137,7 +148,7 @@ const SearchMapNative = forwardRef<any, SearchMapProps>((props, ref) => {
           latitudeDelta: 0.015,
           longitudeDelta: 0.015,
         },
-        1000
+        1000,
       );
     },
   }));
@@ -154,7 +165,7 @@ const SearchMapNative = forwardRef<any, SearchMapProps>((props, ref) => {
             latitudeDelta: 0.012,
             longitudeDelta: 0.012,
           },
-          800
+          800,
         );
       }
     }
@@ -170,7 +181,7 @@ const SearchMapNative = forwardRef<any, SearchMapProps>((props, ref) => {
           latitudeDelta: 0.015,
           longitudeDelta: 0.015,
         },
-        1000
+        1000,
       );
     }
   }, [userCoords?.latitude, userCoords?.longitude]);
@@ -253,7 +264,9 @@ const SearchMapNative = forwardRef<any, SearchMapProps>((props, ref) => {
                 >
                   <Image
                     source={{
-                      uri: p.avatarUri || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
+                      uri:
+                        p.avatarUri ||
+                        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
                     }}
                     style={styles.markerAvatar}
                   />

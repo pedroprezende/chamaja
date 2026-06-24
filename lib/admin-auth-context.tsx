@@ -23,7 +23,7 @@ interface AdminAuthContextType {
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(
-  undefined
+  undefined,
 );
 
 // Dados de admin hardcoded (em produção, isso viria do backend)

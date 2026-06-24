@@ -18,14 +18,15 @@ import { ScreenContainer } from "@/components/screen-container";
 import { trpc } from "@/lib/trpc";
 
 // Default Play Store and App Store presets
-const PLAY_STORE_DEFAULT = "https://play.google.com/store/apps/details?id=com.chamaja.app";
+const PLAY_STORE_DEFAULT =
+  "https://play.google.com/store/apps/details?id=com.chamaja.app";
 const APP_STORE_DEFAULT = "https://apps.apple.com/br/app/chamaja/id1234567890";
 
 function formatDate(dateInput: any) {
   if (!dateInput) return "-";
   const date = new Date(dateInput);
   if (isNaN(date.getTime())) return "-";
-  
+
   const day = String(date.getDate()).padStart(2, "0");
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const year = date.getFullYear();
@@ -57,7 +58,7 @@ export default function UtmLinksScreen() {
     },
     onError: (err) => {
       Alert.alert("Erro", err.message || "Erro ao salvar link UTM.");
-    }
+    },
   });
 
   // Dynamic URL builder
@@ -65,15 +66,21 @@ export default function UtmLinksScreen() {
     if (!destino.trim()) return "";
     let url = destino.trim();
     const queryParams = [];
-    
+
     if (source.trim()) {
-      queryParams.push(`utm_source=${encodeURIComponent(source.trim().toLowerCase())}`);
+      queryParams.push(
+        `utm_source=${encodeURIComponent(source.trim().toLowerCase())}`,
+      );
     }
     if (medium.trim()) {
-      queryParams.push(`utm_medium=${encodeURIComponent(medium.trim().toLowerCase())}`);
+      queryParams.push(
+        `utm_medium=${encodeURIComponent(medium.trim().toLowerCase())}`,
+      );
     }
     if (campaign.trim()) {
-      queryParams.push(`utm_campaign=${encodeURIComponent(campaign.trim().toLowerCase())}`);
+      queryParams.push(
+        `utm_campaign=${encodeURIComponent(campaign.trim().toLowerCase())}`,
+      );
     }
 
     if (queryParams.length === 0) return url;
@@ -136,7 +143,9 @@ export default function UtmLinksScreen() {
           <Text style={styles.cardTitle}>Gerador de Links</Text>
 
           {/* Destino URL */}
-          <Text style={styles.inputLabel}>Link de Destino (Play Store ou App Store)</Text>
+          <Text style={styles.inputLabel}>
+            Link de Destino (Play Store ou App Store)
+          </Text>
           <TextInput
             style={styles.input}
             value={destino}
@@ -146,19 +155,47 @@ export default function UtmLinksScreen() {
           />
           {/* Presets */}
           <View style={styles.presetRow}>
-            <Pressable 
-              style={[styles.presetBtn, destino === PLAY_STORE_DEFAULT && styles.presetBtnActive]}
+            <Pressable
+              style={[
+                styles.presetBtn,
+                destino === PLAY_STORE_DEFAULT && styles.presetBtnActive,
+              ]}
               onPress={() => setDestino(PLAY_STORE_DEFAULT)}
             >
-              <MaterialIcons name="android" size={14} color={destino === PLAY_STORE_DEFAULT ? "#059669" : "#4B5563"} />
-              <Text style={[styles.presetText, destino === PLAY_STORE_DEFAULT && styles.presetTextActive]}>Google Play Store</Text>
+              <MaterialIcons
+                name="android"
+                size={14}
+                color={destino === PLAY_STORE_DEFAULT ? "#059669" : "#4B5563"}
+              />
+              <Text
+                style={[
+                  styles.presetText,
+                  destino === PLAY_STORE_DEFAULT && styles.presetTextActive,
+                ]}
+              >
+                Google Play Store
+              </Text>
             </Pressable>
-            <Pressable 
-              style={[styles.presetBtn, destino === APP_STORE_DEFAULT && styles.presetBtnActive]}
+            <Pressable
+              style={[
+                styles.presetBtn,
+                destino === APP_STORE_DEFAULT && styles.presetBtnActive,
+              ]}
               onPress={() => setDestino(APP_STORE_DEFAULT)}
             >
-              <MaterialIcons name="phone-iphone" size={14} color={destino === APP_STORE_DEFAULT ? "#059669" : "#4B5563"} />
-              <Text style={[styles.presetText, destino === APP_STORE_DEFAULT && styles.presetTextActive]}>Apple App Store</Text>
+              <MaterialIcons
+                name="phone-iphone"
+                size={14}
+                color={destino === APP_STORE_DEFAULT ? "#059669" : "#4B5563"}
+              />
+              <Text
+                style={[
+                  styles.presetText,
+                  destino === APP_STORE_DEFAULT && styles.presetTextActive,
+                ]}
+              >
+                Apple App Store
+              </Text>
             </Pressable>
           </View>
 
@@ -173,12 +210,22 @@ export default function UtmLinksScreen() {
           />
           <View style={styles.presetRow}>
             {["instagram", "facebook", "whatsapp", "google"].map((src) => (
-              <Pressable 
-                key={src} 
-                style={[styles.smallPresetBtn, source === src && styles.smallPresetBtnActive]}
+              <Pressable
+                key={src}
+                style={[
+                  styles.smallPresetBtn,
+                  source === src && styles.smallPresetBtnActive,
+                ]}
                 onPress={() => setSource(src)}
               >
-                <Text style={[styles.smallPresetText, source === src && styles.smallPresetTextActive]}>{src}</Text>
+                <Text
+                  style={[
+                    styles.smallPresetText,
+                    source === src && styles.smallPresetTextActive,
+                  ]}
+                >
+                  {src}
+                </Text>
               </Pressable>
             ))}
           </View>
@@ -194,12 +241,22 @@ export default function UtmLinksScreen() {
           />
           <View style={styles.presetRow}>
             {["stories", "bio", "feed", "cpc", "status"].map((med) => (
-              <Pressable 
-                key={med} 
-                style={[styles.smallPresetBtn, medium === med && styles.smallPresetBtnActive]}
+              <Pressable
+                key={med}
+                style={[
+                  styles.smallPresetBtn,
+                  medium === med && styles.smallPresetBtnActive,
+                ]}
                 onPress={() => setMedium(med)}
               >
-                <Text style={[styles.smallPresetText, medium === med && styles.smallPresetTextActive]}>{med}</Text>
+                <Text
+                  style={[
+                    styles.smallPresetText,
+                    medium === med && styles.smallPresetTextActive,
+                  ]}
+                >
+                  {med}
+                </Text>
               </Pressable>
             ))}
           </View>
@@ -217,16 +274,24 @@ export default function UtmLinksScreen() {
           {/* Real-time Generated Link Preview */}
           <View style={styles.previewContainer}>
             <Text style={styles.previewLabel}>Link Gerado em Tempo Real:</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.previewScroll}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.previewScroll}
+            >
               <Text style={styles.previewLinkText} selectable={true}>
-                {generatedLink || "Preencha os campos acima para gerar o link..."}
+                {generatedLink ||
+                  "Preencha os campos acima para gerar o link..."}
               </Text>
             </ScrollView>
           </View>
 
           {/* Action button */}
           <Pressable
-            style={({ pressed }) => [styles.submitBtn, pressed && { opacity: 0.9 }]}
+            style={({ pressed }) => [
+              styles.submitBtn,
+              pressed && { opacity: 0.9 },
+            ]}
             onPress={handleCopyAndSave}
             disabled={generateMutation.isPending}
           >
@@ -260,17 +325,26 @@ export default function UtmLinksScreen() {
               <View key={item.id} style={styles.historyCard}>
                 <View style={styles.historyHeader}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.historyCampaign}>Campanha: {item.campaign}</Text>
+                    <Text style={styles.historyCampaign}>
+                      Campanha: {item.campaign}
+                    </Text>
                     <Text style={styles.historyMeta}>
-                      Fonte: <Text style={styles.boldText}>{item.source}</Text> • Mídia: <Text style={styles.boldText}>{item.medium}</Text>
+                      Fonte: <Text style={styles.boldText}>{item.source}</Text>{" "}
+                      • Mídia:{" "}
+                      <Text style={styles.boldText}>{item.medium}</Text>
                     </Text>
                   </View>
-                  
+
                   {/* Conversions / Registration Count Badge */}
                   <View style={styles.conversionsBadge}>
-                    <MaterialIcons name="person-add" size={14} color="#059669" />
+                    <MaterialIcons
+                      name="person-add"
+                      size={14}
+                      color="#059669"
+                    />
                     <Text style={styles.conversionsText}>
-                      {item.registrationsCount} {item.registrationsCount === 1 ? "Cadastro" : "Cadastros"}
+                      {item.registrationsCount}{" "}
+                      {item.registrationsCount === 1 ? "Cadastro" : "Cadastros"}
                     </Text>
                   </View>
                 </View>
@@ -280,16 +354,25 @@ export default function UtmLinksScreen() {
                   <Text style={styles.historyUrlText} numberOfLines={1}>
                     {item.linkCompleto}
                   </Text>
-                  <Pressable 
+                  <Pressable
                     onPress={() => handleCopyLinkOnly(item.linkCompleto)}
-                    style={({ pressed }) => [styles.copyIconBtn, pressed && { backgroundColor: "#E5E7EB" }]}
+                    style={({ pressed }) => [
+                      styles.copyIconBtn,
+                      pressed && { backgroundColor: "#E5E7EB" },
+                    ]}
                   >
-                    <MaterialIcons name="content-copy" size={16} color="#4B5563" />
+                    <MaterialIcons
+                      name="content-copy"
+                      size={16}
+                      color="#4B5563"
+                    />
                   </Pressable>
                 </View>
 
                 <View style={styles.historyFooter}>
-                  <Text style={styles.historyDate}>Criado em {formatDate(item.criadoEm)}</Text>
+                  <Text style={styles.historyDate}>
+                    Criado em {formatDate(item.criadoEm)}
+                  </Text>
                 </View>
               </View>
             ))}

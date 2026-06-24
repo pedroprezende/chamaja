@@ -22,21 +22,25 @@ const targetCategoryId = "reformas-reparos";
 const subServicesToInsert = [
   {
     name: "Montagem de Móveis",
-    imageUrl: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=500&q=80",
+    imageUrl:
+      "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=500&q=80",
   },
   {
     name: "Desmontagem de Móveis",
-    imageUrl: "https://images.unsplash.com/photo-1595515106969-1ce29566ff1c?w=500&q=80",
+    imageUrl:
+      "https://images.unsplash.com/photo-1595515106969-1ce29566ff1c?w=500&q=80",
   },
 ];
 
 async function run() {
   try {
     console.log("Conectando ao banco de dados...");
-    
+
     // Inserir sub-serviços
-    console.log(`Inserindo especialidades na categoria "${targetCategoryId}"...`);
-    
+    console.log(
+      `Inserindo especialidades na categoria "${targetCategoryId}"...`,
+    );
+
     const existingSubs = await db
       .select()
       .from(subServices)
@@ -45,15 +49,18 @@ async function run() {
     for (let i = 0; i < subServicesToInsert.length; i++) {
       const item = subServicesToInsert[i];
       const subId = `${targetCategoryId}-moveis-${i}-${Date.now()}`;
-      
+
       const alreadyHas = existingSubs.some(
-        (s) => s.name.toLowerCase() === item.name.toLowerCase()
+        (s) => s.name.toLowerCase() === item.name.toLowerCase(),
       );
 
       if (!alreadyHas) {
         console.log(`Inserindo sub-serviço: "${item.name}"...`);
-        const maxOrder = existingSubs.length > 0 ? Math.max(...existingSubs.map((s) => s.displayOrder)) : -1;
-        
+        const maxOrder =
+          existingSubs.length > 0
+            ? Math.max(...existingSubs.map((s) => s.displayOrder))
+            : -1;
+
         await db.insert(subServices).values({
           id: subId,
           categoryId: targetCategoryId,
@@ -68,7 +75,9 @@ async function run() {
       }
     }
 
-    console.log("\n🚀 Especialidades de montagem e desmontagem de móveis inseridas com sucesso!");
+    console.log(
+      "\n🚀 Especialidades de montagem e desmontagem de móveis inseridas com sucesso!",
+    );
   } catch (error) {
     console.error("Erro durante a execução do script:", error);
   } finally {

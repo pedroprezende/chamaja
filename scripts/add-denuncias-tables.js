@@ -49,7 +49,7 @@ async function runMigration() {
     await sql`DROP POLICY IF EXISTS "Admin full access to admin_report_actions" ON public.admin_report_actions;`;
 
     console.log("5. Criando novas políticas RLS...");
-    
+
     // allow inserts from authenticated users
     await sql`
       CREATE POLICY "Allow authenticated insert to denuncias" 

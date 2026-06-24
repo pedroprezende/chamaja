@@ -33,20 +33,24 @@ export default function ForgotPasswordScreen() {
       }
 
       setIsLoading(true);
-      
-      const redirectTo = Platform.OS === "web"
-        ? `${window.location.origin}/auth/reset-password`
-        : Linking.createURL("/auth/reset-password");
+
+      const redirectTo =
+        Platform.OS === "web"
+          ? `${window.location.origin}/auth/reset-password`
+          : Linking.createURL("/auth/reset-password");
 
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo,
       });
 
       if (error) throw error;
-      
+
       setIsSubmitted(true);
     } catch (error: any) {
-      Alert.alert("Erro", error.message || "Não foi possível enviar o e-mail de recuperação");
+      Alert.alert(
+        "Erro",
+        error.message || "Não foi possível enviar o e-mail de recuperação",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -61,29 +65,50 @@ export default function ForgotPasswordScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Pressable
-            style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
+            style={({ pressed }) => [
+              styles.backBtn,
+              pressed && { opacity: 0.6 },
+            ]}
             onPress={() => router.back()}
           >
-            <MaterialIcons name="arrow-back" size={24} color={colors.foreground} />
+            <MaterialIcons
+              name="arrow-back"
+              size={24}
+              color={colors.foreground}
+            />
           </Pressable>
-          <Text style={[styles.title, { color: colors.foreground }]}>Redefinir Senha</Text>
+          <Text style={[styles.title, { color: colors.foreground }]}>
+            Redefinir Senha
+          </Text>
         </View>
 
         {isSubmitted ? (
           // Success State
           <View style={styles.successContainer}>
-            <View style={[styles.successIconBox, { backgroundColor: colors.success + "20" }]}>
-              <MaterialIcons name="check-circle" size={64} color={colors.success || "#22C55E"} />
+            <View
+              style={[
+                styles.successIconBox,
+                { backgroundColor: colors.success + "20" },
+              ]}
+            >
+              <MaterialIcons
+                name="check-circle"
+                size={64}
+                color={colors.success || "#22C55E"}
+              />
             </View>
-            <Text style={[styles.successTitle, { color: colors.foreground }]}>E-mail enviado!</Text>
+            <Text style={[styles.successTitle, { color: colors.foreground }]}>
+              E-mail enviado!
+            </Text>
             <Text style={[styles.successMessage, { color: colors.muted }]}>
-              Verifique sua caixa de entrada para obter o link de redefinição de senha
+              Verifique sua caixa de entrada para obter o link de redefinição de
+              senha
             </Text>
             <Pressable
               style={({ pressed }) => [
                 styles.backToLoginBtn,
                 { backgroundColor: colors.primary },
-                pressed && { opacity: 0.85 }
+                pressed && { opacity: 0.85 },
               ]}
               onPress={() => router.back()}
             >
@@ -94,13 +119,28 @@ export default function ForgotPasswordScreen() {
           // Form State
           <View style={styles.form}>
             <Text style={[styles.description, { color: colors.muted }]}>
-              Digite seu e-mail cadastrado e enviaremos um link seguro para redefinir sua senha.
+              Digite seu e-mail cadastrado e enviaremos um link seguro para
+              redefinir sua senha.
             </Text>
 
             <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.foreground }]}>Email</Text>
-              <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <MaterialIcons name="mail-outline" size={18} color={colors.muted} />
+              <Text style={[styles.label, { color: colors.foreground }]}>
+                Email
+              </Text>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <MaterialIcons
+                  name="mail-outline"
+                  size={18}
+                  color={colors.muted}
+                />
                 <TextInput
                   style={[styles.input, { color: colors.foreground }]}
                   placeholder="seu@email.com"

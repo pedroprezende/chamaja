@@ -35,27 +35,24 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setSchemeState(scheme);
     nativewindColorScheme.set(scheme);
     AsyncStorage.setItem("@chamaja_color_scheme", scheme).catch((e) =>
-      console.error("Failed to save theme:", e)
+      console.error("Failed to save theme:", e),
     );
   };
 
-  const themeVariables = useMemo(
-    () => {
-      const activeColors = SchemeColors[colorScheme];
-      return vars({
-        "color-primary": activeColors.primary,
-        "color-background": activeColors.background,
-        "color-surface": activeColors.surface,
-        "color-foreground": activeColors.foreground,
-        "color-muted": activeColors.muted,
-        "color-border": activeColors.border,
-        "color-success": activeColors.success,
-        "color-warning": activeColors.warning,
-        "color-error": activeColors.error,
-      });
-    },
-    [colorScheme],
-  );
+  const themeVariables = useMemo(() => {
+    const activeColors = SchemeColors[colorScheme];
+    return vars({
+      "color-primary": activeColors.primary,
+      "color-background": activeColors.background,
+      "color-surface": activeColors.surface,
+      "color-foreground": activeColors.foreground,
+      "color-muted": activeColors.muted,
+      "color-border": activeColors.border,
+      "color-success": activeColors.success,
+      "color-warning": activeColors.warning,
+      "color-error": activeColors.error,
+    });
+  }, [colorScheme]);
 
   const value = useMemo(
     () => ({

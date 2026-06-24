@@ -6,4 +6,3 @@ import { COOKIE_NAME, ONE_YEAR_MS } from "../../shared/const.js";
 export function registerOAuthRoutes(app: any) {
   // Legacy OAuth removed
 }
-

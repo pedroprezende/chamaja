@@ -36,7 +36,11 @@ export function getApiBaseUrl(): string {
   }
 
   // On web, derive from current hostname
-  if (ReactNative.Platform.OS === "web" && typeof window !== "undefined" && window.location) {
+  if (
+    ReactNative.Platform.OS === "web" &&
+    typeof window !== "undefined" &&
+    window.location
+  ) {
     const { protocol, hostname, port } = window.location;
     // Use the same hostname (localhost) to keep Chrome happy
     if (hostname === "localhost" || hostname === "127.0.0.1") {
@@ -47,7 +51,7 @@ export function getApiBaseUrl(): string {
     if (apiHostname !== hostname) {
       return `${protocol}//${apiHostname}`;
     }
-    return `${protocol}//${hostname}${port ? ':' + port : ''}`;
+    return `${protocol}//${hostname}${port ? ":" + port : ""}`;
   }
 
   // Fallback to empty (will use relative URL)

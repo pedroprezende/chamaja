@@ -25,7 +25,10 @@ import {
 import type { EdgeInsets, Metrics, Rect } from "react-native-safe-area-context";
 
 import { trpc, createTRPCClient } from "@/lib/trpc";
-import { initManusRuntime, subscribeSafeAreaInsets } from "@/lib/_core/manus-runtime";
+import {
+  initManusRuntime,
+  subscribeSafeAreaInsets,
+} from "@/lib/_core/manus-runtime";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LocationProvider, useLocation } from "@/lib/location-context";
 
@@ -54,7 +57,9 @@ function RootLayoutNav() {
   useEffect(() => {
     if (!isAuthLoading && !isLocationLoading) return;
     const timer = setTimeout(() => {
-      console.warn("[RootLayoutNav] Loading timed out after 8s, forcing render");
+      console.warn(
+        "[RootLayoutNav] Loading timed out after 8s, forcing render",
+      );
       setLoadingTimedOut(true);
     }, 8000);
     return () => clearTimeout(timer);
@@ -83,11 +88,14 @@ function RootLayoutNav() {
       // User is signed in — redirect to appropriate dashboard or home
       (async () => {
         try {
-          const isBusinessFlag = await AsyncStorage.getItem("@chamaja_login_as_business");
+          const isBusinessFlag = await AsyncStorage.getItem(
+            "@chamaja_login_as_business",
+          );
           const isBusiness = isBusinessFlag === "true";
           const firstSegment = segments[0] as string | undefined;
           const segmentsLength = segments.length as number;
-          const inTabsGroup = firstSegment === "(tabs)" || segmentsLength === 0 || !firstSegment;
+          const inTabsGroup =
+            firstSegment === "(tabs)" || segmentsLength === 0 || !firstSegment;
 
           if (isBusiness && (inAuthGroup || inTabsGroup)) {
             // Se for negócio e estiver no grupo de autenticação ou de abas comuns, redireciona para a área de prestador
@@ -104,7 +112,10 @@ function RootLayoutNav() {
             } else {
               router.replace("/register-professional" as any);
             }
-          } else if (!isBusiness && (inAuthGroup || segments[0] === "provider-dashboard")) {
+          } else if (
+            !isBusiness &&
+            (inAuthGroup || segments[0] === "provider-dashboard")
+          ) {
             // Se não for negócio mas tentar acessar login/painel do prestador, redireciona para a home
             hasNavigated.current = true;
             router.replace("/(tabs)" as any);
@@ -114,11 +125,23 @@ function RootLayoutNav() {
           router.replace("/(tabs)" as any);
         } finally {
           // Allow future navigations on dependency changes
-          setTimeout(() => { hasNavigated.current = false; }, 100);
+          setTimeout(() => {
+            hasNavigated.current = false;
+          }, 100);
         }
       })();
     }
-  }, [isSignedIn, isAuthLoading, isLocationLoading, segments, router, shouldRender, provider, isProviderLoading, loadingTimedOut]);
+  }, [
+    isSignedIn,
+    isAuthLoading,
+    isLocationLoading,
+    segments,
+    router,
+    shouldRender,
+    provider,
+    isProviderLoading,
+    loadingTimedOut,
+  ]);
 
   if (!shouldRender) {
     return <InitialLoadingScreen />;
@@ -126,10 +149,10 @@ function RootLayoutNav() {
 
   return (
     <>
-      <StatusBar 
-        style="dark" 
-        backgroundColor="transparent" 
-        translucent={true} 
+      <StatusBar
+        style="dark"
+        backgroundColor="transparent"
+        translucent={true}
       />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
@@ -154,30 +177,38 @@ function RootLayoutNav() {
 
 function MainContent({ children }: { children: React.ReactNode }) {
   const colors = useColors();
-  
+
   return (
-    <View style={[
-      Platform.OS === 'web' ? {
-        flex: 1,
-        backgroundColor: "#E5E7EB", // Light gray for web outer area
-        alignItems: 'center',
-        justifyContent: 'center',
-      } : { flex: 1 }
-    ]}>
-      <View style={[
-        Platform.OS === 'web' ? {
-          width: '100%',
-          maxWidth: 500,
-          height: '100dvh' as any,
-          backgroundColor: colors.background,
-          overflow: 'hidden',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: 0.1,
-          shadowRadius: 20,
-          elevation: 10,
-        } : { flex: 1 }
-      ]}>
+    <View
+      style={[
+        Platform.OS === "web"
+          ? {
+              flex: 1,
+              backgroundColor: "#E5E7EB", // Light gray for web outer area
+              alignItems: "center",
+              justifyContent: "center",
+            }
+          : { flex: 1 },
+      ]}
+    >
+      <View
+        style={[
+          Platform.OS === "web"
+            ? {
+                width: "100%",
+                maxWidth: 500,
+                height: "100dvh" as any,
+                backgroundColor: colors.background,
+                overflow: "hidden",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 0.1,
+                shadowRadius: 20,
+                elevation: 10,
+              }
+            : { flex: 1 },
+        ]}
+      >
         {children}
       </View>
     </View>
@@ -224,7 +255,10 @@ export default function RootLayout() {
   const [trpcClient] = useState(() => createTRPCClient());
 
   const providerInitialMetrics = useMemo(() => {
-    const metrics = initialWindowMetrics ?? { insets: initialInsets, frame: initialFrame };
+    const metrics = initialWindowMetrics ?? {
+      insets: initialInsets,
+      frame: initialFrame,
+    };
     return {
       ...metrics,
       insets: {

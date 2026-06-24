@@ -49,14 +49,15 @@ function getWhatsAppUrl(phone: string, serviceName: string) {
     number = "55" + number;
   }
   const message = encodeURIComponent(
-    `Olá! Vi o serviço "${serviceName}" no ChamaJá e gostaria de mais informações. 😊`
+    `Olá! Vi o serviço "${serviceName}" no ChamaJá e gostaria de mais informações. 😊`,
   );
   return `https://wa.me/${number}?text=${message}`;
 }
 
 export default function AdminServiceDetailScreen() {
   const { width: WINDOW_WIDTH } = useWindowDimensions();
-  const SCREEN_WIDTH = Platform.OS === "web" ? Math.min(WINDOW_WIDTH, 500) : WINDOW_WIDTH;
+  const SCREEN_WIDTH =
+    Platform.OS === "web" ? Math.min(WINDOW_WIDTH, 500) : WINDOW_WIDTH;
 
   const { serviceId, title } = useLocalSearchParams<{
     serviceId: string;
@@ -70,10 +71,8 @@ export default function AdminServiceDetailScreen() {
   const { user } = useAuth();
 
   // Caso o ID seja de um prestador, tentamos carregar do banco via tRPC
-  const { data: serverProvider, isLoading: loadingProvider } = trpc.providers.getById.useQuery(
-    serviceId || "",
-    { enabled: !!serviceId }
-  );
+  const { data: serverProvider, isLoading: loadingProvider } =
+    trpc.providers.getById.useQuery(serviceId || "", { enabled: !!serviceId });
 
   const service = useMemo(() => {
     const localService = services.find((s) => s.id === serviceId);
@@ -122,19 +121,30 @@ export default function AdminServiceDetailScreen() {
       city: service.address || undefined,
       userId: user?.id || undefined,
     });
-    
+
     const phone = service.whatsapp || "";
     const url = getWhatsAppUrl(phone, service.name);
     Linking.openURL(url).catch(() =>
-      Alert.alert("Erro", "Não foi possível abrir o WhatsApp.")
+      Alert.alert("Erro", "Não foi possível abrir o WhatsApp."),
     );
   };
 
   if (loadingProvider) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top, alignItems: "center", justifyContent: "center" }]}>
+      <View
+        style={[
+          styles.container,
+          {
+            paddingTop: insets.top,
+            alignItems: "center",
+            justifyContent: "center",
+          },
+        ]}
+      >
         <ActivityIndicator size="large" color="#25D366" />
-        <Text style={{ marginTop: 12, color: "#6B7280", fontWeight: "600" }}>Carregando...</Text>
+        <Text style={{ marginTop: 12, color: "#6B7280", fontWeight: "600" }}>
+          Carregando...
+        </Text>
       </View>
     );
   }
@@ -144,7 +154,10 @@ export default function AdminServiceDetailScreen() {
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.header}>
           <Pressable
-            style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
+            style={({ pressed }) => [
+              styles.backBtn,
+              pressed && { opacity: 0.6 },
+            ]}
             onPress={() => router.back()}
           >
             <MaterialIcons name="arrow-back" size={24} color="#111827" />
@@ -162,7 +175,8 @@ export default function AdminServiceDetailScreen() {
 
   const iconName = getCategoryIcon(service.category) as any;
   const hasWhatsapp = !!service.whatsapp?.trim();
-  const hasGallery = Array.isArray(service.gallery) && service.gallery.length > 0;
+  const hasGallery =
+    Array.isArray(service.gallery) && service.gallery.length > 0;
   const allImages = [
     ...(service.imageUri ? [service.imageUri] : []),
     ...(hasGallery ? service.gallery! : []),
@@ -184,7 +198,10 @@ export default function AdminServiceDetailScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
         {/* ── Galeria de imagens ── */}
         {allImages.length > 1 ? (
           <FlatList
@@ -244,7 +261,8 @@ export default function AdminServiceDetailScreen() {
           <View style={styles.infoRow}>
             <MaterialIcons name="calendar-today" size={14} color="#9CA3AF" />
             <Text style={styles.metaText}>
-              Disponível desde {new Date(service.createdAt).toLocaleDateString("pt-BR")}
+              Disponível desde{" "}
+              {new Date(service.createdAt).toLocaleDateString("pt-BR")}
             </Text>
           </View>
 
@@ -257,7 +275,10 @@ export default function AdminServiceDetailScreen() {
               </View>
 
               <Pressable
-                style={({ pressed }) => [styles.whatsappBtn, pressed && { opacity: 0.85 }]}
+                style={({ pressed }) => [
+                  styles.whatsappBtn,
+                  pressed && { opacity: 0.85 },
+                ]}
                 onPress={handleOpenWhatsApp}
               >
                 <MaterialIcons name="chat" size={20} color="#FFFFFF" />
@@ -274,7 +295,8 @@ export default function AdminServiceDetailScreen() {
               <MaterialIcons name="info-outline" size={18} color="#2563EB" />
               <Text style={styles.ctaText}>
                 Para contratar este serviço, busque profissionais da categoria{" "}
-                <Text style={{ fontWeight: "700" }}>{service.category}</Text> no app.
+                <Text style={{ fontWeight: "700" }}>{service.category}</Text> no
+                app.
               </Text>
             </View>
           )}
@@ -286,11 +308,22 @@ export default function AdminServiceDetailScreen() {
               pressed && { opacity: 0.8 },
             ]}
             onPress={() =>
-              router.push(`/professionals/${service.category.toLowerCase()}` as any)
+              router.push(
+                `/professionals/${service.category.toLowerCase()}` as any,
+              )
             }
           >
-            <MaterialIcons name="search" size={20} color={hasWhatsapp ? "#25D366" : "#FFFFFF"} />
-            <Text style={[styles.searchBtnText, hasWhatsapp && styles.searchBtnTextOutline]}>
+            <MaterialIcons
+              name="search"
+              size={20}
+              color={hasWhatsapp ? "#25D366" : "#FFFFFF"}
+            />
+            <Text
+              style={[
+                styles.searchBtnText,
+                hasWhatsapp && styles.searchBtnTextOutline,
+              ]}
+            >
               Buscar profissionais de {service.category}
             </Text>
           </Pressable>
@@ -299,7 +332,11 @@ export default function AdminServiceDetailScreen() {
           {hasGallery && service.gallery!.length > 0 && (
             <View style={styles.gallerySection}>
               <Text style={styles.gallerySectionTitle}>Fotos do local</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={{ marginTop: 10 }}
+              >
                 <View style={styles.galleryRow}>
                   {service.gallery!.map((uri: string, idx: number) => (
                     <Image

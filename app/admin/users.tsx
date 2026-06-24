@@ -27,9 +27,9 @@ export default function AdminUsersScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "blocked">(
-    "all"
-  );
+  const [filterStatus, setFilterStatus] = useState<
+    "all" | "active" | "blocked"
+  >("all");
 
   // Mock data
   const [users, setUsers] = useState<User[]>([
@@ -63,25 +63,30 @@ export default function AdminUsersScreen() {
     const matchesSearch =
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = filterStatus === "all" || user.status === filterStatus;
+    const matchesStatus =
+      filterStatus === "all" || user.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
 
   const handleBlockUser = (userId: string) => {
-    Alert.alert("Bloquear Usuário", "Tem certeza que deseja bloquear este usuário?", [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Bloquear",
-        style: "destructive",
-        onPress: () => {
-          setUsers(
-            users.map((u) =>
-              u.id === userId ? { ...u, status: "blocked" as const } : u
-            )
-          );
+    Alert.alert(
+      "Bloquear Usuário",
+      "Tem certeza que deseja bloquear este usuário?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Bloquear",
+          style: "destructive",
+          onPress: () => {
+            setUsers(
+              users.map((u) =>
+                u.id === userId ? { ...u, status: "blocked" as const } : u,
+              ),
+            );
+          },
         },
-      },
-    ]);
+      ],
+    );
   };
 
   const handleDeleteUser = (userId: string) => {
@@ -175,7 +180,10 @@ export default function AdminUsersScreen() {
       </View>
 
       {/* Users List */}
-      <ScrollView showsVerticalScrollIndicator={false} style={styles.listContainer}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        style={styles.listContainer}
+      >
         {filteredUsers.length === 0 ? (
           <View style={styles.emptyState}>
             <MaterialIcons name="person-off" size={48} color="#6B7280" />

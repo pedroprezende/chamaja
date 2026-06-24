@@ -23,6 +23,7 @@ export const users = pgTable("users", {
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("login_method", { length: 64 }),
   role: userRoleEnum("role").default("user").notNull(),
+  tipo: varchar("tipo", { length: 50 }).default("cliente").notNull(),
   status: varchar("status", { length: 50 }),
   phone: varchar("phone", { length: 50 }),
   adminRole: varchar("admin_role", { length: 50 }),
@@ -37,7 +38,9 @@ export const admins = pgTable("admins", {
   openId: varchar("open_id", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }).notNull().unique(),
-  adminRole: varchar("admin_role", { length: 50 }).default("moderador").notNull(),
+  adminRole: varchar("admin_role", { length: 50 })
+    .default("moderador")
+    .notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -56,7 +59,9 @@ export const categories = pgTable("categories", {
 // ── Sub-services ──────────────────────────────────────────────────────────────
 export const subServices = pgTable("sub_services", {
   id: varchar("id", { length: 64 }).primaryKey(),
-  categoryId: varchar("category_id", { length: 64 }).notNull().references(() => categories.id, { onDelete: "cascade" }),
+  categoryId: varchar("category_id", { length: 64 })
+    .notNull()
+    .references(() => categories.id, { onDelete: "cascade" }),
   name: varchar("name", { length: 255 }).notNull(),
   icon: varchar("icon", { length: 64 }).notNull().default("build"),
   imageUrl: text("image_url"),
@@ -79,91 +84,103 @@ export const regions = pgTable("regions", {
 });
 
 // ── Services (anúncios de serviços criados pelo admin) ─────────────────────────
-export const services = pgTable("services", {
-  id: varchar("id", { length: 64 }).primaryKey(),
-  adminId: varchar("admin_id", { length: 64 }).notNull(),
-  name: varchar("name", { length: 255 }).notNull(),
-  category: varchar("category", { length: 255 }).notNull(),
-  categoryId: varchar("category_id", { length: 64 }),
-  subcategoryId: varchar("subcategory_id", { length: 64 }),
-  subcategoryName: varchar("subcategory_name", { length: 255 }),
-  description: text("description"),
-  icon: varchar("icon", { length: 64 }),
-  imageUri: text("image_uri"),
-  whatsapp: varchar("whatsapp", { length: 20 }),
-  address: text("address"),
-  gallery: text("gallery").array(),
-  showOnHome: boolean("show_on_home").notNull().default(true),
-  displayOrder: integer("display_order").notNull().default(0),
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => [
-  index("services_category_id_idx").on(table.categoryId),
-  index("services_subcategory_id_idx").on(table.subcategoryId),
-  index("services_is_active_idx").on(table.isActive),
-]);
+export const services = pgTable(
+  "services",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    adminId: varchar("admin_id", { length: 64 }).notNull(),
+    name: varchar("name", { length: 255 }).notNull(),
+    category: varchar("category", { length: 255 }).notNull(),
+    categoryId: varchar("category_id", { length: 64 }),
+    subcategoryId: varchar("subcategory_id", { length: 64 }),
+    subcategoryName: varchar("subcategory_name", { length: 255 }),
+    description: text("description"),
+    icon: varchar("icon", { length: 64 }),
+    imageUri: text("image_uri"),
+    whatsapp: varchar("whatsapp", { length: 20 }),
+    address: text("address"),
+    gallery: text("gallery").array(),
+    showOnHome: boolean("show_on_home").notNull().default(true),
+    displayOrder: integer("display_order").notNull().default(0),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("services_category_id_idx").on(table.categoryId),
+    index("services_subcategory_id_idx").on(table.subcategoryId),
+    index("services_is_active_idx").on(table.isActive),
+  ],
+);
 
 // ── Providers (prestadores cadastrados pelo admin e usuários) ─────────────────
-export const providers = pgTable("providers", {
-  id: varchar("id", { length: 64 }).primaryKey(),
-  userId: varchar("user_id", { length: 64 }),
-  name: varchar("name", { length: 255 }).notNull(),
-  category: varchar("category", { length: 255 }),
-  categoryId: varchar("category_id", { length: 64 }),
-  city: varchar("city", { length: 255 }),
-  neighborhood: varchar("neighborhood", { length: 255 }),
-  phone: varchar("phone", { length: 20 }),
-  plan: varchar("plan", { length: 20 }),
-  planExpiresAt: timestamp("plan_expires_at"),
-  services: text("services"), // Using text for JSON stringified services to match StoredProvider easily
-  serviceId: varchar("service_id", { length: 64 }),
-  serviceName: varchar("service_name", { length: 255 }),
-  subcategoryId: varchar("subcategory_id", { length: 64 }),
-  subcategoryName: varchar("subcategory_name", { length: 255 }),
-  whatsapp: varchar("whatsapp", { length: 20 }),
-  description: text("description"),
-  address: text("address"),
-  avatarUri: text("avatar_uri"),
-  avatarThumbnailUri: text("avatar_thumbnail_uri"),
-  gallery: text("gallery").array(),
-  rating: real("rating").default(0),
-  ratingCount: integer("rating_count").default(0),
-  latitude: real("latitude"),
-  longitude: real("longitude"),
-  coverUri: text("cover_uri"),
-  coverThumbnailUri: text("cover_thumbnail_uri"),
-  isVerified: boolean("is_verified").default(false).notNull(),
-  hasCatalog: boolean("has_catalog").default(false).notNull(),
-  onlineStatus: boolean("online_status").default(false).notNull(),
-  responseTime: varchar("response_time", { length: 100 }),
-  clientsServed: integer("clients_served").default(0),
-  foundedYear: integer("founded_year"),
-  topBadge: varchar("top_badge", { length: 100 }),
-  popularServices: text("popular_services"),
-  tags: text("tags"),
-  workingHours: text("working_hours"),
-  priceLevel: integer("price_level").default(2).notNull(),
-  isActive: boolean("is_active").notNull().default(true),
-  status: varchar("status", { length: 50 }).default("ativo"),
-  businessType: varchar("business_type", { length: 50 }).default("servicos").notNull(),
-  deliveryTime: varchar("delivery_time", { length: 100 }).default("30-45 min"),
-  displayOrder: integer("display_order").notNull().default(0),
-  destaque: boolean("destaque").default(false).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => [
-  index("providers_category_id_idx").on(table.categoryId),
-  index("providers_subcategory_id_idx").on(table.subcategoryId),
-  index("providers_is_active_idx").on(table.isActive),
-  index("providers_destaque_idx").on(table.destaque),
-  index("providers_user_id_idx").on(table.userId),
-  index("providers_latitude_idx").on(table.latitude),
-  index("providers_longitude_idx").on(table.longitude),
-  index("providers_rating_idx").on(table.rating),
-  index("providers_online_status_idx").on(table.onlineStatus),
-  index("providers_price_level_idx").on(table.priceLevel),
-]);
+export const providers = pgTable(
+  "providers",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    userId: varchar("user_id", { length: 64 }),
+    name: varchar("name", { length: 255 }).notNull(),
+    category: varchar("category", { length: 255 }),
+    categoryId: varchar("category_id", { length: 64 }),
+    city: varchar("city", { length: 255 }),
+    neighborhood: varchar("neighborhood", { length: 255 }),
+    phone: varchar("phone", { length: 20 }),
+    plan: varchar("plan", { length: 20 }),
+    planExpiresAt: timestamp("plan_expires_at"),
+    services: text("services"), // Using text for JSON stringified services to match StoredProvider easily
+    serviceId: varchar("service_id", { length: 64 }),
+    serviceName: varchar("service_name", { length: 255 }),
+    subcategoryId: varchar("subcategory_id", { length: 64 }),
+    subcategoryName: varchar("subcategory_name", { length: 255 }),
+    whatsapp: varchar("whatsapp", { length: 20 }),
+    description: text("description"),
+    address: text("address"),
+    avatarUri: text("avatar_uri"),
+    avatarThumbnailUri: text("avatar_thumbnail_uri"),
+    gallery: text("gallery").array(),
+    rating: real("rating").default(0),
+    ratingCount: integer("rating_count").default(0),
+    latitude: real("latitude"),
+    longitude: real("longitude"),
+    coverUri: text("cover_uri"),
+    coverThumbnailUri: text("cover_thumbnail_uri"),
+    isVerified: boolean("is_verified").default(false).notNull(),
+    hasCatalog: boolean("has_catalog").default(false).notNull(),
+    onlineStatus: boolean("online_status").default(false).notNull(),
+    responseTime: varchar("response_time", { length: 100 }),
+    clientsServed: integer("clients_served").default(0),
+    foundedYear: integer("founded_year"),
+    topBadge: varchar("top_badge", { length: 100 }),
+    popularServices: text("popular_services"),
+    tags: text("tags"),
+    workingHours: text("working_hours"),
+    priceLevel: integer("price_level").default(2).notNull(),
+    isActive: boolean("is_active").notNull().default(true),
+    status: varchar("status", { length: 50 }).default("ativo"),
+    businessType: varchar("business_type", { length: 50 })
+      .default("servicos")
+      .notNull(),
+    deliveryTime: varchar("delivery_time", { length: 100 }).default(
+      "30-45 min",
+    ),
+    displayOrder: integer("display_order").notNull().default(0),
+    destaque: boolean("destaque").default(false).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("providers_category_id_idx").on(table.categoryId),
+    index("providers_subcategory_id_idx").on(table.subcategoryId),
+    index("providers_is_active_idx").on(table.isActive),
+    index("providers_destaque_idx").on(table.destaque),
+    index("providers_user_id_idx").on(table.userId),
+    index("providers_latitude_idx").on(table.latitude),
+    index("providers_longitude_idx").on(table.longitude),
+    index("providers_rating_idx").on(table.rating),
+    index("providers_online_status_idx").on(table.onlineStatus),
+    index("providers_price_level_idx").on(table.priceLevel),
+  ],
+);
 
 // ── Featured Ads (destaques) ───────────────────────────────────────────────────
 export const featuredAds = pgTable("featured_ads", {
@@ -200,7 +217,10 @@ export type InsertFeaturedAd = typeof featuredAds.$inferInsert;
 // ── Analytics ─────────────────────────────────────────────────────────────────
 export const whatsappClicks = pgTable("whatsapp_clicks", {
   id: serial("id").primaryKey(),
-  providerId: varchar("provider_id", { length: 64 }).references(() => providers.id, { onDelete: "set null" }),
+  providerId: varchar("provider_id", { length: 64 }).references(
+    () => providers.id,
+    { onDelete: "set null" },
+  ),
   serviceName: varchar("service_name", { length: 255 }),
   city: varchar("city", { length: 255 }),
   userId: varchar("user_id", { length: 64 }), // Open ID from users (nullable for guests)
@@ -244,54 +264,70 @@ export const systemLogs = pgTable("system_logs", {
 export type SystemLog = typeof systemLogs.$inferSelect;
 export type InsertSystemLog = typeof systemLogs.$inferInsert;
 
-export const reviews = pgTable("reviews", {
-  id: varchar("id", { length: 64 }).primaryKey(),
-  professionalId: varchar("professional_id", { length: 64 }).notNull(),
-  userName: varchar("user_name", { length: 255 }).notNull(),
-  userAvatar: text("user_avatar").notNull(),
-  rating: real("rating").notNull(),
-  comment: text("comment"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-}, (table) => [
-  index("reviews_professional_id_idx").on(table.professionalId),
-]);
+export const reviews = pgTable(
+  "reviews",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    professionalId: varchar("professional_id", { length: 64 }).notNull(),
+    userName: varchar("user_name", { length: 255 }).notNull(),
+    userAvatar: text("user_avatar").notNull(),
+    rating: real("rating").notNull(),
+    comment: text("comment"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [index("reviews_professional_id_idx").on(table.professionalId)],
+);
 
 export type Review = typeof reviews.$inferSelect;
 export type InsertReview = typeof reviews.$inferInsert;
 
-export const favorites = pgTable("favorites", {
-  id: serial("id").primaryKey(),
-  userId: varchar("user_id", { length: 64 }).notNull().references(() => users.openId, { onDelete: "cascade" }),
-  providerId: varchar("provider_id", { length: 64 }).notNull().references(() => providers.id, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-}, (table) => [
-  index("favorites_user_id_idx").on(table.userId),
-  index("favorites_provider_id_idx").on(table.providerId),
-]);
+export const favorites = pgTable(
+  "favorites",
+  {
+    id: serial("id").primaryKey(),
+    userId: varchar("user_id", { length: 64 })
+      .notNull()
+      .references(() => users.openId, { onDelete: "cascade" }),
+    providerId: varchar("provider_id", { length: 64 })
+      .notNull()
+      .references(() => providers.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("favorites_user_id_idx").on(table.userId),
+    index("favorites_provider_id_idx").on(table.providerId),
+  ],
+);
 
 export type Favorite = typeof favorites.$inferSelect;
 export type InsertFavorite = typeof favorites.$inferInsert;
 
-export const appEvents = pgTable("app_events", {
-  id: serial("id").primaryKey(),
-  tipoEvento: varchar("tipo_evento", { length: 50 }).notNull(), // busca, clique_whatsapp, visualizacao, cadastro
-  valor: text("valor"), // e.g. search query, provider name
-  cidade: varchar("cidade", { length: 255 }),
-  prestadorId: varchar("prestador_id", { length: 64 }),
-  usuarioId: varchar("usuario_id", { length: 64 }),
-  utmSource: varchar("utm_source", { length: 255 }),
-  criadoEm: timestamp("created_at").defaultNow().notNull(),
-}, (table) => [
-  index("app_events_prestador_id_idx").on(table.prestadorId),
-  index("app_events_usuario_id_idx").on(table.usuarioId),
-]);
+export const appEvents = pgTable(
+  "app_events",
+  {
+    id: serial("id").primaryKey(),
+    tipoEvento: varchar("tipo_evento", { length: 50 }).notNull(), // busca, clique_whatsapp, visualizacao, cadastro
+    valor: text("valor"), // e.g. search query, provider name
+    cidade: varchar("cidade", { length: 255 }),
+    prestadorId: varchar("prestador_id", { length: 64 }),
+    usuarioId: varchar("usuario_id", { length: 64 }),
+    utmSource: varchar("utm_source", { length: 255 }),
+    criadoEm: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("app_events_prestador_id_idx").on(table.prestadorId),
+    index("app_events_usuario_id_idx").on(table.usuarioId),
+  ],
+);
 
 export type AppEvent = typeof appEvents.$inferSelect;
 export type InsertAppEvent = typeof appEvents.$inferInsert;
 
 export const payments = pgTable("pagamentos", {
   id: serial("id").primaryKey(),
-  prestadorId: varchar("prestador_id", { length: 64 }).notNull().references(() => providers.id, { onDelete: "cascade" }),
+  prestadorId: varchar("prestador_id", { length: 64 })
+    .notNull()
+    .references(() => providers.id, { onDelete: "cascade" }),
   plano: varchar("plano", { length: 20 }).notNull(), // 'mensal' / 'anual'
   valor: real("valor").notNull(),
   dataPagamento: timestamp("data_pagamento").notNull(),
@@ -339,7 +375,9 @@ export const partners = pgTable("partners", {
   email: varchar("email", { length: 320 }).notNull().unique(),
   telefone: varchar("telefone", { length: 50 }).notNull(),
   cidade: varchar("cidade", { length: 255 }).notNull(),
-  codigoIndicacao: varchar("codigo_indicacao", { length: 50 }).notNull().unique(),
+  codigoIndicacao: varchar("codigo_indicacao", { length: 50 })
+    .notNull()
+    .unique(),
   comissao: real("comissao").default(0),
   pagamentoComissao: real("pagamento_comissao").default(0),
   planoAssociado: varchar("plano_associado", { length: 50 }),
@@ -365,7 +403,3 @@ export const referrals = pgTable("referrals", {
 
 export type Referral = typeof referrals.$inferSelect;
 export type InsertReferral = typeof referrals.$inferInsert;
-
-
-
-

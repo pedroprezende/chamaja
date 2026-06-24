@@ -2,7 +2,9 @@ require("dotenv").config();
 const postgres = require("postgres");
 
 async function runMigration() {
-  console.log("--- Executando Migração de Configurações e Logs Administrativos ---");
+  console.log(
+    "--- Executando Migração de Configurações e Logs Administrativos ---",
+  );
   const dbUrl = process.env.DATABASE_URL;
   if (!dbUrl) {
     console.error("Erro: DATABASE_URL não definida no arquivo .env.");
@@ -12,13 +14,17 @@ async function runMigration() {
   const sql = postgres(dbUrl, { max: 1 });
 
   try {
-    console.log("1. Adicionando coluna 'admin_role' na tabela 'users' se não existir...");
+    console.log(
+      "1. Adicionando coluna 'admin_role' na tabela 'users' se não existir...",
+    );
     await sql`
       ALTER TABLE public.users 
       ADD COLUMN IF NOT EXISTS admin_role VARCHAR(50);
     `;
 
-    console.log("2. Atualizando e-mail principal para Administrador Principal...");
+    console.log(
+      "2. Atualizando e-mail principal para Administrador Principal...",
+    );
     await sql`
       UPDATE public.users 
       SET role = 'admin', admin_role = 'principal' 
@@ -57,7 +63,7 @@ async function runMigration() {
     await sql`DROP POLICY IF EXISTS "Admin full access to admin_activity_logs" ON public.admin_activity_logs;`;
 
     console.log("7. Criando políticas RLS...");
-    
+
     // app_settings select policy (public)
     await sql`
       CREATE POLICY "Public select on app_settings" 
@@ -82,12 +88,14 @@ async function runMigration() {
       USING (public.is_admin());
     `;
 
-    console.log("8. Semeando chaves de configurações padrão se não existirem...");
+    console.log(
+      "8. Semeando chaves de configurações padrão se não existirem...",
+    );
     const defaultSettings = [
       { key: "maintenance_mode", value: "false" },
       { key: "contact_whatsapp", value: "(11) 99999-9999" },
       { key: "min_rating_featured", value: "4.5" },
-      { key: "app_version", value: "1.0.0" }
+      { key: "app_version", value: "1.0.0" },
     ];
 
     for (const setting of defaultSettings) {
@@ -102,7 +110,9 @@ async function runMigration() {
       }
     }
 
-    console.log("Migração de Configurações Administrativas concluída com sucesso!");
+    console.log(
+      "Migração de Configurações Administrativas concluída com sucesso!",
+    );
   } catch (error) {
     console.error("Erro ao rodar migração de configurações:", error);
   } finally {

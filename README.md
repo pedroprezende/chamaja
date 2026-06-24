@@ -8,15 +8,15 @@ Desenvolvido com **Expo SDK 54**, **React Native 0.81**, **TypeScript** e **Nati
 
 ## Funcionalidades
 
-| Área | Descrição |
-|------|-----------|
-| **Home** | Carrossel de destaques/anúncios, categorias de serviço, listagem por subcategoria |
-| **Busca** | Pesquisa por nome, categoria ou subcategoria |
-| **Perfil do Prestador** | Galeria de fotos, WhatsApp, avaliações, planos |
-| **Painel Admin** | Gestão de anúncios, prestadores, serviços, imagens de subcategorias |
-| **Autenticação** | Login/cadastro via e-mail, OAuth (Manus) |
-| **Pedidos** | Histórico de solicitações |
-| **Notificações** | Central de notificações com badge |
+| Área                    | Descrição                                                                         |
+| ----------------------- | --------------------------------------------------------------------------------- |
+| **Home**                | Carrossel de destaques/anúncios, categorias de serviço, listagem por subcategoria |
+| **Busca**               | Pesquisa por nome, categoria ou subcategoria                                      |
+| **Perfil do Prestador** | Galeria de fotos, WhatsApp, avaliações, planos                                    |
+| **Painel Admin**        | Gestão de anúncios, prestadores, serviços, imagens de subcategorias               |
+| **Autenticação**        | Login/cadastro via e-mail, OAuth (Manus)                                          |
+| **Pedidos**             | Histórico de solicitações                                                         |
+| **Notificações**        | Central de notificações com badge                                                 |
 
 ---
 
@@ -30,6 +30,7 @@ Antes de começar, instale as seguintes ferramentas na sua máquina:
 - **Expo Go** no celular (iOS ou Android) para testar em dispositivo físico → [expo.dev/go](https://expo.dev/go)
 
 Para rodar em simulador/emulador (opcional):
+
 - **iOS**: Xcode (apenas macOS) com simulador iPhone
 - **Android**: Android Studio com emulador configurado
 
@@ -77,6 +78,7 @@ pnpm dev
 ```
 
 Isso inicia simultaneamente:
+
 - **Metro Bundler** (app mobile) na porta `8081`
 - **Servidor backend** (API) na porta `3000`
 
@@ -157,34 +159,34 @@ Para acessar o painel admin, faça login com a conta de administrador configurad
 
 ## Scripts Disponíveis
 
-| Comando | Descrição |
-|---------|-----------|
-| `pnpm dev` | Inicia o app e o servidor simultaneamente |
-| `pnpm dev:metro` | Inicia apenas o Metro Bundler (app) |
-| `pnpm dev:server` | Inicia apenas o servidor backend |
-| `pnpm ios` | Abre no simulador iOS |
-| `pnpm android` | Abre no emulador Android |
-| `pnpm test` | Roda os testes com Vitest |
-| `pnpm check` | Verifica erros TypeScript |
-| `pnpm lint` | Verifica erros de lint |
-| `pnpm db:push` | Aplica migrações do banco de dados |
-| `pnpm qr` | Gera QR code para Expo Go |
+| Comando           | Descrição                                 |
+| ----------------- | ----------------------------------------- |
+| `pnpm dev`        | Inicia o app e o servidor simultaneamente |
+| `pnpm dev:metro`  | Inicia apenas o Metro Bundler (app)       |
+| `pnpm dev:server` | Inicia apenas o servidor backend          |
+| `pnpm ios`        | Abre no simulador iOS                     |
+| `pnpm android`    | Abre no emulador Android                  |
+| `pnpm test`       | Roda os testes com Vitest                 |
+| `pnpm check`      | Verifica erros TypeScript                 |
+| `pnpm lint`       | Verifica erros de lint                    |
+| `pnpm db:push`    | Aplica migrações do banco de dados        |
+| `pnpm qr`         | Gera QR code para Expo Go                 |
 
 ---
 
 ## Stack Tecnológica
 
-| Tecnologia | Versão | Uso |
-|-----------|--------|-----|
-| Expo SDK | 54 | Framework mobile |
-| React Native | 0.81.5 | Base do app |
-| Expo Router | 6 | Navegação baseada em arquivos |
-| NativeWind | 4 | Tailwind CSS para React Native |
-| TypeScript | 5.9 | Tipagem estática |
-| tRPC | 11 | API type-safe |
-| AsyncStorage | 2 | Persistência local |
-| Drizzle ORM | 0.44 | ORM para banco de dados |
-| Vitest | 2 | Testes unitários |
+| Tecnologia   | Versão | Uso                            |
+| ------------ | ------ | ------------------------------ |
+| Expo SDK     | 54     | Framework mobile               |
+| React Native | 0.81.5 | Base do app                    |
+| Expo Router  | 6      | Navegação baseada em arquivos  |
+| NativeWind   | 4      | Tailwind CSS para React Native |
+| TypeScript   | 5.9    | Tipagem estática               |
+| tRPC         | 11     | API type-safe                  |
+| AsyncStorage | 2      | Persistência local             |
+| Drizzle ORM  | 0.44   | ORM para banco de dados        |
+| Vitest       | 2      | Testes unitários               |
 
 ---
 
@@ -192,13 +194,13 @@ Para acessar o painel admin, faça login com a conta de administrador configurad
 
 O app usa **AsyncStorage** como banco de dados local no dispositivo. Os dados persistem entre sessões, mas ficam apenas no dispositivo onde o app está instalado.
 
-| Chave AsyncStorage | Conteúdo |
-|--------------------|----------|
-| `@chamaja_admin_services` | Serviços criados pelo admin |
-| `@chamaja_admin_providers` | Prestadores criados pelo admin |
-| `@chamaja_ads` | Anúncios/destaques do carrossel |
-| `@chamaja_all_providers` | Prestadores cadastrados via app |
-| `@chamaja_subcategory_images` | Imagens das subcategorias |
+| Chave AsyncStorage            | Conteúdo                        |
+| ----------------------------- | ------------------------------- |
+| `@chamaja_admin_services`     | Serviços criados pelo admin     |
+| `@chamaja_admin_providers`    | Prestadores criados pelo admin  |
+| `@chamaja_ads`                | Anúncios/destaques do carrossel |
+| `@chamaja_all_providers`      | Prestadores cadastrados via app |
+| `@chamaja_subcategory_images` | Imagens das subcategorias       |
 
 ---
 
@@ -207,6 +209,7 @@ O app usa **AsyncStorage** como banco de dados local no dispositivo. Os dados pe
 **O app abre mas está em branco / com erro**
 
 Verifique se todas as dependências foram instaladas corretamente:
+
 ```bash
 pnpm install
 ```
@@ -214,6 +217,7 @@ pnpm install
 **Erro "Metro bundler failed to start"**
 
 Limpe o cache do Metro:
+
 ```bash
 npx expo start --clear
 ```

@@ -7,7 +7,7 @@ import axios from "axios";
 export async function geocodeAddress(
   address: string | null | undefined,
   neighborhood?: string | null,
-  city?: string | null
+  city?: string | null,
 ): Promise<{ latitude: number; longitude: number } | null> {
   if (!address || address.trim() === "") {
     // If no address is provided, try to geocode the neighborhood and city
@@ -29,19 +29,27 @@ export async function geocodeAddress(
   const queryStr = parts.join(", ");
 
   try {
-    const response = await axios.get("https://nominatim.openstreetmap.org/search", {
-      params: {
-        q: queryStr,
-        format: "json",
-        limit: 1,
+    const response = await axios.get(
+      "https://nominatim.openstreetmap.org/search",
+      {
+        params: {
+          q: queryStr,
+          format: "json",
+          limit: 1,
+        },
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        },
+        timeout: 5000,
       },
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      },
-      timeout: 5000,
-    });
+    );
 
-    if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+    if (
+      response.data &&
+      Array.isArray(response.data) &&
+      response.data.length > 0
+    ) {
       const lat = parseFloat(response.data[0].lat);
       const lon = parseFloat(response.data[0].lon);
       if (!isNaN(lat) && !isNaN(lon)) {
@@ -49,7 +57,10 @@ export async function geocodeAddress(
       }
     }
   } catch (error: any) {
-    console.warn(`[Geocoding] Full address geocoding failed for "${queryStr}":`, error.message);
+    console.warn(
+      `[Geocoding] Full address geocoding failed for "${queryStr}":`,
+      error.message,
+    );
   }
 
   // If full address geocoding fails, fallback to geocoding neighborhood and city
@@ -58,25 +69,33 @@ export async function geocodeAddress(
 
 async function geocodeBackup(
   neighborhood?: string | null,
-  city?: string | null
+  city?: string | null,
 ): Promise<{ latitude: number; longitude: number } | null> {
   // Try 1: neighborhood + city
   if (neighborhood && city) {
     const queryStr = `${neighborhood}, ${city}, Brasil`;
     try {
-      const response = await axios.get("https://nominatim.openstreetmap.org/search", {
-        params: {
-          q: queryStr,
-          format: "json",
-          limit: 1,
+      const response = await axios.get(
+        "https://nominatim.openstreetmap.org/search",
+        {
+          params: {
+            q: queryStr,
+            format: "json",
+            limit: 1,
+          },
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          },
+          timeout: 4000,
         },
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        },
-        timeout: 4000,
-      });
+      );
 
-      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+      if (
+        response.data &&
+        Array.isArray(response.data) &&
+        response.data.length > 0
+      ) {
         const lat = parseFloat(response.data[0].lat);
         const lon = parseFloat(response.data[0].lon);
         if (!isNaN(lat) && !isNaN(lon)) {
@@ -84,7 +103,10 @@ async function geocodeBackup(
         }
       }
     } catch (error: any) {
-      console.warn(`[Geocoding] Backup geocoding failed for "${queryStr}":`, error.message);
+      console.warn(
+        `[Geocoding] Backup geocoding failed for "${queryStr}":`,
+        error.message,
+      );
     }
   }
 
@@ -92,19 +114,27 @@ async function geocodeBackup(
   if (city) {
     const queryStr = `${city}, Brasil`;
     try {
-      const response = await axios.get("https://nominatim.openstreetmap.org/search", {
-        params: {
-          q: queryStr,
-          format: "json",
-          limit: 1,
+      const response = await axios.get(
+        "https://nominatim.openstreetmap.org/search",
+        {
+          params: {
+            q: queryStr,
+            format: "json",
+            limit: 1,
+          },
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          },
+          timeout: 4000,
         },
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        },
-        timeout: 4000,
-      });
+      );
 
-      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+      if (
+        response.data &&
+        Array.isArray(response.data) &&
+        response.data.length > 0
+      ) {
         const lat = parseFloat(response.data[0].lat);
         const lon = parseFloat(response.data[0].lon);
         if (!isNaN(lat) && !isNaN(lon)) {
@@ -112,7 +142,10 @@ async function geocodeBackup(
         }
       }
     } catch (error: any) {
-      console.warn(`[Geocoding] City backup geocoding failed for "${queryStr}":`, error.message);
+      console.warn(
+        `[Geocoding] City backup geocoding failed for "${queryStr}":`,
+        error.message,
+      );
     }
   }
 

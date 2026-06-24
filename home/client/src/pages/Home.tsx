@@ -1,7 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowRight, MapPin, Users, CheckCircle, TrendingUp, AlertTriangle } from "lucide-react";
+import {
+  ArrowRight,
+  MapPin,
+  Users,
+  CheckCircle,
+  TrendingUp,
+  AlertTriangle,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 
 export default function Home() {
@@ -29,7 +36,10 @@ export default function Home() {
     }
 
     // 2. Scroll to #cadastro if URL path is /cadastro or has hash
-    if (window.location.pathname === "/cadastro" || window.location.hash === "#cadastro") {
+    if (
+      window.location.pathname === "/cadastro" ||
+      window.location.hash === "#cadastro"
+    ) {
       setTimeout(() => {
         const element = document.getElementById("cadastro");
         if (element) {
@@ -45,7 +55,15 @@ export default function Home() {
     setFormSuccess(false);
     setFormError("");
 
-    if (!name || !email || !phone || !categoryId || !city || !neighborhood || !description) {
+    if (
+      !name ||
+      !email ||
+      !phone ||
+      !categoryId ||
+      !city ||
+      !neighborhood ||
+      !description
+    ) {
       setFormError("Por favor, preencha todos os campos obrigatórios.");
       setIsSubmitting(false);
       return;
@@ -89,11 +107,16 @@ export default function Home() {
         setNeighborhood("");
         setDescription("");
       } else {
-        setFormError(result.error || "Ocorreu um erro ao realizar o cadastro. Tente novamente.");
+        setFormError(
+          result.error ||
+            "Ocorreu um erro ao realizar o cadastro. Tente novamente."
+        );
       }
     } catch (err) {
       console.error("Error submitting form:", err);
-      setFormError("Falha na conexão com o servidor. Verifique sua conexão e tente novamente.");
+      setFormError(
+        "Falha na conexão com o servidor. Verifique sua conexão e tente novamente."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -113,19 +136,34 @@ export default function Home() {
           </div>
 
           <nav className="hidden md:flex items-center gap-8">
-            <a href="#" className="text-muted-foreground hover:text-foreground transition">
+            <a
+              href="#"
+              className="text-muted-foreground hover:text-foreground transition"
+            >
               Início
             </a>
-            <a href="#como-funciona" className="text-muted-foreground hover:text-foreground transition">
+            <a
+              href="#como-funciona"
+              className="text-muted-foreground hover:text-foreground transition"
+            >
               Como funciona
             </a>
-            <a href="#para-prestadores" className="text-muted-foreground hover:text-foreground transition">
+            <a
+              href="#para-prestadores"
+              className="text-muted-foreground hover:text-foreground transition"
+            >
               Para prestadores
             </a>
-            <a href="#para-comercios" className="text-muted-foreground hover:text-foreground transition">
+            <a
+              href="#para-comercios"
+              className="text-muted-foreground hover:text-foreground transition"
+            >
               Para comércios
             </a>
-            <a href="/parceiros" className="text-primary font-semibold hover:text-primary/80 transition">
+            <a
+              href="/parceiro"
+              className="text-primary font-semibold hover:text-primary/80 transition"
+            >
               Seja um Parceiro ✦
             </a>
           </nav>
@@ -143,7 +181,9 @@ export default function Home() {
             {/* Left Content */}
             <div className="space-y-8">
               <div className="inline-block px-4 py-2 bg-primary/10 border border-primary/30 rounded-full">
-                <span className="text-primary text-sm font-semibold">✦ PLATAFORMA COMPLETA</span>
+                <span className="text-primary text-sm font-semibold">
+                  ✦ PLATAFORMA COMPLETA
+                </span>
               </div>
 
               <div className="space-y-4">
@@ -156,18 +196,26 @@ export default function Home() {
                 </h1>
 
                 <p className="text-lg text-muted-foreground max-w-md">
-                  Encontre prestadores de serviços e comércios perto de você com praticidade, segurança e confiança.
+                  Encontre prestadores de serviços e comércios perto de você com
+                  praticidade, segurança e confiança.
                 </p>
               </div>
 
               <div className="flex gap-4 pt-4">
-                <Button 
-                  onClick={() => document.getElementById("cadastro")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+                <Button
+                  onClick={() =>
+                    document
+                      .getElementById("cadastro")
+                      ?.scrollIntoView({ behavior: "smooth", block: "center" })
+                  }
                   className="bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-6 text-base"
                 >
                   Cadastrar agora <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
-                <Button variant="outline" className="border-border text-foreground hover:bg-card px-8 py-6 text-base">
+                <Button
+                  variant="outline"
+                  className="border-border text-foreground hover:bg-card px-8 py-6 text-base"
+                >
                   Quero ver prestador
                 </Button>
               </div>
@@ -186,7 +234,9 @@ export default function Home() {
                     <CheckCircle className="h-5 w-5 text-primary" />
                     <span className="text-2xl font-bold">Serviços</span>
                   </div>
-                  <p className="text-sm text-muted-foreground">diversificados</p>
+                  <p className="text-sm text-muted-foreground">
+                    diversificados
+                  </p>
                 </div>
                 <div>
                   <div className="flex items-center gap-2 mb-2">
@@ -219,13 +269,19 @@ export default function Home() {
       </section>
 
       {/* Como Funciona Section */}
-      <section id="como-funciona" className="py-20 md:py-32 bg-card/50" style={{ backgroundColor: '#000000' }}>
+      <section
+        id="como-funciona"
+        className="py-20 md:py-32 bg-card/50"
+        style={{ backgroundColor: "#000000" }}
+      >
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
               Como <span className="text-primary">funciona</span>
             </h2>
-            <p className="text-lg text-muted-foreground">É simples, rápido e funcional</p>
+            <p className="text-lg text-muted-foreground">
+              É simples, rápido e funcional
+            </p>
           </div>
 
           <div className="grid md:grid-cols-4 gap-8">
@@ -233,37 +289,50 @@ export default function Home() {
               {
                 step: 1,
                 title: "Você busca",
-                description: "Encontre o serviço ou comércio que precisa perto de você.",
-                image: "https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-how-it-works-1-YELFGGwpwvDRAB5gWkGeRy.webp",
+                description:
+                  "Encontre o serviço ou comércio que precisa perto de você.",
+                image:
+                  "https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-how-it-works-1-YELFGGwpwvDRAB5gWkGeRy.webp",
               },
               {
                 step: 2,
                 title: "Encontre e escolha",
-                description: "Veja avaliações, localização e escolha a melhor para você.",
-                image: "https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-how-it-works-2-gddMe4gnuUmsyxDMDXEV8Y.webp",
+                description:
+                  "Veja avaliações, localização e escolha a melhor para você.",
+                image:
+                  "https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-how-it-works-2-gddMe4gnuUmsyxDMDXEV8Y.webp",
               },
               {
                 step: 3,
                 title: "Fale direto no WhatsApp",
-                description: "Chame no WhatsApp e resolva tudo de forma rápida.",
-                image: "https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-how-it-works-3-R4296w5gJuujeFURG4oyzj.webp",
+                description:
+                  "Chame no WhatsApp e resolva tudo de forma rápida.",
+                image:
+                  "https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-how-it-works-3-R4296w5gJuujeFURG4oyzj.webp",
               },
               {
                 step: 4,
                 title: "Problema resolvido!",
                 description: "Tudo que você precisa, em um só lugar.",
-                image: "https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-how-it-works-4-9A3jbMW432PLGGSxpUuDVa.webp",
+                image:
+                  "https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-how-it-works-4-9A3jbMW432PLGGSxpUuDVa.webp",
               },
-            ].map((item) => (
+            ].map(item => (
               <div key={item.step} className="text-center">
                 <div className="mb-6 flex justify-center">
                   <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg">
                     {item.step}
                   </div>
                 </div>
-                <img src={item.image} alt={item.title} className="w-full h-auto mb-6 rounded-lg" />
+                <img
+                  src={item.image}
+                  alt={item.title}
+                  className="w-full h-auto mb-6 rounded-lg"
+                />
                 <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
-                <p className="text-muted-foreground text-sm">{item.description}</p>
+                <p className="text-muted-foreground text-sm">
+                  {item.description}
+                </p>
               </div>
             ))}
           </div>
@@ -271,7 +340,11 @@ export default function Home() {
       </section>
 
       {/* Para Prestadores Section */}
-      <section id="para-prestadores" className="py-20 md:py-32 bg-background" style={{ backgroundColor: '#000000' }}>
+      <section
+        id="para-prestadores"
+        className="py-20 md:py-32 bg-background"
+        style={{ backgroundColor: "#000000" }}
+      >
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
             <div>
@@ -290,7 +363,7 @@ export default function Home() {
                   "Gerencie seus serviços e horários",
                   "Veja avaliações de clientes",
                   "Autentique seus ganhos todos os dias",
-                ].map((item) => (
+                ].map(item => (
                   <li key={item} className="flex items-start gap-3">
                     <CheckCircle className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
                     <span className="text-foreground">{item}</span>
@@ -298,8 +371,12 @@ export default function Home() {
                 ))}
               </ul>
 
-              <Button 
-                onClick={() => document.getElementById("cadastro")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+              <Button
+                onClick={() =>
+                  document
+                    .getElementById("cadastro")
+                    ?.scrollIntoView({ behavior: "smooth", block: "center" })
+                }
                 className="bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 Quero ser encontrado
@@ -316,7 +393,10 @@ export default function Home() {
           </div>
 
           {/* Para Comércios Section */}
-          <div id="para-comercios" className="grid md:grid-cols-2 gap-12 items-center">
+          <div
+            id="para-comercios"
+            className="grid md:grid-cols-2 gap-12 items-center"
+          >
             <div className="flex justify-center order-2 md:order-1">
               <img
                 src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-commerce-kCETcfMaD2NsM9wbVS6gvi.webp"
@@ -341,7 +421,7 @@ export default function Home() {
                   "Receba pedidos direto no WhatsApp",
                   "Mais pedidos, mais vendas",
                   "Sem taxas por pedido",
-                ].map((item) => (
+                ].map(item => (
                   <li key={item} className="flex items-start gap-3">
                     <CheckCircle className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
                     <span className="text-foreground">{item}</span>
@@ -349,8 +429,12 @@ export default function Home() {
                 ))}
               </ul>
 
-              <Button 
-                onClick={() => document.getElementById("cadastro")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+              <Button
+                onClick={() =>
+                  document
+                    .getElementById("cadastro")
+                    ?.scrollIntoView({ behavior: "smooth", block: "center" })
+                }
                 className="bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 Quero meu comércio
@@ -361,13 +445,18 @@ export default function Home() {
       </section>
 
       {/* O App na Prática Section */}
-      <section className="py-20 md:py-32 bg-card/50" style={{ backgroundColor: '#000000' }}>
+      <section
+        className="py-20 md:py-32 bg-card/50"
+        style={{ backgroundColor: "#000000" }}
+      >
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
               O app na <span className="text-primary">prática</span>
             </h2>
-            <p className="text-lg text-muted-foreground">Tudo que você precisa, em um só lugar.</p>
+            <p className="text-lg text-muted-foreground">
+              Tudo que você precisa, em um só lugar.
+            </p>
           </div>
 
           <div className="flex flex-wrap justify-center gap-8 pb-4">
@@ -384,8 +473,11 @@ export default function Home() {
                 title: "App",
                 img: "/assets/images/xj/app_mockup.png",
               },
-            ].map((item) => (
-              <div key={item.title} className="flex flex-col items-center gap-4">
+            ].map(item => (
+              <div
+                key={item.title}
+                className="flex flex-col items-center gap-4"
+              >
                 <div className="w-[220px] h-[450px] md:w-[280px] md:h-[580px] rounded-2xl bg-[#09090b] border border-zinc-800/80 p-0 flex items-center justify-center shadow-2xl transition hover:border-primary/50 hover:scale-[1.02] duration-300 overflow-hidden">
                   <img
                     src={item.img}
@@ -403,14 +495,20 @@ export default function Home() {
       </section>
 
       {/* Form Section (Registration) */}
-      <section id="cadastro" className="py-20 bg-card/10 border-b border-border">
+      <section
+        id="cadastro"
+        className="py-20 bg-card/10 border-b border-border"
+      >
         <div className="container mx-auto px-4 max-w-4xl">
           <div className="text-center max-w-2xl mx-auto mb-12 space-y-4">
             <h2 className="text-3xl md:text-5xl font-black text-white">
-              Cadastre seu <span className="text-primary">Serviço</span> ou <span className="text-primary">Negócio</span>
+              Cadastre seu <span className="text-primary">Serviço</span> ou{" "}
+              <span className="text-primary">Negócio</span>
             </h2>
             <p className="text-sm md:text-base text-muted-foreground">
-              Preencha o formulário abaixo com as informações do seu negócio ou serviço. Nossa equipe fará a verificação e entrará em contato para ativar seu perfil.
+              Preencha o formulário abaixo com as informações do seu negócio ou
+              serviço. Nossa equipe fará a verificação e entrará em contato para
+              ativar seu perfil.
             </p>
           </div>
 
@@ -418,7 +516,10 @@ export default function Home() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="name" className="text-sm font-semibold text-white">
+                  <label
+                    htmlFor="name"
+                    className="text-sm font-semibold text-white"
+                  >
                     Nome do Profissional ou Negócio *
                   </label>
                   <Input
@@ -427,12 +528,15 @@ export default function Home() {
                     placeholder="Ex: João Silva ou Pinturas Silva"
                     required
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={e => setName(e.target.value)}
                     className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="email" className="text-sm font-semibold text-white">
+                  <label
+                    htmlFor="email"
+                    className="text-sm font-semibold text-white"
+                  >
                     E-mail *
                   </label>
                   <Input
@@ -441,7 +545,7 @@ export default function Home() {
                     placeholder="Ex: joao@gmail.com"
                     required
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={e => setEmail(e.target.value)}
                     className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
                   />
                 </div>
@@ -449,7 +553,10 @@ export default function Home() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="phone" className="text-sm font-semibold text-white">
+                  <label
+                    htmlFor="phone"
+                    className="text-sm font-semibold text-white"
+                  >
                     Telefone / WhatsApp *
                   </label>
                   <Input
@@ -458,43 +565,79 @@ export default function Home() {
                     placeholder="Ex: (11) 99999-9999"
                     required
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={e => setPhone(e.target.value)}
                     className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="categoryId" className="text-sm font-semibold text-white font-body">
+                  <label
+                    htmlFor="categoryId"
+                    className="text-sm font-semibold text-white font-body"
+                  >
                     Categoria Principal *
                   </label>
                   <select
                     id="categoryId"
                     required
                     value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
+                    onChange={e => setCategoryId(e.target.value)}
                     className="bg-background border border-border text-foreground rounded-xl px-4 py-3 h-12 focus:border-primary focus:outline-none transition text-sm"
                   >
-                    <option value="" className="bg-card">Selecione uma categoria...</option>
-                    <option value="reformas-reparos" className="bg-card">Reformas e Reparos</option>
-                    <option value="assistencia-tecnica" className="bg-card">Assistência Técnica</option>
-                    <option value="servicos-domesticos" className="bg-card">Serviços Domésticos</option>
-                    <option value="servicos-externos" className="bg-card">Serviços Externos</option>
-                    <option value="automotivo" className="bg-card">Automotivo</option>
-                    <option value="beleza-estetica" className="bg-card">Beleza e Estética</option>
-                    <option value="servicos-profissionais" className="bg-card">Serviços Profissionais</option>
-                    <option value="saude" className="bg-card">Saúde</option>
-                    <option value="eventos" className="bg-card">Eventos</option>
-                    <option value="logistica" className="bg-card">Logística</option>
-                    <option value="educacao" className="bg-card">Educação</option>
-                    <option value="comercios" className="bg-card">Comércios / Lojas</option>
-                    <option value="mobilidade" className="bg-card">Mobilidade</option>
-                    <option value="outro" className="bg-card">Outro (Especificar)...</option>
+                    <option value="" className="bg-card">
+                      Selecione uma categoria...
+                    </option>
+                    <option value="reformas-reparos" className="bg-card">
+                      Reformas e Reparos
+                    </option>
+                    <option value="assistencia-tecnica" className="bg-card">
+                      Assistência Técnica
+                    </option>
+                    <option value="servicos-domesticos" className="bg-card">
+                      Serviços Domésticos
+                    </option>
+                    <option value="servicos-externos" className="bg-card">
+                      Serviços Externos
+                    </option>
+                    <option value="automotivo" className="bg-card">
+                      Automotivo
+                    </option>
+                    <option value="beleza-estetica" className="bg-card">
+                      Beleza e Estética
+                    </option>
+                    <option value="servicos-profissionais" className="bg-card">
+                      Serviços Profissionais
+                    </option>
+                    <option value="saude" className="bg-card">
+                      Saúde
+                    </option>
+                    <option value="eventos" className="bg-card">
+                      Eventos
+                    </option>
+                    <option value="logistica" className="bg-card">
+                      Logística
+                    </option>
+                    <option value="educacao" className="bg-card">
+                      Educação
+                    </option>
+                    <option value="comercios" className="bg-card">
+                      Comércios / Lojas
+                    </option>
+                    <option value="mobilidade" className="bg-card">
+                      Mobilidade
+                    </option>
+                    <option value="outro" className="bg-card">
+                      Outro (Especificar)...
+                    </option>
                   </select>
                 </div>
               </div>
 
               {categoryId === "outro" && (
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="otherCategory" className="text-sm font-semibold text-white">
+                  <label
+                    htmlFor="otherCategory"
+                    className="text-sm font-semibold text-white"
+                  >
                     Especifique a Categoria *
                   </label>
                   <Input
@@ -503,7 +646,7 @@ export default function Home() {
                     placeholder="Ex: Pet Shop, Consultoria, etc."
                     required
                     value={otherCategory}
-                    onChange={(e) => setOtherCategory(e.target.value)}
+                    onChange={e => setOtherCategory(e.target.value)}
                     className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
                   />
                 </div>
@@ -511,7 +654,10 @@ export default function Home() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="city" className="text-sm font-semibold text-white">
+                  <label
+                    htmlFor="city"
+                    className="text-sm font-semibold text-white"
+                  >
                     Cidade *
                   </label>
                   <Input
@@ -520,12 +666,15 @@ export default function Home() {
                     placeholder="Ex: Bragança Paulista"
                     required
                     value={city}
-                    onChange={(e) => setCity(e.target.value)}
+                    onChange={e => setCity(e.target.value)}
                     className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="neighborhood" className="text-sm font-semibold text-white">
+                  <label
+                    htmlFor="neighborhood"
+                    className="text-sm font-semibold text-white"
+                  >
                     Bairro *
                   </label>
                   <Input
@@ -534,14 +683,17 @@ export default function Home() {
                     placeholder="Ex: Centro"
                     required
                     value={neighborhood}
-                    onChange={(e) => setNeighborhood(e.target.value)}
+                    onChange={e => setNeighborhood(e.target.value)}
                     className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
                   />
                 </div>
               </div>
 
               <div className="flex flex-col gap-2">
-                <label htmlFor="description" className="text-sm font-semibold text-white">
+                <label
+                  htmlFor="description"
+                  className="text-sm font-semibold text-white"
+                >
                   Descrição do seu negócio, produtos ou serviços *
                 </label>
                 <Textarea
@@ -550,7 +702,7 @@ export default function Home() {
                   placeholder="Descreva brevemente o seu comércio, loja, os produtos que vende ou serviços que oferece..."
                   required
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={e => setDescription(e.target.value)}
                   className="bg-background border-border text-foreground rounded-xl px-4 py-3 focus-visible:ring-primary focus-visible:border-primary text-sm resize-none"
                 />
               </div>
@@ -560,7 +712,9 @@ export default function Home() {
                 <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl p-4 gap-3 text-sm flex items-start">
                   <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
                   <div>
-                    <strong>Cadastro enviado com sucesso!</strong> Recebemos suas informações. Analisaremos os dados e entraremos em contato para ativar o seu perfil no app XamaJá.
+                    <strong>Cadastro enviado com sucesso!</strong> Recebemos
+                    suas informações. Analisaremos os dados e entraremos em
+                    contato para ativar o seu perfil no app XamaJá.
                   </div>
                 </div>
               )}
@@ -598,18 +752,23 @@ export default function Home() {
           <div className="bg-[#09090b]/80 border border-primary/20 rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 backdrop-blur-sm">
             <div className="space-y-4 max-w-xl text-left">
               <div className="inline-block px-3 py-1 bg-primary/10 border border-primary/30 rounded-full">
-                <span className="text-primary text-xs font-semibold uppercase tracking-wider">✦ Indicações & Parceiros</span>
+                <span className="text-primary text-xs font-semibold uppercase tracking-wider">
+                  ✦ Indicações & Parceiros
+                </span>
               </div>
               <h2 className="text-3xl md:text-4xl font-bold text-white tracking-tight">
                 Ganhe Indicando Prestadores e Comércios!
               </h2>
               <p className="text-muted-foreground text-sm md:text-base leading-relaxed">
-                Indique profissionais e comércios locais para a nossa plataforma. Cadastre-se como parceiro, obtenha seu código de indicação exclusivo e acompanhe todos os seus leads pelo painel de controle.
+                Indique profissionais e comércios locais para a nossa
+                plataforma. Cadastre-se como parceiro, obtenha seu código de
+                indicação exclusivo e acompanhe todos os seus leads pelo painel
+                de controle.
               </p>
             </div>
             <div className="flex-shrink-0 w-full md:w-auto">
-              <Button 
-                onClick={() => window.location.href = "/parceiros"}
+              <Button
+                onClick={() => (window.location.href = "/parceiro")}
                 className="w-full md:w-auto bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-8 py-6 rounded-xl flex items-center justify-center gap-2"
               >
                 <span>Ser um Parceiro</span>
@@ -637,11 +796,16 @@ export default function Home() {
                 Pronto para crescer com o XamaJá?
               </h2>
               <p className="text-lg text-muted-foreground mb-8">
-                Cadastre-se agora e comece a receber mais clientes ou encontre os melhores prestadores perto de você.
+                Cadastre-se agora e comece a receber mais clientes ou encontre
+                os melhores prestadores perto de você.
               </p>
 
-              <Button 
-                onClick={() => document.getElementById("cadastro")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+              <Button
+                onClick={() =>
+                  document
+                    .getElementById("cadastro")
+                    ?.scrollIntoView({ behavior: "smooth", block: "center" })
+                }
                 className="bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-6 text-base"
               >
                 Cadastrar agora <ArrowRight className="ml-2 h-5 w-5" />
@@ -658,36 +822,98 @@ export default function Home() {
             <div>
               <h3 className="font-semibold mb-4">Navegação</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition">Início</a></li>
-                <li><a href="#como-funciona" className="hover:text-foreground transition">Como funciona</a></li>
-                <li><a href="#para-prestadores" className="hover:text-foreground transition">Para prestadores</a></li>
-                <li><a href="#para-comercios" className="hover:text-foreground transition">Para comércios</a></li>
-                <li><a href="/parceiros" className="text-primary hover:text-primary/80 transition font-semibold">Seja um Parceiro ✦</a></li>
+                <li>
+                  <a href="#" className="hover:text-foreground transition">
+                    Início
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#como-funciona"
+                    className="hover:text-foreground transition"
+                  >
+                    Como funciona
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#para-prestadores"
+                    className="hover:text-foreground transition"
+                  >
+                    Para prestadores
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#para-comercios"
+                    className="hover:text-foreground transition"
+                  >
+                    Para comércios
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/parceiro"
+                    className="text-primary hover:text-primary/80 transition font-semibold"
+                  >
+                    Seja um Parceiro ✦
+                  </a>
+                </li>
               </ul>
             </div>
 
             <div>
               <h3 className="font-semibold mb-4">Suporte</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition">Central de ajuda</a></li>
-                <li><a href="#" className="hover:text-foreground transition">Contato</a></li>
-                <li><a href="#" className="hover:text-foreground transition">FAQ</a></li>
+                <li>
+                  <a href="#" className="hover:text-foreground transition">
+                    Central de ajuda
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-foreground transition">
+                    Contato
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-foreground transition">
+                    FAQ
+                  </a>
+                </li>
               </ul>
             </div>
 
             <div>
               <h3 className="font-semibold mb-4">Legal</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition">Termos de uso</a></li>
-                <li><a href="#" className="hover:text-foreground transition">Política de privacidade</a></li>
+                <li>
+                  <a href="#" className="hover:text-foreground transition">
+                    Termos de uso
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-foreground transition">
+                    Política de privacidade
+                  </a>
+                </li>
               </ul>
             </div>
 
             <div>
               <h3 className="font-semibold mb-4">Siga-nos</h3>
               <div className="flex gap-4">
-                <a href="#" className="text-primary hover:text-primary/80 transition">Instagram</a>
-                <a href="#" className="text-primary hover:text-primary/80 transition">WhatsApp</a>
+                <a
+                  href="#"
+                  className="text-primary hover:text-primary/80 transition"
+                >
+                  Instagram
+                </a>
+                <a
+                  href="#"
+                  className="text-primary hover:text-primary/80 transition"
+                >
+                  WhatsApp
+                </a>
               </div>
             </div>
           </div>

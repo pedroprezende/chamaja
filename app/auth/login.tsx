@@ -24,14 +24,14 @@ import { useAuth } from "@/lib/auth-context";
 export default function LoginScreen() {
   const router = useRouter();
   const auth = useAuth();
-  
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [isBusiness, setIsBusiness] = useState(false);
-  
+
   const passwordRef = useRef<TextInput>(null);
 
   const handleGoogleLogin = async () => {
@@ -102,9 +102,17 @@ export default function LoginScreen() {
   };
 
   return (
-    <ScreenContainer edges={["top", "left", "right"]} style={{ backgroundColor: "#000000" }} containerClassName="bg-black">
-      <StatusBar style="light" backgroundColor="transparent" translucent={true} />
-      
+    <ScreenContainer
+      edges={["top", "left", "right"]}
+      style={{ backgroundColor: "#000000" }}
+      containerClassName="bg-black"
+    >
+      <StatusBar
+        style="light"
+        backgroundColor="transparent"
+        translucent={true}
+      />
+
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
@@ -167,11 +175,19 @@ export default function LoginScreen() {
             {/* Tabs selection */}
             <View style={styles.tabContainer}>
               <Pressable
-                style={[styles.tabButton, !isBusiness && styles.tabButtonActive]}
+                style={[
+                  styles.tabButton,
+                  !isBusiness && styles.tabButtonActive,
+                ]}
                 onPress={() => setIsBusiness(false)}
                 disabled={isLoading}
               >
-                <Text style={[styles.tabButtonText, !isBusiness && styles.tabButtonTextActive]}>
+                <Text
+                  style={[
+                    styles.tabButtonText,
+                    !isBusiness && styles.tabButtonTextActive,
+                  ]}
+                >
                   Cliente
                 </Text>
               </Pressable>
@@ -180,7 +196,12 @@ export default function LoginScreen() {
                 onPress={() => setIsBusiness(true)}
                 disabled={isLoading}
               >
-                <Text style={[styles.tabButtonText, isBusiness && styles.tabButtonTextActive]}>
+                <Text
+                  style={[
+                    styles.tabButtonText,
+                    isBusiness && styles.tabButtonTextActive,
+                  ]}
+                >
                   Prestador / Comércio
                 </Text>
               </Pressable>
@@ -188,7 +209,12 @@ export default function LoginScreen() {
 
             {/* Email/Phone Input */}
             <View style={styles.inputWrapper}>
-              <MaterialIcons name="person-outline" size={20} color="#84cc16" style={styles.inputIcon} />
+              <MaterialIcons
+                name="person-outline"
+                size={20}
+                color="#84cc16"
+                style={styles.inputIcon}
+              />
               <TextInput
                 style={styles.input}
                 placeholder="Email ou telefone"
@@ -206,7 +232,12 @@ export default function LoginScreen() {
 
             {/* Password Input */}
             <View style={styles.inputWrapper}>
-              <MaterialIcons name="lock-outline" size={20} color="#84cc16" style={styles.inputIcon} />
+              <MaterialIcons
+                name="lock-outline"
+                size={20}
+                color="#84cc16"
+                style={styles.inputIcon}
+              />
               <TextInput
                 style={styles.input}
                 placeholder="Senha"
@@ -219,7 +250,10 @@ export default function LoginScreen() {
                 returnKeyType="go"
                 onSubmitEditing={handleEmailLogin}
               />
-              <Pressable onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
+              <Pressable
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeBtn}
+              >
                 <MaterialIcons
                   name={showPassword ? "visibility" : "visibility-off"}
                   size={20}
@@ -329,12 +363,18 @@ export default function LoginScreen() {
               onPress={async () => {
                 try {
                   if (isBusiness) {
-                    await AsyncStorage.setItem("@chamaja_login_as_business", "true");
+                    await AsyncStorage.setItem(
+                      "@chamaja_login_as_business",
+                      "true",
+                    );
                   } else {
                     await AsyncStorage.removeItem("@chamaja_login_as_business");
                   }
                 } catch (e) {
-                  console.warn("Failed to set business flag on signup navigation", e);
+                  console.warn(
+                    "Failed to set business flag on signup navigation",
+                    e,
+                  );
                 }
                 router.push("/auth/signup" as any);
               }}

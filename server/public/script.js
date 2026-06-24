@@ -14,7 +14,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // Close mobile menu when a link or button is clicked
-    const mobileLinks = mobileNav.querySelectorAll(".mobile-link, .btn-secondary-drawer, .btn-primary-drawer");
+    const mobileLinks = mobileNav.querySelectorAll(
+      ".mobile-link, .btn-secondary-drawer, .btn-primary-drawer",
+    );
     mobileLinks.forEach((link) => {
       link.addEventListener("click", () => {
         mobileNav.classList.remove("open");
@@ -65,7 +67,15 @@ document.addEventListener("DOMContentLoaded", () => {
       const neighborhood = document.getElementById("neighborhood").value.trim();
       const description = document.getElementById("description").value.trim();
 
-      if (!name || !email || !phone || !categoryId || !city || !neighborhood || !description) {
+      if (
+        !name ||
+        !email ||
+        !phone ||
+        !categoryId ||
+        !city ||
+        !neighborhood ||
+        !description
+      ) {
         showError("Por favor, preencha todos os campos obrigatórios.");
         return;
       }
@@ -111,16 +121,21 @@ document.addEventListener("DOMContentLoaded", () => {
           if (otherCategoryGroup) {
             otherCategoryGroup.style.display = "none";
           }
-          
+
           // Smooth scroll to success message
           formSuccess.scrollIntoView({ behavior: "smooth", block: "center" });
         } else {
           // API error
-          showError(result.error || "Ocorreu um erro ao realizar o cadastro. Verifique os dados e tente novamente.");
+          showError(
+            result.error ||
+              "Ocorreu um erro ao realizar o cadastro. Verifique os dados e tente novamente.",
+          );
         }
       } catch (err) {
         console.error("Error submitting form:", err);
-        showError("Falha na conexão com o servidor. Verifique sua internet e tente novamente.");
+        showError(
+          "Falha na conexão com o servidor. Verifique sua internet e tente novamente.",
+        );
       } finally {
         setLoading(false);
       }

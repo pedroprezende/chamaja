@@ -27,13 +27,16 @@ export default function RegisterProfessionalScreen() {
   const { registerProvider } = useProvider();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [selectedSpecialties, setSelectedSpecialties] = useState<Record<string, boolean>>({});
+  const [selectedSpecialties, setSelectedSpecialties] = useState<
+    Record<string, boolean>
+  >({});
   const [formData, setFormData] = useState({
     name: "",
     city: "",
     neighborhood: "",
     phone: "",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
+    avatar:
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
     description: "",
     businessType: "servicos",
     deliveryTime: null as string | null,
@@ -41,7 +44,9 @@ export default function RegisterProfessionalScreen() {
 
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
 
-  const selectedIds = Object.keys(selectedSpecialties).filter(id => selectedSpecialties[id]);
+  const selectedIds = Object.keys(selectedSpecialties).filter(
+    (id) => selectedSpecialties[id],
+  );
 
   const handlePickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -81,7 +86,10 @@ export default function RegisterProfessionalScreen() {
       Alert.alert("Erro", "Descrição deve ter pelo menos 20 caracteres");
       return false;
     }
-    if (formData.businessType === "alimentacao" && (!formData.deliveryTime || !formData.deliveryTime.trim())) {
+    if (
+      formData.businessType === "alimentacao" &&
+      (!formData.deliveryTime || !formData.deliveryTime.trim())
+    ) {
       Alert.alert("Erro", "Digite o tempo estimado de entrega");
       return false;
     }
@@ -99,8 +107,8 @@ export default function RegisterProfessionalScreen() {
     try {
       // Concatenar categorias para o mock/legacy DB
       const categoryNames = allSpecialties
-        .filter(c => selectedIds.includes(c.id))
-        .map(c => c.name.replace("\n", " "))
+        .filter((c) => selectedIds.includes(c.id))
+        .map((c) => c.name.replace("\n", " "))
         .join(", ");
 
       let finalAvatar = formData.avatar;
@@ -109,7 +117,10 @@ export default function RegisterProfessionalScreen() {
           const { optimizeImage } = await import("@/lib/image-optimizer");
           finalAvatar = await optimizeImage(formData.avatar, 200, 0.75);
         } catch (optimizeErr) {
-          console.warn("[RegisterProfessional] Image optimization failed, using original uri:", optimizeErr);
+          console.warn(
+            "[RegisterProfessional] Image optimization failed, using original uri:",
+            optimizeErr,
+          );
         }
       }
 
@@ -126,7 +137,7 @@ export default function RegisterProfessionalScreen() {
           deliveryTime: formData.deliveryTime,
         },
         user.id,
-        "free"
+        "free",
       );
 
       Alert.alert(
@@ -139,7 +150,7 @@ export default function RegisterProfessionalScreen() {
               router.replace("/become-provider" as any);
             },
           },
-        ]
+        ],
       );
     } catch (error) {
       console.error("[RegisterProfessional] error:", error);
@@ -149,27 +160,34 @@ export default function RegisterProfessionalScreen() {
     }
   };
 
-  const selectedCategoriesText = selectedIds.length > 0
-    ? allSpecialties
-        .filter((c) => selectedIds.includes(c.id))
-        .map((c) => c.name.replace("\n", " "))
-        .join(", ")
-    : "Selecione suas especialidades";
+  const selectedCategoriesText =
+    selectedIds.length > 0
+      ? allSpecialties
+          .filter((c) => selectedIds.includes(c.id))
+          .map((c) => c.name.replace("\n", " "))
+          .join(", ")
+      : "Selecione suas especialidades";
 
   const toggleCategory = (id: string) => {
-    setSelectedSpecialties(prev => ({
+    setSelectedSpecialties((prev) => ({
       ...prev,
-      [id]: !prev[id]
+      [id]: !prev[id],
     }));
   };
 
   return (
     <ScreenContainer containerClassName="bg-[#F5F5F5]" className="">
-      <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Header */}
         <View style={styles.header}>
           <Pressable
-            style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
+            style={({ pressed }) => [
+              styles.backBtn,
+              pressed && { opacity: 0.6 },
+            ]}
             onPress={() => router.back()}
           >
             <MaterialIcons name="arrow-back" size={24} color="#11181C" />
@@ -182,7 +200,10 @@ export default function RegisterProfessionalScreen() {
           {/* Avatar Section */}
           <View style={styles.avatarSection}>
             <Pressable
-              style={({ pressed }) => [styles.avatarButton, pressed && { opacity: 0.8 }]}
+              style={({ pressed }) => [
+                styles.avatarButton,
+                pressed && { opacity: 0.8 },
+              ]}
               onPress={handlePickImage}
             >
               <Image source={{ uri: formData.avatar }} style={styles.avatar} />
@@ -203,14 +224,18 @@ export default function RegisterProfessionalScreen() {
                 placeholder="Digite seu nome"
                 placeholderTextColor="#9CA3AF"
                 value={formData.name}
-                onChangeText={(text) => setFormData({ ...formData, name: text })}
+                onChangeText={(text) =>
+                  setFormData({ ...formData, name: text })
+                }
                 editable={!loading}
               />
             </View>
 
             {/* Category */}
             <View style={styles.fieldGroup}>
-              <Text style={styles.label}>Especialidades (selecione várias se desejar)</Text>
+              <Text style={styles.label}>
+                Especialidades (selecione várias se desejar)
+              </Text>
               <Pressable
                 style={styles.selectButton}
                 onPress={() => setShowCategoryPicker(!showCategoryPicker)}
@@ -241,16 +266,22 @@ export default function RegisterProfessionalScreen() {
                         style={({ pressed }) => [
                           styles.categoryItem,
                           pressed && { backgroundColor: "#F0FDF4" },
-                          isSelected && { 
+                          isSelected && {
                             backgroundColor: "#DCFCE7",
                             borderLeftWidth: 4,
-                            borderLeftColor: "#25D366" 
+                            borderLeftColor: "#25D366",
                           },
                         ]}
                         onPress={() => toggleCategory(cat.id)}
                         hitSlop={8}
                       >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                          }}
+                        >
                           <Text
                             style={[
                               styles.categoryItemText,
@@ -263,7 +294,11 @@ export default function RegisterProfessionalScreen() {
                             {cat.name.replace("\n", " ")}
                           </Text>
                           {isSelected && (
-                            <MaterialIcons name="check-circle" size={20} color="#25D366" />
+                            <MaterialIcons
+                              name="check-circle"
+                              size={20}
+                              color="#25D366"
+                            />
                           )}
                         </View>
                       </Pressable>
@@ -272,14 +307,18 @@ export default function RegisterProfessionalScreen() {
                 </View>
               )}
             </View>
- 
+
             {/* Tipo de Negócio */}
             <View style={styles.fieldGroup}>
               <Text style={styles.label}>Tipo de Negócio</Text>
               <View style={styles.businessTypeContainer}>
                 {[
                   { id: "servicos", label: "Serviços", icon: "build" },
-                  { id: "alimentacao", label: "Alimentação", icon: "restaurant" },
+                  {
+                    id: "alimentacao",
+                    label: "Alimentação",
+                    icon: "restaurant",
+                  },
                   { id: "produtos", label: "Produtos", icon: "shopping-bag" },
                 ].map((type) => {
                   const isSelected = formData.businessType === type.id;
@@ -290,18 +329,28 @@ export default function RegisterProfessionalScreen() {
                         styles.typeButton,
                         isSelected && styles.typeButtonSelected,
                       ]}
-                      onPress={() => setFormData({
-                        ...formData,
-                        businessType: type.id,
-                        deliveryTime: type.id === "alimentacao" ? (formData.deliveryTime || "30-45 min") : null
-                      })}
+                      onPress={() =>
+                        setFormData({
+                          ...formData,
+                          businessType: type.id,
+                          deliveryTime:
+                            type.id === "alimentacao"
+                              ? formData.deliveryTime || "30-45 min"
+                              : null,
+                        })
+                      }
                     >
                       <MaterialIcons
                         name={type.icon as any}
                         size={20}
                         color={isSelected ? "#FFFFFF" : "#687076"}
                       />
-                      <Text style={[styles.typeButtonText, isSelected && styles.typeButtonTextSelected]}>
+                      <Text
+                        style={[
+                          styles.typeButtonText,
+                          isSelected && styles.typeButtonTextSelected,
+                        ]}
+                      >
                         {type.label}
                       </Text>
                     </Pressable>
@@ -309,7 +358,7 @@ export default function RegisterProfessionalScreen() {
                 })}
               </View>
             </View>
- 
+
             {/* Delivery Time (Only if businessType is alimentacao) */}
             {formData.businessType === "alimentacao" && (
               <View style={styles.fieldGroup}>
@@ -319,7 +368,9 @@ export default function RegisterProfessionalScreen() {
                   placeholder="Ex: 30-45 min"
                   placeholderTextColor="#9CA3AF"
                   value={formData.deliveryTime || ""}
-                  onChangeText={(text) => setFormData({ ...formData, deliveryTime: text })}
+                  onChangeText={(text) =>
+                    setFormData({ ...formData, deliveryTime: text })
+                  }
                   editable={!loading}
                 />
               </View>
@@ -333,7 +384,9 @@ export default function RegisterProfessionalScreen() {
                 placeholder="Ex: São Paulo"
                 placeholderTextColor="#9CA3AF"
                 value={formData.city}
-                onChangeText={(text) => setFormData({ ...formData, city: text })}
+                onChangeText={(text) =>
+                  setFormData({ ...formData, city: text })
+                }
                 editable={!loading}
               />
             </View>
@@ -346,7 +399,9 @@ export default function RegisterProfessionalScreen() {
                 placeholder="Ex: Centro"
                 placeholderTextColor="#9CA3AF"
                 value={formData.neighborhood}
-                onChangeText={(text) => setFormData({ ...formData, neighborhood: text })}
+                onChangeText={(text) =>
+                  setFormData({ ...formData, neighborhood: text })
+                }
                 editable={!loading}
               />
             </View>
@@ -359,7 +414,9 @@ export default function RegisterProfessionalScreen() {
                 placeholder="Ex: 5511999999999"
                 placeholderTextColor="#9CA3AF"
                 value={formData.phone}
-                onChangeText={(text) => setFormData({ ...formData, phone: text })}
+                onChangeText={(text) =>
+                  setFormData({ ...formData, phone: text })
+                }
                 keyboardType="phone-pad"
                 editable={!loading}
               />
@@ -373,7 +430,9 @@ export default function RegisterProfessionalScreen() {
                 placeholder="Descreva seus serviços e experiência..."
                 placeholderTextColor="#9CA3AF"
                 value={formData.description}
-                onChangeText={(text) => setFormData({ ...formData, description: text })}
+                onChangeText={(text) =>
+                  setFormData({ ...formData, description: text })
+                }
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
@@ -390,7 +449,8 @@ export default function RegisterProfessionalScreen() {
           <View style={styles.infoBox}>
             <MaterialIcons name="info" size={20} color="#25D366" />
             <Text style={styles.infoText}>
-              Seu perfil será criado como FREE. Você pode atualizar para PREMIUM para ter mais visibilidade!
+              Seu perfil será criado como FREE. Você pode atualizar para PREMIUM
+              para ter mais visibilidade!
             </Text>
           </View>
 

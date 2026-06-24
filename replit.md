@@ -1,6 +1,7 @@
 # XamaJá - Services Marketplace
 
 ## Overview
+
 XamaJá is a Brazilian services marketplace app built with Expo (React Native) + Express + tRPC. It connects users with local service providers across categories like repairs, automotive, beauty, health, and more.
 
 ## Architecture
@@ -48,12 +49,14 @@ pnpm db:push      # Run Drizzle migrations
 ## Environment Variables
 
 Required:
+
 - `DATABASE_URL` - MySQL connection string
 - `JWT_SECRET` - Cookie signing secret
 - `OAUTH_SERVER_URL` - OAuth server URL
 - `VITE_APP_ID` - Application ID
 
-Firebase (EXPO_PUBLIC_ prefix):
+Firebase (EXPO*PUBLIC* prefix):
+
 - `EXPO_PUBLIC_FIREBASE_API_KEY`
 - `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN`
 - `EXPO_PUBLIC_FIREBASE_PROJECT_ID`
@@ -64,6 +67,7 @@ Firebase (EXPO_PUBLIC_ prefix):
 ## Workflow
 
 Single workflow: **Start application** (`pnpm dev`)
+
 - Runs Metro (port 5000) + Express server (port 3000) concurrently
 
 ## Deployment

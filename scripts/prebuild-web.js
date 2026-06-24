@@ -16,5 +16,8 @@ try {
     console.log(`ℹ️ Cache file already exists: ${file}`);
   }
 } catch (error) {
-  console.error("⚠️ Failed to pre-create react-native-css-interop cache:", error);
+  console.error(
+    "⚠️ Failed to pre-create react-native-css-interop cache:",
+    error,
+  );
 }

@@ -1,5 +1,12 @@
 import React, { memo } from "react";
-import { View, Text, Pressable, Image, StyleSheet, Platform } from "react-native";
+import {
+  View,
+  Text,
+  Pressable,
+  Image,
+  StyleSheet,
+  Platform,
+} from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
@@ -16,84 +23,102 @@ interface ServiceCardProps {
   onWhatsAppPress?: () => void;
 }
 
-export const ServiceCard = memo(({ 
-  id, 
-  name, 
-  category, 
-  imageUri, 
-  whatsapp, 
-  type = "SERVICE",
-  rating = 5,
-  onWhatsAppPress 
-}: ServiceCardProps) => {
-  const colors = useColors();
-  const router = useRouter();
+export const ServiceCard = memo(
+  ({
+    id,
+    name,
+    category,
+    imageUri,
+    whatsapp,
+    type = "SERVICE",
+    rating = 5,
+    onWhatsAppPress,
+  }: ServiceCardProps) => {
+    const colors = useColors();
+    const router = useRouter();
 
-  const handlePress = () => {
-    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (type === "SERVICE") {
-      router.push({
-        pathname: "/admin-services/[serviceId]",
-        params: { serviceId: id, title: name },
-      } as any);
-    } else {
-      router.push(`/professional/${id}` as any);
-    }
-  };
+    const handlePress = () => {
+      if (Platform.OS !== "web")
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      if (type === "SERVICE") {
+        router.push({
+          pathname: "/admin-services/[serviceId]",
+          params: { serviceId: id, title: name },
+        } as any);
+      } else {
+        router.push(`/professional/${id}` as any);
+      }
+    };
 
-  const handleWhatsApp = () => {
-    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    onWhatsAppPress?.();
-  };
+    const handleWhatsApp = () => {
+      if (Platform.OS !== "web")
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      onWhatsAppPress?.();
+    };
 
-  return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.card,
-        { backgroundColor: colors.surface, borderColor: colors.border },
-        pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] }
-      ]}
-      onPress={handlePress}
-    >
-      <View style={styles.imageContainer}>
-        {imageUri ? (
-          <Image source={{ uri: imageUri }} style={styles.image} resizeMode="cover" />
-        ) : (
-          <View style={[styles.iconBg, { backgroundColor: colors.background }]}>
-            <MaterialIcons name="work" size={32} color={colors.primary} />
-          </View>
+    return (
+      <Pressable
+        style={({ pressed }) => [
+          styles.card,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+          pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
+        ]}
+        onPress={handlePress}
+      >
+        <View style={styles.imageContainer}>
+          {imageUri ? (
+            <Image
+              source={{ uri: imageUri }}
+              style={styles.image}
+              resizeMode="cover"
+            />
+          ) : (
+            <View
+              style={[styles.iconBg, { backgroundColor: colors.background }]}
+            >
+              <MaterialIcons name="work" size={32} color={colors.primary} />
+            </View>
+          )}
+          {rating > 0 && (
+            <View
+              style={[styles.ratingBadge, { backgroundColor: colors.primary }]}
+            >
+              <MaterialIcons name="star" size={10} color="#FFFFFF" />
+              <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.info}>
+          <Text
+            style={[styles.name, { color: colors.foreground }]}
+            numberOfLines={1}
+          >
+            {name}
+          </Text>
+          <Text
+            style={[styles.category, { color: colors.primary }]}
+            numberOfLines={1}
+          >
+            {category}
+          </Text>
+        </View>
+
+        {whatsapp && (
+          <Pressable
+            style={({ pressed }) => [
+              styles.whatsappBtn,
+              pressed && { opacity: 0.7, transform: [{ scale: 1.1 }] },
+            ]}
+            onPress={handleWhatsApp}
+          >
+            <MaterialIcons name="chat" size={14} color="#FFFFFF" />
+          </Pressable>
         )}
-        {rating > 0 && (
-          <View style={[styles.ratingBadge, { backgroundColor: colors.primary }]}>
-            <MaterialIcons name="star" size={10} color="#FFFFFF" />
-            <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.info}>
-        <Text style={[styles.name, { color: colors.foreground }]} numberOfLines={1}>
-          {name}
-        </Text>
-        <Text style={[styles.category, { color: colors.primary }]} numberOfLines={1}>
-          {category}
-        </Text>
-      </View>
-
-      {whatsapp && (
-        <Pressable
-          style={({ pressed }) => [
-            styles.whatsappBtn,
-            pressed && { opacity: 0.7, transform: [{ scale: 1.1 }] }
-          ]}
-          onPress={handleWhatsApp}
-        >
-          <MaterialIcons name="chat" size={14} color="#FFFFFF" />
-        </Pressable>
-      )}
-    </Pressable>
-  );
-});
+      </Pressable>
+    );
+  },
+);
 
 const styles = StyleSheet.create({
   card: {

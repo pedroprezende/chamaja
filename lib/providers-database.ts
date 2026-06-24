@@ -67,16 +67,29 @@ function mapToStoredProvider(dbProvider: any): StoredProvider {
     description: dbProvider.description || "",
     address: dbProvider.address || "",
     gallery: dbProvider.gallery || [],
-    plan: dbProvider.plan as any || null,
-    planExpiresAt: dbProvider.planExpiresAt ? new Date(dbProvider.planExpiresAt).toISOString() : null,
+    plan: (dbProvider.plan as any) || null,
+    planExpiresAt: dbProvider.planExpiresAt
+      ? new Date(dbProvider.planExpiresAt).toISOString()
+      : null,
     isActive: dbProvider.isActive ?? true,
-    createdAt: dbProvider.createdAt ? new Date(dbProvider.createdAt).toISOString() : new Date().toISOString(),
+    createdAt: dbProvider.createdAt
+      ? new Date(dbProvider.createdAt).toISOString()
+      : new Date().toISOString(),
     rating: dbProvider.rating || 0,
     reviewCount: dbProvider.ratingCount || 0,
     services: parsedServices,
-    latitude: dbProvider.latitude !== null && dbProvider.latitude !== undefined ? Number(dbProvider.latitude) : undefined,
-    longitude: dbProvider.longitude !== null && dbProvider.longitude !== undefined ? Number(dbProvider.longitude) : undefined,
-    maxServicos: dbProvider.maxServicos !== undefined ? Number(dbProvider.maxServicos) : undefined,
+    latitude:
+      dbProvider.latitude !== null && dbProvider.latitude !== undefined
+        ? Number(dbProvider.latitude)
+        : undefined,
+    longitude:
+      dbProvider.longitude !== null && dbProvider.longitude !== undefined
+        ? Number(dbProvider.longitude)
+        : undefined,
+    maxServicos:
+      dbProvider.maxServicos !== undefined
+        ? Number(dbProvider.maxServicos)
+        : undefined,
     permissionsStatus: dbProvider.permissionsStatus || undefined,
     workingHours: dbProvider.workingHours || undefined,
     hasCatalog: dbProvider.hasCatalog ?? false,
@@ -95,7 +108,10 @@ export const providersDB = {
     }
   },
 
-  updateProvider: async (userId: string, updates: Partial<StoredProvider>): Promise<void> => {
+  updateProvider: async (
+    userId: string,
+    updates: Partial<StoredProvider>,
+  ): Promise<void> => {
     try {
       await trpcVanilla.providers.updateProvider.mutate({ userId, updates });
     } catch (err) {
@@ -156,4 +172,3 @@ export const providersDB = {
     // No-op for cloud db
   },
 };
-

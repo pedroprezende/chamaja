@@ -12,7 +12,11 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useState } from "react";
 
 import { ScreenContainer } from "@/components/screen-container";
-import { premiumPlans, upgradeToPremium, getProfessionalById } from "@/data/mock";
+import {
+  premiumPlans,
+  upgradeToPremium,
+  getProfessionalById,
+} from "@/data/mock";
 
 export default function ProfessionalPlansScreen() {
   const router = useRouter();
@@ -20,11 +24,16 @@ export default function ProfessionalPlansScreen() {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const professional = professionalId ? getProfessionalById(professionalId) : undefined;
+  const professional = professionalId
+    ? getProfessionalById(professionalId)
+    : undefined;
 
   if (!professional) {
     return (
-      <ScreenContainer containerClassName="bg-[#F5F5F5]" className="items-center justify-center">
+      <ScreenContainer
+        containerClassName="bg-[#F5F5F5]"
+        className="items-center justify-center"
+      >
         <Text style={styles.errorText}>Profissional não encontrado</Text>
       </ScreenContainer>
     );
@@ -44,10 +53,13 @@ export default function ProfessionalPlansScreen() {
               router.push(`/professional/${professionalId}` as any);
             },
           },
-        ]
+        ],
       );
     } catch (error) {
-      Alert.alert("Erro", "Não foi possível processar o upgrade. Tente novamente.");
+      Alert.alert(
+        "Erro",
+        "Não foi possível processar o upgrade. Tente novamente.",
+      );
     } finally {
       setLoading(false);
     }
@@ -61,7 +73,10 @@ export default function ProfessionalPlansScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Pressable
-            style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
+            style={({ pressed }) => [
+              styles.backBtn,
+              pressed && { opacity: 0.6 },
+            ]}
             onPress={() => router.back()}
           >
             <MaterialIcons name="arrow-back" size={24} color="#11181C" />
@@ -76,7 +91,8 @@ export default function ProfessionalPlansScreen() {
             <MaterialIcons name="star" size={48} color="#FCD34D" />
             <Text style={styles.heroTitle}>Destaque seu Perfil</Text>
             <Text style={styles.heroSubtitle}>
-              Apareça primeiro nos resultados e aumente suas chances de ser contratado
+              Apareça primeiro nos resultados e aumente suas chances de ser
+              contratado
             </Text>
           </View>
 
@@ -90,7 +106,9 @@ export default function ProfessionalPlansScreen() {
                   pressed && { opacity: 0.9 },
                   selectedPlan === p.id && styles.planCardSelected,
                 ]}
-                onPress={() => setSelectedPlan(selectedPlan === p.id ? null : p.id)}
+                onPress={() =>
+                  setSelectedPlan(selectedPlan === p.id ? null : p.id)
+                }
               >
                 {p.period === "annual" && (
                   <View style={styles.saveBadge}>
@@ -104,7 +122,11 @@ export default function ProfessionalPlansScreen() {
                     <Text style={styles.planPeriod}>{p.description}</Text>
                   </View>
                   <MaterialIcons
-                    name={selectedPlan === p.id ? "radio-button-checked" : "radio-button-unchecked"}
+                    name={
+                      selectedPlan === p.id
+                        ? "radio-button-checked"
+                        : "radio-button-unchecked"
+                    }
                     size={24}
                     color={selectedPlan === p.id ? "#25D366" : "#D1D5DB"}
                   />
@@ -119,10 +141,16 @@ export default function ProfessionalPlansScreen() {
 
                 {selectedPlan === p.id && (
                   <View style={styles.benefitsSection}>
-                    <Text style={styles.benefitsTitle}>Benefícios inclusos:</Text>
+                    <Text style={styles.benefitsTitle}>
+                      Benefícios inclusos:
+                    </Text>
                     {p.benefits.map((benefit, idx) => (
                       <View key={idx} style={styles.benefitItem}>
-                        <MaterialIcons name="check-circle" size={16} color="#25D366" />
+                        <MaterialIcons
+                          name="check-circle"
+                          size={16}
+                          color="#25D366"
+                        />
                         <Text style={styles.benefitText}>{benefit}</Text>
                       </View>
                     ))}
@@ -172,19 +200,23 @@ export default function ProfessionalPlansScreen() {
             <View style={styles.faqItem}>
               <Text style={styles.faqQuestion}>Posso cancelar meu plano?</Text>
               <Text style={styles.faqAnswer}>
-                Sim, você pode cancelar a qualquer momento. Não há compromisso de longo prazo.
+                Sim, você pode cancelar a qualquer momento. Não há compromisso
+                de longo prazo.
               </Text>
             </View>
 
             <View style={styles.faqItem}>
               <Text style={styles.faqQuestion}>Como funciona o pagamento?</Text>
               <Text style={styles.faqAnswer}>
-                Oferecemos pagamento seguro via PIX, cartão de crédito e transferência bancária.
+                Oferecemos pagamento seguro via PIX, cartão de crédito e
+                transferência bancária.
               </Text>
             </View>
 
             <View style={styles.faqItem}>
-              <Text style={styles.faqQuestion}>Quanto tempo leva para ativar?</Text>
+              <Text style={styles.faqQuestion}>
+                Quanto tempo leva para ativar?
+              </Text>
               <Text style={styles.faqAnswer}>
                 Seu plano Premium é ativado imediatamente após o pagamento.
               </Text>

@@ -34,18 +34,25 @@ function openWhatsApp(phone: string, name: string) {
   let number = phone.replace(/\D/g, "");
   if (!number.startsWith("55")) number = "55" + number;
   const msg = encodeURIComponent(
-    `Olá ${name}! Vi o seu perfil no ChamaJá e gostaria de solicitar um serviço. 😊`
+    `Olá ${name}! Vi o seu perfil no ChamaJá e gostaria de solicitar um serviço. 😊`,
   );
   Linking.openURL(`https://wa.me/${number}?text=${msg}`).catch(() =>
-    Alert.alert("WhatsApp não encontrado", "Verifique se o WhatsApp está instalado.")
+    Alert.alert(
+      "WhatsApp não encontrado",
+      "Verifique se o WhatsApp está instalado.",
+    ),
   );
 }
 
 export default function AdminProviderDetailScreen() {
   const { width: WINDOW_WIDTH } = useWindowDimensions();
-  const width = Platform.OS === "web" ? Math.min(WINDOW_WIDTH, 500) : WINDOW_WIDTH;
+  const width =
+    Platform.OS === "web" ? Math.min(WINDOW_WIDTH, 500) : WINDOW_WIDTH;
 
-  const { providerId, title } = useLocalSearchParams<{ providerId: string; title: string }>();
+  const { providerId, title } = useLocalSearchParams<{
+    providerId: string;
+    title: string;
+  }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { coords } = useLocation();
@@ -55,11 +62,23 @@ export default function AdminProviderDetailScreen() {
   const [galleryIndex, setGalleryIndex] = useState(0);
 
   const distanceInfo = useMemo(() => {
-    if (coords && provider && provider.latitude !== null && provider.latitude !== undefined && provider.longitude !== null && provider.longitude !== undefined) {
+    if (
+      coords &&
+      provider &&
+      provider.latitude !== null &&
+      provider.latitude !== undefined &&
+      provider.longitude !== null &&
+      provider.longitude !== undefined
+    ) {
       const lat = Number(provider.latitude);
       const lon = Number(provider.longitude);
       if (!isNaN(lat) && !isNaN(lon)) {
-        const distKm = calculateHaversineDistance(coords.latitude, coords.longitude, lat, lon);
+        const distKm = calculateHaversineDistance(
+          coords.latitude,
+          coords.longitude,
+          lat,
+          lon,
+        );
         const timeMin = estimateDrivingTimeMinutes(distKm);
         return {
           distanceText: formatDistancePtBr(distKm),
@@ -131,14 +150,19 @@ export default function AdminProviderDetailScreen() {
         >
           <MaterialIcons name="arrow-back" size={24} color="#111827" />
         </Pressable>
-        <Text style={styles.headerTitle} numberOfLines={1}>{provider.name}</Text>
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          {provider.name}
+        </Text>
         <View style={styles.verifiedBadge}>
           <MaterialIcons name="verified" size={14} color="#25D366" />
           <Text style={styles.verifiedText}>Verificado</Text>
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
         {/* Foto de perfil + nome */}
         <View style={styles.heroSection}>
           {provider.avatarUri ? (
@@ -157,7 +181,8 @@ export default function AdminProviderDetailScreen() {
             <View style={styles.addressRow}>
               <MaterialIcons name="place" size={14} color="#9CA3AF" />
               <Text style={styles.addressText}>
-                {provider.address || "Localização não informada"}{distanceInfo ? ` • ${distanceInfo.distanceText}` : ""}
+                {provider.address || "Localização não informada"}
+                {distanceInfo ? ` • ${distanceInfo.distanceText}` : ""}
               </Text>
             </View>
           )}
@@ -168,21 +193,32 @@ export default function AdminProviderDetailScreen() {
                   key={star}
                   name="star"
                   size={16}
-                  color={star <= Math.round(provider.rating ?? 0) ? "#F59E0B" : "#E5E7EB"}
+                  color={
+                    star <= Math.round(provider.rating ?? 0)
+                      ? "#F59E0B"
+                      : "#E5E7EB"
+                  }
                 />
               ))}
               <Text style={styles.ratingText}>
                 {provider.rating.toFixed(1)}
-                {provider.ratingCount ? ` (${provider.ratingCount} avaliações)` : ""}
+                {provider.ratingCount
+                  ? ` (${provider.ratingCount} avaliações)`
+                  : ""}
               </Text>
             </View>
           )}
           {distanceInfo && (
             <View style={styles.distanceBadgeRow}>
               <View style={styles.distanceBadge}>
-                <MaterialIcons name="directions-car" size={13} color="#25D366" />
+                <MaterialIcons
+                  name="directions-car"
+                  size={13}
+                  color="#25D366"
+                />
                 <Text style={styles.distanceBadgeText}>
-                  {distanceInfo.distancePrepText} • {distanceInfo.drivingTimeText}
+                  {distanceInfo.distancePrepText} •{" "}
+                  {distanceInfo.drivingTimeText}
                 </Text>
               </View>
             </View>
@@ -193,7 +229,10 @@ export default function AdminProviderDetailScreen() {
         {!!provider.whatsapp && (
           <View style={styles.ctaSection}>
             <Pressable
-              style={({ pressed }) => [styles.whatsappBtn, pressed && { opacity: 0.85 }]}
+              style={({ pressed }) => [
+                styles.whatsappBtn,
+                pressed && { opacity: 0.85 },
+              ]}
               onPress={() => openWhatsApp(provider.whatsapp!, provider.name)}
             >
               <MaterialIcons name="chat" size={20} color="#FFFFFF" />
@@ -213,7 +252,9 @@ export default function AdminProviderDetailScreen() {
         {/* Galeria */}
         {gallery.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Fotos do local ({gallery.length})</Text>
+            <Text style={styles.sectionTitle}>
+              Fotos do local ({gallery.length})
+            </Text>
             <FlatList
               data={gallery}
               keyExtractor={(_, i) => String(i)}
@@ -223,7 +264,10 @@ export default function AdminProviderDetailScreen() {
               renderItem={({ item, index }) => (
                 <Pressable
                   onPress={() => setGalleryIndex(index)}
-                  style={({ pressed }) => [styles.galleryThumb, pressed && { opacity: 0.85 }]}
+                  style={({ pressed }) => [
+                    styles.galleryThumb,
+                    pressed && { opacity: 0.85 },
+                  ]}
                 >
                   <Image
                     source={{ uri: item }}
@@ -262,10 +306,22 @@ export default function AdminProviderDetailScreen() {
                   <Text style={styles.infoValue}>{provider.address}</Text>
                   {distanceInfo ? (
                     <View style={{ marginTop: 4, gap: 2 }}>
-                      <Text style={{ fontSize: 12, color: "#111827", fontWeight: "600" }}>
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          color: "#111827",
+                          fontWeight: "600",
+                        }}
+                      >
                         📍 {distanceInfo.distancePrepText}
                       </Text>
-                      <Text style={{ fontSize: 11, color: "#6B7280", fontWeight: "500" }}>
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          color: "#6B7280",
+                          fontWeight: "500",
+                        }}
+                      >
                         🚗 {distanceInfo.drivingTimeText}
                       </Text>
                     </View>
@@ -277,7 +333,9 @@ export default function AdminProviderDetailScreen() {
               <View style={styles.infoRow}>
                 <MaterialIcons name="phone" size={16} color="#25D366" />
                 <Text style={styles.infoLabel}>WhatsApp</Text>
-                <Text style={[styles.infoValue, { color: "#25D366" }]}>{provider.whatsapp}</Text>
+                <Text style={[styles.infoValue, { color: "#25D366" }]}>
+                  {provider.whatsapp}
+                </Text>
               </View>
             )}
           </View>
@@ -311,7 +369,12 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   verifiedText: { fontSize: 11, color: "#25D366", fontWeight: "600" },
-  loadingCenter: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
+  loadingCenter: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+  },
   loadingText: { fontSize: 14, color: "#6B7280" },
   notFoundText: { fontSize: 15, color: "#9CA3AF" },
   // Hero
@@ -325,8 +388,17 @@ const styles = StyleSheet.create({
     borderBottomColor: "#F3F4F6",
   },
   avatar: { width: 96, height: 96, borderRadius: 48, marginBottom: 4 },
-  avatarPlaceholder: { backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
-  providerName: { fontSize: 22, fontWeight: "800", color: "#111827", textAlign: "center" },
+  avatarPlaceholder: {
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  providerName: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#111827",
+    textAlign: "center",
+  },
   serviceBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -339,7 +411,12 @@ const styles = StyleSheet.create({
   serviceBadgeText: { fontSize: 13, color: "#3B82F6", fontWeight: "600" },
   addressRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   addressText: { fontSize: 13, color: "#9CA3AF" },
-  ratingRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
+  ratingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 4,
+  },
   ratingText: { fontSize: 13, color: "#6B7280", marginLeft: 4 },
   // CTA
   ctaSection: { paddingHorizontal: 20, paddingVertical: 16 },
@@ -355,7 +432,12 @@ const styles = StyleSheet.create({
   whatsappBtnText: { fontSize: 16, fontWeight: "700", color: "#FFFFFF" },
   // Sections
   section: { paddingHorizontal: 20, paddingTop: 20 },
-  sectionTitle: { fontSize: 15, fontWeight: "700", color: "#111827", marginBottom: 12 },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 12,
+  },
   descriptionText: {
     fontSize: 14,
     color: "#374151",

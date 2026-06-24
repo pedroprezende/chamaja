@@ -14,11 +14,11 @@ export default function App() {
         .select("*")
         .eq("open_id", userId)
         .single();
-      
+
       if (error) {
         throw error;
       }
-      
+
       return data;
     } catch (err) {
       console.error("Erro ao verificar permissão de admin:", err);
@@ -33,17 +33,20 @@ export default function App() {
       if (savedSession) {
         try {
           const parsed = JSON.parse(savedSession);
-          
+
           // Caso contrário, busca do banco de dados para garantir que a permissão ainda é válida
           const { data, error } = await supabase
             .from("admins")
             .select("*")
             .eq("open_id", parsed.open_id)
             .single();
-          
+
           if (!error && data) {
             setAdminUser(data);
-            localStorage.setItem("@chamaja_admin_session", JSON.stringify(data));
+            localStorage.setItem(
+              "@chamaja_admin_session",
+              JSON.stringify(data),
+            );
             setSessionChecked(true);
             return;
           }
@@ -54,12 +57,17 @@ export default function App() {
 
       // 2. Se não houver sessão local, tenta obter sessão do Supabase Auth
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         if (session?.user) {
           const adminData = await checkAdminRole(session.user.id);
           if (adminData) {
             setAdminUser(adminData);
-            localStorage.setItem("@chamaja_admin_session", JSON.stringify(adminData));
+            localStorage.setItem(
+              "@chamaja_admin_session",
+              JSON.stringify(adminData),
+            );
           }
         }
       } catch (err) {
@@ -71,23 +79,26 @@ export default function App() {
     initSession();
 
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === "SIGNED_IN" && session?.user) {
-          const adminData = await checkAdminRole(session.user.id);
-          if (adminData) {
-            setAdminUser(adminData);
-            localStorage.setItem("@chamaja_admin_session", JSON.stringify(adminData));
-          } else {
-            setAdminUser(null);
-            localStorage.removeItem("@chamaja_admin_session");
-          }
-        } else if (event === "SIGNED_OUT") {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_IN" && session?.user) {
+        const adminData = await checkAdminRole(session.user.id);
+        if (adminData) {
+          setAdminUser(adminData);
+          localStorage.setItem(
+            "@chamaja_admin_session",
+            JSON.stringify(adminData),
+          );
+        } else {
           setAdminUser(null);
           localStorage.removeItem("@chamaja_admin_session");
         }
+      } else if (event === "SIGNED_OUT") {
+        setAdminUser(null);
+        localStorage.removeItem("@chamaja_admin_session");
       }
-    );
+    });
 
     return () => {
       subscription.unsubscribe();

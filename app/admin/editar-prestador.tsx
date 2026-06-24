@@ -29,8 +29,13 @@ export default function EditarPrestador() {
   const isEditing = !!id;
 
   // Real data
-  const { data: categories = [], isLoading: loadingCats, error: catError } = trpc.categories.list.useQuery();
-  const { data: dbProvider, isLoading: loadingProvider } = trpc.providers.getById.useQuery(id as string, { enabled: isEditing });
+  const {
+    data: categories = [],
+    isLoading: loadingCats,
+    error: catError,
+  } = trpc.categories.list.useQuery();
+  const { data: dbProvider, isLoading: loadingProvider } =
+    trpc.providers.getById.useQuery(id as string, { enabled: isEditing });
 
   useEffect(() => {
     if (catError) console.error("[EditarPrestador] Erro categorias:", catError);
@@ -41,7 +46,7 @@ export default function EditarPrestador() {
     onSuccess: () => {
       utils.providers.all.invalidate();
       utils.providers.list.invalidate();
-    }
+    },
   });
   const updateMutation = trpc.providers.update.useMutation({
     onSuccess: () => {
@@ -50,13 +55,13 @@ export default function EditarPrestador() {
       if (id) {
         utils.providers.getById.invalidate(id as string);
       }
-    }
+    },
   });
   const deleteMutation = trpc.providers.delete.useMutation({
     onSuccess: () => {
       utils.providers.all.invalidate();
       utils.providers.list.invalidate();
-    }
+    },
   });
 
   const [name, setName] = useState("");
@@ -75,8 +80,10 @@ export default function EditarPrestador() {
   const [coverUri, setCoverUri] = useState("");
   const [foundedYear, setFoundedYear] = useState("");
   const [gallery, setGallery] = useState<string[]>([]);
-  
-  const [selectedSpecialties, setSelectedSpecialties] = useState<Record<string, boolean>>({});
+
+  const [selectedSpecialties, setSelectedSpecialties] = useState<
+    Record<string, boolean>
+  >({});
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showSubcategoryPicker, setShowSubcategoryPicker] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -84,7 +91,9 @@ export default function EditarPrestador() {
   // Estados para gerenciamento de serviços/produtos (cardápio)
   const [servicesList, setServicesList] = useState<any[]>([]);
   const [serviceModalVisible, setServiceModalVisible] = useState(false);
-  const [editingServiceItem, setEditingServiceItem] = useState<any | null>(null);
+  const [editingServiceItem, setEditingServiceItem] = useState<any | null>(
+    null,
+  );
   const [serviceForm, setServiceForm] = useState({
     id: "",
     name: "",
@@ -94,8 +103,11 @@ export default function EditarPrestador() {
     imageUri: "",
   });
 
-  const isCommerce = categoryId === "comercios" || category === "Comércios" || category === "comercios";
-  
+  const isCommerce =
+    categoryId === "comercios" ||
+    category === "Comércios" ||
+    category === "comercios";
+
   // ── New subcategory state ──
   const [newSubName, setNewSubName] = useState("");
   const [isCreatingSub, setIsCreatingSub] = useState(false);
@@ -108,15 +120,16 @@ export default function EditarPrestador() {
       setNewSubName("");
       setIsCreatingSub(false);
       // Auto-select the new one
-      setSelectedSpecialties(prev => ({ ...prev, [newSub.id]: true }));
-    }
+      setSelectedSpecialties((prev) => ({ ...prev, [newSub.id]: true }));
+    },
   });
 
   // Fetch subcategories for the selected category
-  const { data: dbSubcategories = [], isLoading: loadingSubs } = trpc.categories.subServices.list.useQuery(
-    { categoryId },
-    { enabled: !!categoryId }
-  );
+  const { data: dbSubcategories = [], isLoading: loadingSubs } =
+    trpc.categories.subServices.list.useQuery(
+      { categoryId },
+      { enabled: !!categoryId },
+    );
 
   // Load admin services locally
   const { services: localServices } = useAdminServices(false);
@@ -128,25 +141,33 @@ export default function EditarPrestador() {
   }, [localServices, categoryId]);
 
   // Fetch all subcategories globally for restoration mapping
-  const { data: allSubServices = [] } = trpc.categories.subServices.listAll.useQuery();
+  const { data: allSubServices = [] } =
+    trpc.categories.subServices.listAll.useQuery();
 
   // Merge both lists
   const mergedSubcategories = React.useMemo(() => {
     const list: any[] = [];
-    
+
     // 1. Subcategorias do DB
     dbSubcategories.forEach((s: any) => {
-      list.push({ ...s, type: 'subcategory' });
+      list.push({ ...s, type: "subcategory" });
     });
 
     // 2. Serviços Administrativos (como especialidades)
     dbServices.forEach((s: any) => {
-      if (!list.find(item => typeof item.name === "string" && typeof s.name === "string" && item.name.toLowerCase() === s.name.toLowerCase())) {
+      if (
+        !list.find(
+          (item) =>
+            typeof item.name === "string" &&
+            typeof s.name === "string" &&
+            item.name.toLowerCase() === s.name.toLowerCase(),
+        )
+      ) {
         list.push({
           id: s.id,
           name: s.name,
           categoryId: s.categoryId || "",
-          type: 'service',
+          type: "service",
         });
       }
     });
@@ -160,35 +181,55 @@ export default function EditarPrestador() {
       setName(dbProvider.name ? String(dbProvider.name) : "");
       setCategory(dbProvider.category ? String(dbProvider.category) : "");
       setCategoryId(dbProvider.categoryId ? String(dbProvider.categoryId) : "");
-      setSubcategoryName(dbProvider.subcategoryName ? String(dbProvider.subcategoryName) : "");
-      setSubcategoryId(dbProvider.subcategoryId ? String(dbProvider.subcategoryId) : "");
-      setDescription(dbProvider.description ? String(dbProvider.description) : "");
+      setSubcategoryName(
+        dbProvider.subcategoryName ? String(dbProvider.subcategoryName) : "",
+      );
+      setSubcategoryId(
+        dbProvider.subcategoryId ? String(dbProvider.subcategoryId) : "",
+      );
+      setDescription(
+        dbProvider.description ? String(dbProvider.description) : "",
+      );
       setAddress(dbProvider.address ? String(dbProvider.address) : "");
       setCity(dbProvider.city ? String(dbProvider.city) : "Bragança Paulista");
-      setNeighborhood(dbProvider.neighborhood ? String(dbProvider.neighborhood) : "");
+      setNeighborhood(
+        dbProvider.neighborhood ? String(dbProvider.neighborhood) : "",
+      );
       setIsActive(!!dbProvider.isActive);
       setDestaque(!!dbProvider.destaque);
-      setWhatsapp(dbProvider.whatsapp ? String(dbProvider.whatsapp) : (dbProvider.phone ? String(dbProvider.phone) : ""));
+      setWhatsapp(
+        dbProvider.whatsapp
+          ? String(dbProvider.whatsapp)
+          : dbProvider.phone
+            ? String(dbProvider.phone)
+            : "",
+      );
       setAvatarUri(dbProvider.avatarUri ? String(dbProvider.avatarUri) : "");
       setCoverUri(dbProvider.coverUri ? String(dbProvider.coverUri) : "");
-      setFoundedYear(dbProvider.foundedYear ? String(dbProvider.foundedYear) : "");
+      setFoundedYear(
+        dbProvider.foundedYear ? String(dbProvider.foundedYear) : "",
+      );
 
       // Safe Gallery recovery
       let initialGallery: string[] = [];
       const rawGallery: any = dbProvider.gallery;
       if (Array.isArray(rawGallery)) {
-        initialGallery = rawGallery.map(g => String(g));
+        initialGallery = rawGallery.map((g) => String(g));
       } else if (typeof rawGallery === "string") {
         try {
           const parsed = JSON.parse(rawGallery);
           if (Array.isArray(parsed)) {
-            initialGallery = parsed.map(g => String(g));
+            initialGallery = parsed.map((g) => String(g));
           } else {
             initialGallery = [rawGallery];
           }
         } catch {
           if (rawGallery.startsWith("{") && rawGallery.endsWith("}")) {
-            initialGallery = rawGallery.slice(1, -1).split(",").map((s: string) => s.trim()).filter(Boolean);
+            initialGallery = rawGallery
+              .slice(1, -1)
+              .split(",")
+              .map((s: string) => s.trim())
+              .filter(Boolean);
           } else {
             initialGallery = [rawGallery];
           }
@@ -203,40 +244,66 @@ export default function EditarPrestador() {
           const parsed = JSON.parse(dbProvider.services);
           specNames = Array.isArray(parsed) ? parsed : [parsed];
         } else if (dbProvider.subcategoryName) {
-          specNames = String(dbProvider.subcategoryName).split(",").map(s => s.trim()).filter(Boolean);
+          specNames = String(dbProvider.subcategoryName)
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
         }
       } catch (e) {
         if (dbProvider.subcategoryName) {
-          specNames = String(dbProvider.subcategoryName).split(",").map(s => s.trim()).filter(Boolean);
+          specNames = String(dbProvider.subcategoryName)
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
         }
       }
 
       // Convert any objects {"name": "...", "price": ...} into strings
-      const specNamesCleaned = specNames.map(item => {
-        if (typeof item === "string") return item;
-        if (item && typeof item === "object" && typeof item.name === "string") return item.name;
-        return "";
-      }).filter(Boolean);
+      const specNamesCleaned = specNames
+        .map((item) => {
+          if (typeof item === "string") return item;
+          if (item && typeof item === "object" && typeof item.name === "string")
+            return item.name;
+          return "";
+        })
+        .filter(Boolean);
 
       // Restaurar múltiplas especialidades no mapa de seleção
       const newSelected: Record<string, boolean> = {};
-      
+
       // Também tentamos restaurar pelos IDs se estiverem salvos no subcategoryId
-      if (dbProvider.subcategoryId && typeof dbProvider.subcategoryId === "string") {
-        const ids = dbProvider.subcategoryId.split(",").map((id: string) => id.trim()).filter(Boolean);
-        ids.forEach((id: string) => { newSelected[id] = true; });
+      if (
+        dbProvider.subcategoryId &&
+        typeof dbProvider.subcategoryId === "string"
+      ) {
+        const ids = dbProvider.subcategoryId
+          .split(",")
+          .map((id: string) => id.trim())
+          .filter(Boolean);
+        ids.forEach((id: string) => {
+          newSelected[id] = true;
+        });
       }
 
-      specNamesCleaned.forEach(name => {
+      specNamesCleaned.forEach((name) => {
         if (typeof name === "string") {
-          const found = allSubServices.find(m => typeof m.name === "string" && m.name.toLowerCase() === name.toLowerCase()) ||
-                        dbServices.find(m => typeof m.name === "string" && m.name.toLowerCase() === name.toLowerCase());
+          const found =
+            allSubServices.find(
+              (m) =>
+                typeof m.name === "string" &&
+                m.name.toLowerCase() === name.toLowerCase(),
+            ) ||
+            dbServices.find(
+              (m) =>
+                typeof m.name === "string" &&
+                m.name.toLowerCase() === name.toLowerCase(),
+            );
           if (found) {
             newSelected[found.id] = true;
           }
         }
       });
-      
+
       setSelectedSpecialties(newSelected);
       setSubcategoryName(specNamesCleaned.join(", "));
 
@@ -244,9 +311,15 @@ export default function EditarPrestador() {
       let initialServices: any[] = [];
       if (dbProvider.services) {
         try {
-          const parsed = typeof dbProvider.services === "string" ? JSON.parse(dbProvider.services) : dbProvider.services;
+          const parsed =
+            typeof dbProvider.services === "string"
+              ? JSON.parse(dbProvider.services)
+              : dbProvider.services;
           if (Array.isArray(parsed)) {
-            if (parsed.length === 0 || (parsed[0] && typeof parsed[0] === "object")) {
+            if (
+              parsed.length === 0 ||
+              (parsed[0] && typeof parsed[0] === "object")
+            ) {
               initialServices = parsed;
             } else {
               // Converter strings do formato antigo para objetos
@@ -254,7 +327,7 @@ export default function EditarPrestador() {
                 id: `svc-${Date.now()}-${idx}`,
                 name: String(name),
                 description: `Serviço de ${name}`,
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
               }));
             }
           }
@@ -301,7 +374,7 @@ export default function EditarPrestador() {
       quality: 0.85,
     });
     if (!result.canceled) {
-      setServiceForm(prev => ({ ...prev, imageUri: result.assets[0].uri }));
+      setServiceForm((prev) => ({ ...prev, imageUri: result.assets[0].uri }));
     }
   };
 
@@ -336,9 +409,11 @@ export default function EditarPrestador() {
     }
 
     if (editingServiceItem) {
-      setServicesList(prev => prev.map(s => s.id === editingServiceItem.id ? payload : s));
+      setServicesList((prev) =>
+        prev.map((s) => (s.id === editingServiceItem.id ? payload : s)),
+      );
     } else {
-      setServicesList(prev => [...prev, payload]);
+      setServicesList((prev) => [...prev, payload]);
     }
 
     setServiceModalVisible(false);
@@ -346,7 +421,7 @@ export default function EditarPrestador() {
 
   const handleDeleteServiceItem = (id: string) => {
     const performDelete = () => {
-      setServicesList(prev => prev.filter(s => s.id !== id));
+      setServicesList((prev) => prev.filter((s) => s.id !== id));
     };
 
     if (Platform.OS === "web") {
@@ -361,11 +436,12 @@ export default function EditarPrestador() {
 
   const handleSave = async () => {
     if (!name.trim() || !category) {
-      if (Platform.OS === "web") window.alert("Erro: Nome e categoria são obrigatórios.");
+      if (Platform.OS === "web")
+        window.alert("Erro: Nome e categoria são obrigatórios.");
       else Alert.alert("Erro", "Nome e categoria são obrigatórios.");
       return;
     }
-    
+
     setSaving(true);
     let errorDetails = "";
     try {
@@ -394,7 +470,7 @@ export default function EditarPrestador() {
       // 3. Upload Galeria
       const finalGallery = [];
       let galleryFailures = 0;
-      
+
       for (const img of gallery) {
         if (img.startsWith("http")) {
           finalGallery.push(img);
@@ -411,14 +487,18 @@ export default function EditarPrestador() {
         }
       }
 
-      const selectedIds = Object.keys(selectedSpecialties).filter(id => selectedSpecialties[id]);
-      const selectedItems = mergedSubcategories.filter(s => selectedIds.includes(s.id));
-      
-      const selectedNames = selectedItems.map(s => s.name);
-      
+      const selectedIds = Object.keys(selectedSpecialties).filter(
+        (id) => selectedSpecialties[id],
+      );
+      const selectedItems = mergedSubcategories.filter((s) =>
+        selectedIds.includes(s.id),
+      );
+
+      const selectedNames = selectedItems.map((s) => s.name);
+
       // Encontrar primeiro serviço selecionado (se houver) para o vínculo oficial
-      const primaryService = selectedItems.find(s => s.type === 'service');
-      const primarySubcat = selectedItems.find(s => s.type === 'subcategory');
+      const primaryService = selectedItems.find((s) => s.type === "service");
+      const primarySubcat = selectedItems.find((s) => s.type === "subcategory");
 
       let finalServicesList = [...servicesList];
       if (finalServicesList.length === 0 && selectedNames.length > 0) {
@@ -426,7 +506,7 @@ export default function EditarPrestador() {
           id: `svc-${Date.now()}-${idx}`,
           name,
           description: `Serviço de ${name}`,
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
         }));
       }
 
@@ -464,9 +544,13 @@ export default function EditarPrestador() {
         if (errorDetails) msg += `\n\nAVISO DE FOTOS:\n${errorDetails}`;
         window.alert(msg);
       } else {
-        Alert.alert("Sucesso", "Prestador salvo com sucesso!" + (errorDetails ? "\n\nAlgumas fotos falharam." : ""));
+        Alert.alert(
+          "Sucesso",
+          "Prestador salvo com sucesso!" +
+            (errorDetails ? "\n\nAlgumas fotos falharam." : ""),
+        );
       }
-      
+
       router.back();
     } catch (e: any) {
       const msg = e.message || "Erro desconhecido";
@@ -492,7 +576,12 @@ export default function EditarPrestador() {
     };
 
     if (Platform.OS === "web") {
-      if (window.confirm("Remover este prestador? Esta ação não pode ser desfeita.")) perform();
+      if (
+        window.confirm(
+          "Remover este prestador? Esta ação não pode ser desfeita.",
+        )
+      )
+        perform();
     } else {
       Alert.alert("Remover prestador", "Esta ação não pode ser desfeita.", [
         { text: "Cancelar", style: "cancel" },
@@ -533,8 +622,8 @@ export default function EditarPrestador() {
       quality: 0.6, // Reduzido para maior estabilidade
     });
     if (!result.canceled) {
-      const uris = result.assets.map(a => a.uri);
-      setGallery(prev => [...prev, ...uris]);
+      const uris = result.assets.map((a) => a.uri);
+      setGallery((prev) => [...prev, ...uris]);
     }
   };
 
@@ -549,13 +638,22 @@ export default function EditarPrestador() {
   return (
     <View style={styles.screen}>
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-        <Pressable style={styles.backBtn} onPress={() => router.back()} hitSlop={15}>
+        <Pressable
+          style={styles.backBtn}
+          onPress={() => router.back()}
+          hitSlop={15}
+        >
           <MaterialIcons name="arrow-back" size={22} color="#111827" />
         </Pressable>
-        <Text style={styles.headerTitle}>{isEditing ? "Editar Prestador" : "Novo Prestador"}</Text>
+        <Text style={styles.headerTitle}>
+          {isEditing ? "Editar Prestador" : "Novo Prestador"}
+        </Text>
         {isEditing && (
-          <Pressable 
-            style={({ pressed }) => [styles.deleteBtn, pressed && { opacity: 0.7 }]} 
+          <Pressable
+            style={({ pressed }) => [
+              styles.deleteBtn,
+              pressed && { opacity: 0.7 },
+            ]}
             onPress={handleDelete}
             hitSlop={15}
           >
@@ -564,16 +662,29 @@ export default function EditarPrestador() {
         )}
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+      >
         {/* Cover & Avatar Header Section */}
         <View style={styles.coverAvatarSection}>
           <Pressable style={styles.coverWrap} onPress={pickCover}>
             {coverUri ? (
-              <Image source={{ uri: coverUri }} style={styles.coverImage} resizeMode="cover" />
+              <Image
+                source={{ uri: coverUri }}
+                style={styles.coverImage}
+                resizeMode="cover"
+              />
             ) : (
               <View style={styles.coverPlaceholder}>
-                <MaterialIcons name="add-photo-alternate" size={32} color="#9CA3AF" />
-                <Text style={styles.coverPlaceholderText}>Adicionar Foto de Capa</Text>
+                <MaterialIcons
+                  name="add-photo-alternate"
+                  size={32}
+                  color="#9CA3AF"
+                />
+                <Text style={styles.coverPlaceholderText}>
+                  Adicionar Foto de Capa
+                </Text>
               </View>
             )}
             <View style={styles.coverEditBtn}>
@@ -583,7 +694,12 @@ export default function EditarPrestador() {
 
           <View style={styles.avatarWrapFloating}>
             <Image
-              source={{ uri: avatarUri || "https://ui-avatars.com/api/?name=" + encodeURIComponent(name || "P") }}
+              source={{
+                uri:
+                  avatarUri ||
+                  "https://ui-avatars.com/api/?name=" +
+                    encodeURIComponent(name || "P"),
+              }}
               style={styles.avatarFloating}
             />
             <Pressable style={styles.avatarCameraBtn} onPress={pickAvatar}>
@@ -603,38 +719,69 @@ export default function EditarPrestador() {
           />
 
           <Text style={styles.fieldLabel}>Categoria Principal</Text>
-          <Pressable 
+          <Pressable
             style={styles.selectField}
             onPress={() => setShowCategoryPicker(!showCategoryPicker)}
           >
-            <Text style={[styles.selectText, !category && { color: "#9CA3AF" }]}>
+            <Text
+              style={[styles.selectText, !category && { color: "#9CA3AF" }]}
+            >
               {category || "Selecionar categoria"}
             </Text>
-            <MaterialIcons name={showCategoryPicker ? "expand-less" : "expand-more"} size={24} color="#6B7280" />
+            <MaterialIcons
+              name={showCategoryPicker ? "expand-less" : "expand-more"}
+              size={24}
+              color="#6B7280"
+            />
           </Pressable>
 
           {showCategoryPicker && (
             <View style={styles.pickerDropdown}>
               {loadingCats ? (
-                <ActivityIndicator size="small" color="#25D366" style={{ padding: 20 }} />
+                <ActivityIndicator
+                  size="small"
+                  color="#25D366"
+                  style={{ padding: 20 }}
+                />
               ) : categories.length === 0 ? (
-                <Text style={{ padding: 20, color: "#9CA3AF", textAlign: "center" }}>Nenhuma categoria encontrada.</Text>
-              ) : categories.map((c) => (
-                <Pressable 
-                  key={c.id} 
-                  style={[styles.pickerOption, categoryId === c.id && styles.pickerOptionActive]}
-                  onPress={() => {
-                    setCategory(c.name);
-                    setCategoryId(c.id);
-                    setSubcategoryName(""); 
-                    setSubcategoryId("");
-                    setShowCategoryPicker(false);
-                  }}
+                <Text
+                  style={{ padding: 20, color: "#9CA3AF", textAlign: "center" }}
                 >
-                  <Text style={[styles.pickerOptionText, categoryId === c.id && { color: "#25D366", fontWeight: "700" }]}>{c.name}</Text>
-                  {categoryId === c.id && <MaterialIcons name="check" size={20} color="#25D366" />}
-                </Pressable>
-              ))}
+                  Nenhuma categoria encontrada.
+                </Text>
+              ) : (
+                categories.map((c) => (
+                  <Pressable
+                    key={c.id}
+                    style={[
+                      styles.pickerOption,
+                      categoryId === c.id && styles.pickerOptionActive,
+                    ]}
+                    onPress={() => {
+                      setCategory(c.name);
+                      setCategoryId(c.id);
+                      setSubcategoryName("");
+                      setSubcategoryId("");
+                      setShowCategoryPicker(false);
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.pickerOptionText,
+                        categoryId === c.id && {
+                          color: "#25D366",
+                          fontWeight: "700",
+                        },
+                      ]}
+                    >
+                      {c.name}
+                    </Text>
+                    {categoryId === c.id && (
+                      <MaterialIcons name="check" size={20} color="#25D366" />
+                    )}
+                  </Pressable>
+                ))
+              )}
             </View>
           )}
 
@@ -643,16 +790,30 @@ export default function EditarPrestador() {
             <>
               <View style={{ height: 16 }} />
               <Text style={styles.fieldLabel}>Especialidade</Text>
-              <Pressable 
+              <Pressable
                 style={styles.selectField}
                 onPress={() => setShowSubcategoryPicker(!showSubcategoryPicker)}
               >
-                <Text style={[styles.selectText, !subcategoryName && Object.keys(selectedSpecialties).filter(k => selectedSpecialties[k]).length === 0 && { color: "#9CA3AF" }]}>
-                  {Object.keys(selectedSpecialties).filter(k => selectedSpecialties[k]).length > 0 
-                    ? `${Object.keys(selectedSpecialties).filter(k => selectedSpecialties[k]).length} selecionados`
+                <Text
+                  style={[
+                    styles.selectText,
+                    !subcategoryName &&
+                      Object.keys(selectedSpecialties).filter(
+                        (k) => selectedSpecialties[k],
+                      ).length === 0 && { color: "#9CA3AF" },
+                  ]}
+                >
+                  {Object.keys(selectedSpecialties).filter(
+                    (k) => selectedSpecialties[k],
+                  ).length > 0
+                    ? `${Object.keys(selectedSpecialties).filter((k) => selectedSpecialties[k]).length} selecionados`
                     : subcategoryName || "Selecionar especialidade"}
                 </Text>
-                <MaterialIcons name={showSubcategoryPicker ? "expand-less" : "expand-more"} size={24} color="#6B7280" />
+                <MaterialIcons
+                  name={showSubcategoryPicker ? "expand-less" : "expand-more"}
+                  size={24}
+                  color="#6B7280"
+                />
               </Pressable>
 
               {showSubcategoryPicker && (
@@ -667,7 +828,12 @@ export default function EditarPrestador() {
                       placeholderTextColor="#9CA3AF"
                     />
                     <Pressable
-                      style={[styles.addSubBtn, (!newSubName.trim() || isCreatingSub) && { opacity: 0.5 }]}
+                      style={[
+                        styles.addSubBtn,
+                        (!newSubName.trim() || isCreatingSub) && {
+                          opacity: 0.5,
+                        },
+                      ]}
                       disabled={!newSubName.trim() || isCreatingSub}
                       onPress={async () => {
                         setIsCreatingSub(true);
@@ -675,10 +841,13 @@ export default function EditarPrestador() {
                           await createSubService.mutateAsync({
                             categoryId,
                             name: newSubName.trim(),
-                            icon: "build"
+                            icon: "build",
                           });
                         } catch (e) {
-                          Alert.alert("Erro", "Não foi possível criar a subcategoria");
+                          Alert.alert(
+                            "Erro",
+                            "Não foi possível criar a subcategoria",
+                          );
                         } finally {
                           setIsCreatingSub(false);
                         }
@@ -695,20 +864,36 @@ export default function EditarPrestador() {
                   <View style={{ height: 1, backgroundColor: "#F3F4F6" }} />
 
                   {loadingSubs ? (
-                    <ActivityIndicator size="small" color="#25D366" style={{ padding: 20 }} />
+                    <ActivityIndicator
+                      size="small"
+                      color="#25D366"
+                      style={{ padding: 20 }}
+                    />
                   ) : mergedSubcategories.length === 0 ? (
-                    <Text style={{ padding: 20, color: "#9CA3AF", textAlign: "center" }}>Nenhuma subcategoria disponível.</Text>
+                    <Text
+                      style={{
+                        padding: 20,
+                        color: "#9CA3AF",
+                        textAlign: "center",
+                      }}
+                    >
+                      Nenhuma subcategoria disponível.
+                    </Text>
                   ) : (
                     mergedSubcategories.map((s) => {
-                      const isSelected = !!selectedSpecialties[s.id] || subcategoryId === s.id;
+                      const isSelected =
+                        !!selectedSpecialties[s.id] || subcategoryId === s.id;
                       return (
-                        <Pressable 
-                          key={s.id} 
-                          style={[styles.pickerOption, isSelected && styles.pickerOptionActive]}
+                        <Pressable
+                          key={s.id}
+                          style={[
+                            styles.pickerOption,
+                            isSelected && styles.pickerOptionActive,
+                          ]}
                           onPress={() => {
-                            setSelectedSpecialties(prev => ({
+                            setSelectedSpecialties((prev) => ({
                               ...prev,
-                              [s.id]: !isSelected
+                              [s.id]: !isSelected,
                             }));
                             // Se estiver desmarcando o principal antigo
                             if (subcategoryId === s.id && isSelected) {
@@ -717,15 +902,42 @@ export default function EditarPrestador() {
                             }
                           }}
                         >
-                          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
-                            <MaterialIcons 
-                              name={s.type === 'service' ? 'star-outline' : 'label-outline'} 
-                              size={16} 
-                              color={isSelected ? "#25D366" : "#9CA3AF"} 
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              gap: 8,
+                              flex: 1,
+                            }}
+                          >
+                            <MaterialIcons
+                              name={
+                                s.type === "service"
+                                  ? "star-outline"
+                                  : "label-outline"
+                              }
+                              size={16}
+                              color={isSelected ? "#25D366" : "#9CA3AF"}
                             />
-                            <Text style={[styles.pickerOptionText, isSelected && { color: "#25D366", fontWeight: "700" }]}>{s.name}</Text>
+                            <Text
+                              style={[
+                                styles.pickerOptionText,
+                                isSelected && {
+                                  color: "#25D366",
+                                  fontWeight: "700",
+                                },
+                              ]}
+                            >
+                              {s.name}
+                            </Text>
                           </View>
-                          {isSelected && <MaterialIcons name="check-circle" size={20} color="#25D366" />}
+                          {isSelected && (
+                            <MaterialIcons
+                              name="check-circle"
+                              size={20}
+                              color="#25D366"
+                            />
+                          )}
                         </Pressable>
                       );
                     })
@@ -766,7 +978,9 @@ export default function EditarPrestador() {
             </View>
           </View>
 
-          <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Endereço Completo / Google Maps Link</Text>
+          <Text style={[styles.fieldLabel, { marginTop: 16 }]}>
+            Endereço Completo / Google Maps Link
+          </Text>
           <TextInput
             style={styles.fieldInput}
             value={address}
@@ -775,7 +989,9 @@ export default function EditarPrestador() {
             placeholderTextColor="#9CA3AF"
           />
 
-          <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Ano início (Fundação)</Text>
+          <Text style={[styles.fieldLabel, { marginTop: 16 }]}>
+            Ano início (Fundação)
+          </Text>
           <TextInput
             style={styles.fieldInput}
             value={foundedYear}
@@ -788,7 +1004,12 @@ export default function EditarPrestador() {
           <View style={styles.switchRow}>
             <Text style={styles.fieldLabel}>Status</Text>
             <View style={styles.switchRight}>
-              <Text style={[styles.switchLabel, { color: isActive ? "#25D366" : "#9CA3AF" }]}>
+              <Text
+                style={[
+                  styles.switchLabel,
+                  { color: isActive ? "#25D366" : "#9CA3AF" },
+                ]}
+              >
                 {isActive ? "Ativo" : "Inativo"}
               </Text>
               <Switch
@@ -803,7 +1024,12 @@ export default function EditarPrestador() {
           <View style={styles.switchRow}>
             <Text style={styles.fieldLabel}>Destaque para você</Text>
             <View style={styles.switchRight}>
-              <Text style={[styles.switchLabel, { color: destaque ? "#25D366" : "#9CA3AF" }]}>
+              <Text
+                style={[
+                  styles.switchLabel,
+                  { color: destaque ? "#25D366" : "#9CA3AF" },
+                ]}
+              >
                 {destaque ? "Sim" : "Não"}
               </Text>
               <Switch
@@ -817,15 +1043,32 @@ export default function EditarPrestador() {
         </View>
 
         {/* Gallery */}
-        <Text style={styles.sectionTitle}>Galeria de fotos (Local/Serviços)</Text>
+        <Text style={styles.sectionTitle}>
+          Galeria de fotos (Local/Serviços)
+        </Text>
         <View style={styles.card}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 8 }}
+          >
             {gallery.map((uri, idx) => (
               <View key={idx} style={{ position: "relative" }}>
-                <Image source={{ uri }} style={{ width: 80, height: 80, borderRadius: 10 }} />
+                <Image
+                  source={{ uri }}
+                  style={{ width: 80, height: 80, borderRadius: 10 }}
+                />
                 <Pressable
-                  style={{ position: "absolute", top: -5, right: -5, backgroundColor: "#EF4444", borderRadius: 10 }}
-                  onPress={() => setGallery(prev => prev.filter((_, i) => i !== idx))}
+                  style={{
+                    position: "absolute",
+                    top: -5,
+                    right: -5,
+                    backgroundColor: "#EF4444",
+                    borderRadius: 10,
+                  }}
+                  onPress={() =>
+                    setGallery((prev) => prev.filter((_, i) => i !== idx))
+                  }
                 >
                   <MaterialIcons name="close" size={16} color="#FFF" />
                 </Pressable>
@@ -838,52 +1081,134 @@ export default function EditarPrestador() {
         </View>
 
         {/* Cardápio / Serviços */}
-        <Text style={styles.sectionTitle}>{isCommerce ? "Cardápio de Produtos" : "Serviços Oferecidos"}</Text>
+        <Text style={styles.sectionTitle}>
+          {isCommerce ? "Cardápio de Produtos" : "Serviços Oferecidos"}
+        </Text>
         <View style={styles.card}>
           {servicesList.length === 0 ? (
-            <Text style={{ color: "#9CA3AF", textAlign: "center", paddingVertical: 12 }}>
+            <Text
+              style={{
+                color: "#9CA3AF",
+                textAlign: "center",
+                paddingVertical: 12,
+              }}
+            >
               Nenhum {isCommerce ? "produto" : "serviço"} cadastrado ainda.
             </Text>
           ) : (
             servicesList.map((svc) => (
-              <View key={svc.id} style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#F3F4F6" }}>
+              <View
+                key={svc.id}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingVertical: 10,
+                  borderBottomWidth: 1,
+                  borderBottomColor: "#F3F4F6",
+                }}
+              >
                 {svc.imageUri ? (
-                  <Image source={{ uri: svc.imageUri }} style={{ width: 44, height: 44, borderRadius: 8, backgroundColor: "#E5E7EB", marginRight: 10 }} />
+                  <Image
+                    source={{ uri: svc.imageUri }}
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 8,
+                      backgroundColor: "#E5E7EB",
+                      marginRight: 10,
+                    }}
+                  />
                 ) : (
-                  <View style={{ width: 44, height: 44, borderRadius: 8, backgroundColor: "#F0FDF4", alignItems: "center", justifyContent: "center", marginRight: 10 }}>
-                    <MaterialIcons name={isCommerce ? "restaurant" : "build"} size={20} color="#25D366" />
+                  <View
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 8,
+                      backgroundColor: "#F0FDF4",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginRight: 10,
+                    }}
+                  >
+                    <MaterialIcons
+                      name={isCommerce ? "restaurant" : "build"}
+                      size={20}
+                      color="#25D366"
+                    />
                   </View>
                 )}
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 14, fontWeight: "700", color: "#111827" }}>{svc.name}</Text>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: "700",
+                      color: "#111827",
+                    }}
+                  >
+                    {svc.name}
+                  </Text>
                   {isCommerce && svc.price !== undefined && (
-                    <Text style={{ fontSize: 12, fontWeight: "600", color: "#15803D", marginTop: 1 }}>
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontWeight: "600",
+                        color: "#15803D",
+                        marginTop: 1,
+                      }}
+                    >
                       R$ {Number(svc.price).toFixed(2)}
                     </Text>
                   )}
                   {!!svc.productCategory && (
-                    <Text style={{ fontSize: 10, color: "#6B7280", marginTop: 1 }}>
+                    <Text
+                      style={{ fontSize: 10, color: "#6B7280", marginTop: 1 }}
+                    >
                       Categoria: {svc.productCategory}
                     </Text>
                   )}
                   {!!svc.description && (
-                    <Text style={{ fontSize: 12, color: "#6B7280", marginTop: 2 }} numberOfLines={1}>
+                    <Text
+                      style={{ fontSize: 12, color: "#6B7280", marginTop: 2 }}
+                      numberOfLines={1}
+                    >
                       {svc.description}
                     </Text>
                   )}
                 </View>
                 <View style={{ flexDirection: "row", gap: 6 }}>
                   <Pressable
-                    style={{ width: 32, height: 32, borderRadius: 6, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#BFDBFE" }}
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 6,
+                      backgroundColor: "#EFF6FF",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderWidth: 1,
+                      borderColor: "#BFDBFE",
+                    }}
                     onPress={() => openEditServiceModal(svc)}
                   >
                     <MaterialIcons name="edit" size={14} color="#2563EB" />
                   </Pressable>
                   <Pressable
-                    style={{ width: 32, height: 32, borderRadius: 6, backgroundColor: "#FEF2F2", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#FECACA" }}
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 6,
+                      backgroundColor: "#FEF2F2",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderWidth: 1,
+                      borderColor: "#FECACA",
+                    }}
                     onPress={() => handleDeleteServiceItem(svc.id)}
                   >
-                    <MaterialIcons name="delete-outline" size={14} color="#DC2626" />
+                    <MaterialIcons
+                      name="delete-outline"
+                      size={14}
+                      color="#DC2626"
+                    />
                   </Pressable>
                 </View>
               </View>
@@ -891,8 +1216,19 @@ export default function EditarPrestador() {
           )}
           <Pressable
             style={({ pressed }) => [
-              { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: "#F0FDF4", borderWidth: 1, borderColor: "#BBF7D0", borderRadius: 10, paddingVertical: 12, marginTop: 12 },
-              pressed && { opacity: 0.8 }
+              {
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                backgroundColor: "#F0FDF4",
+                borderWidth: 1,
+                borderColor: "#BBF7D0",
+                borderRadius: 10,
+                paddingVertical: 12,
+                marginTop: 12,
+              },
+              pressed && { opacity: 0.8 },
             ]}
             onPress={openAddServiceModal}
           >
@@ -923,7 +1259,11 @@ export default function EditarPrestador() {
         </View>
 
         <Pressable
-          style={({ pressed }) => [styles.saveBtn, pressed && { opacity: 0.85 }, saving && { opacity: 0.7 }]}
+          style={({ pressed }) => [
+            styles.saveBtn,
+            pressed && { opacity: 0.85 },
+            saving && { opacity: 0.7 },
+          ]}
           onPress={handleSave}
           disabled={saving}
         >
@@ -937,101 +1277,307 @@ export default function EditarPrestador() {
           )}
         </Pressable>
 
-      {/* Modal para adicionar/editar produto ou serviço */}
-      <Modal visible={serviceModalVisible} transparent animationType="slide" onRequestClose={() => setServiceModalVisible(false)}>
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-          <View style={{ backgroundColor: "#FFFFFF", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: "90%" }}>
-            <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: "#E5E7EB", alignSelf: "center", marginBottom: 12 }} />
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-              <Text style={{ fontSize: 18, fontWeight: "800", color: "#111827" }}>
-                {editingServiceItem ? (isCommerce ? "Editar Produto" : "Editar Serviço") : (isCommerce ? "Novo Produto" : "Novo Serviço")}
-              </Text>
-              <Pressable
-                style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" }}
-                onPress={() => setServiceModalVisible(false)}
-              >
-                <MaterialIcons name="close" size={18} color="#6B7280" />
-              </Pressable>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {/* Imagem do Item */}
-              <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6 }}>Imagem (opcional)</Text>
-              <Pressable
-                style={{ height: 100, backgroundColor: "#F9FAFB", borderWidth: 1, borderColor: "#E5E7EB", borderStyle: "dashed", borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 16, overflow: "hidden" }}
-                onPress={handlePickServiceImage}
-              >
-                {serviceForm.imageUri ? (
-                  <Image source={{ uri: serviceForm.imageUri }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
-                ) : (
-                  <>
-                    <MaterialIcons name="add-a-photo" size={24} color="#9CA3AF" />
-                    <Text style={{ fontSize: 12, color: "#9CA3AF", marginTop: 4 }}>Escolher foto</Text>
-                  </>
-                )}
-              </Pressable>
-
-              {/* Nome */}
-              <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6 }}>Nome *</Text>
-              <TextInput
-                style={{ backgroundColor: "#F9FAFB", borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: "#111827", marginBottom: 16 }}
-                placeholder={isCommerce ? "Ex: Pizza de Calabresa" : "Ex: Instalação de chuveiro"}
-                value={serviceForm.name}
-                onChangeText={(t) => setServiceForm({ ...serviceForm, name: t })}
+        {/* Modal para adicionar/editar produto ou serviço */}
+        <Modal
+          visible={serviceModalVisible}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setServiceModalVisible(false)}
+        >
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: "rgba(0,0,0,0.5)",
+              justifyContent: "flex-end",
+            }}
+          >
+            <View
+              style={{
+                backgroundColor: "#FFFFFF",
+                borderTopLeftRadius: 24,
+                borderTopRightRadius: 24,
+                padding: 20,
+                maxHeight: "90%",
+              }}
+            >
+              <View
+                style={{
+                  width: 36,
+                  height: 4,
+                  borderRadius: 2,
+                  backgroundColor: "#E5E7EB",
+                  alignSelf: "center",
+                  marginBottom: 12,
+                }}
               />
-
-              {/* Descrição */}
-              <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6 }}>Descrição</Text>
-              <TextInput
-                style={{ backgroundColor: "#F9FAFB", borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: "#111827", minHeight: 60, textAlignVertical: "top", marginBottom: 16 }}
-                placeholder="Descreva brevemente..."
-                value={serviceForm.description}
-                onChangeText={(t) => setServiceForm({ ...serviceForm, description: t })}
-                multiline
-                numberOfLines={3}
-              />
-
-              {/* Campos adicionais para Comércio */}
-              {isCommerce && (
-                <>
-                  <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6 }}>Preço (R$)</Text>
-                  <TextInput
-                    style={{ backgroundColor: "#F9FAFB", borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: "#111827", marginBottom: 16 }}
-                    placeholder="Ex: 45.00"
-                    keyboardType="numeric"
-                    value={serviceForm.price}
-                    onChangeText={(t) => setServiceForm({ ...serviceForm, price: t })}
-                  />
-
-                  <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6 }}>Categoria no Cardápio (opcional)</Text>
-                  <TextInput
-                    style={{ backgroundColor: "#F9FAFB", borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: "#111827", marginBottom: 16 }}
-                    placeholder="Ex: Pizzas Salgadas, Bebidas"
-                    value={serviceForm.productCategory}
-                    onChangeText={(t) => setServiceForm({ ...serviceForm, productCategory: t })}
-                  />
-                </>
-              )}
-
-              <View style={{ flexDirection: "row", gap: 10, marginTop: 10, marginBottom: 20 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: 16,
+                }}
+              >
+                <Text
+                  style={{ fontSize: 18, fontWeight: "800", color: "#111827" }}
+                >
+                  {editingServiceItem
+                    ? isCommerce
+                      ? "Editar Produto"
+                      : "Editar Serviço"
+                    : isCommerce
+                      ? "Novo Produto"
+                      : "Novo Serviço"}
+                </Text>
                 <Pressable
-                  style={{ flex: 1, backgroundColor: "#F3F4F6", borderRadius: 12, paddingVertical: 12, alignItems: "center" }}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
+                    backgroundColor: "#F3F4F6",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
                   onPress={() => setServiceModalVisible(false)}
                 >
-                  <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151" }}>Cancelar</Text>
-                </Pressable>
-                <Pressable
-                  style={{ flex: 2, backgroundColor: "#25D366", borderRadius: 12, paddingVertical: 12, alignItems: "center" }}
-                  onPress={handleSaveServiceItem}
-                >
-                  <Text style={{ fontSize: 14, fontWeight: "700", color: "#FFFFFF" }}>Salvar Item</Text>
+                  <MaterialIcons name="close" size={18} color="#6B7280" />
                 </Pressable>
               </View>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
 
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {/* Imagem do Item */}
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: "600",
+                    color: "#374151",
+                    marginBottom: 6,
+                  }}
+                >
+                  Imagem (opcional)
+                </Text>
+                <Pressable
+                  style={{
+                    height: 100,
+                    backgroundColor: "#F9FAFB",
+                    borderWidth: 1,
+                    borderColor: "#E5E7EB",
+                    borderStyle: "dashed",
+                    borderRadius: 12,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: 16,
+                    overflow: "hidden",
+                  }}
+                  onPress={handlePickServiceImage}
+                >
+                  {serviceForm.imageUri ? (
+                    <Image
+                      source={{ uri: serviceForm.imageUri }}
+                      style={{ width: "100%", height: "100%" }}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <>
+                      <MaterialIcons
+                        name="add-a-photo"
+                        size={24}
+                        color="#9CA3AF"
+                      />
+                      <Text
+                        style={{ fontSize: 12, color: "#9CA3AF", marginTop: 4 }}
+                      >
+                        Escolher foto
+                      </Text>
+                    </>
+                  )}
+                </Pressable>
+
+                {/* Nome */}
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: "600",
+                    color: "#374151",
+                    marginBottom: 6,
+                  }}
+                >
+                  Nome *
+                </Text>
+                <TextInput
+                  style={{
+                    backgroundColor: "#F9FAFB",
+                    borderWidth: 1,
+                    borderColor: "#E5E7EB",
+                    borderRadius: 10,
+                    paddingHorizontal: 12,
+                    paddingVertical: 10,
+                    fontSize: 14,
+                    color: "#111827",
+                    marginBottom: 16,
+                  }}
+                  placeholder={
+                    isCommerce
+                      ? "Ex: Pizza de Calabresa"
+                      : "Ex: Instalação de chuveiro"
+                  }
+                  value={serviceForm.name}
+                  onChangeText={(t) =>
+                    setServiceForm({ ...serviceForm, name: t })
+                  }
+                />
+
+                {/* Descrição */}
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: "600",
+                    color: "#374151",
+                    marginBottom: 6,
+                  }}
+                >
+                  Descrição
+                </Text>
+                <TextInput
+                  style={{
+                    backgroundColor: "#F9FAFB",
+                    borderWidth: 1,
+                    borderColor: "#E5E7EB",
+                    borderRadius: 10,
+                    paddingHorizontal: 12,
+                    paddingVertical: 10,
+                    fontSize: 14,
+                    color: "#111827",
+                    minHeight: 60,
+                    textAlignVertical: "top",
+                    marginBottom: 16,
+                  }}
+                  placeholder="Descreva brevemente..."
+                  value={serviceForm.description}
+                  onChangeText={(t) =>
+                    setServiceForm({ ...serviceForm, description: t })
+                  }
+                  multiline
+                  numberOfLines={3}
+                />
+
+                {/* Campos adicionais para Comércio */}
+                {isCommerce && (
+                  <>
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: "600",
+                        color: "#374151",
+                        marginBottom: 6,
+                      }}
+                    >
+                      Preço (R$)
+                    </Text>
+                    <TextInput
+                      style={{
+                        backgroundColor: "#F9FAFB",
+                        borderWidth: 1,
+                        borderColor: "#E5E7EB",
+                        borderRadius: 10,
+                        paddingHorizontal: 12,
+                        paddingVertical: 10,
+                        fontSize: 14,
+                        color: "#111827",
+                        marginBottom: 16,
+                      }}
+                      placeholder="Ex: 45.00"
+                      keyboardType="numeric"
+                      value={serviceForm.price}
+                      onChangeText={(t) =>
+                        setServiceForm({ ...serviceForm, price: t })
+                      }
+                    />
+
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: "600",
+                        color: "#374151",
+                        marginBottom: 6,
+                      }}
+                    >
+                      Categoria no Cardápio (opcional)
+                    </Text>
+                    <TextInput
+                      style={{
+                        backgroundColor: "#F9FAFB",
+                        borderWidth: 1,
+                        borderColor: "#E5E7EB",
+                        borderRadius: 10,
+                        paddingHorizontal: 12,
+                        paddingVertical: 10,
+                        fontSize: 14,
+                        color: "#111827",
+                        marginBottom: 16,
+                      }}
+                      placeholder="Ex: Pizzas Salgadas, Bebidas"
+                      value={serviceForm.productCategory}
+                      onChangeText={(t) =>
+                        setServiceForm({ ...serviceForm, productCategory: t })
+                      }
+                    />
+                  </>
+                )}
+
+                <View
+                  style={{
+                    flexDirection: "row",
+                    gap: 10,
+                    marginTop: 10,
+                    marginBottom: 20,
+                  }}
+                >
+                  <Pressable
+                    style={{
+                      flex: 1,
+                      backgroundColor: "#F3F4F6",
+                      borderRadius: 12,
+                      paddingVertical: 12,
+                      alignItems: "center",
+                    }}
+                    onPress={() => setServiceModalVisible(false)}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        fontWeight: "600",
+                        color: "#374151",
+                      }}
+                    >
+                      Cancelar
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={{
+                      flex: 2,
+                      backgroundColor: "#25D366",
+                      borderRadius: 12,
+                      paddingVertical: 12,
+                      alignItems: "center",
+                    }}
+                    onPress={handleSaveServiceItem}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        fontWeight: "700",
+                        color: "#FFFFFF",
+                      }}
+                    >
+                      Salvar Item
+                    </Text>
+                  </Pressable>
+                </View>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
       </ScrollView>
     </View>
   );
@@ -1040,15 +1586,25 @@ export default function EditarPrestador() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#F5F5F5" },
   header: {
-    flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF",
-    paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: "#F3F4F6",
-    zIndex: 10, elevation: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+    zIndex: 10,
+    elevation: 10,
   },
   backBtn: { padding: 4, marginRight: 8 },
   headerTitle: { flex: 1, fontSize: 18, fontWeight: "800", color: "#111827" },
   deleteBtn: {
-    width: 44, height: 44, borderRadius: 22, backgroundColor: "#FEF2F2",
-    alignItems: "center", justifyContent: "center",
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#FEF2F2",
+    alignItems: "center",
+    justifyContent: "center",
   },
   content: { padding: 16, gap: 0 },
   coverAvatarSection: {
@@ -1124,60 +1680,126 @@ const styles = StyleSheet.create({
     borderColor: "#FFF",
   },
   card: {
-    backgroundColor: "#FFFFFF", borderRadius: 14, padding: 16,
-    borderWidth: 1, borderColor: "#F3F4F6", marginBottom: 12,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
+    marginBottom: 12,
   },
-  sectionTitle: { fontSize: 15, fontWeight: "700", color: "#111827", marginBottom: 8, marginTop: 4 },
-  fieldLabel: { fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6 },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#374151",
+    marginBottom: 6,
+  },
   fieldInput: {
-    borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 10, paddingHorizontal: 12,
-    paddingVertical: 10, fontSize: 14, color: "#111827", backgroundColor: "#F9FAFB",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: "#111827",
+    backgroundColor: "#F9FAFB",
     outlineStyle: "none",
   } as any,
   textArea: { minHeight: 80, textAlignVertical: "top", paddingTop: 10 },
   selectField: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 10,
-    paddingHorizontal: 12, paddingVertical: 11, backgroundColor: "#F9FAFB",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    backgroundColor: "#F9FAFB",
   },
   selectText: { fontSize: 14, color: "#111827" },
   pickerDropdown: {
-    borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 10, marginTop: 4,
-    backgroundColor: "#FFFFFF", overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 10,
+    marginTop: 4,
+    backgroundColor: "#FFFFFF",
+    overflow: "hidden",
   },
   pickerOption: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 14, paddingVertical: 11,
-    borderBottomWidth: 1, borderBottomColor: "#F3F4F6",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
   },
   pickerOptionActive: { backgroundColor: "#F0FDF4" },
   pickerOptionText: { fontSize: 14, color: "#374151" },
-  switchRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 16 },
+  switchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 16,
+  },
   switchRight: { flexDirection: "row", alignItems: "center", gap: 8 },
   switchLabel: { fontSize: 13, fontWeight: "600" },
   contactRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   waIcon: {
-    width: 36, height: 36, borderRadius: 10, backgroundColor: "#F0FDF4",
-    alignItems: "center", justifyContent: "center",
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: "#F0FDF4",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  contactLabel: { fontSize: 13, fontWeight: "600", color: "#374151", width: 70 },
+  contactLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#374151",
+    width: 70,
+  },
   contactInput: {
-    flex: 1, fontSize: 14, color: "#111827",
-    borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 10,
-    paddingHorizontal: 10, paddingVertical: 8, backgroundColor: "#F9FAFB",
+    flex: 1,
+    fontSize: 14,
+    color: "#111827",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    backgroundColor: "#F9FAFB",
     outlineStyle: "none",
   } as any,
   saveBtn: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center",
-    backgroundColor: "#25D366", borderRadius: 14, paddingVertical: 15, gap: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#25D366",
+    borderRadius: 14,
+    paddingVertical: 15,
+    gap: 8,
     marginTop: 8,
   },
   saveBtnSaved: { backgroundColor: "#16A34A" },
   saveBtnText: { fontSize: 16, fontWeight: "800", color: "#FFF" },
   addGalleryBtn: {
-    width: 80, height: 80, borderRadius: 10, backgroundColor: "#F0FDF4",
-    alignItems: "center", justifyContent: "center", borderStyle: "dashed",
-    borderWidth: 1, borderColor: "#25D366",
+    width: 80,
+    height: 80,
+    borderRadius: 10,
+    backgroundColor: "#F0FDF4",
+    alignItems: "center",
+    justifyContent: "center",
+    borderStyle: "dashed",
+    borderWidth: 1,
+    borderColor: "#25D366",
   },
   addSubBox: {
     flexDirection: "row",

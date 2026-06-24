@@ -53,21 +53,41 @@ export default function LoginEmailScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Pressable
-            style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
+            style={({ pressed }) => [
+              styles.backBtn,
+              pressed && { opacity: 0.6 },
+            ]}
             onPress={() => router.back()}
           >
-            <MaterialIcons name="arrow-back" size={24} color={colors.foreground} />
+            <MaterialIcons
+              name="arrow-back"
+              size={24}
+              color={colors.foreground}
+            />
           </Pressable>
-          <Text style={[styles.title, { color: colors.foreground }]}>Fazer Login</Text>
+          <Text style={[styles.title, { color: colors.foreground }]}>
+            Fazer Login
+          </Text>
         </View>
 
         {/* Form */}
         <View style={styles.form}>
           {/* Email Input */}
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.foreground }]}>Email</Text>
-            <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <MaterialIcons name="mail-outline" size={18} color={colors.muted} />
+            <Text style={[styles.label, { color: colors.foreground }]}>
+              Email
+            </Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
+            >
+              <MaterialIcons
+                name="mail-outline"
+                size={18}
+                color={colors.muted}
+              />
               <TextInput
                 style={[styles.input, { color: colors.foreground }]}
                 placeholder="seu@email.com"
@@ -87,13 +107,28 @@ export default function LoginEmailScreen() {
           {/* Password Input */}
           <View style={styles.inputGroup}>
             <View style={styles.passwordHeader}>
-              <Text style={[styles.label, { color: colors.foreground }]}>Senha</Text>
-              <Pressable onPress={() => router.push("/auth/forgot-password" as any)}>
-                <Text style={[styles.forgotLink, { color: colors.primary }]}>Esqueceu?</Text>
+              <Text style={[styles.label, { color: colors.foreground }]}>
+                Senha
+              </Text>
+              <Pressable
+                onPress={() => router.push("/auth/forgot-password" as any)}
+              >
+                <Text style={[styles.forgotLink, { color: colors.primary }]}>
+                  Esqueceu?
+                </Text>
               </Pressable>
             </View>
-            <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <MaterialIcons name="lock-outline" size={18} color={colors.muted} />
+            <View
+              style={[
+                styles.inputWrapper,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
+            >
+              <MaterialIcons
+                name="lock-outline"
+                size={18}
+                color={colors.muted}
+              />
               <TextInput
                 style={[styles.input, { color: colors.foreground }]}
                 placeholder="Sua senha"
@@ -144,9 +179,16 @@ export default function LoginEmailScreen() {
 
           {/* Sign Up Link */}
           <View style={styles.signupContainer}>
-            <Text style={[styles.signupText, { color: colors.muted }]}>Não tem conta? </Text>
-            <Pressable onPress={() => router.push("/auth/signup" as any)} disabled={isLoading}>
-              <Text style={[styles.signupLink, { color: colors.primary }]}>Cadastre-se</Text>
+            <Text style={[styles.signupText, { color: colors.muted }]}>
+              Não tem conta?{" "}
+            </Text>
+            <Pressable
+              onPress={() => router.push("/auth/signup" as any)}
+              disabled={isLoading}
+            >
+              <Text style={[styles.signupLink, { color: colors.primary }]}>
+                Cadastre-se
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -154,7 +196,8 @@ export default function LoginEmailScreen() {
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={[styles.footerText, { color: colors.muted }]}>
-            Ao continuar, você concorda com nossos Termos de Serviço e Política de Privacidade
+            Ao continuar, você concorda com nossos Termos de Serviço e Política
+            de Privacidade
           </Text>
         </View>
       </ScrollView>

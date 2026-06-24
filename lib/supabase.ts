@@ -31,4 +31,3 @@ export function setCachedSessionToken(token: string | null) {
 supabase.auth.onAuthStateChange((event, session) => {
   cachedSessionToken = session?.access_token || null;
 });
-

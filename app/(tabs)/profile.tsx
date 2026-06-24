@@ -49,7 +49,7 @@ export default function ProfileScreen() {
   const { favorites } = useFavorites();
   const { unreadCount } = useNotifications();
   const { coords } = useLocation();
-  
+
   const userId = user?.id || "guest";
   const storageKey = `@chamaja_saved_user_addresses_${userId}`;
   const [privacyModalVisible, setPrivacyModalVisible] = useState(false);
@@ -64,8 +64,11 @@ export default function ProfileScreen() {
   const [searchResults, setSearchResults] = useState<GeocodedAddress[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
-  const [selectedAddressToAdd, setSelectedAddressToAdd] = useState<GeocodedAddress | null>(null);
-  const [activeLabelType, setActiveLabelType] = useState<"casa" | "trabalho" | "outro">("casa");
+  const [selectedAddressToAdd, setSelectedAddressToAdd] =
+    useState<GeocodedAddress | null>(null);
+  const [activeLabelType, setActiveLabelType] = useState<
+    "casa" | "trabalho" | "outro"
+  >("casa");
   const [customLabel, setCustomLabel] = useState("");
   const [savingAddress, setSavingAddress] = useState(false);
   const [customStreet, setCustomStreet] = useState("");
@@ -78,8 +81,14 @@ export default function ProfileScreen() {
 
   // Confirmation Map States
   const [showConfirmationMap, setShowConfirmationMap] = useState(false);
-  const [tempGeocodedCoords, setTempGeocodedCoords] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [initialGeocodedCoords, setInitialGeocodedCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [tempGeocodedCoords, setTempGeocodedCoords] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+  const [initialGeocodedCoords, setInitialGeocodedCoords] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
 
   const loadSavedAddresses = async () => {
     try {
@@ -126,7 +135,9 @@ export default function ProfileScreen() {
       const cleanInput = addressInput.trim().replace(/\D/g, "");
       if (cleanInput.length === 8) {
         try {
-          const res = await fetch(`https://viacep.com.br/ws/${cleanInput}/json/`);
+          const res = await fetch(
+            `https://viacep.com.br/ws/${cleanInput}/json/`,
+          );
           const viaCepData = await res.json();
           if (viaCepData && !viaCepData.erro) {
             const street = viaCepData.logradouro;
@@ -139,19 +150,20 @@ export default function ProfileScreen() {
             setCustomNeighborhood(neighborhood);
             setCustomCity(city);
             setCustomCep(viaCepData.cep);
-             // Fetch coordinates for the street as fallback, including CEP
-            let lat = coords?.latitude ?? -22.9520;
-            let lon = coords?.longitude ?? -46.5420;
+            // Fetch coordinates for the street as fallback, including CEP
+            let lat = coords?.latitude ?? -22.952;
+            let lon = coords?.longitude ?? -46.542;
             try {
               const nomRes = await fetch(
                 `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
-                  `${street}, ${neighborhood}, ${city}, ${viaCepData.cep}, Brasil`
+                  `${street}, ${neighborhood}, ${city}, ${viaCepData.cep}, Brasil`,
                 )}&format=json&limit=1`,
                 {
                   headers: {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                    "User-Agent":
+                      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                   },
-                }
+                },
               );
               const nomData = await nomRes.json();
               if (Array.isArray(nomData) && nomData.length > 0) {
@@ -191,41 +203,57 @@ export default function ProfileScreen() {
 
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
-          queryStr
+          queryStr,
         )}&format=json&limit=5&addressdetails=1&countrycodes=br`,
         {
           headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
           },
-        }
+        },
       );
       const data = await response.json();
-      
-      if (Array.isArray(data) && data.length > 0) {
-        const formatted: GeocodedAddress[] = data.map((item: any, idx: number) => {
-          const { road, house_number, suburb, city, town, village, state, postcode } = item.address || {};
-          const streetPart = road ? (house_number ? `${road}, ${house_number}` : road) : "";
-          const neighborhoodPart = suburb || "";
-          const cityPart = city || town || village || "";
-          const statePart = state || "SP";
-          
-          const parts = [];
-          if (streetPart) parts.push(streetPart);
-          if (neighborhoodPart) parts.push(neighborhoodPart);
-          if (cityPart) parts.push(`${cityPart} - ${statePart}`);
-          
-          const finalName = parts.join(", ") || item.display_name;
 
-          return {
-            id: `${item.place_id}-${idx}`,
-            displayName: finalName,
-            latitude: parseFloat(item.lat),
-            longitude: parseFloat(item.lon),
-            neighborhood: neighborhoodPart || undefined,
-            city: cityPart || undefined,
-            cep: postcode || undefined,
-          };
-        });
+      if (Array.isArray(data) && data.length > 0) {
+        const formatted: GeocodedAddress[] = data.map(
+          (item: any, idx: number) => {
+            const {
+              road,
+              house_number,
+              suburb,
+              city,
+              town,
+              village,
+              state,
+              postcode,
+            } = item.address || {};
+            const streetPart = road
+              ? house_number
+                ? `${road}, ${house_number}`
+                : road
+              : "";
+            const neighborhoodPart = suburb || "";
+            const cityPart = city || town || village || "";
+            const statePart = state || "SP";
+
+            const parts = [];
+            if (streetPart) parts.push(streetPart);
+            if (neighborhoodPart) parts.push(neighborhoodPart);
+            if (cityPart) parts.push(`${cityPart} - ${statePart}`);
+
+            const finalName = parts.join(", ") || item.display_name;
+
+            return {
+              id: `${item.place_id}-${idx}`,
+              displayName: finalName,
+              latitude: parseFloat(item.lat),
+              longitude: parseFloat(item.lon),
+              neighborhood: neighborhoodPart || undefined,
+              city: cityPart || undefined,
+              cep: postcode || undefined,
+            };
+          },
+        );
         setSearchResults(formatted);
       } else {
         setSearchResults([]);
@@ -248,7 +276,7 @@ export default function ProfileScreen() {
     setCustomNeighborhood(item.neighborhood || "");
     setCustomCity(item.city || "Bragança Paulista");
     setCustomCep(item.cep || "");
-    
+
     setSelectedAddressToAdd({
       id: `edit-${item.id}`,
       displayName: item.addressName,
@@ -258,8 +286,16 @@ export default function ProfileScreen() {
       city: item.city,
     });
 
-    setCustomLabel(item.label === "Casa" || item.label === "Trabalho" ? "" : item.label);
-    setActiveLabelType(item.label === "Casa" ? "casa" : item.label === "Trabalho" ? "trabalho" : "outro");
+    setCustomLabel(
+      item.label === "Casa" || item.label === "Trabalho" ? "" : item.label,
+    );
+    setActiveLabelType(
+      item.label === "Casa"
+        ? "casa"
+        : item.label === "Trabalho"
+          ? "trabalho"
+          : "outro",
+    );
     setIsAddingNew(true);
   };
 
@@ -299,13 +335,14 @@ export default function ProfileScreen() {
         try {
           const res = await fetch(
             `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
-              q
+              q,
             )}&format=json&limit=1&addressdetails=1&countrycodes=br`,
             {
               headers: {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "User-Agent":
+                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
               },
-            }
+            },
           );
           const data = await res.json();
           return Array.isArray(data) && data.length > 0 ? data[0] : null;
@@ -377,7 +414,7 @@ export default function ProfileScreen() {
       if (result) {
         resolvedCoords.latitude = parseFloat(result.lat);
         resolvedCoords.longitude = parseFloat(result.lon);
-        
+
         const { suburb, city, town, village } = result.address || {};
         if (suburb && !customNeighborhood.trim()) {
           setCustomNeighborhood(suburb);
@@ -397,7 +434,10 @@ export default function ProfileScreen() {
     setShowConfirmationMap(true);
   };
 
-  const handleConfirmLocationProfile = async (finalCoords: { latitude: number; longitude: number }) => {
+  const handleConfirmLocationProfile = async (finalCoords: {
+    latitude: number;
+    longitude: number;
+  }) => {
     setShowConfirmationMap(false);
     setSavingAddress(true);
 
@@ -412,7 +452,10 @@ export default function ProfileScreen() {
       timestamp: new Date().toISOString(),
     };
     try {
-      await AsyncStorage.setItem("@chamaja_last_geocoded_debug_info", JSON.stringify(debugInfo));
+      await AsyncStorage.setItem(
+        "@chamaja_last_geocoded_debug_info",
+        JSON.stringify(debugInfo),
+      );
     } catch (e) {
       console.warn("Failed to save debug info:", e);
     }
@@ -437,7 +480,10 @@ export default function ProfileScreen() {
     }
     if (customCity.trim()) {
       finalAddressName += `, ${customCity.trim()}`;
-      if (!customCity.toLowerCase().includes("sp") && !customCity.toLowerCase().includes("estado")) {
+      if (
+        !customCity.toLowerCase().includes("sp") &&
+        !customCity.toLowerCase().includes("estado")
+      ) {
         finalAddressName += ` - SP`;
       }
     }
@@ -446,7 +492,9 @@ export default function ProfileScreen() {
     }
 
     const newAddress: SavedAddress = {
-      id: editingAddressId || `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      id:
+        editingAddressId ||
+        `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       label: finalLabel,
       addressName: finalAddressName,
       latitude: finalCoords.latitude,
@@ -461,17 +509,16 @@ export default function ProfileScreen() {
 
     let updatedAddresses;
     if (editingAddressId) {
-      updatedAddresses = savedAddresses.map((addr) => addr.id === editingAddressId ? newAddress : addr);
+      updatedAddresses = savedAddresses.map((addr) =>
+        addr.id === editingAddressId ? newAddress : addr,
+      );
     } else {
       updatedAddresses = [newAddress, ...savedAddresses];
     }
     setSavedAddresses(updatedAddresses);
 
     try {
-      await AsyncStorage.setItem(
-        storageKey,
-        JSON.stringify(updatedAddresses)
-      );
+      await AsyncStorage.setItem(storageKey, JSON.stringify(updatedAddresses));
       // Reset view to saved addresses list
       setIsAddingNew(false);
       setAddressInput("");
@@ -502,10 +549,14 @@ export default function ProfileScreen() {
     if (Platform.OS === "web") {
       await deleteAction();
     } else {
-      Alert.alert("Excluir endereço", "Deseja realmente remover este endereço salvo?", [
-        { text: "Cancelar", style: "cancel" },
-        { text: "Excluir", style: "destructive", onPress: deleteAction },
-      ]);
+      Alert.alert(
+        "Excluir endereço",
+        "Deseja realmente remover este endereço salvo?",
+        [
+          { text: "Cancelar", style: "cancel" },
+          { text: "Excluir", style: "destructive", onPress: deleteAction },
+        ],
+      );
     }
   };
 
@@ -518,7 +569,11 @@ export default function ProfileScreen() {
 
   const handleLogout = async () => {
     if (Platform.OS === "web") {
-      try { await signOut(); } catch (e) { console.error(e); }
+      try {
+        await signOut();
+      } catch (e) {
+        console.error(e);
+      }
     } else {
       Alert.alert("Sair", "Tem certeza que deseja sair?", [
         { text: "Cancelar", style: "cancel" },
@@ -526,7 +581,11 @@ export default function ProfileScreen() {
           text: "Sair",
           style: "destructive",
           onPress: async () => {
-            try { await signOut(); } catch (e) { console.error(e); }
+            try {
+              await signOut();
+            } catch (e) {
+              console.error(e);
+            }
           },
         },
       ]);
@@ -535,82 +594,193 @@ export default function ProfileScreen() {
 
   const MENU_ITEMS = [
     { id: "addresses", label: "Meus endereços", icon: "place" },
-    { id: "favorites", label: "Favoritos", icon: "favorite-border", badge: favorites.length > 0 ? String(favorites.length) : undefined },
-    { id: "notifications", label: "Notificações", icon: "notifications-none", badge: unreadCount > 0 ? String(unreadCount) : undefined },
-    { id: "provider", label: isProvider ? "Minha área de prestador" : "Seja um prestador", icon: isProvider ? "work" : "add-business", highlight: !isProvider },
+    {
+      id: "favorites",
+      label: "Favoritos",
+      icon: "favorite-border",
+      badge: favorites.length > 0 ? String(favorites.length) : undefined,
+    },
+    {
+      id: "notifications",
+      label: "Notificações",
+      icon: "notifications-none",
+      badge: unreadCount > 0 ? String(unreadCount) : undefined,
+    },
+    {
+      id: "provider",
+      label: isProvider ? "Minha área de prestador" : "Seja um prestador",
+      icon: isProvider ? "work" : "add-business",
+      highlight: !isProvider,
+    },
     { id: "help", label: "Ajuda e suporte", icon: "help-outline" },
     { id: "about", label: "Sobre o XamaJá", icon: "info-outline" },
     { id: "privacy", label: "Política de Privacidade", icon: "security" },
     { id: "terms", label: "Termos de Uso", icon: "gavel" },
     { id: "debug_location", label: "Debug de Localização", icon: "bug-report" },
-    ...(isAdmin ? [{ id: "admin", label: "Painel Admin", icon: "admin-panel-settings", isAdmin: true }] : []),
+    ...(isAdmin
+      ? [
+          {
+            id: "admin",
+            label: "Painel Admin",
+            icon: "admin-panel-settings",
+            isAdmin: true,
+          },
+        ]
+      : []),
   ] as const;
 
   const handleMenuPress = (itemId: string) => {
     switch (itemId) {
-      case "addresses": setAddressesModalVisible(true); break;
-      case "favorites": router.push("/favorites" as any); break;
-      case "notifications": router.push("/notifications" as any); break;
-      case "provider": router.push(isProvider ? "/provider-dashboard" : "/become-provider" as any); break;
-      case "admin": router.push("/admin" as any); break;
-      case "help": setHelpModalVisible(true); break;
-      case "about": setAboutModalVisible(true); break;
-      case "privacy": setPrivacyModalVisible(true); break;
-      case "terms": setTermsModalVisible(true); break;
-      case "debug_location": router.push("/dev/location-debug" as any); break;
+      case "addresses":
+        setAddressesModalVisible(true);
+        break;
+      case "favorites":
+        router.push("/favorites" as any);
+        break;
+      case "notifications":
+        router.push("/notifications" as any);
+        break;
+      case "provider":
+        router.push(
+          isProvider ? "/provider-dashboard" : ("/become-provider" as any),
+        );
+        break;
+      case "admin":
+        router.push("/admin" as any);
+        break;
+      case "help":
+        setHelpModalVisible(true);
+        break;
+      case "about":
+        setAboutModalVisible(true);
+        break;
+      case "privacy":
+        setPrivacyModalVisible(true);
+        break;
+      case "terms":
+        setTermsModalVisible(true);
+        break;
+      case "debug_location":
+        router.push("/dev/location-debug" as any);
+        break;
     }
   };
 
-  const displayAvatar = user?.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=80";
+  const displayAvatar =
+    user?.avatar ||
+    "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=80";
 
   return (
     <ScreenContainer edges={["left", "right"]} className="">
       {/* Header */}
       <LinearGradient
-        colors={colors.background === "#F8F9FA" ? ["#FFFFFF", "#F8F9FA"] : ["#1E293B", "#0F172A"]}
+        colors={
+          colors.background === "#F8F9FA"
+            ? ["#FFFFFF", "#F8F9FA"]
+            : ["#1E293B", "#0F172A"]
+        }
         style={[styles.header, { borderBottomColor: colors.border }]}
       >
-        <Text style={[styles.headerTitle, { color: colors.foreground }]}>Perfil</Text>
+        <Text style={[styles.headerTitle, { color: colors.foreground }]}>
+          Perfil
+        </Text>
       </LinearGradient>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
         {/* User Card */}
-        <View style={[styles.userCard, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}>
+        <View
+          style={[
+            styles.userCard,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+              borderWidth: 1,
+            },
+          ]}
+        >
           <View style={styles.avatarWrapper}>
             <Image source={{ uri: displayAvatar }} style={styles.avatar} />
             {isProvider && (
-              <View style={[styles.providerBadge, { backgroundColor: colors.primary, borderColor: colors.surface }]}>
+              <View
+                style={[
+                  styles.providerBadge,
+                  {
+                    backgroundColor: colors.primary,
+                    borderColor: colors.surface,
+                  },
+                ]}
+              >
                 <MaterialIcons name="work" size={10} color="#FFFFFF" />
               </View>
             )}
           </View>
           <View style={styles.userInfo}>
-            <Text style={[styles.userName, { color: colors.foreground }]}>{user?.name || "Usuário"}</Text>
-            <Text style={[styles.userEmail, { color: colors.muted }]}>{user?.email}</Text>
+            <Text style={[styles.userName, { color: colors.foreground }]}>
+              {user?.name || "Usuário"}
+            </Text>
+            <Text style={[styles.userEmail, { color: colors.muted }]}>
+              {user?.email}
+            </Text>
             {isProvider && provider && (
-              <View style={[styles.providerTag, { backgroundColor: colors.primary + "15" }]}>
-                <MaterialIcons name="workspace-premium" size={11} color={colors.primary} />
-                <Text style={[styles.providerTagText, { color: colors.primary }]}>Prestador • {provider.category}</Text>
+              <View
+                style={[
+                  styles.providerTag,
+                  { backgroundColor: colors.primary + "15" },
+                ]}
+              >
+                <MaterialIcons
+                  name="workspace-premium"
+                  size={11}
+                  color={colors.primary}
+                />
+                <Text
+                  style={[styles.providerTagText, { color: colors.primary }]}
+                >
+                  Prestador • {provider.category}
+                </Text>
               </View>
             )}
             {isAdmin && (
-              <View style={[styles.providerTag, { backgroundColor: "#EFF6FF" }]}>
-                <MaterialIcons name="admin-panel-settings" size={11} color="#2563EB" />
-                <Text style={[styles.providerTagText, { color: "#2563EB" }]}>Administrador</Text>
+              <View
+                style={[styles.providerTag, { backgroundColor: "#EFF6FF" }]}
+              >
+                <MaterialIcons
+                  name="admin-panel-settings"
+                  size={11}
+                  color="#2563EB"
+                />
+                <Text style={[styles.providerTagText, { color: "#2563EB" }]}>
+                  Administrador
+                </Text>
               </View>
             )}
           </View>
           <Pressable
-            style={({ pressed }) => [styles.editBtn, { backgroundColor: colors.primary + "15" }, pressed && { opacity: 0.6 }]}
+            style={({ pressed }) => [
+              styles.editBtn,
+              { backgroundColor: colors.primary + "15" },
+              pressed && { opacity: 0.6 },
+            ]}
             onPress={() => router.push("/edit-profile" as any)}
           >
             <MaterialIcons name="edit" size={18} color={colors.primary} />
           </Pressable>
         </View>
 
-
         {/* Menu */}
-        <View style={[styles.menuSection, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}>
+        <View
+          style={[
+            styles.menuSection,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+              borderWidth: 1,
+            },
+          ]}
+        >
           {MENU_ITEMS.map((item, index) => {
             const isLast = index === MENU_ITEMS.length - 1;
             const isAdminItem = "isAdmin" in item && item.isAdmin;
@@ -620,39 +790,58 @@ export default function ProfileScreen() {
                 key={item.id}
                 style={({ pressed }) => [
                   styles.menuItem,
-                  !isLast && [styles.menuItemBorder, { borderBottomColor: colors.border }],
+                  !isLast && [
+                    styles.menuItemBorder,
+                    { borderBottomColor: colors.border },
+                  ],
                   pressed && { backgroundColor: colors.background },
                   isAdminItem && { backgroundColor: "#2563EB10" },
                   isHighlight && { backgroundColor: colors.primary + "10" },
                 ]}
                 onPress={() => handleMenuPress(item.id)}
               >
-                <View style={[
-                  styles.menuIcon,
-                  { backgroundColor: colors.background },
-                  isAdminItem && { backgroundColor: "#DBEAFE" },
-                  isHighlight && { backgroundColor: colors.primary + "20" },
-                ]}>
+                <View
+                  style={[
+                    styles.menuIcon,
+                    { backgroundColor: colors.background },
+                    isAdminItem && { backgroundColor: "#DBEAFE" },
+                    isHighlight && { backgroundColor: colors.primary + "20" },
+                  ]}
+                >
                   <MaterialIcons
                     name={item.icon as any}
                     size={20}
-                    color={isAdminItem ? "#2563EB" : isHighlight ? colors.primary : colors.muted}
+                    color={
+                      isAdminItem
+                        ? "#2563EB"
+                        : isHighlight
+                          ? colors.primary
+                          : colors.muted
+                    }
                   />
                 </View>
-                <Text style={[
-                  styles.menuLabel,
-                  { color: colors.foreground },
-                  isAdminItem && { color: "#2563EB", fontWeight: "700" },
-                  isHighlight && { color: colors.primary, fontWeight: "700" },
-                ]}>
+                <Text
+                  style={[
+                    styles.menuLabel,
+                    { color: colors.foreground },
+                    isAdminItem && { color: "#2563EB", fontWeight: "700" },
+                    isHighlight && { color: colors.primary, fontWeight: "700" },
+                  ]}
+                >
                   {item.label}
                 </Text>
                 {"badge" in item && item.badge && (
-                  <View style={[styles.badge, { backgroundColor: colors.primary }]}>
+                  <View
+                    style={[styles.badge, { backgroundColor: colors.primary }]}
+                  >
                     <Text style={styles.badgeText}>{item.badge}</Text>
                   </View>
                 )}
-                <MaterialIcons name="chevron-right" size={20} color={colors.muted} />
+                <MaterialIcons
+                  name="chevron-right"
+                  size={20}
+                  color={colors.muted}
+                />
               </Pressable>
             );
           })}
@@ -661,9 +850,9 @@ export default function ProfileScreen() {
         {/* Logout */}
         <Pressable
           style={({ pressed }) => [
-            styles.logoutBtn, 
+            styles.logoutBtn,
             { backgroundColor: colors.background, borderColor: "#EF444450" },
-            pressed && { opacity: 0.8 }
+            pressed && { opacity: 0.8 },
           ]}
           onPress={handleLogout}
         >
@@ -689,8 +878,12 @@ export default function ProfileScreen() {
         }}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+          <View
+            style={[styles.modalContent, { backgroundColor: colors.surface }]}
+          >
+            <View
+              style={[styles.modalHeader, { borderBottomColor: colors.border }]}
+            >
               <Text style={[styles.modalTitle, { color: colors.foreground }]}>
                 {isAddingNew ? "Novo Endereço" : "Meus Endereços"}
               </Text>
@@ -705,14 +898,29 @@ export default function ProfileScreen() {
                     setAddressesModalVisible(false);
                   }
                 }}
-                style={({ pressed }) => [styles.closeButton, pressed && { opacity: 0.7 }]}
+                style={({ pressed }) => [
+                  styles.closeButton,
+                  pressed && { opacity: 0.7 },
+                ]}
               >
-                <MaterialIcons name={isAddingNew ? "arrow-back" : "close"} size={24} color={colors.muted} />
+                <MaterialIcons
+                  name={isAddingNew ? "arrow-back" : "close"}
+                  size={24}
+                  color={colors.muted}
+                />
               </Pressable>
             </View>
 
             {showConfirmationMap && tempGeocodedCoords ? (
-              <View style={{ flex: 1, minHeight: 350, width: "100%", borderRadius: 14, overflow: "hidden" }}>
+              <View
+                style={{
+                  flex: 1,
+                  minHeight: 350,
+                  width: "100%",
+                  borderRadius: 14,
+                  overflow: "hidden",
+                }}
+              >
                 <LocationConfirmationMap
                   initialCoords={tempGeocodedCoords}
                   onConfirm={handleConfirmLocationProfile}
@@ -721,35 +929,82 @@ export default function ProfileScreen() {
               </View>
             ) : isAddingNew ? (
               // TELA DE ADICIONAR NOVO ENDEREÇO
-              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalBody} keyboardShouldPersistTaps="handled">
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.modalBody}
+                keyboardShouldPersistTaps="handled"
+              >
                 {selectedAddressToAdd ? (
                   // SUB-FLUXO: DEFINIR RÓTULO DO ENDEREÇO SELECIONADO
                   <View style={styles.labelForm}>
-                    <Text style={[styles.policySectionTitle, { color: colors.foreground, marginTop: 0 }]}>
+                    <Text
+                      style={[
+                        styles.policySectionTitle,
+                        { color: colors.foreground, marginTop: 0 },
+                      ]}
+                    >
                       Como quer salvar esse endereço?
                     </Text>
-                    <Text style={{ color: colors.muted, fontSize: 13, marginBottom: 16 }}>
+                    <Text
+                      style={{
+                        color: colors.muted,
+                        fontSize: 13,
+                        marginBottom: 16,
+                      }}
+                    >
                       {selectedAddressToAdd.displayName}
                     </Text>
 
                     {/* Inputs para Rua, Bairro, CEP, Número e Complemento */}
                     <View style={{ gap: 12, marginBottom: 16 }}>
                       <View style={{ gap: 6 }}>
-                        <Text style={{ fontSize: 12, fontWeight: "700", color: colors.muted }}>Rua</Text>
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            fontWeight: "700",
+                            color: colors.muted,
+                          }}
+                        >
+                          Rua
+                        </Text>
                         <TextInput
-                          style={[styles.inputField, { backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground, marginBottom: 0 }]}
+                          style={[
+                            styles.inputField,
+                            {
+                              backgroundColor: colors.background,
+                              borderColor: colors.border,
+                              color: colors.foreground,
+                              marginBottom: 0,
+                            },
+                          ]}
                           placeholder="Rua..."
                           placeholderTextColor={colors.muted}
                           value={customStreet}
                           onChangeText={setCustomStreet}
                         />
                       </View>
-                      
+
                       <View style={{ flexDirection: "row", gap: 12 }}>
                         <View style={{ flex: 1, gap: 6 }}>
-                          <Text style={{ fontSize: 12, fontWeight: "700", color: colors.muted }}>Bairro</Text>
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              fontWeight: "700",
+                              color: colors.muted,
+                            }}
+                          >
+                            Bairro
+                          </Text>
                           <TextInput
-                            style={[styles.inputField, { backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground, marginBottom: 0 }]}
+                            style={[
+                              styles.inputField,
+                              {
+                                backgroundColor: colors.background,
+                                borderColor: colors.border,
+                                color: colors.foreground,
+                                marginBottom: 0,
+                              },
+                            ]}
                             placeholder="Bairro..."
                             placeholderTextColor={colors.muted}
                             value={customNeighborhood}
@@ -757,9 +1012,25 @@ export default function ProfileScreen() {
                           />
                         </View>
                         <View style={{ flex: 1, gap: 6 }}>
-                          <Text style={{ fontSize: 12, fontWeight: "700", color: colors.muted }}>CEP</Text>
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              fontWeight: "700",
+                              color: colors.muted,
+                            }}
+                          >
+                            CEP
+                          </Text>
                           <TextInput
-                            style={[styles.inputField, { backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground, marginBottom: 0 }]}
+                            style={[
+                              styles.inputField,
+                              {
+                                backgroundColor: colors.background,
+                                borderColor: colors.border,
+                                color: colors.foreground,
+                                marginBottom: 0,
+                              },
+                            ]}
                             placeholder="Ex: 12900-000"
                             placeholderTextColor={colors.muted}
                             value={customCep}
@@ -778,9 +1049,25 @@ export default function ProfileScreen() {
 
                       <View style={{ flexDirection: "row", gap: 12 }}>
                         <View style={{ flex: 1, gap: 6 }}>
-                          <Text style={{ fontSize: 12, fontWeight: "700", color: colors.muted }}>Número *</Text>
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              fontWeight: "700",
+                              color: colors.muted,
+                            }}
+                          >
+                            Número *
+                          </Text>
                           <TextInput
-                            style={[styles.inputField, { backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground, marginBottom: 0 }]}
+                            style={[
+                              styles.inputField,
+                              {
+                                backgroundColor: colors.background,
+                                borderColor: colors.border,
+                                color: colors.foreground,
+                                marginBottom: 0,
+                              },
+                            ]}
                             placeholder="Ex: 997"
                             placeholderTextColor={colors.muted}
                             value={customNumber}
@@ -789,9 +1076,25 @@ export default function ProfileScreen() {
                           />
                         </View>
                         <View style={{ flex: 1, gap: 6 }}>
-                          <Text style={{ fontSize: 12, fontWeight: "700", color: colors.muted }}>Complemento</Text>
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              fontWeight: "700",
+                              color: colors.muted,
+                            }}
+                          >
+                            Complemento
+                          </Text>
                           <TextInput
-                            style={[styles.inputField, { backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground, marginBottom: 0 }]}
+                            style={[
+                              styles.inputField,
+                              {
+                                backgroundColor: colors.background,
+                                borderColor: colors.border,
+                                color: colors.foreground,
+                                marginBottom: 0,
+                              },
+                            ]}
                             placeholder="Ex: Apto 12 (Opcional)"
                             placeholderTextColor={colors.muted}
                             value={customComplement}
@@ -806,7 +1109,7 @@ export default function ProfileScreen() {
                       {[
                         { type: "casa", label: "Casa", icon: "home" },
                         { type: "trabalho", label: "Trabalho", icon: "work" },
-                        { type: "outro", label: "Outro", icon: "place" }
+                        { type: "outro", label: "Outro", icon: "place" },
                       ].map((chip) => {
                         const isSelected = activeLabelType === chip.type;
                         return (
@@ -815,11 +1118,31 @@ export default function ProfileScreen() {
                             onPress={() => setActiveLabelType(chip.type as any)}
                             style={[
                               styles.chipButton,
-                              { backgroundColor: isSelected ? colors.primary : colors.background, borderColor: isSelected ? colors.primary : colors.border }
+                              {
+                                backgroundColor: isSelected
+                                  ? colors.primary
+                                  : colors.background,
+                                borderColor: isSelected
+                                  ? colors.primary
+                                  : colors.border,
+                              },
                             ]}
                           >
-                            <MaterialIcons name={chip.icon as any} size={18} color={isSelected ? "#FFFFFF" : colors.muted} />
-                            <Text style={[styles.chipText, { color: isSelected ? "#FFFFFF" : colors.foreground }]}>
+                            <MaterialIcons
+                              name={chip.icon as any}
+                              size={18}
+                              color={isSelected ? "#FFFFFF" : colors.muted}
+                            />
+                            <Text
+                              style={[
+                                styles.chipText,
+                                {
+                                  color: isSelected
+                                    ? "#FFFFFF"
+                                    : colors.foreground,
+                                },
+                              ]}
+                            >
                               {chip.label}
                             </Text>
                           </Pressable>
@@ -829,7 +1152,14 @@ export default function ProfileScreen() {
 
                     {activeLabelType === "outro" && (
                       <TextInput
-                        style={[styles.inputField, { backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground }]}
+                        style={[
+                          styles.inputField,
+                          {
+                            backgroundColor: colors.background,
+                            borderColor: colors.border,
+                            color: colors.foreground,
+                          },
+                        ]}
                         placeholder="Ex: Faculdade, Casa da Mãe"
                         placeholderTextColor={colors.muted}
                         value={customLabel}
@@ -838,22 +1168,43 @@ export default function ProfileScreen() {
                       />
                     )}
 
-                    <View style={{ flexDirection: "row", gap: 12, marginTop: 24 }}>
+                    <View
+                      style={{ flexDirection: "row", gap: 12, marginTop: 24 }}
+                    >
                       <Pressable
                         onPress={() => setSelectedAddressToAdd(null)}
-                        style={[styles.actionButtonCancel, { backgroundColor: colors.background, borderColor: colors.border }]}
+                        style={[
+                          styles.actionButtonCancel,
+                          {
+                            backgroundColor: colors.background,
+                            borderColor: colors.border,
+                          },
+                        ]}
                       >
-                        <Text style={{ color: colors.foreground, fontWeight: "600" }}>Voltar</Text>
+                        <Text
+                          style={{
+                            color: colors.foreground,
+                            fontWeight: "600",
+                          }}
+                        >
+                          Voltar
+                        </Text>
                       </Pressable>
                       <Pressable
                         onPress={handleSaveAddress}
-                        style={[styles.actionButtonConfirm, { backgroundColor: colors.primary }, savingAddress && { opacity: 0.7 }]}
+                        style={[
+                          styles.actionButtonConfirm,
+                          { backgroundColor: colors.primary },
+                          savingAddress && { opacity: 0.7 },
+                        ]}
                         disabled={savingAddress}
                       >
                         {savingAddress ? (
                           <ActivityIndicator size="small" color="#FFFFFF" />
                         ) : (
-                          <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>Salvar Endereço</Text>
+                          <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>
+                            Salvar Endereço
+                          </Text>
                         )}
                       </Pressable>
                     </View>
@@ -864,10 +1215,17 @@ export default function ProfileScreen() {
                     <Text style={{ color: colors.muted, fontSize: 14 }}>
                       Busque o endereço completo para cadastrar
                     </Text>
-                    
+
                     <View style={{ flexDirection: "row", gap: 8 }}>
                       <TextInput
-                        style={[styles.searchAddressInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground }]}
+                        style={[
+                          styles.searchAddressInput,
+                          {
+                            backgroundColor: colors.background,
+                            borderColor: colors.border,
+                            color: colors.foreground,
+                          },
+                        ]}
                         placeholder="Rua, número, bairro..."
                         placeholderTextColor={colors.muted}
                         value={addressInput}
@@ -878,12 +1236,17 @@ export default function ProfileScreen() {
                       />
                       <Pressable
                         onPress={handleSearchAddress}
-                        style={[styles.searchAddressBtn, { backgroundColor: colors.primary }]}
+                        style={[
+                          styles.searchAddressBtn,
+                          { backgroundColor: colors.primary },
+                        ]}
                       >
                         {searching ? (
                           <ActivityIndicator size="small" color="#FFFFFF" />
                         ) : (
-                          <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>Buscar</Text>
+                          <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>
+                            Buscar
+                          </Text>
                         )}
                       </Pressable>
                     </View>
@@ -894,10 +1257,10 @@ export default function ProfileScreen() {
                           const manualItem: GeocodedAddress = {
                             id: `manual-${Date.now()}`,
                             displayName: addressInput.trim(),
-                            latitude: coords?.latitude ?? -22.9520,
-                            longitude: coords?.longitude ?? -46.5420,
+                            latitude: coords?.latitude ?? -22.952,
+                            longitude: coords?.longitude ?? -46.542,
                           };
-                          
+
                           let parsedNumber = "";
                           const numberMatch = addressInput.match(/\b\d+\b/);
                           if (numberMatch) {
@@ -905,8 +1268,13 @@ export default function ProfileScreen() {
                           }
 
                           setSelectedAddressToAdd(manualItem);
-                          const streetNameWithoutNumber = addressInput.replace(/\b\d+\b/g, "").replace(/\s+,/g, ",").trim();
-                          setCustomStreet(streetNameWithoutNumber || addressInput.trim());
+                          const streetNameWithoutNumber = addressInput
+                            .replace(/\b\d+\b/g, "")
+                            .replace(/\s+,/g, ",")
+                            .trim();
+                          setCustomStreet(
+                            streetNameWithoutNumber || addressInput.trim(),
+                          );
                           setCustomNeighborhood("");
                           setCustomCity("Bragança Paulista");
                           setCustomCep("");
@@ -915,17 +1283,35 @@ export default function ProfileScreen() {
                           setCustomLabel("");
                           setActiveLabelType("casa");
                         }}
-                        style={[styles.manualAddRow, { borderColor: colors.primary + "40", backgroundColor: colors.background }]}
+                        style={[
+                          styles.manualAddRow,
+                          {
+                            borderColor: colors.primary + "40",
+                            backgroundColor: colors.background,
+                          },
+                        ]}
                       >
-                        <MaterialIcons name="add-location" size={20} color={colors.primary} />
-                        <Text style={[styles.manualAddText, { color: colors.primary }]} numberOfLines={1}>
+                        <MaterialIcons
+                          name="add-location"
+                          size={20}
+                          color={colors.primary}
+                        />
+                        <Text
+                          style={[
+                            styles.manualAddText,
+                            { color: colors.primary },
+                          ]}
+                          numberOfLines={1}
+                        >
                           Adicionar "{addressInput.trim()}" manualmente
                         </Text>
                       </Pressable>
                     )}
 
                     {searchError && (
-                      <Text style={{ color: "#EF4444", fontSize: 13 }}>{searchError}</Text>
+                      <Text style={{ color: "#EF4444", fontSize: 13 }}>
+                        {searchError}
+                      </Text>
                     )}
 
                     {searchResults.length > 0 && (
@@ -937,8 +1323,13 @@ export default function ProfileScreen() {
                               setSelectedAddressToAdd(item);
                               const parts = item.displayName.split(", ");
                               const street = parts[0] || "";
-                              const neighborhood = item.neighborhood || parts[1] || "";
-                              const city = item.city || (parts[2] ? parts[2].split(" - ")[0] : "Bragança Paulista");
+                              const neighborhood =
+                                item.neighborhood || parts[1] || "";
+                              const city =
+                                item.city ||
+                                (parts[2]
+                                  ? parts[2].split(" - ")[0]
+                                  : "Bragança Paulista");
 
                               // Parse number from addressInput
                               let parsedNumber = "";
@@ -959,19 +1350,37 @@ export default function ProfileScreen() {
                             style={({ pressed }) => [
                               styles.searchResultItem,
                               { borderBottomColor: colors.border },
-                              pressed && { backgroundColor: colors.background }
+                              pressed && { backgroundColor: colors.background },
                             ]}
                           >
-                            <MaterialIcons name="location-on" size={18} color={colors.muted} />
+                            <MaterialIcons
+                              name="location-on"
+                              size={18}
+                              color={colors.muted}
+                            />
                             <View style={{ flex: 1 }}>
-                              <Text style={{ color: colors.foreground, fontWeight: "600", fontSize: 13 }} numberOfLines={1}>
+                              <Text
+                                style={{
+                                  color: colors.foreground,
+                                  fontWeight: "600",
+                                  fontSize: 13,
+                                }}
+                                numberOfLines={1}
+                              >
                                 {item.displayName.split(",")[0]}
                               </Text>
-                              <Text style={{ color: colors.muted, fontSize: 12 }} numberOfLines={2}>
+                              <Text
+                                style={{ color: colors.muted, fontSize: 12 }}
+                                numberOfLines={2}
+                              >
                                 {item.displayName}
                               </Text>
                             </View>
-                            <MaterialIcons name="add" size={20} color={colors.primary} />
+                            <MaterialIcons
+                              name="add"
+                              size={20}
+                              color={colors.primary}
+                            />
                           </Pressable>
                         ))}
                       </View>
@@ -981,23 +1390,50 @@ export default function ProfileScreen() {
               </ScrollView>
             ) : (
               // LISTA DE ENDEREÇOS SALVOS
-              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalBody}>
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.modalBody}
+              >
                 {savedAddresses.length > 0 ? (
                   <View style={{ gap: 12 }}>
                     {savedAddresses.map((item) => (
                       <View
                         key={item.id}
-                        style={[styles.addressItemRow, { backgroundColor: colors.background, borderColor: colors.border }]}
+                        style={[
+                          styles.addressItemRow,
+                          {
+                            backgroundColor: colors.background,
+                            borderColor: colors.border,
+                          },
+                        ]}
                       >
-                        <View style={[styles.addressIconWrapper, { backgroundColor: colors.primary + "15" }]}>
-                          <MaterialIcons name={getLabelIcon(item.label) as any} size={20} color={colors.primary} />
+                        <View
+                          style={[
+                            styles.addressIconWrapper,
+                            { backgroundColor: colors.primary + "15" },
+                          ]}
+                        >
+                          <MaterialIcons
+                            name={getLabelIcon(item.label) as any}
+                            size={20}
+                            color={colors.primary}
+                          />
                         </View>
-                        
+
                         <View style={{ flex: 1 }}>
-                          <Text style={{ color: colors.foreground, fontWeight: "700", fontSize: 14 }}>
+                          <Text
+                            style={{
+                              color: colors.foreground,
+                              fontWeight: "700",
+                              fontSize: 14,
+                            }}
+                          >
                             {item.label}
                           </Text>
-                          <Text style={{ color: colors.muted, fontSize: 12 }} numberOfLines={1}>
+                          <Text
+                            style={{ color: colors.muted, fontSize: 12 }}
+                            numberOfLines={1}
+                          >
                             {item.addressName}
                           </Text>
                         </View>
@@ -1005,26 +1441,52 @@ export default function ProfileScreen() {
                         {/* Botão de Editar */}
                         <Pressable
                           onPress={(e) => handleEditSavedAddress(item, e)}
-                          style={({ pressed }) => [{ padding: 8, marginRight: 4 }, pressed && { opacity: 0.6 }]}
+                          style={({ pressed }) => [
+                            { padding: 8, marginRight: 4 },
+                            pressed && { opacity: 0.6 },
+                          ]}
                         >
-                          <MaterialIcons name="edit" size={20} color={colors.primary} />
+                          <MaterialIcons
+                            name="edit"
+                            size={20}
+                            color={colors.primary}
+                          />
                         </Pressable>
 
                         {/* Botão de Excluir */}
                         <Pressable
                           onPress={() => handleDeleteAddress(item.id)}
-                          style={({ pressed }) => [styles.deleteBtnRow, pressed && { opacity: 0.6 }]}
+                          style={({ pressed }) => [
+                            styles.deleteBtnRow,
+                            pressed && { opacity: 0.6 },
+                          ]}
                         >
-                          <MaterialIcons name="delete-outline" size={20} color="#EF4444" />
+                          <MaterialIcons
+                            name="delete-outline"
+                            size={20}
+                            color="#EF4444"
+                          />
                         </Pressable>
                       </View>
                     ))}
                   </View>
                 ) : (
                   <View style={styles.emptyAddressesView}>
-                    <MaterialIcons name="place" size={48} color={colors.muted} />
-                    <Text style={{ color: colors.muted, textAlign: "center", fontSize: 14, marginTop: 8 }}>
-                      Nenhum endereço cadastrado. Salve seus locais frequentes para facilitar o cálculo de distâncias.
+                    <MaterialIcons
+                      name="place"
+                      size={48}
+                      color={colors.muted}
+                    />
+                    <Text
+                      style={{
+                        color: colors.muted,
+                        textAlign: "center",
+                        fontSize: 14,
+                        marginTop: 8,
+                      }}
+                    >
+                      Nenhum endereço cadastrado. Salve seus locais frequentes
+                      para facilitar o cálculo de distâncias.
                     </Text>
                   </View>
                 )}
@@ -1034,11 +1496,13 @@ export default function ProfileScreen() {
                   style={({ pressed }) => [
                     styles.addNewAddressBtn,
                     { backgroundColor: colors.primary },
-                    pressed && { opacity: 0.9 }
+                    pressed && { opacity: 0.9 },
                   ]}
                 >
                   <MaterialIcons name="add" size={20} color="#FFFFFF" />
-                  <Text style={styles.addNewAddressBtnText}>Adicionar Endereço</Text>
+                  <Text style={styles.addNewAddressBtnText}>
+                    Adicionar Endereço
+                  </Text>
                 </Pressable>
               </ScrollView>
             )}
@@ -1054,25 +1518,45 @@ export default function ProfileScreen() {
         onRequestClose={() => setPrivacyModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.foreground }]}>Política de Privacidade</Text>
+          <View
+            style={[styles.modalContent, { backgroundColor: colors.surface }]}
+          >
+            <View
+              style={[styles.modalHeader, { borderBottomColor: colors.border }]}
+            >
+              <Text style={[styles.modalTitle, { color: colors.foreground }]}>
+                Política de Privacidade
+              </Text>
               <Pressable
                 onPress={() => setPrivacyModalVisible(false)}
-                style={({ pressed }) => [styles.closeButton, pressed && { opacity: 0.7 }]}
+                style={({ pressed }) => [
+                  styles.closeButton,
+                  pressed && { opacity: 0.7 },
+                ]}
               >
                 <MaterialIcons name="close" size={24} color={colors.muted} />
               </Pressable>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalBody}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.modalBody}
+            >
               <Text style={[styles.policyIntro, { color: colors.foreground }]}>
-                Bem-vindo ao XamaJá. Sua privacidade é importante para nós. Esta Política de Privacidade explica como coletamos, utilizamos, armazenamos e protegemos suas informações ao utilizar nosso aplicativo.
+                Bem-vindo ao XamaJá. Sua privacidade é importante para nós. Esta
+                Política de Privacidade explica como coletamos, utilizamos,
+                armazenamos e protegemos suas informações ao utilizar nosso
+                aplicativo.
               </Text>
 
-              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>1. INFORMAÇÕES COLETADAS</Text>
+              <Text
+                style={[styles.policySectionTitle, { color: colors.primary }]}
+              >
+                1. INFORMAÇÕES COLETADAS
+              </Text>
               <Text style={[styles.policyText, { color: colors.foreground }]}>
-                O XamaJá pode coletar as seguintes informações fornecidas pelo usuário:
+                O XamaJá pode coletar as seguintes informações fornecidas pelo
+                usuário:
               </Text>
               <View style={styles.bulletList}>
                 {[
@@ -1082,17 +1566,29 @@ export default function ProfileScreen() {
                   "Foto de perfil",
                   "Endereços cadastrados",
                   "Informações relacionadas a serviços e agendamentos",
-                  "Avaliações realizadas dentro da plataforma"
+                  "Avaliações realizadas dentro da plataforma",
                 ].map((item, idx) => (
                   <View key={idx} style={styles.bulletRow}>
-                    <Text style={[styles.bulletDot, { color: colors.primary }]}>•</Text>
-                    <Text style={[styles.bulletText, { color: colors.foreground }]}>{item}</Text>
+                    <Text style={[styles.bulletDot, { color: colors.primary }]}>
+                      •
+                    </Text>
+                    <Text
+                      style={[styles.bulletText, { color: colors.foreground }]}
+                    >
+                      {item}
+                    </Text>
                   </View>
                 ))}
               </View>
 
-              <Text style={[styles.policyText, { color: colors.foreground, marginTop: 12 }]}>
-                Também podemos coletar automaticamente algumas informações do dispositivo e uso do aplicativo:
+              <Text
+                style={[
+                  styles.policyText,
+                  { color: colors.foreground, marginTop: 12 },
+                ]}
+              >
+                Também podemos coletar automaticamente algumas informações do
+                dispositivo e uso do aplicativo:
               </Text>
               <View style={styles.bulletList}>
                 {[
@@ -1100,16 +1596,26 @@ export default function ProfileScreen() {
                   "Sistema operacional",
                   "Endereço IP",
                   "Dados de navegação e utilização do aplicativo",
-                  "Informações de desempenho e diagnóstico"
+                  "Informações de desempenho e diagnóstico",
                 ].map((item, idx) => (
                   <View key={idx} style={styles.bulletRow}>
-                    <Text style={[styles.bulletDot, { color: colors.primary }]}>•</Text>
-                    <Text style={[styles.bulletText, { color: colors.foreground }]}>{item}</Text>
+                    <Text style={[styles.bulletDot, { color: colors.primary }]}>
+                      •
+                    </Text>
+                    <Text
+                      style={[styles.bulletText, { color: colors.foreground }]}
+                    >
+                      {item}
+                    </Text>
                   </View>
                 ))}
               </View>
 
-              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>2. COMO UTILIZAMOS SUAS INFORMAÇÕES</Text>
+              <Text
+                style={[styles.policySectionTitle, { color: colors.primary }]}
+              >
+                2. COMO UTILIZAMOS SUAS INFORMAÇÕES
+              </Text>
               <Text style={[styles.policyText, { color: colors.foreground }]}>
                 Utilizamos seus dados para:
               </Text>
@@ -1122,112 +1628,243 @@ export default function ProfileScreen() {
                   "Personalizar recomendações and conteúdos",
                   "Enviar notificações importantes",
                   "Garantir segurança, autenticação e prevenção contra fraudes",
-                  "Cumprir obrigações legais e regulatórias"
+                  "Cumprir obrigações legais e regulatórias",
                 ].map((item, idx) => (
                   <View key={idx} style={styles.bulletRow}>
-                    <Text style={[styles.bulletDot, { color: colors.primary }]}>•</Text>
-                    <Text style={[styles.bulletText, { color: colors.foreground }]}>{item}</Text>
+                    <Text style={[styles.bulletDot, { color: colors.primary }]}>
+                      •
+                    </Text>
+                    <Text
+                      style={[styles.bulletText, { color: colors.foreground }]}
+                    >
+                      {item}
+                    </Text>
                   </View>
                 ))}
               </View>
 
-              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>3. COMPARTILHAMENTO DE INFORMAÇÕES</Text>
+              <Text
+                style={[styles.policySectionTitle, { color: colors.primary }]}
+              >
+                3. COMPARTILHAMENTO DE INFORMAÇÕES
+              </Text>
               <Text style={[styles.policyText, { color: colors.foreground }]}>
                 O XamaJá não vende informações pessoais dos usuários.
               </Text>
-              <Text style={[styles.policyText, { color: colors.foreground, marginTop: 8 }]}>
-                As informações poderão ser compartilhadas apenas quando necessário para:
+              <Text
+                style={[
+                  styles.policyText,
+                  { color: colors.foreground, marginTop: 8 },
+                ]}
+              >
+                As informações poderão ser compartilhadas apenas quando
+                necessário para:
               </Text>
               <View style={styles.bulletList}>
                 {[
                   "Permitir a prestação dos serviços oferecidos na plataforma",
                   "Atender determinações legais ou judiciais",
                   "Proteger direitos, segurança e integridade dos usuários e da plataforma",
-                  "Operação de serviços essenciais para funcionamento do aplicativo"
+                  "Operação de serviços essenciais para funcionamento do aplicativo",
                 ].map((item, idx) => (
                   <View key={idx} style={styles.bulletRow}>
-                    <Text style={[styles.bulletDot, { color: colors.primary }]}>•</Text>
-                    <Text style={[styles.bulletText, { color: colors.foreground }]}>{item}</Text>
+                    <Text style={[styles.bulletDot, { color: colors.primary }]}>
+                      •
+                    </Text>
+                    <Text
+                      style={[styles.bulletText, { color: colors.foreground }]}
+                    >
+                      {item}
+                    </Text>
                   </View>
                 ))}
               </View>
 
-              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>4. USO DA LOCALIZAÇÃO</Text>
+              <Text
+                style={[styles.policySectionTitle, { color: colors.primary }]}
+              >
+                4. USO DA LOCALIZAÇÃO
+              </Text>
               <Text style={[styles.policyText, { color: colors.foreground }]}>
-                O XamaJá poderá utilizar a localização do usuário, mediante autorização, para:
+                O XamaJá poderá utilizar a localização do usuário, mediante
+                autorização, para:
               </Text>
               <View style={styles.bulletList}>
                 {[
                   "Exibir profissionais e estabelecimentos próximos",
                   "Calcular a distância entre usuários e prestadores de serviço",
-                  "Melhorar a relevância dos resultados exibidos"
+                  "Melhorar a relevância dos resultados exibidos",
                 ].map((item, idx) => (
                   <View key={idx} style={styles.bulletRow}>
-                    <Text style={[styles.bulletDot, { color: colors.primary }]}>•</Text>
-                    <Text style={[styles.bulletText, { color: colors.foreground }]}>{item}</Text>
+                    <Text style={[styles.bulletDot, { color: colors.primary }]}>
+                      •
+                    </Text>
+                    <Text
+                      style={[styles.bulletText, { color: colors.foreground }]}
+                    >
+                      {item}
+                    </Text>
                   </View>
                 ))}
               </View>
-              <Text style={[styles.policyText, { color: colors.foreground, marginTop: 8 }]}>
-                O usuário pode revogar essa permissão a qualquer momento nas configurações do dispositivo.
+              <Text
+                style={[
+                  styles.policyText,
+                  { color: colors.foreground, marginTop: 8 },
+                ]}
+              >
+                O usuário pode revogar essa permissão a qualquer momento nas
+                configurações do dispositivo.
               </Text>
 
-              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>5. SEGURANÇA DOS DADOS</Text>
-              <Text style={[styles.policyText, { color: colors.foreground }]}>
-                Adotamos medidas técnicas e organizacionais adequadas para proteger as informações dos usuários contra acessos não autorizados, perda, alteração, divulgação ou destruição indevida.
+              <Text
+                style={[styles.policySectionTitle, { color: colors.primary }]}
+              >
+                5. SEGURANÇA DOS DADOS
               </Text>
-              <Text style={[styles.policyText, { color: colors.foreground, marginTop: 8 }]}>
-                Apesar dos esforços empregados, nenhum sistema de armazenamento ou transmissão de dados é totalmente seguro.
+              <Text style={[styles.policyText, { color: colors.foreground }]}>
+                Adotamos medidas técnicas e organizacionais adequadas para
+                proteger as informações dos usuários contra acessos não
+                autorizados, perda, alteração, divulgação ou destruição
+                indevida.
+              </Text>
+              <Text
+                style={[
+                  styles.policyText,
+                  { color: colors.foreground, marginTop: 8 },
+                ]}
+              >
+                Apesar dos esforços empregados, nenhum sistema de armazenamento
+                ou transmissão de dados é totalmente seguro.
               </Text>
 
-              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>6. EXCLUSÃO DE CONTA E DADOS</Text>
-              <Text style={[styles.policyText, { color: colors.foreground }]}>
-                O usuário poderá excluir sua conta diretamente pelo aplicativo através da área de configurações.
+              <Text
+                style={[styles.policySectionTitle, { color: colors.primary }]}
+              >
+                6. EXCLUSÃO DE CONTA E DADOS
               </Text>
-              <Text style={[styles.policyText, { color: colors.foreground, marginTop: 8 }]}>
-                Após a solicitação de exclusão, os dados pessoais serão removidos ou anonimizados, exceto quando houver necessidade legal de retenção ou cumprimento de obrigações regulatórias.
+              <Text style={[styles.policyText, { color: colors.foreground }]}>
+                O usuário poderá excluir sua conta diretamente pelo aplicativo
+                através da área de configurações.
+              </Text>
+              <Text
+                style={[
+                  styles.policyText,
+                  { color: colors.foreground, marginTop: 8 },
+                ]}
+              >
+                Após a solicitação de exclusão, os dados pessoais serão
+                removidos ou anonimizados, exceto quando houver necessidade
+                legal de retenção ou cumprimento de obrigações regulatórias.
               </Text>
 
-              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>7. RESPONSABILIDADE SOBRE OS SERVIÇOS</Text>
-              <Text style={[styles.policyText, { color: colors.foreground }]}>
-                O XamaJá atua exclusivamente como uma plataforma de conexão entre usuários, profissionais autônomos, prestadores de serviços e estabelecimentos comerciais.
+              <Text
+                style={[styles.policySectionTitle, { color: colors.primary }]}
+              >
+                7. RESPONSABILIDADE SOBRE OS SERVIÇOS
               </Text>
-              <Text style={[styles.policyText, { color: colors.foreground, marginTop: 8 }]}>
-                A execução dos serviços contratados, qualidade do atendimento, preços praticados, prazos e demais condições são de responsabilidade exclusiva das partes envolvidas na contratação.
+              <Text style={[styles.policyText, { color: colors.foreground }]}>
+                O XamaJá atua exclusivamente como uma plataforma de conexão
+                entre usuários, profissionais autônomos, prestadores de serviços
+                e estabelecimentos comerciais.
+              </Text>
+              <Text
+                style={[
+                  styles.policyText,
+                  { color: colors.foreground, marginTop: 8 },
+                ]}
+              >
+                A execução dos serviços contratados, qualidade do atendimento,
+                preços praticados, prazos e demais condições são de
+                responsabilidade exclusiva das partes envolvidas na contratação.
               </Text>
 
-              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>8. LGPD</Text>
-              <Text style={[styles.policyText, { color: colors.foreground }]}>
-                O tratamento dos dados pessoais é realizado em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018), observando os princípios da finalidade, necessidade, transparência, segurança e boa-fé.
+              <Text
+                style={[styles.policySectionTitle, { color: colors.primary }]}
+              >
+                8. LGPD
               </Text>
-              <Text style={[styles.policyText, { color: colors.foreground, marginTop: 8 }]}>
-                O usuário poderá exercer seus direitos previstos na LGPD mediante contato pelos canais de atendimento informados nesta política.
+              <Text style={[styles.policyText, { color: colors.foreground }]}>
+                O tratamento dos dados pessoais é realizado em conformidade com
+                a Lei Geral de Proteção de Dados (Lei nº 13.709/2018),
+                observando os princípios da finalidade, necessidade,
+                transparência, segurança e boa-fé.
+              </Text>
+              <Text
+                style={[
+                  styles.policyText,
+                  { color: colors.foreground, marginTop: 8 },
+                ]}
+              >
+                O usuário poderá exercer seus direitos previstos na LGPD
+                mediante contato pelos canais de atendimento informados nesta
+                política.
               </Text>
 
-              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>9. ALTERAÇÕES NESTA POLÍTICA</Text>
-              <Text style={[styles.policyText, { color: colors.foreground }]}>
-                Esta Política de Privacidade poderá ser atualizada periodicamente para refletir melhorias no aplicativo, alterações legais ou mudanças em nossos serviços.
+              <Text
+                style={[styles.policySectionTitle, { color: colors.primary }]}
+              >
+                9. ALTERAÇÕES NESTA POLÍTICA
               </Text>
-              <Text style={[styles.policyText, { color: colors.foreground, marginTop: 8 }]}>
+              <Text style={[styles.policyText, { color: colors.foreground }]}>
+                Esta Política de Privacidade poderá ser atualizada
+                periodicamente para refletir melhorias no aplicativo, alterações
+                legais ou mudanças em nossos serviços.
+              </Text>
+              <Text
+                style={[
+                  styles.policyText,
+                  { color: colors.foreground, marginTop: 8 },
+                ]}
+              >
                 Recomendamos a consulta periódica deste documento.
               </Text>
 
-              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>10. CONTATO</Text>
-              <Text style={[styles.policyText, { color: colors.foreground, marginBottom: 12 }]}>
-                Em caso de dúvidas, solicitações ou assuntos relacionados à privacidade e proteção de dados, entre em contato conosco:
+              <Text
+                style={[styles.policySectionTitle, { color: colors.primary }]}
+              >
+                10. CONTATO
+              </Text>
+              <Text
+                style={[
+                  styles.policyText,
+                  { color: colors.foreground, marginBottom: 12 },
+                ]}
+              >
+                Em caso de dúvidas, solicitações ou assuntos relacionados à
+                privacidade e proteção de dados, entre em contato conosco:
               </Text>
               <Pressable
-                onPress={() => Linking.openURL("mailto:chamajasuporte@gmail.com")}
-                style={({ pressed }) => [styles.emailButton, pressed && { opacity: 0.8 }]}
+                onPress={() =>
+                  Linking.openURL("mailto:chamajasuporte@gmail.com")
+                }
+                style={({ pressed }) => [
+                  styles.emailButton,
+                  pressed && { opacity: 0.8 },
+                ]}
               >
                 <MaterialIcons name="email" size={16} color="#FFFFFF" />
-                <Text style={styles.emailButtonText}>chamajasuporte@gmail.com</Text>
+                <Text style={styles.emailButtonText}>
+                  chamajasuporte@gmail.com
+                </Text>
               </Pressable>
 
-              <Text style={[styles.policyText, { color: colors.muted, marginTop: 24, fontSize: 12, fontStyle: "italic", textAlign: "center" }]}>
-                Ao utilizar o XamaJá, você declara estar ciente e concordar com os termos desta Política de Privacidade.
+              <Text
+                style={[
+                  styles.policyText,
+                  {
+                    color: colors.muted,
+                    marginTop: 24,
+                    fontSize: 12,
+                    fontStyle: "italic",
+                    textAlign: "center",
+                  },
+                ]}
+              >
+                Ao utilizar o XamaJá, você declara estar ciente e concordar com
+                os termos desta Política de Privacidade.
               </Text>
-              
+
               <View style={{ height: 24 }} />
             </ScrollView>
           </View>
@@ -1242,72 +1879,140 @@ export default function ProfileScreen() {
         onRequestClose={() => setTermsModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.foreground }]}>Termos de Uso</Text>
+          <View
+            style={[styles.modalContent, { backgroundColor: colors.surface }]}
+          >
+            <View
+              style={[styles.modalHeader, { borderBottomColor: colors.border }]}
+            >
+              <Text style={[styles.modalTitle, { color: colors.foreground }]}>
+                Termos de Uso
+              </Text>
               <Pressable
                 onPress={() => setTermsModalVisible(false)}
-                style={({ pressed }) => [styles.closeButton, pressed && { opacity: 0.7 }]}
+                style={({ pressed }) => [
+                  styles.closeButton,
+                  pressed && { opacity: 0.7 },
+                ]}
               >
                 <MaterialIcons name="close" size={24} color={colors.muted} />
               </Pressable>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalBody}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.modalBody}
+            >
               <Text style={[styles.policyIntro, { color: colors.foreground }]}>
                 Ao utilizar o XamaJá, você concorda com os seguintes termos:
               </Text>
 
-              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>1. Sobre o aplicativo</Text>
+              <Text
+                style={[styles.policySectionTitle, { color: colors.primary }]}
+              >
+                1. Sobre o aplicativo
+              </Text>
               <Text style={[styles.policyText, { color: colors.foreground }]}>
-                O XamaJá é uma plataforma que conecta clientes a prestadores de serviços e empresas locais.
+                O XamaJá é uma plataforma que conecta clientes a prestadores de
+                serviços e empresas locais.
               </Text>
 
-              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>2. Cadastro</Text>
-              <Text style={[styles.policyText, { color: colors.foreground }]}>
-                O usuário é responsável pelas informações fornecidas no cadastro.
+              <Text
+                style={[styles.policySectionTitle, { color: colors.primary }]}
+              >
+                2. Cadastro
               </Text>
-              <Text style={[styles.policyText, { color: colors.foreground, marginTop: 8, fontWeight: "600" }]}>
+              <Text style={[styles.policyText, { color: colors.foreground }]}>
+                O usuário é responsável pelas informações fornecidas no
+                cadastro.
+              </Text>
+              <Text
+                style={[
+                  styles.policyText,
+                  { color: colors.foreground, marginTop: 8, fontWeight: "600" },
+                ]}
+              >
                 É proibido:
               </Text>
               <View style={styles.bulletList}>
                 {[
                   "utilizar informações falsas",
                   "criar contas fraudulentas",
-                  "praticar atividades ilegais"
+                  "praticar atividades ilegais",
                 ].map((item, idx) => (
                   <View key={idx} style={styles.bulletRow}>
-                    <Text style={[styles.bulletDot, { color: colors.primary }]}>•</Text>
-                    <Text style={[styles.bulletText, { color: colors.foreground }]}>{item}</Text>
+                    <Text style={[styles.bulletDot, { color: colors.primary }]}>
+                      •
+                    </Text>
+                    <Text
+                      style={[styles.bulletText, { color: colors.foreground }]}
+                    >
+                      {item}
+                    </Text>
                   </View>
                 ))}
               </View>
 
-              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>3. Prestadores de serviço</Text>
-              <Text style={[styles.policyText, { color: colors.foreground }]}>
-                Os prestadores são responsáveis pelos serviços oferecidos dentro da plataforma.
+              <Text
+                style={[styles.policySectionTitle, { color: colors.primary }]}
+              >
+                3. Prestadores de serviço
               </Text>
-              <Text style={[styles.policyText, { color: colors.foreground, marginTop: 6 }]}>
-                O XamaJá atua apenas como intermediador entre cliente e profissional.
+              <Text style={[styles.policyText, { color: colors.foreground }]}>
+                Os prestadores são responsáveis pelos serviços oferecidos dentro
+                da plataforma.
+              </Text>
+              <Text
+                style={[
+                  styles.policyText,
+                  { color: colors.foreground, marginTop: 6 },
+                ]}
+              >
+                O XamaJá atua apenas como intermediador entre cliente e
+                profissional.
               </Text>
 
-              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>4. Pagamentos</Text>
-              <Text style={[styles.policyText, { color: colors.foreground }]}>
-                Alguns serviços podem envolver pagamentos dentro ou fora da plataforma.
+              <Text
+                style={[styles.policySectionTitle, { color: colors.primary }]}
+              >
+                4. Pagamentos
               </Text>
-              <Text style={[styles.policyText, { color: colors.foreground, marginTop: 6 }]}>
+              <Text style={[styles.policyText, { color: colors.foreground }]}>
+                Alguns serviços podem envolver pagamentos dentro ou fora da
+                plataforma.
+              </Text>
+              <Text
+                style={[
+                  styles.policyText,
+                  { color: colors.foreground, marginTop: 6 },
+                ]}
+              >
                 O XamaJá poderá cobrar taxas, comissões ou valores promocionais.
               </Text>
 
-              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>5. Avaliações</Text>
+              <Text
+                style={[styles.policySectionTitle, { color: colors.primary }]}
+              >
+                5. Avaliações
+              </Text>
               <Text style={[styles.policyText, { color: colors.foreground }]}>
                 Os usuários podem avaliar serviços realizados.
               </Text>
-              <Text style={[styles.policyText, { color: colors.foreground, marginTop: 6 }]}>
-                Comentários ofensivos, discriminatórios ou falsos poderão ser removidos.
+              <Text
+                style={[
+                  styles.policyText,
+                  { color: colors.foreground, marginTop: 6 },
+                ]}
+              >
+                Comentários ofensivos, discriminatórios ou falsos poderão ser
+                removidos.
               </Text>
 
-              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>6. Suspensão de contas</Text>
+              <Text
+                style={[styles.policySectionTitle, { color: colors.primary }]}
+              >
+                6. Suspensão de contas
+              </Text>
               <Text style={[styles.policyText, { color: colors.foreground }]}>
                 O XamaJá poderá suspender contas que:
               </Text>
@@ -1315,25 +2020,40 @@ export default function ProfileScreen() {
                 {[
                   "violem os termos",
                   "pratiquem golpes",
-                  "prejudiquem outros usuários"
+                  "prejudiquem outros usuários",
                 ].map((item, idx) => (
                   <View key={idx} style={styles.bulletRow}>
-                    <Text style={[styles.bulletDot, { color: colors.primary }]}>•</Text>
-                    <Text style={[styles.bulletText, { color: colors.foreground }]}>{item}</Text>
+                    <Text style={[styles.bulletDot, { color: colors.primary }]}>
+                      •
+                    </Text>
+                    <Text
+                      style={[styles.bulletText, { color: colors.foreground }]}
+                    >
+                      {item}
+                    </Text>
                   </View>
                 ))}
               </View>
 
-              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>7. Limitação de responsabilidade</Text>
+              <Text
+                style={[styles.policySectionTitle, { color: colors.primary }]}
+              >
+                7. Limitação de responsabilidade
+              </Text>
               <Text style={[styles.policyText, { color: colors.foreground }]}>
-                O XamaJá não se responsabiliza diretamente pela execução dos serviços realizados pelos prestadores.
+                O XamaJá não se responsabiliza diretamente pela execução dos
+                serviços realizados pelos prestadores.
               </Text>
 
-              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>8. Alterações</Text>
+              <Text
+                style={[styles.policySectionTitle, { color: colors.primary }]}
+              >
+                8. Alterações
+              </Text>
               <Text style={[styles.policyText, { color: colors.foreground }]}>
                 Os termos poderão ser alterados a qualquer momento.
               </Text>
-              
+
               <View style={{ height: 40 }} />
             </ScrollView>
           </View>
@@ -1348,70 +2068,157 @@ export default function ProfileScreen() {
         onRequestClose={() => setHelpModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.foreground }]}>Ajuda e Suporte</Text>
+          <View
+            style={[styles.modalContent, { backgroundColor: colors.surface }]}
+          >
+            <View
+              style={[styles.modalHeader, { borderBottomColor: colors.border }]}
+            >
+              <Text style={[styles.modalTitle, { color: colors.foreground }]}>
+                Ajuda e Suporte
+              </Text>
               <Pressable
                 onPress={() => setHelpModalVisible(false)}
-                style={({ pressed }) => [styles.closeButton, pressed && { opacity: 0.7 }]}
+                style={({ pressed }) => [
+                  styles.closeButton,
+                  pressed && { opacity: 0.7 },
+                ]}
               >
                 <MaterialIcons name="close" size={24} color={colors.muted} />
               </Pressable>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalBody}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.modalBody}
+            >
               <Text style={[styles.policyIntro, { color: colors.foreground }]}>
                 Precisa de ajuda? Estamos aqui para ajudar você.
               </Text>
 
-              <Text style={[styles.policySectionTitle, { color: colors.primary }]}>Suporte ao usuário</Text>
-              <Text style={[styles.policyText, { color: colors.foreground, marginBottom: 8 }]}>
+              <Text
+                style={[styles.policySectionTitle, { color: colors.primary }]}
+              >
+                Suporte ao usuário
+              </Text>
+              <Text
+                style={[
+                  styles.policyText,
+                  { color: colors.foreground, marginBottom: 8 },
+                ]}
+              >
                 Entre em contato com nossa equipe:
               </Text>
               <Pressable
-                onPress={() => Linking.openURL("mailto:chamajasuporte@gmail.com")}
-                style={({ pressed }) => [styles.emailButton, pressed && { opacity: 0.8 }]}
+                onPress={() =>
+                  Linking.openURL("mailto:chamajasuporte@gmail.com")
+                }
+                style={({ pressed }) => [
+                  styles.emailButton,
+                  pressed && { opacity: 0.8 },
+                ]}
               >
                 <MaterialIcons name="email" size={16} color="#FFFFFF" />
-                <Text style={styles.emailButtonText}>chamajasuporte@gmail.com</Text>
+                <Text style={styles.emailButtonText}>
+                  chamajasuporte@gmail.com
+                </Text>
               </Pressable>
 
-              <Text style={[styles.policySectionTitle, { color: colors.primary, marginTop: 24 }]}>Problemas comuns</Text>
-              
-              <Text style={[styles.policySectionTitle, { fontSize: 14, marginTop: 12 }]}>Não consigo entrar na conta</Text>
-              <Text style={[styles.policyText, { color: colors.foreground }]}>
-                Verifique seu e-mail e senha ou utilize a opção “Esqueci minha senha”.
+              <Text
+                style={[
+                  styles.policySectionTitle,
+                  { color: colors.primary, marginTop: 24 },
+                ]}
+              >
+                Problemas comuns
               </Text>
 
-              <Text style={[styles.policySectionTitle, { fontSize: 14, marginTop: 16 }]}>Como contratar um serviço?</Text>
+              <Text
+                style={[
+                  styles.policySectionTitle,
+                  { fontSize: 14, marginTop: 12 },
+                ]}
+              >
+                Não consigo entrar na conta
+              </Text>
+              <Text style={[styles.policyText, { color: colors.foreground }]}>
+                Verifique seu e-mail e senha ou utilize a opção “Esqueci minha
+                senha”.
+              </Text>
+
+              <Text
+                style={[
+                  styles.policySectionTitle,
+                  { fontSize: 14, marginTop: 16 },
+                ]}
+              >
+                Como contratar um serviço?
+              </Text>
               <View style={styles.bulletList}>
                 {[
                   "Escolha uma categoria",
                   "Selecione um profissional",
-                  "Chame-o no Whatsapp"
+                  "Chame-o no Whatsapp",
                 ].map((item, idx) => (
                   <View key={idx} style={styles.bulletRow}>
-                    <Text style={[styles.bulletDot, { color: colors.primary }]}>{idx + 1}.</Text>
-                    <Text style={[styles.bulletText, { color: colors.foreground }]}>{item}</Text>
+                    <Text style={[styles.bulletDot, { color: colors.primary }]}>
+                      {idx + 1}.
+                    </Text>
+                    <Text
+                      style={[styles.bulletText, { color: colors.foreground }]}
+                    >
+                      {item}
+                    </Text>
                   </View>
                 ))}
               </View>
 
-              <Text style={[styles.policySectionTitle, { fontSize: 14, marginTop: 16 }]}>Como virar prestador?</Text>
+              <Text
+                style={[
+                  styles.policySectionTitle,
+                  { fontSize: 14, marginTop: 16 },
+                ]}
+              >
+                Como virar prestador?
+              </Text>
               <Text style={[styles.policyText, { color: colors.foreground }]}>
                 Na tela de perfil, clique em:
               </Text>
-              <View style={[styles.bulletRow, { marginTop: 8, paddingLeft: 8 }]}>
-                <MaterialIcons name="check-circle" size={16} color="#16A34A" style={{ marginTop: 2 }} />
-                <Text style={[styles.bulletText, { color: colors.foreground, fontWeight: "600" }]}>
+              <View
+                style={[styles.bulletRow, { marginTop: 8, paddingLeft: 8 }]}
+              >
+                <MaterialIcons
+                  name="check-circle"
+                  size={16}
+                  color="#16A34A"
+                  style={{ marginTop: 2 }}
+                />
+                <Text
+                  style={[
+                    styles.bulletText,
+                    { color: colors.foreground, fontWeight: "600" },
+                  ]}
+                >
                   “Seja um prestador”
                 </Text>
               </View>
-              <Text style={[styles.policyText, { color: colors.foreground, marginTop: 6 }]}>
+              <Text
+                style={[
+                  styles.policyText,
+                  { color: colors.foreground, marginTop: 6 },
+                ]}
+              >
                 e complete seu cadastro.
               </Text>
 
-              <Text style={[styles.policySectionTitle, { fontSize: 14, marginTop: 16 }]}>Como denunciar um usuário?</Text>
+              <Text
+                style={[
+                  styles.policySectionTitle,
+                  { fontSize: 14, marginTop: 16 },
+                ]}
+              >
+                Como denunciar um usuário?
+              </Text>
               <Text style={[styles.policyText, { color: colors.foreground }]}>
                 Entre no perfil do usuário e utilize a opção “Denunciar”.
               </Text>
@@ -1430,27 +2237,57 @@ export default function ProfileScreen() {
         onRequestClose={() => setAboutModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.foreground }]}>Sobre o XamaJá</Text>
+          <View
+            style={[styles.modalContent, { backgroundColor: colors.surface }]}
+          >
+            <View
+              style={[styles.modalHeader, { borderBottomColor: colors.border }]}
+            >
+              <Text style={[styles.modalTitle, { color: colors.foreground }]}>
+                Sobre o XamaJá
+              </Text>
               <Pressable
                 onPress={() => setAboutModalVisible(false)}
-                style={({ pressed }) => [styles.closeButton, pressed && { opacity: 0.7 }]}
+                style={({ pressed }) => [
+                  styles.closeButton,
+                  pressed && { opacity: 0.7 },
+                ]}
               >
                 <MaterialIcons name="close" size={24} color={colors.muted} />
               </Pressable>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalBody}>
-              <Text style={[styles.policyIntro, { color: colors.foreground, fontSize: 16, fontWeight: "600" }]}>
-                O XamaJá é uma plataforma criada para conectar pessoas a profissionais e empresas locais de forma rápida, prática e segura.
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.modalBody}
+            >
+              <Text
+                style={[
+                  styles.policyIntro,
+                  { color: colors.foreground, fontSize: 16, fontWeight: "600" },
+                ]}
+              >
+                O XamaJá é uma plataforma criada para conectar pessoas a
+                profissionais e empresas locais de forma rápida, prática e
+                segura.
               </Text>
 
-              <Text style={[styles.policyText, { color: colors.foreground, marginTop: 12 }]}>
-                Nosso objetivo é facilitar a contratação de serviços do dia a dia, aproximando clientes de prestadores da própria cidade.
+              <Text
+                style={[
+                  styles.policyText,
+                  { color: colors.foreground, marginTop: 12 },
+                ]}
+              >
+                Nosso objetivo é facilitar a contratação de serviços do dia a
+                dia, aproximando clientes de prestadores da própria cidade.
               </Text>
 
-              <Text style={[styles.policySectionTitle, { color: colors.primary, marginTop: 24 }]}>
+              <Text
+                style={[
+                  styles.policySectionTitle,
+                  { color: colors.primary, marginTop: 24 },
+                ]}
+              >
                 Com o XamaJá você pode:
               </Text>
               <View style={styles.bulletList}>
@@ -1459,35 +2296,78 @@ export default function ProfileScreen() {
                   "agendar serviços",
                   "contratar empresas locais",
                   "divulgar seus próprios serviços",
-                  "anunciar dentro da plataforma"
+                  "anunciar dentro da plataforma",
                 ].map((item, idx) => (
                   <View key={idx} style={styles.bulletRow}>
-                    <Text style={[styles.bulletDot, { color: colors.primary }]}>•</Text>
-                    <Text style={[styles.bulletText, { color: colors.foreground }]}>{item}</Text>
+                    <Text style={[styles.bulletDot, { color: colors.primary }]}>
+                      •
+                    </Text>
+                    <Text
+                      style={[styles.bulletText, { color: colors.foreground }]}
+                    >
+                      {item}
+                    </Text>
                   </View>
                 ))}
               </View>
 
-              <Text style={[styles.policyText, { color: colors.foreground, marginTop: 16, fontWeight: "600", fontStyle: "italic" }]}>
+              <Text
+                style={[
+                  styles.policyText,
+                  {
+                    color: colors.foreground,
+                    marginTop: 16,
+                    fontWeight: "600",
+                    fontStyle: "italic",
+                  },
+                ]}
+              >
                 Tudo isso em um único aplicativo.
               </Text>
 
-              <Text style={[styles.policySectionTitle, { color: colors.primary, marginTop: 24 }]}>Nossa missão</Text>
+              <Text
+                style={[
+                  styles.policySectionTitle,
+                  { color: colors.primary, marginTop: 24 },
+                ]}
+              >
+                Nossa missão
+              </Text>
               <Text style={[styles.policyText, { color: colors.foreground }]}>
-                Facilitar a conexão entre clientes e prestadores locais através da tecnologia.
+                Facilitar a conexão entre clientes e prestadores locais através
+                da tecnologia.
               </Text>
 
-              <View style={{
-                marginTop: 32,
-                padding: 20,
-                borderRadius: 16,
-                alignItems: "center",
-                backgroundColor: colors.background,
-                borderWidth: 1,
-                borderColor: colors.border
-              }}>
-                <Text style={{ fontSize: 20, fontWeight: "800", color: colors.primary, marginBottom: 4 }}>XamaJá</Text>
-                <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, fontStyle: "italic", textAlign: "center" }}>
+              <View
+                style={{
+                  marginTop: 32,
+                  padding: 20,
+                  borderRadius: 16,
+                  alignItems: "center",
+                  backgroundColor: colors.background,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 20,
+                    fontWeight: "800",
+                    color: colors.primary,
+                    marginBottom: 4,
+                  }}
+                >
+                  XamaJá
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: "600",
+                    color: colors.foreground,
+                    fontStyle: "italic",
+                    textAlign: "center",
+                  }}
+                >
                   “O que você precisa, perto de você.” 🚀
                 </Text>
               </View>
@@ -1523,25 +2403,43 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   avatarWrapper: { position: "relative" },
-  avatar: { width: 68, height: 68, borderRadius: 34, backgroundColor: "#E5E7EB" },
+  avatar: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: "#E5E7EB",
+  },
   providerBadge: {
-    position: "absolute", bottom: 0, right: 0,
-    width: 22, height: 22, borderRadius: 11,
-    alignItems: "center", justifyContent: "center",
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 2,
   },
   userInfo: { flex: 1, gap: 4 },
   userName: { fontSize: 18, fontWeight: "800" },
   userEmail: { fontSize: 13 },
   providerTag: {
-    flexDirection: "row", alignItems: "center", gap: 4,
-    borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4,
-    alignSelf: "flex-start", marginTop: 2,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    alignSelf: "flex-start",
+    marginTop: 2,
   },
   providerTagText: { fontSize: 11, fontWeight: "700" },
   editBtn: {
-    width: 38, height: 38, borderRadius: 19,
-    alignItems: "center", justifyContent: "center",
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
   },
   sectionHeader: {
     paddingHorizontal: 20,
@@ -1573,11 +2471,19 @@ const styles = StyleSheet.create({
   },
   menuItemBorder: { borderBottomWidth: 1 },
   menuIcon: {
-    width: 40, height: 40, borderRadius: 12,
-    alignItems: "center", justifyContent: "center",
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
   },
   menuLabel: { flex: 1, fontSize: 15, fontWeight: "600" },
-  badge: { borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2, marginRight: 4 },
+  badge: {
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginRight: 4,
+  },
   badgeText: { fontSize: 11, fontWeight: "800", color: "#FFFFFF" },
   logoutBtn: {
     flexDirection: "row",

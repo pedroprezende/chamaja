@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as WebBrowser from "expo-web-browser";
 import * as Linking from "expo-linking";
@@ -34,7 +40,11 @@ export interface AuthContextType {
   signInWithGoogle: () => Promise<void>;
   signInWithMicrosoft: () => Promise<void>;
   signInWithApple: () => Promise<void>;
-  signUpWithEmail: (email: string, password: string, name: string) => Promise<{ needsConfirmation: boolean }>;
+  signUpWithEmail: (
+    email: string,
+    password: string,
+    name: string,
+  ) => Promise<{ needsConfirmation: boolean }>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshRole: () => Promise<void>;
@@ -48,7 +58,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   // Função central para buscar a Role do banco de dados (Fonte da Verdade)
-  const getCurrentUserRole = async (userId: string, email: string): Promise<UserRole> => {
+  const getCurrentUserRole = async (
+    userId: string,
+    email: string,
+  ): Promise<UserRole> => {
     logger.info("AUTH", `Buscando role para usuário: ${email}`);
     try {
       const { data, error } = await supabase
@@ -58,15 +71,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .single();
 
       if (error) {
-        logger.warn("AUTH", "Role não encontrada por open_id, tentando fallback por e-mail", { userId, error });
+        logger.warn(
+          "AUTH",
+          "Role não encontrada por open_id, tentando fallback por e-mail",
+          { userId, error },
+        );
         const { data: dataEmail, error: errorEmail } = await supabase
           .from("users")
           .select("role")
           .eq("email", email)
           .single();
-        
+
         if (errorEmail) {
-          logger.warn("AUTH", "Role não encontrada por e-mail, assumindo 'user'");
+          logger.warn(
+            "AUTH",
+            "Role não encontrada por e-mail, assumindo 'user'",
+          );
           return "user";
         }
         return (dataEmail.role as UserRole) || "user";
@@ -91,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { user: authUser, access_token } = session;
     logger.info("AUTH", `Sincronizando sessão para: ${authUser.email}`);
-    
+
     await setSessionToken(access_token);
 
     // Recupera a role do cache síncrono/local se existir para evitar travamentos ou atrasos na interface
@@ -105,13 +125,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch (e) {
-      logger.warn("AUTH", "Erro ao carregar cache de role para login rápido", e);
+      logger.warn(
+        "AUTH",
+        "Erro ao carregar cache de role para login rápido",
+        e,
+      );
     }
 
     const dbUser: User = {
       id: authUser.id,
       email: authUser.email || "",
-      name: authUser.user_metadata?.full_name || authUser.email?.split("@")[0] || "Usuário",
+      name:
+        authUser.user_metadata?.full_name ||
+        authUser.email?.split("@")[0] ||
+        "Usuário",
       avatar: authUser.user_metadata?.avatar_url,
       provider: (authUser.app_metadata?.provider as AuthProvider) || "email",
       role: initialRole,
@@ -121,16 +148,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Atualiza o estado imediatamente para liberar a navegação do usuário
     setUser(dbUser);
     await AsyncStorage.setItem("@chamaja_user", JSON.stringify(dbUser));
-    logger.info("AUTH", "Sessão de usuário persistida temporariamente com a role inicial");
+    logger.info(
+      "AUTH",
+      "Sessão de usuário persistida temporariamente com a role inicial",
+    );
 
     // Consulta a role atualizada do banco em background de forma não-bloqueante
     getCurrentUserRole(authUser.id, authUser.email || "")
       .then(async (userRole) => {
         if (userRole !== initialRole) {
-          logger.info("AUTH", `Atualizando role do usuário em background: de ${initialRole} para ${userRole}`);
+          logger.info(
+            "AUTH",
+            `Atualizando role do usuário em background: de ${initialRole} para ${userRole}`,
+          );
           const updatedUser = { ...dbUser, role: userRole };
           setUser(updatedUser);
-          await AsyncStorage.setItem("@chamaja_user", JSON.stringify(updatedUser));
+          await AsyncStorage.setItem(
+            "@chamaja_user",
+            JSON.stringify(updatedUser),
+          );
         }
       })
       .catch((err) => {
@@ -150,18 +186,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Se for um callback de OAuth na Web, evitamos chamar getSession() concorrentemente
         // para prevenir deadlocks no cliente do Supabase, deixando o onAuthStateChange cuidar disso
-        const isOAuthCallback = Platform.OS === "web" && (
-          window.location.hash.includes("access_token=") ||
-          window.location.search.includes("code=")
-        );
+        const isOAuthCallback =
+          Platform.OS === "web" &&
+          (window.location.hash.includes("access_token=") ||
+            window.location.search.includes("code="));
 
         if (isOAuthCallback) {
-          logger.info("AUTH", "Callback OAuth detectado, pulando getSession inicial para evitar concorrência");
+          logger.info(
+            "AUTH",
+            "Callback OAuth detectado, pulando getSession inicial para evitar concorrência",
+          );
           // Configura um timeout de segurança de 10 segundos para desativar o loading se nada acontecer
           setTimeout(() => {
             setIsLoading((prev) => {
               if (prev) {
-                logger.warn("AUTH", "Timeout de segurança no callback OAuth, forçando isLoading = false");
+                logger.warn(
+                  "AUTH",
+                  "Timeout de segurança no callback OAuth, forçando isLoading = false",
+                );
                 return false;
               }
               return prev;
@@ -174,10 +216,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const sessionResult = await Promise.race([
           supabase.auth.getSession(),
           new Promise<{ data: { session: null } }>((_, reject) =>
-            setTimeout(() => reject(new Error("Supabase getSession timeout")), 15000)
-          )
-        ]).catch(err => {
-          logger.warn("AUTH", "Timeout ou falha ao obter sessão do Supabase", err);
+            setTimeout(
+              () => reject(new Error("Supabase getSession timeout")),
+              15000,
+            ),
+          ),
+        ]).catch((err) => {
+          logger.warn(
+            "AUTH",
+            "Timeout ou falha ao obter sessão do Supabase",
+            err,
+          );
           return { data: { session: undefined } }; // Retorna undefined para diferenciar de 'null' (sem sessão)
         });
 
@@ -188,25 +237,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await Promise.race([
             syncUserSession(session),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error("Sync user session timeout")), 15000)
-            )
-          ]).catch(err => {
-            logger.warn("AUTH", "Sincronização lenta ou falhou durante inicialização", err);
+              setTimeout(
+                () => reject(new Error("Sync user session timeout")),
+                15000,
+              ),
+            ),
+          ]).catch((err) => {
+            logger.warn(
+              "AUTH",
+              "Sincronização lenta ou falhou durante inicialização",
+              err,
+            );
           });
         } else if (session === null) {
-          logger.info("AUTH", "Nenhuma sessão ativa encontrada (confirmado pelo servidor)");
+          logger.info(
+            "AUTH",
+            "Nenhuma sessão ativa encontrada (confirmado pelo servidor)",
+          );
           setUser(null);
           await removeSessionToken();
         } else {
-          logger.info("AUTH", "Manter usuário cacheado devido a falha ou timeout de rede");
+          logger.info(
+            "AUTH",
+            "Manter usuário cacheado devido a falha ou timeout de rede",
+          );
         }
       } catch (err) {
         logger.error("AUTH", "Erro crítico ao restaurar sessão", err);
       } finally {
-        const isOAuthCallback = Platform.OS === "web" && (
-          window.location.hash.includes("access_token=") ||
-          window.location.search.includes("code=")
-        );
+        const isOAuthCallback =
+          Platform.OS === "web" &&
+          (window.location.hash.includes("access_token=") ||
+            window.location.search.includes("code="));
         if (!isOAuthCallback) {
           setIsLoading(false);
         }
@@ -215,30 +277,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     restoreSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        logger.info("AUTH", `Evento Auth detectado: ${event}`);
-        try {
-          if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
-            // Sincroniza sessão mas não deixa travar o app se demorar (timeout de 15 segundos)
-            await Promise.race([
-              syncUserSession(session),
-              new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 15000))
-            ]).catch(err => logger.warn("AUTH", "Sincronização lenta ou falhou", err));
-          } else if (event === "SIGNED_OUT") {
-            setUser(null);
-            await AsyncStorage.removeItem("@chamaja_user");
-            await removeSessionToken();
-          }
-        } finally {
-          // Apenas define loading como falso se não for o INITIAL_SESSION, 
-          // que é tratado de forma assíncrona por restoreSession()
-          if (event !== "INITIAL_SESSION") {
-            setIsLoading(false);
-          }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      logger.info("AUTH", `Evento Auth detectado: ${event}`);
+      try {
+        if (
+          event === "SIGNED_IN" ||
+          event === "TOKEN_REFRESHED" ||
+          event === "USER_UPDATED"
+        ) {
+          // Sincroniza sessão mas não deixa travar o app se demorar (timeout de 15 segundos)
+          await Promise.race([
+            syncUserSession(session),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error("Timeout")), 15000),
+            ),
+          ]).catch((err) =>
+            logger.warn("AUTH", "Sincronização lenta ou falhou", err),
+          );
+        } else if (event === "SIGNED_OUT") {
+          setUser(null);
+          await AsyncStorage.removeItem("@chamaja_user");
+          await removeSessionToken();
+        }
+      } finally {
+        // Apenas define loading como falso se não for o INITIAL_SESSION,
+        // que é tratado de forma assíncrona por restoreSession()
+        if (event !== "INITIAL_SESSION") {
+          setIsLoading(false);
         }
       }
-    );
+    });
 
     return () => {
       subscription.unsubscribe();
@@ -277,10 +347,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const performOAuth = async (provider: "google" | "azure" | "apple") => {
     logger.info("AUTH", `Iniciando login OAuth com: ${provider}`);
     try {
-      const redirectTo = Platform.OS === "web"
-        ? `${window.location.origin}/app/oauth/callback`
-        : Linking.createURL("/oauth/callback");
-        
+      const redirectTo =
+        Platform.OS === "web"
+          ? `${window.location.origin}/app/oauth/callback`
+          : Linking.createURL("/oauth/callback");
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
@@ -292,9 +363,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
 
       if (Platform.OS !== "web" && data?.url) {
-        const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+        const result = await WebBrowser.openAuthSessionAsync(
+          data.url,
+          redirectTo,
+        );
         logger.info("AUTH", `Resultado do WebBrowser: ${result.type}`);
-        
+
         if (result.type === "success" && result.url) {
           const url = result.url.replace("#", "?");
           const params = Linking.parse(url).queryParams;
@@ -302,7 +376,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const refreshToken = params?.refresh_token as string;
 
           if (accessToken && refreshToken) {
-            logger.info("AUTH", "Token recebido via OAuth, estabelecendo sessão...");
+            logger.info(
+              "AUTH",
+              "Token recebido via OAuth, estabelecendo sessão...",
+            );
             await supabase.auth.setSession({
               access_token: accessToken,
               refresh_token: refreshToken,
@@ -318,12 +395,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => performOAuth("google");
   const signInWithMicrosoft = async () => performOAuth("azure");
-  const signInWithApple = async () => { 
+  const signInWithApple = async () => {
     logger.info("AUTH", "Iniciando login com Apple...");
     try {
       const isAvailable = await AppleAuthentication.isAvailableAsync();
       if (!isAvailable) {
-        logger.warn("AUTH", "Apple Authentication não está disponível neste dispositivo");
+        logger.warn(
+          "AUTH",
+          "Apple Authentication não está disponível neste dispositivo",
+        );
         // Fallback para o fluxo Web/OAuth normal
         await performOAuth("apple");
         return;
@@ -332,7 +412,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const rawNonce = Crypto.randomUUID();
       const hashedNonce = await Crypto.digestStringAsync(
         Crypto.CryptoDigestAlgorithm.SHA256,
-        rawNonce
+        rawNonce,
       );
 
       const credential = await AppleAuthentication.signInAsync({
@@ -360,22 +440,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Se for o primeiro login, a Apple retorna o nome do usuário no credential.fullName
         const nameObj = credential.fullName;
         if (nameObj && (nameObj.givenName || nameObj.familyName)) {
-          const fullName = [nameObj.givenName, nameObj.familyName].filter(Boolean).join(" ");
+          const fullName = [nameObj.givenName, nameObj.familyName]
+            .filter(Boolean)
+            .join(" ");
           if (fullName) {
             logger.info("AUTH", `Salvando nome recebido da Apple: ${fullName}`);
             await supabase.auth.updateUser({
-              data: { full_name: fullName }
+              data: { full_name: fullName },
             });
-            
+
             const updatedSession = {
               ...data.session,
               user: {
                 ...data.session.user,
                 user_metadata: {
                   ...data.session.user.user_metadata,
-                  full_name: fullName
-                }
-              }
+                  full_name: fullName,
+                },
+              },
             };
             await syncUserSession(updatedSession);
             return;
@@ -393,23 +475,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!error) return new Error("Erro desconhecido");
     const msg = error.message || String(error);
     let translated = msg;
-    if (msg.includes("User already registered") || msg.includes("already registered")) {
+    if (
+      msg.includes("User already registered") ||
+      msg.includes("already registered")
+    ) {
       translated = "Este e-mail já está cadastrado.";
-    } else if (msg.includes("Invalid login credentials") || msg.includes("credentials")) {
+    } else if (
+      msg.includes("Invalid login credentials") ||
+      msg.includes("credentials")
+    ) {
       translated = "E-mail ou senha incorretos.";
-    } else if (msg.includes("Email not confirmed") || msg.includes("confirmed")) {
-      translated = "Por favor, confirme seu e-mail na caixa de entrada antes de fazer login.";
+    } else if (
+      msg.includes("Email not confirmed") ||
+      msg.includes("confirmed")
+    ) {
+      translated =
+        "Por favor, confirme seu e-mail na caixa de entrada antes de fazer login.";
     } else if (msg.includes("Password should be at least 6 characters")) {
       translated = "A senha deve ter pelo menos 6 caracteres.";
-    } else if (msg.includes("Invalid signup email") || msg.includes("invalid email")) {
+    } else if (
+      msg.includes("Invalid signup email") ||
+      msg.includes("invalid email")
+    ) {
       translated = "Formato de e-mail inválido.";
     }
     return new Error(translated);
   };
 
-  const signUpWithEmail = async (email: string, password: string, name: string): Promise<{ needsConfirmation: boolean }> => {
+  const signUpWithEmail = async (
+    email: string,
+    password: string,
+    name: string,
+  ): Promise<{ needsConfirmation: boolean }> => {
     logger.info("AUTH", `Iniciando cadastro por e-mail: ${email}`);
-    
+
     let utmSource: string | null = null;
     try {
       utmSource = await AsyncStorage.getItem("utm_source");
@@ -420,11 +519,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { 
-        data: { 
+      options: {
+        data: {
           full_name: name,
-          ...(utmSource ? { utm_source: utmSource } : {})
-        } 
+          ...(utmSource ? { utm_source: utmSource } : {}),
+        },
       },
     });
     if (error) {
@@ -438,16 +537,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       let signedIn = false;
       try {
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+        const { data: signInData, error: signInError } =
+          await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
         if (!signInError && signInData?.session) {
           await syncUserSession(signInData.session);
           signedIn = true;
         }
       } catch (e) {
-        logger.warn("AUTH", "Auto-login pós-cadastro falhou ou exige confirmação de e-mail");
+        logger.warn(
+          "AUTH",
+          "Auto-login pós-cadastro falhou ou exige confirmação de e-mail",
+        );
       }
       return { needsConfirmation: !signedIn };
     }
@@ -455,7 +558,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithEmail = async (email: string, password: string) => {
     logger.info("AUTH", `Iniciando login por e-mail: ${email}`);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
     if (error) {
       logger.error("AUTH", "Erro no login por e-mail", error);
       throw translateAuthError(error);
@@ -469,7 +575,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       await AsyncStorage.removeItem("@chamaja_user");
       await removeSessionToken();
-      
+
       // Faz a chamada de rede
       await supabase.auth.signOut();
       logger.info("AUTH", "Logout no servidor concluído");
@@ -488,7 +594,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value: AuthContextType = {
     user,
     role: user?.role || null,
-    isAdmin: user?.role === "admin" || user?.email === "pedroprezende33@gmail.com",
+    isAdmin:
+      user?.role === "admin" || user?.email === "pedroprezende33@gmail.com",
     isLoading,
     isSignedIn: user !== null,
     signInWithGoogle,

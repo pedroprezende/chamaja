@@ -43,74 +43,74 @@
 }
 
 :root {
-  --primary: #CCFF00;
-  --primary-foreground: #0A0E27;
-  --sidebar-primary: #CCFF00;
-  --sidebar-primary-foreground: #0A0E27;
-  --chart-1: #CCFF00;
-  --chart-2: #4A90E2;
-  --chart-3: #00D4FF;
-  --chart-4: #CCFF00;
-  --chart-5: #4A90E2;
+  --primary: #ccff00;
+  --primary-foreground: #0a0e27;
+  --sidebar-primary: #ccff00;
+  --sidebar-primary-foreground: #0a0e27;
+  --chart-1: #ccff00;
+  --chart-2: #4a90e2;
+  --chart-3: #00d4ff;
+  --chart-4: #ccff00;
+  --chart-5: #4a90e2;
   --radius: 0.65rem;
-  --background: #0A0E27;
-  --foreground: #FFFFFF;
-  --card: #1A1F3A;
-  --card-foreground: #FFFFFF;
-  --popover: #1A1F3A;
-  --popover-foreground: #FFFFFF;
-  --secondary: #4A90E2;
-  --secondary-foreground: #FFFFFF;
-  --muted: #2A2F4A;
-  --muted-foreground: #A0A0A0;
-  --accent: #CCFF00;
-  --accent-foreground: #0A0E27;
-  --destructive: #FF4444;
-  --destructive-foreground: #FFFFFF;
-  --border: #2A2F4A;
-  --input: #1A1F3A;
-  --ring: #CCFF00;
-  --sidebar: #0A0E27;
-  --sidebar-foreground: #FFFFFF;
-  --sidebar-accent: #CCFF00;
-  --sidebar-accent-foreground: #0A0E27;
-  --sidebar-border: #2A2F4A;
-  --sidebar-ring: #CCFF00;
+  --background: #0a0e27;
+  --foreground: #ffffff;
+  --card: #1a1f3a;
+  --card-foreground: #ffffff;
+  --popover: #1a1f3a;
+  --popover-foreground: #ffffff;
+  --secondary: #4a90e2;
+  --secondary-foreground: #ffffff;
+  --muted: #2a2f4a;
+  --muted-foreground: #a0a0a0;
+  --accent: #ccff00;
+  --accent-foreground: #0a0e27;
+  --destructive: #ff4444;
+  --destructive-foreground: #ffffff;
+  --border: #2a2f4a;
+  --input: #1a1f3a;
+  --ring: #ccff00;
+  --sidebar: #0a0e27;
+  --sidebar-foreground: #ffffff;
+  --sidebar-accent: #ccff00;
+  --sidebar-accent-foreground: #0a0e27;
+  --sidebar-border: #2a2f4a;
+  --sidebar-ring: #ccff00;
 }
 
 .dark {
-  --primary: #CCFF00;
-  --primary-foreground: #0A0E27;
-  --sidebar-primary: #CCFF00;
-  --sidebar-primary-foreground: #0A0E27;
-  --background: #0A0E27;
-  --foreground: #FFFFFF;
-  --card: #1A1F3A;
-  --card-foreground: #FFFFFF;
-  --popover: #1A1F3A;
-  --popover-foreground: #FFFFFF;
-  --secondary: #4A90E2;
-  --secondary-foreground: #FFFFFF;
-  --muted: #2A2F4A;
-  --muted-foreground: #A0A0A0;
-  --accent: #CCFF00;
-  --accent-foreground: #0A0E27;
-  --destructive: #FF4444;
-  --destructive-foreground: #FFFFFF;
-  --border: #2A2F4A;
-  --input: #1A1F3A;
-  --ring: #CCFF00;
-  --chart-1: #CCFF00;
-  --chart-2: #4A90E2;
-  --chart-3: #00D4FF;
-  --chart-4: #CCFF00;
-  --chart-5: #4A90E2;
-  --sidebar: #0A0E27;
-  --sidebar-foreground: #FFFFFF;
-  --sidebar-accent: #CCFF00;
-  --sidebar-accent-foreground: #0A0E27;
-  --sidebar-border: #2A2F4A;
-  --sidebar-ring: #CCFF00;
+  --primary: #ccff00;
+  --primary-foreground: #0a0e27;
+  --sidebar-primary: #ccff00;
+  --sidebar-primary-foreground: #0a0e27;
+  --background: #0a0e27;
+  --foreground: #ffffff;
+  --card: #1a1f3a;
+  --card-foreground: #ffffff;
+  --popover: #1a1f3a;
+  --popover-foreground: #ffffff;
+  --secondary: #4a90e2;
+  --secondary-foreground: #ffffff;
+  --muted: #2a2f4a;
+  --muted-foreground: #a0a0a0;
+  --accent: #ccff00;
+  --accent-foreground: #0a0e27;
+  --destructive: #ff4444;
+  --destructive-foreground: #ffffff;
+  --border: #2a2f4a;
+  --input: #1a1f3a;
+  --ring: #ccff00;
+  --chart-1: #ccff00;
+  --chart-2: #4a90e2;
+  --chart-3: #00d4ff;
+  --chart-4: #ccff00;
+  --chart-5: #4a90e2;
+  --sidebar: #0a0e27;
+  --sidebar-foreground: #ffffff;
+  --sidebar-accent: #ccff00;
+  --sidebar-accent-foreground: #0a0e27;
+  --sidebar-border: #2a2f4a;
+  --sidebar-ring: #ccff00;
 }
 
 @layer base {
@@ -163,22 +163,22 @@
   }
 
   h1 {
-    font-family: 'Montserrat', sans-serif;
+    font-family: "Montserrat", sans-serif;
     font-weight: 700;
   }
 
   h2 {
-    font-family: 'Montserrat', sans-serif;
+    font-family: "Montserrat", sans-serif;
     font-weight: 700;
   }
 
   h3 {
-    font-family: 'Montserrat', sans-serif;
+    font-family: "Montserrat", sans-serif;
     font-weight: 600;
   }
 
   body {
-    font-family: 'Inter', sans-serif;
+    font-family: "Inter", sans-serif;
   }
 
   button {

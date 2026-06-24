@@ -1,5 +1,12 @@
 import React from "react";
-import { View, Text, StyleSheet, FlatList, Pressable, Alert } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  Pressable,
+  Alert,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -16,7 +23,8 @@ const ICON_MAP: Record<string, { icon: string; color: string; bg: string }> = {
 export default function NotificationsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { notifications, unreadCount, markRead, markAllRead, clearAll } = useNotifications();
+  const { notifications, unreadCount, markRead, markAllRead, clearAll } =
+    useNotifications();
 
   const handleClearAll = () => {
     Alert.alert(
@@ -25,7 +33,7 @@ export default function NotificationsScreen() {
       [
         { text: "Cancelar", style: "cancel" },
         { text: "Limpar", style: "destructive", onPress: clearAll },
-      ]
+      ],
     );
   };
 
@@ -41,11 +49,17 @@ export default function NotificationsScreen() {
         onPress={() => markRead(item.id)}
       >
         <View style={[styles.iconWrapper, { backgroundColor: iconInfo.bg }]}>
-          <MaterialIcons name={iconInfo.icon as any} size={22} color={iconInfo.color} />
+          <MaterialIcons
+            name={iconInfo.icon as any}
+            size={22}
+            color={iconInfo.color}
+          />
         </View>
         <View style={styles.content}>
           <View style={styles.titleRow}>
-            <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
+            <Text style={styles.title} numberOfLines={1}>
+              {item.title}
+            </Text>
             {!item.read && <View style={styles.unreadDot} />}
           </View>
           <Text style={styles.body}>{item.body}</Text>
@@ -76,7 +90,10 @@ export default function NotificationsScreen() {
         <View style={styles.headerActions}>
           {unreadCount > 0 && (
             <Pressable
-              style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.7 }]}
+              style={({ pressed }) => [
+                styles.actionBtn,
+                pressed && { opacity: 0.7 },
+              ]}
               onPress={markAllRead}
             >
               <MaterialIcons name="done-all" size={20} color="#25D366" />
@@ -84,7 +101,10 @@ export default function NotificationsScreen() {
           )}
           {notifications.length > 0 && (
             <Pressable
-              style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.7 }]}
+              style={({ pressed }) => [
+                styles.actionBtn,
+                pressed && { opacity: 0.7 },
+              ]}
               onPress={handleClearAll}
             >
               <MaterialIcons name="delete-outline" size={20} color="#EF4444" />
@@ -101,7 +121,11 @@ export default function NotificationsScreen() {
         renderItem={renderItem}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <MaterialIcons name="notifications-none" size={64} color="#D1D5DB" />
+            <MaterialIcons
+              name="notifications-none"
+              size={64}
+              color="#D1D5DB"
+            />
             <Text style={styles.emptyTitle}>Nenhuma notificação</Text>
             <Text style={styles.emptySubtitle}>Você está em dia com tudo!</Text>
           </View>
@@ -123,8 +147,19 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#F3F4F6",
   },
-  backBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
-  headerCenter: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1, justifyContent: "center" },
+  backBtn: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerCenter: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flex: 1,
+    justifyContent: "center",
+  },
   headerTitle: { fontSize: 17, fontWeight: "700", color: "#111827" },
   badge: {
     backgroundColor: "#EF4444",
@@ -137,7 +172,12 @@ const styles = StyleSheet.create({
   },
   badgeText: { fontSize: 11, fontWeight: "700", color: "#FFFFFF" },
   headerActions: { flexDirection: "row", gap: 4 },
-  actionBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
+  actionBtn: {
+    width: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   listContent: { padding: 16, paddingBottom: 32, flexGrow: 1 },
   card: {
     flexDirection: "row",
@@ -157,16 +197,35 @@ const styles = StyleSheet.create({
   },
   cardUnread: { borderColor: "#BBF7D0", backgroundColor: "#F0FDF4" },
   iconWrapper: {
-    width: 44, height: 44, borderRadius: 22,
-    alignItems: "center", justifyContent: "center",
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
   },
   content: { flex: 1, gap: 4 },
   titleRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   title: { flex: 1, fontSize: 14, fontWeight: "700", color: "#111827" },
-  unreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#25D366" },
+  unreadDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#25D366",
+  },
   body: { fontSize: 13, color: "#6B7280", lineHeight: 18 },
   time: { fontSize: 11, color: "#9CA3AF" },
-  empty: { flex: 1, alignItems: "center", justifyContent: "center", paddingTop: 80, gap: 10 },
-  emptyTitle: { fontSize: 18, fontWeight: "700", color: "#374151", marginTop: 8 },
+  empty: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 80,
+    gap: 10,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#374151",
+    marginTop: 8,
+  },
   emptySubtitle: { fontSize: 14, color: "#9CA3AF" },
 });

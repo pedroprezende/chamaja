@@ -49,20 +49,14 @@ export function ScreenContainer({
   ...props
 }: ScreenContainerProps) {
   const colors = useColors();
-  
+
   return (
     <View
-      className={cn(
-        "flex-1",
-        containerClassName
-      )}
+      className={cn("flex-1", containerClassName)}
       style={[{ backgroundColor: colors.background }, style]}
       {...props}
     >
-      <SafeAreaView
-        edges={edges}
-        className={cn("flex-1", safeAreaClassName)}
-      >
+      <SafeAreaView edges={edges} className={cn("flex-1", safeAreaClassName)}>
         <View className={cn("flex-1", className)}>{children}</View>
       </SafeAreaView>
     </View>

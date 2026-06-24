@@ -39,7 +39,8 @@ export class ErrorBoundary extends Component<Props, State> {
         <View style={styles.container}>
           <Text style={styles.title}>Ops! Algo deu errado.</Text>
           <Text style={styles.subtitle}>
-            Encontramos um erro inesperado, mas já notificamos nossa equipe para corrigir o mais rápido possível.
+            Encontramos um erro inesperado, mas já notificamos nossa equipe para
+            corrigir o mais rápido possível.
           </Text>
           <Pressable style={styles.button} onPress={this.handleReset}>
             <Text style={styles.buttonText}>Tentar Novamente</Text>

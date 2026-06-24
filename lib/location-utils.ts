@@ -6,7 +6,7 @@ export function calculateHaversineDistance(
   lat1: number,
   lon1: number,
   lat2: number,
-  lon2: number
+  lon2: number,
 ): number {
   const R = 6371; // Earth's radius in kilometers
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -74,9 +74,9 @@ export function formatDistanceWithPreposition(distanceKm: number): string {
     return `está a ${meters}m de você`;
   }
   const roundedKm = Math.round(distanceKm * 10) / 10;
-  const kmStr = roundedKm % 1 === 0 
-    ? `${Math.round(roundedKm)}km` 
-    : `${roundedKm.toFixed(1).replace(".", ",")}km`;
+  const kmStr =
+    roundedKm % 1 === 0
+      ? `${Math.round(roundedKm)}km`
+      : `${roundedKm.toFixed(1).replace(".", ",")}km`;
   return `está a ${kmStr} de você`;
 }
-

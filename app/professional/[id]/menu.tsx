@@ -24,22 +24,26 @@ export default function MenuScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  
+
   const { items: cartItems, cartTotal, cartCount, addToCart } = useCart();
   const [selectedCategory, setSelectedCategory] = useState<string>("Tudo");
 
   // Busca detalhes do comércio
-  const { data: professional, isLoading } = trpc.providers.getById.useQuery(id as string, {
-    enabled: !!id,
-  });
+  const { data: professional, isLoading } = trpc.providers.getById.useQuery(
+    id as string,
+    {
+      enabled: !!id,
+    },
+  );
 
   // Parse dos produtos
   const products = useMemo(() => {
     if (!professional || !professional.services) return [];
     try {
-      const parsed = typeof professional.services === "string" 
-        ? JSON.parse(professional.services) 
-        : professional.services;
+      const parsed =
+        typeof professional.services === "string"
+          ? JSON.parse(professional.services)
+          : professional.services;
       return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
       console.error("Failed to parse products:", e);
@@ -81,12 +85,12 @@ export default function MenuScreen() {
 
   const handleAddProduct = (product: any) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
+
     const cartProduct: CartProduct = {
       id: product.id,
       name: product.name,
       price: Number(product.price || 0),
-      imageUri: product.imageUri
+      imageUri: product.imageUri,
     };
 
     const success = addToCart(id as string, cartProduct, 1, false);
@@ -102,29 +106,45 @@ export default function MenuScreen() {
             style: "destructive",
             onPress: () => {
               addToCart(id as string, cartProduct, 1, true);
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            }
-          }
-        ]
+              Haptics.notificationAsync(
+                Haptics.NotificationFeedbackType.Success,
+              );
+            },
+          },
+        ],
       );
     }
   };
 
   if (isLoading) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+      <View
+        style={[
+          styles.loadingContainer,
+          { backgroundColor: colors.background },
+        ]}
+      >
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.muted }]}>Carregando cardápio...</Text>
+        <Text style={[styles.loadingText, { color: colors.muted }]}>
+          Carregando cardápio...
+        </Text>
       </View>
     );
   }
 
   if (!professional) {
     return (
-      <View style={[styles.errorContainer, { backgroundColor: colors.background }]}>
+      <View
+        style={[styles.errorContainer, { backgroundColor: colors.background }]}
+      >
         <MaterialIcons name="error-outline" size={48} color={colors.muted} />
-        <Text style={[styles.errorText, { color: colors.foreground }]}>Comércio não encontrado</Text>
-        <Pressable style={[styles.backBtn, { backgroundColor: colors.primary }]} onPress={() => router.back()}>
+        <Text style={[styles.errorText, { color: colors.foreground }]}>
+          Comércio não encontrado
+        </Text>
+        <Pressable
+          style={[styles.backBtn, { backgroundColor: colors.primary }]}
+          onPress={() => router.back()}
+        >
           <Text style={styles.backBtnText}>Voltar</Text>
         </Pressable>
       </View>
@@ -134,23 +154,46 @@ export default function MenuScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8, backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+      <View
+        style={[
+          styles.header,
+          {
+            paddingTop: insets.top + 8,
+            backgroundColor: colors.surface,
+            borderBottomColor: colors.border,
+          },
+        ]}
+      >
         <Pressable onPress={() => router.back()} style={styles.headerBackBtn}>
-          <MaterialIcons name="arrow-back" size={24} color={colors.foreground} />
+          <MaterialIcons
+            name="arrow-back"
+            size={24}
+            color={colors.foreground}
+          />
         </Pressable>
         <View style={styles.headerTitleContainer}>
-          <Text style={[styles.headerTitle, { color: colors.foreground }]} numberOfLines={1}>
+          <Text
+            style={[styles.headerTitle, { color: colors.foreground }]}
+            numberOfLines={1}
+          >
             {isRealCommerce ? "Cardápio" : "Serviços e Preços"}
           </Text>
-          <Text style={[styles.headerSubtitle, { color: colors.muted }]} numberOfLines={1}>
+          <Text
+            style={[styles.headerSubtitle, { color: colors.muted }]}
+            numberOfLines={1}
+          >
             {professional.name}
           </Text>
         </View>
-        <Pressable 
-          onPress={() => router.push(`/professional/${id}/cart` as any)} 
+        <Pressable
+          onPress={() => router.push(`/professional/${id}/cart` as any)}
           style={styles.headerCartBtn}
         >
-          <MaterialIcons name="shopping-basket" size={22} color={colors.foreground} />
+          <MaterialIcons
+            name="shopping-basket"
+            size={22}
+            color={colors.foreground}
+          />
           {cartCount > 0 && (
             <View style={[styles.badge, { backgroundColor: colors.primary }]}>
               <Text style={styles.badgeText}>{cartCount}</Text>
@@ -160,8 +203,17 @@ export default function MenuScreen() {
       </View>
 
       {/* Tabs de Categorias */}
-      <View style={[styles.categoriesContainer, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesScroll}>
+      <View
+        style={[
+          styles.categoriesContainer,
+          { backgroundColor: colors.surface, borderBottomColor: colors.border },
+        ]}
+      >
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoriesScroll}
+        >
           {categories.map((cat) => {
             const isSelected = selectedCategory === cat;
             return (
@@ -170,14 +222,14 @@ export default function MenuScreen() {
                 onPress={() => setSelectedCategory(cat)}
                 style={[
                   styles.categoryTab,
-                  isSelected && { borderBottomColor: colors.primary }
+                  isSelected && { borderBottomColor: colors.primary },
                 ]}
               >
                 <Text
                   style={[
                     styles.categoryTabText,
                     { color: isSelected ? colors.primary : colors.muted },
-                    isSelected && { fontWeight: "700" }
+                    isSelected && { fontWeight: "700" },
                   ]}
                 >
                   {cat}
@@ -198,34 +250,71 @@ export default function MenuScreen() {
           const quantityInCart = cartItem ? cartItem.quantity : 0;
 
           return (
-            <View style={[styles.productCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View
+              style={[
+                styles.productCard,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
+            >
               {item.imageUri ? (
-                <Image source={{ uri: item.imageUri }} style={styles.productImage} />
+                <Image
+                  source={{ uri: item.imageUri }}
+                  style={styles.productImage}
+                />
               ) : (
-                <View style={[styles.productImage, { alignItems: "center", justifyContent: "center", backgroundColor: colors.border + "40" }]}>
-                  <MaterialIcons name={isRealCommerce ? "restaurant" : "assignment"} size={28} color={colors.muted} />
+                <View
+                  style={[
+                    styles.productImage,
+                    {
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: colors.border + "40",
+                    },
+                  ]}
+                >
+                  <MaterialIcons
+                    name={isRealCommerce ? "restaurant" : "assignment"}
+                    size={28}
+                    color={colors.muted}
+                  />
                 </View>
               )}
               <View style={styles.productInfo}>
-                <Text style={[styles.productName, { color: colors.foreground }]}>{item.name}</Text>
-                <Text style={[styles.productDesc, { color: colors.muted }]} numberOfLines={2}>
+                <Text
+                  style={[styles.productName, { color: colors.foreground }]}
+                >
+                  {item.name}
+                </Text>
+                <Text
+                  style={[styles.productDesc, { color: colors.muted }]}
+                  numberOfLines={2}
+                >
                   {item.description || "Sem descrição disponível."}
                 </Text>
-                <Text style={[styles.productPrice, { color: colors.foreground }]}>
+                <Text
+                  style={[styles.productPrice, { color: colors.foreground }]}
+                >
                   R$ {Number(item.price || 0).toFixed(2)}
                 </Text>
               </View>
               <View style={styles.actionContainer}>
                 {quantityInCart > 0 ? (
-                  <View style={[styles.quantityBadge, { backgroundColor: colors.primary }]}>
-                    <Text style={styles.quantityBadgeText}>{quantityInCart}x</Text>
+                  <View
+                    style={[
+                      styles.quantityBadge,
+                      { backgroundColor: colors.primary },
+                    ]}
+                  >
+                    <Text style={styles.quantityBadgeText}>
+                      {quantityInCart}x
+                    </Text>
                   </View>
                 ) : null}
                 <Pressable
                   style={({ pressed }) => [
                     styles.addBtn,
                     { backgroundColor: colors.primary },
-                    pressed && { opacity: 0.8 }
+                    pressed && { opacity: 0.8 },
                   ]}
                   onPress={() => handleAddProduct(item)}
                 >
@@ -238,19 +327,30 @@ export default function MenuScreen() {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <MaterialIcons name="search-off" size={48} color={colors.muted} />
-            <Text style={[styles.emptyText, { color: colors.muted }]}>Nenhum produto nesta categoria.</Text>
+            <Text style={[styles.emptyText, { color: colors.muted }]}>
+              Nenhum produto nesta categoria.
+            </Text>
           </View>
         }
       />
 
       {/* Resumo do Carrinho Flutuante */}
       {cartCount > 0 && (
-        <View style={[styles.cartBar, { backgroundColor: colors.surface, borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 16) }]}>
-          <Pressable 
+        <View
+          style={[
+            styles.cartBar,
+            {
+              backgroundColor: colors.surface,
+              borderTopColor: colors.border,
+              paddingBottom: Math.max(insets.bottom, 16),
+            },
+          ]}
+        >
+          <Pressable
             style={({ pressed }) => [
-              styles.cartBarButton, 
+              styles.cartBarButton,
               { backgroundColor: colors.primary },
-              pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] }
+              pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
             ]}
             onPress={() => router.push(`/professional/${id}/cart` as any)}
           >
@@ -258,7 +358,9 @@ export default function MenuScreen() {
               <View style={styles.cartBarCount}>
                 <Text style={styles.cartBarCountText}>{cartCount}</Text>
               </View>
-              <Text style={styles.cartBarTotal}>Total: R$ {cartTotal.toFixed(2)}</Text>
+              <Text style={styles.cartBarTotal}>
+                Total: R$ {cartTotal.toFixed(2)}
+              </Text>
             </View>
             <View style={styles.cartBarRight}>
               <Text style={styles.cartBarText}>Ver carrinho</Text>

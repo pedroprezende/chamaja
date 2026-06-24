@@ -20,10 +20,13 @@ export const vanillaTrpc = createVanillaTRPCClient<AppRouter>({
       url: `${getApiBaseUrl()}/api/trpc`,
       async headers() {
         try {
-          const { getCachedSessionToken, supabase } = await import("./supabase");
+          const { getCachedSessionToken, supabase } =
+            await import("./supabase");
           let token = getCachedSessionToken();
           if (!token) {
-            const { data: { session } } = await supabase.auth.getSession();
+            const {
+              data: { session },
+            } = await supabase.auth.getSession();
             token = session?.access_token || null;
           }
           return token ? { Authorization: `Bearer ${token}` } : {};
@@ -50,10 +53,13 @@ export function createTRPCClient() {
         // Transformer removed to fix "Unable to transform response" error
         async headers() {
           try {
-            const { getCachedSessionToken, supabase } = await import("./supabase");
+            const { getCachedSessionToken, supabase } =
+              await import("./supabase");
             let token = getCachedSessionToken();
             if (!token) {
-              const { data: { session } } = await supabase.auth.getSession();
+              const {
+                data: { session },
+              } = await supabase.auth.getSession();
               token = session?.access_token || null;
             }
             return token ? { Authorization: `Bearer ${token}` } : {};

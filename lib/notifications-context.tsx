@@ -1,9 +1,21 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  ReactNode,
+} from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const STORAGE_KEY = "@chamaja_notifications";
 
-export type NotificationType = "info" | "promo" | "order" | "review" | "welcome";
+export type NotificationType =
+  | "info"
+  | "promo"
+  | "order"
+  | "review"
+  | "welcome";
 
 export interface AppNotification {
   id: string;
@@ -18,13 +30,17 @@ export interface AppNotification {
 interface NotificationsContextType {
   notifications: AppNotification[];
   unreadCount: number;
-  addNotification: (n: Omit<AppNotification, "id" | "createdAt" | "read">) => Promise<void>;
+  addNotification: (
+    n: Omit<AppNotification, "id" | "createdAt" | "read">,
+  ) => Promise<void>;
   markRead: (id: string) => Promise<void>;
   markAllRead: () => Promise<void>;
   clearAll: () => Promise<void>;
 }
 
-const NotificationsContext = createContext<NotificationsContextType | undefined>(undefined);
+const NotificationsContext = createContext<
+  NotificationsContextType | undefined
+>(undefined);
 
 const WELCOME_NOTIFICATIONS: AppNotification[] = [
   {
@@ -91,7 +107,10 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
           setNotifications(refreshed);
         } else {
           // First time — seed welcome notifications
-          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(WELCOME_NOTIFICATIONS));
+          await AsyncStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(WELCOME_NOTIFICATIONS),
+          );
           setNotifications(WELCOME_NOTIFICATIONS);
         }
       } catch {
@@ -122,18 +141,20 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
         return updated;
       });
     },
-    [save]
+    [save],
   );
 
   const markRead = useCallback(
     async (id: string) => {
       setNotifications((prev) => {
-        const updated = prev.map((n) => (n.id === id ? { ...n, read: true } : n));
+        const updated = prev.map((n) =>
+          n.id === id ? { ...n, read: true } : n,
+        );
         save(updated);
         return updated;
       });
     },
-    [save]
+    [save],
   );
 
   const markAllRead = useCallback(async () => {
@@ -153,7 +174,14 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 
   return (
     <NotificationsContext.Provider
-      value={{ notifications, unreadCount, addNotification, markRead, markAllRead, clearAll }}
+      value={{
+        notifications,
+        unreadCount,
+        addNotification,
+        markRead,
+        markAllRead,
+        clearAll,
+      }}
     >
       {children}
     </NotificationsContext.Provider>
@@ -162,6 +190,9 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 
 export function useNotifications() {
   const ctx = useContext(NotificationsContext);
-  if (!ctx) throw new Error("useNotifications must be used within NotificationsProvider");
+  if (!ctx)
+    throw new Error(
+      "useNotifications must be used within NotificationsProvider",
+    );
   return ctx;
 }

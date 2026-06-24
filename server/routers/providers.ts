@@ -1,7 +1,17 @@
 import { z } from "zod";
-import { publicProcedure, adminProcedure, adminWriteProcedure, protectedProcedure, router } from "../_core/trpc";
+import {
+  publicProcedure,
+  adminProcedure,
+  adminWriteProcedure,
+  protectedProcedure,
+  router,
+} from "../_core/trpc";
 import * as db from "../db";
-import { providers, appEvents, businessPermissions } from "../../drizzle/schema";
+import {
+  providers,
+  appEvents,
+  businessPermissions,
+} from "../../drizzle/schema";
 import { eq, or, ilike, and, gte, lte, ne, desc, asc, sql } from "drizzle-orm";
 import { getReviewsByProfessional as getMockReviewsByProfessional } from "../../data/mock";
 import { geocodeAddress } from "../geocoding";
@@ -93,7 +103,7 @@ const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
 function sanitizeProviderForUser(
   provider: any,
-  currentUser: { openId: string; role: string } | null
+  currentUser: { openId: string; role: string } | null,
 ) {
   if (!provider) return null;
   const isAdmin = currentUser?.role === "admin";
@@ -115,7 +125,7 @@ function sanitizeProviderForUser(
 
 function sanitizeProvidersForUser(
   providersList: any[],
-  currentUser: { openId: string; role: string } | null
+  currentUser: { openId: string; role: string } | null,
 ) {
   return providersList.map((p) => sanitizeProviderForUser(p, currentUser));
 }
@@ -128,11 +138,10 @@ export const providersRouter = router({
       return sanitizeProvidersForUser(results, ctx.user);
     }),
 
-  listLightweight: publicProcedure
-    .query(async ({ ctx }) => {
-      const results = await db.getProvidersLightweight(true);
-      return sanitizeProvidersForUser(results, ctx.user);
-    }),
+  listLightweight: publicProcedure.query(async ({ ctx }) => {
+    const results = await db.getProvidersLightweight(true);
+    return sanitizeProvidersForUser(results, ctx.user);
+  }),
 
   all: adminProcedure.query(async () => {
     return db.getProviders(false);
@@ -146,18 +155,40 @@ export const providersRouter = router({
       const userId = ctx.user.openId;
 
       // Verify if user already has a provider profile
-      const existing = await dbInstance.select().from(providers).where(eq(providers.userId, userId)).limit(1);
-      
-      let latitude = input.latitude !== undefined && input.latitude !== null ? input.latitude : (existing.length > 0 ? existing[0].latitude : null);
-      let longitude = input.longitude !== undefined && input.longitude !== null ? input.longitude : (existing.length > 0 ? existing[0].longitude : null);
+      const existing = await dbInstance
+        .select()
+        .from(providers)
+        .where(eq(providers.userId, userId))
+        .limit(1);
 
-      const hasAddressChanged = existing.length === 0 || 
-        existing[0].address !== input.address || 
-        existing[0].neighborhood !== input.neighborhood || 
+      let latitude =
+        input.latitude !== undefined && input.latitude !== null
+          ? input.latitude
+          : existing.length > 0
+            ? existing[0].latitude
+            : null;
+      let longitude =
+        input.longitude !== undefined && input.longitude !== null
+          ? input.longitude
+          : existing.length > 0
+            ? existing[0].longitude
+            : null;
+
+      const hasAddressChanged =
+        existing.length === 0 ||
+        existing[0].address !== input.address ||
+        existing[0].neighborhood !== input.neighborhood ||
         existing[0].city !== input.city;
 
-      if (hasAddressChanged && (input.latitude === undefined || input.latitude === null)) {
-        const coords = await geocodeAddress(input.address, input.neighborhood, input.city);
+      if (
+        hasAddressChanged &&
+        (input.latitude === undefined || input.latitude === null)
+      ) {
+        const coords = await geocodeAddress(
+          input.address,
+          input.neighborhood,
+          input.city,
+        );
         if (coords) {
           latitude = coords.latitude;
           longitude = coords.longitude;
@@ -166,42 +197,47 @@ export const providersRouter = router({
 
       if (existing.length > 0) {
         // Update
-        await dbInstance.update(providers).set({
-          name: input.name,
-          category: input.category,
-          categoryId: input.categoryId,
-          subcategoryId: input.subcategoryId,
-          subcategoryName: input.subcategoryName,
-          serviceId: input.serviceId,
-          serviceName: input.serviceName,
-          city: input.city,
-          neighborhood: input.neighborhood,
-          phone: input.phone,
-          plan: input.plan,
-          planExpiresAt: input.planExpiresAt ? new Date(input.planExpiresAt) : null,
-          services: JSON.stringify(input.services || []),
-           description: input.description,
-          avatarUri: input.avatar,
-          avatarThumbnailUri: input.avatarThumbnailUri,
-          gallery: input.gallery || [],
-          address: input.address,
-          latitude,
-          longitude,
-          coverUri: input.coverUri,
-          coverThumbnailUri: input.coverThumbnailUri,
-          isVerified: input.isVerified ?? false,
-          onlineStatus: input.onlineStatus ?? false,
-          responseTime: input.responseTime,
-          clientsServed: input.clientsServed || 0,
-          foundedYear: input.foundedYear,
-          topBadge: input.topBadge,
-          popularServices: safeStringify(input.popularServices),
-          tags: safeStringify(input.tags),
-          workingHours: safeStringify(input.workingHours),
-          businessType: input.businessType,
-          deliveryTime: input.deliveryTime,
-          updatedAt: new Date(),
-        }).where(eq(providers.userId, userId));
+        await dbInstance
+          .update(providers)
+          .set({
+            name: input.name,
+            category: input.category,
+            categoryId: input.categoryId,
+            subcategoryId: input.subcategoryId,
+            subcategoryName: input.subcategoryName,
+            serviceId: input.serviceId,
+            serviceName: input.serviceName,
+            city: input.city,
+            neighborhood: input.neighborhood,
+            phone: input.phone,
+            plan: input.plan,
+            planExpiresAt: input.planExpiresAt
+              ? new Date(input.planExpiresAt)
+              : null,
+            services: JSON.stringify(input.services || []),
+            description: input.description,
+            avatarUri: input.avatar,
+            avatarThumbnailUri: input.avatarThumbnailUri,
+            gallery: input.gallery || [],
+            address: input.address,
+            latitude,
+            longitude,
+            coverUri: input.coverUri,
+            coverThumbnailUri: input.coverThumbnailUri,
+            isVerified: input.isVerified ?? false,
+            onlineStatus: input.onlineStatus ?? false,
+            responseTime: input.responseTime,
+            clientsServed: input.clientsServed || 0,
+            foundedYear: input.foundedYear,
+            topBadge: input.topBadge,
+            popularServices: safeStringify(input.popularServices),
+            tags: safeStringify(input.tags),
+            workingHours: safeStringify(input.workingHours),
+            businessType: input.businessType,
+            deliveryTime: input.deliveryTime,
+            updatedAt: new Date(),
+          })
+          .where(eq(providers.userId, userId));
       } else {
         const providerId = uid();
         // Insert
@@ -219,9 +255,11 @@ export const providersRouter = router({
           neighborhood: input.neighborhood,
           phone: input.phone,
           plan: input.plan,
-          planExpiresAt: input.planExpiresAt ? new Date(input.planExpiresAt) : null,
+          planExpiresAt: input.planExpiresAt
+            ? new Date(input.planExpiresAt)
+            : null,
           services: JSON.stringify(input.services || []),
-           description: input.description,
+          description: input.description,
           avatarUri: input.avatar,
           avatarThumbnailUri: input.avatarThumbnailUri,
           gallery: input.gallery || [],
@@ -250,13 +288,19 @@ export const providersRouter = router({
         });
 
         // Insert default business permissions
-        await dbInstance.insert(businessPermissions).values({
-          businessId: providerId,
-          maxServicos: 1,
-          status: "pendente",
-        }).catch((err) => {
-          console.error("[providersRouter] Failed to insert default business permissions:", err);
-        });
+        await dbInstance
+          .insert(businessPermissions)
+          .values({
+            businessId: providerId,
+            maxServicos: 1,
+            status: "pendente",
+          })
+          .catch((err) => {
+            console.error(
+              "[providersRouter] Failed to insert default business permissions:",
+              err,
+            );
+          });
 
         // Log provider registration event
         await dbInstance.insert(appEvents).values({
@@ -276,57 +320,105 @@ export const providersRouter = router({
     .mutation(async ({ input, ctx }) => {
       const dbInstance = await db.getDb();
       if (!dbInstance) return;
-      
+
       // Apenas o próprio usuário ou um admin pode atualizar
       if (ctx.user.openId !== input.userId && ctx.user.role !== "admin") {
         throw new Error("Forbidden: You can only update your own profile");
       }
-      
+
       const mappedUpdates: any = {};
-      if (input.updates.name !== undefined) mappedUpdates.name = input.updates.name;
-       if (input.updates.avatar !== undefined) mappedUpdates.avatarUri = input.updates.avatar;
-      if (input.updates.avatarThumbnailUri !== undefined) mappedUpdates.avatarThumbnailUri = input.updates.avatarThumbnailUri;
-      if (input.updates.category !== undefined) mappedUpdates.category = input.updates.category;
-      if (input.updates.city !== undefined) mappedUpdates.city = input.updates.city;
-      if (input.updates.neighborhood !== undefined) mappedUpdates.neighborhood = input.updates.neighborhood;
-      if (input.updates.phone !== undefined) mappedUpdates.phone = input.updates.phone;
-      if (input.updates.description !== undefined) mappedUpdates.description = input.updates.description;
-      if (input.updates.address !== undefined) mappedUpdates.address = input.updates.address;
-      if (input.updates.services !== undefined) mappedUpdates.services = JSON.stringify(input.updates.services || []);
-      if (input.updates.plan !== undefined) mappedUpdates.plan = input.updates.plan;
+      if (input.updates.name !== undefined)
+        mappedUpdates.name = input.updates.name;
+      if (input.updates.avatar !== undefined)
+        mappedUpdates.avatarUri = input.updates.avatar;
+      if (input.updates.avatarThumbnailUri !== undefined)
+        mappedUpdates.avatarThumbnailUri = input.updates.avatarThumbnailUri;
+      if (input.updates.category !== undefined)
+        mappedUpdates.category = input.updates.category;
+      if (input.updates.city !== undefined)
+        mappedUpdates.city = input.updates.city;
+      if (input.updates.neighborhood !== undefined)
+        mappedUpdates.neighborhood = input.updates.neighborhood;
+      if (input.updates.phone !== undefined)
+        mappedUpdates.phone = input.updates.phone;
+      if (input.updates.description !== undefined)
+        mappedUpdates.description = input.updates.description;
+      if (input.updates.address !== undefined)
+        mappedUpdates.address = input.updates.address;
+      if (input.updates.services !== undefined)
+        mappedUpdates.services = JSON.stringify(input.updates.services || []);
+      if (input.updates.plan !== undefined)
+        mappedUpdates.plan = input.updates.plan;
       if (input.updates.planExpiresAt !== undefined) {
-        mappedUpdates.planExpiresAt = input.updates.planExpiresAt ? new Date(input.updates.planExpiresAt) : null;
+        mappedUpdates.planExpiresAt = input.updates.planExpiresAt
+          ? new Date(input.updates.planExpiresAt)
+          : null;
       }
-      if (input.updates.isActive !== undefined) mappedUpdates.isActive = input.updates.isActive;
-      if (input.updates.latitude !== undefined) mappedUpdates.latitude = input.updates.latitude;
-      if (input.updates.longitude !== undefined) mappedUpdates.longitude = input.updates.longitude;
-      if (input.updates.coverUri !== undefined) mappedUpdates.coverUri = input.updates.coverUri;
-      if (input.updates.coverThumbnailUri !== undefined) mappedUpdates.coverThumbnailUri = input.updates.coverThumbnailUri;
-      if (input.updates.isVerified !== undefined) mappedUpdates.isVerified = input.updates.isVerified;
-      if (input.updates.onlineStatus !== undefined) mappedUpdates.onlineStatus = input.updates.onlineStatus;
-      if (input.updates.responseTime !== undefined) mappedUpdates.responseTime = input.updates.responseTime;
-      if (input.updates.clientsServed !== undefined) mappedUpdates.clientsServed = input.updates.clientsServed;
-      if (input.updates.foundedYear !== undefined) mappedUpdates.foundedYear = input.updates.foundedYear;
-      if (input.updates.topBadge !== undefined) mappedUpdates.topBadge = input.updates.topBadge;
-      if (input.updates.popularServices !== undefined) mappedUpdates.popularServices = safeStringify(input.updates.popularServices);
-      if (input.updates.tags !== undefined) mappedUpdates.tags = safeStringify(input.updates.tags);
-      if (input.updates.workingHours !== undefined) mappedUpdates.workingHours = safeStringify(input.updates.workingHours);
-      if (input.updates.businessType !== undefined) mappedUpdates.businessType = input.updates.businessType;
-      if (input.updates.deliveryTime !== undefined) mappedUpdates.deliveryTime = input.updates.deliveryTime;
+      if (input.updates.isActive !== undefined)
+        mappedUpdates.isActive = input.updates.isActive;
+      if (input.updates.latitude !== undefined)
+        mappedUpdates.latitude = input.updates.latitude;
+      if (input.updates.longitude !== undefined)
+        mappedUpdates.longitude = input.updates.longitude;
+      if (input.updates.coverUri !== undefined)
+        mappedUpdates.coverUri = input.updates.coverUri;
+      if (input.updates.coverThumbnailUri !== undefined)
+        mappedUpdates.coverThumbnailUri = input.updates.coverThumbnailUri;
+      if (input.updates.isVerified !== undefined)
+        mappedUpdates.isVerified = input.updates.isVerified;
+      if (input.updates.onlineStatus !== undefined)
+        mappedUpdates.onlineStatus = input.updates.onlineStatus;
+      if (input.updates.responseTime !== undefined)
+        mappedUpdates.responseTime = input.updates.responseTime;
+      if (input.updates.clientsServed !== undefined)
+        mappedUpdates.clientsServed = input.updates.clientsServed;
+      if (input.updates.foundedYear !== undefined)
+        mappedUpdates.foundedYear = input.updates.foundedYear;
+      if (input.updates.topBadge !== undefined)
+        mappedUpdates.topBadge = input.updates.topBadge;
+      if (input.updates.popularServices !== undefined)
+        mappedUpdates.popularServices = safeStringify(
+          input.updates.popularServices,
+        );
+      if (input.updates.tags !== undefined)
+        mappedUpdates.tags = safeStringify(input.updates.tags);
+      if (input.updates.workingHours !== undefined)
+        mappedUpdates.workingHours = safeStringify(input.updates.workingHours);
+      if (input.updates.businessType !== undefined)
+        mappedUpdates.businessType = input.updates.businessType;
+      if (input.updates.deliveryTime !== undefined)
+        mappedUpdates.deliveryTime = input.updates.deliveryTime;
       mappedUpdates.updatedAt = new Date();
 
-      const existing = await dbInstance.select().from(providers).where(eq(providers.userId, input.userId)).limit(1);
+      const existing = await dbInstance
+        .select()
+        .from(providers)
+        .where(eq(providers.userId, input.userId))
+        .limit(1);
       if (existing.length > 0) {
-        const hasAddressChanged = 
-          (input.updates.address !== undefined && existing[0].address !== input.updates.address) ||
-          (input.updates.neighborhood !== undefined && existing[0].neighborhood !== input.updates.neighborhood) ||
-          (input.updates.city !== undefined && existing[0].city !== input.updates.city);
+        const hasAddressChanged =
+          (input.updates.address !== undefined &&
+            existing[0].address !== input.updates.address) ||
+          (input.updates.neighborhood !== undefined &&
+            existing[0].neighborhood !== input.updates.neighborhood) ||
+          (input.updates.city !== undefined &&
+            existing[0].city !== input.updates.city);
 
-        if (hasAddressChanged && (input.updates.latitude === undefined || input.updates.latitude === null)) {
+        if (
+          hasAddressChanged &&
+          (input.updates.latitude === undefined ||
+            input.updates.latitude === null)
+        ) {
           const coords = await geocodeAddress(
-            input.updates.address !== undefined ? input.updates.address : existing[0].address,
-            input.updates.neighborhood !== undefined ? input.updates.neighborhood : existing[0].neighborhood,
-            input.updates.city !== undefined ? input.updates.city : existing[0].city
+            input.updates.address !== undefined
+              ? input.updates.address
+              : existing[0].address,
+            input.updates.neighborhood !== undefined
+              ? input.updates.neighborhood
+              : existing[0].neighborhood,
+            input.updates.city !== undefined
+              ? input.updates.city
+              : existing[0].city,
           );
           if (coords) {
             mappedUpdates.latitude = coords.latitude;
@@ -334,8 +426,11 @@ export const providersRouter = router({
           }
         }
       }
-      
-      await dbInstance.update(providers).set(mappedUpdates).where(eq(providers.userId, input.userId));
+
+      await dbInstance
+        .update(providers)
+        .set(mappedUpdates)
+        .where(eq(providers.userId, input.userId));
       return { success: true };
     }),
 
@@ -344,12 +439,12 @@ export const providersRouter = router({
     .mutation(async ({ input, ctx }) => {
       const dbInstance = await db.getDb();
       if (!dbInstance) return;
-      
+
       // Apenas o próprio usuário ou um admin pode remover
       if (ctx.user.openId !== input && ctx.user.role !== "admin") {
         throw new Error("Forbidden: You can only delete your own profile");
       }
-      
+
       await dbInstance.delete(providers).where(eq(providers.userId, input));
       return { success: true };
     }),
@@ -359,53 +454,68 @@ export const providersRouter = router({
     .query(async ({ input, ctx }) => {
       const dbInstance = await db.getDb();
       if (!dbInstance) return [];
-      const results = await dbInstance.select().from(providers).where(
-        or(
-          eq(providers.category, input),
-          eq(providers.categoryId, input),
-          ilike(providers.subcategoryId, `%${input}%`),
-          ilike(providers.subcategoryName, `%${input}%`),
-          eq(providers.serviceId, input),
-          ilike(providers.serviceName, `%${input}%`)
-        )
-      );
+      const results = await dbInstance
+        .select()
+        .from(providers)
+        .where(
+          or(
+            eq(providers.category, input),
+            eq(providers.categoryId, input),
+            ilike(providers.subcategoryId, `%${input}%`),
+            ilike(providers.subcategoryName, `%${input}%`),
+            eq(providers.serviceId, input),
+            ilike(providers.serviceName, `%${input}%`),
+          ),
+        );
       return sanitizeProvidersForUser(results, ctx.user);
     }),
 
-  search: publicProcedure
-    .input(z.string())
-    .query(async ({ input, ctx }) => {
-      const dbInstance = await db.getDb();
-      if (!dbInstance) return [];
-      const lower = `%${input.toLowerCase()}%`;
-      const results = await dbInstance.select().from(providers).where(
+  search: publicProcedure.input(z.string()).query(async ({ input, ctx }) => {
+    const dbInstance = await db.getDb();
+    if (!dbInstance) return [];
+    const lower = `%${input.toLowerCase()}%`;
+    const results = await dbInstance
+      .select()
+      .from(providers)
+      .where(
         or(
           ilike(providers.name, lower),
           ilike(providers.category, lower),
           ilike(providers.subcategoryName, lower),
           ilike(providers.city, lower),
           ilike(providers.neighborhood, lower),
-          ilike(providers.description, lower)
-        )
+          ilike(providers.description, lower),
+        ),
       );
-      return sanitizeProvidersForUser(results, ctx.user);
-    }),
+    return sanitizeProvidersForUser(results, ctx.user);
+  }),
 
   searchFiltered: publicProcedure
-    .input(z.object({
-      query: z.string().optional(),
-      profileType: z.enum(["all", "professional", "comercio"]).optional(),
-      categoryId: z.string().optional(),
-      subcategoryId: z.string().optional(),
-      userLatitude: z.number().optional(),
-      userLongitude: z.number().optional(),
-      maxDistanceKm: z.number().optional(),
-      minRating: z.number().optional(),
-      onlyOnline: z.boolean().optional(),
-      priceLevel: z.number().optional(),
-      availability: z.enum(["any", "now", "today", "scheduled"]).optional(),
-      sortBy: z.enum(["relevance", "distance", "rating", "popularity", "recent", "name"]).optional(),
-    }))
+    .input(
+      z.object({
+        query: z.string().optional(),
+        profileType: z.enum(["all", "professional", "comercio"]).optional(),
+        categoryId: z.string().optional(),
+        subcategoryId: z.string().optional(),
+        userLatitude: z.number().optional(),
+        userLongitude: z.number().optional(),
+        maxDistanceKm: z.number().optional(),
+        minRating: z.number().optional(),
+        onlyOnline: z.boolean().optional(),
+        priceLevel: z.number().optional(),
+        availability: z.enum(["any", "now", "today", "scheduled"]).optional(),
+        sortBy: z
+          .enum([
+            "relevance",
+            "distance",
+            "rating",
+            "popularity",
+            "recent",
+            "name",
+          ])
+          .optional(),
+      }),
+    )
     .query(async ({ input, ctx }) => {
       const dbInstance = await db.getDb();
       if (!dbInstance) return [];
@@ -447,8 +557,8 @@ export const providersRouter = router({
             ilike(providers.subcategoryName, lower),
             ilike(providers.city, lower),
             ilike(providers.neighborhood, lower),
-            ilike(providers.description, lower)
-          )
+            ilike(providers.description, lower),
+          ),
         );
       }
 
@@ -462,8 +572,8 @@ export const providersRouter = router({
         conditions.push(
           or(
             eq(providers.subcategoryId, subcategoryId),
-            ilike(providers.subcategoryId, `%${subcategoryId}%`)
-          )
+            ilike(providers.subcategoryId, `%${subcategoryId}%`),
+          ),
         );
       }
 
@@ -483,17 +593,19 @@ export const providersRouter = router({
       }
 
       // 9. Bounding Box para filtro geográfico rápido utilizando índices
-      const hasCoords = userLatitude !== undefined && userLongitude !== undefined;
+      const hasCoords =
+        userLatitude !== undefined && userLongitude !== undefined;
       const limitDistance = maxDistanceKm !== undefined && maxDistanceKm > 0;
-      
+
       if (hasCoords && limitDistance) {
         const deltaLat = maxDistanceKm / 111.0;
-        const deltaLng = maxDistanceKm / (111.0 * Math.cos(userLatitude * Math.PI / 180.0));
+        const deltaLng =
+          maxDistanceKm / (111.0 * Math.cos((userLatitude * Math.PI) / 180.0));
         conditions.push(
           gte(providers.latitude, userLatitude - deltaLat),
           lte(providers.latitude, userLatitude + deltaLat),
           gte(providers.longitude, userLongitude - deltaLng),
-          lte(providers.longitude, userLongitude + deltaLng)
+          lte(providers.longitude, userLongitude + deltaLng),
         );
       }
 
@@ -541,7 +653,10 @@ export const providersRouter = router({
         selectFields.distanceKm = distanceSqlExpr;
       }
 
-      let queryBuilder = dbInstance.select(selectFields).from(providers).where(and(...conditions));
+      let queryBuilder = dbInstance
+        .select(selectFields)
+        .from(providers)
+        .where(and(...conditions));
 
       // 11. Ordenação
       const orderByExprs = [];
@@ -550,7 +665,10 @@ export const providersRouter = router({
       } else if (sortBy === "distance" && hasCoords) {
         orderByExprs.push(asc(distanceSqlExpr));
       } else if (sortBy === "popularity") {
-        orderByExprs.push(desc(providers.clientsServed), desc(providers.ratingCount));
+        orderByExprs.push(
+          desc(providers.clientsServed),
+          desc(providers.ratingCount),
+        );
       } else if (sortBy === "recent") {
         orderByExprs.push(desc(providers.createdAt));
       } else if (sortBy === "name") {
@@ -558,8 +676,10 @@ export const providersRouter = router({
       } else {
         // relevance: Destaques/Premium primeiro, depois displayOrder/distância
         orderByExprs.push(
-          desc(sql`CASE WHEN ${providers.plan} IN ('premium', 'annual') THEN 1 ELSE 0 END`),
-          asc(providers.displayOrder)
+          desc(
+            sql`CASE WHEN ${providers.plan} IN ('premium', 'annual') THEN 1 ELSE 0 END`,
+          ),
+          asc(providers.displayOrder),
         );
         if (hasCoords) {
           orderByExprs.push(asc(distanceSqlExpr));
@@ -569,7 +689,7 @@ export const providersRouter = router({
       queryBuilder.orderBy(...orderByExprs);
       const results = await queryBuilder;
 
-      const mapped = results.map(r => {
+      const mapped = results.map((r) => {
         let distanceStr = "";
         let distanceKm = (r as any).distanceKm;
         if (distanceKm !== undefined && distanceKm !== null) {
@@ -589,9 +709,11 @@ export const providersRouter = router({
     }),
 
   smartSearch: publicProcedure
-    .input(z.object({
-      query: z.string(),
-    }))
+    .input(
+      z.object({
+        query: z.string(),
+      }),
+    )
     .query(async ({ input }) => {
       const dbInstance = await db.getDb();
       if (!dbInstance) return { success: false, reason: "DB_UNAVAILABLE" };
@@ -602,159 +724,262 @@ export const providersRouter = router({
       const allCats = await db.getAllCategories();
       const allSubs = await db.getAllSubServices();
 
-      const normalize = (str: string) => 
-        str.toLowerCase()
-           .normalize("NFD")
-           .replace(/[\u0300-\u036f]/g, "")
-           .replace(/[^a-z0-9\s]/g, "")
-           .trim();
+      const normalize = (str: string) =>
+        str
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9\s]/g, "")
+          .trim();
 
       const queryNorm = normalize(rawQuery);
 
-      const keywordMap: Record<string, { categoryId?: string; label: string; scoreMultiplier?: number }> = {
-        "eletricista": { categoryId: "reformas-reparos", label: "Eletricista", scoreMultiplier: 2.0 },
-        "eletrica": { categoryId: "reformas-reparos", label: "Eletricista" },
-        "fiação": { categoryId: "reformas-reparos", label: "Eletricista" },
-        "fiacao": { categoryId: "reformas-reparos", label: "Eletricista" },
-        "chuveiro": { categoryId: "reformas-reparos", label: "Eletricista" },
-        "tomada": { categoryId: "reformas-reparos", label: "Eletricista" },
-        "lampada": { categoryId: "reformas-reparos", label: "Eletricista" },
-        "curto": { categoryId: "reformas-reparos", label: "Eletricista" },
-        "disjuntor": { categoryId: "reformas-reparos", label: "Eletricista" },
-        "ventilador": { categoryId: "reformas-reparos", label: "Eletricista" },
+      const keywordMap: Record<
+        string,
+        { categoryId?: string; label: string; scoreMultiplier?: number }
+      > = {
+        eletricista: {
+          categoryId: "reformas-reparos",
+          label: "Eletricista",
+          scoreMultiplier: 2.0,
+        },
+        eletrica: { categoryId: "reformas-reparos", label: "Eletricista" },
+        fiação: { categoryId: "reformas-reparos", label: "Eletricista" },
+        fiacao: { categoryId: "reformas-reparos", label: "Eletricista" },
+        chuveiro: { categoryId: "reformas-reparos", label: "Eletricista" },
+        tomada: { categoryId: "reformas-reparos", label: "Eletricista" },
+        lampada: { categoryId: "reformas-reparos", label: "Eletricista" },
+        curto: { categoryId: "reformas-reparos", label: "Eletricista" },
+        disjuntor: { categoryId: "reformas-reparos", label: "Eletricista" },
+        ventilador: { categoryId: "reformas-reparos", label: "Eletricista" },
 
-        "encanador": { categoryId: "reformas-reparos", label: "Encanador", scoreMultiplier: 2.0 },
-        "encanamento": { categoryId: "reformas-reparos", label: "Encanador" },
-        "cano": { categoryId: "reformas-reparos", label: "Encanador" },
-        "vazamento": { categoryId: "reformas-reparos", label: "Encanador" },
-        "infiltracao": { categoryId: "reformas-reparos", label: "Encanador" },
-        "torneira": { categoryId: "reformas-reparos", label: "Encanador" },
-        "pia": { categoryId: "reformas-reparos", label: "Encanador" },
-        "desentupir": { categoryId: "reformas-reparos", label: "Encanador" },
-        "esgoto": { categoryId: "reformas-reparos", label: "Encanador" },
+        encanador: {
+          categoryId: "reformas-reparos",
+          label: "Encanador",
+          scoreMultiplier: 2.0,
+        },
+        encanamento: { categoryId: "reformas-reparos", label: "Encanador" },
+        cano: { categoryId: "reformas-reparos", label: "Encanador" },
+        vazamento: { categoryId: "reformas-reparos", label: "Encanador" },
+        infiltracao: { categoryId: "reformas-reparos", label: "Encanador" },
+        torneira: { categoryId: "reformas-reparos", label: "Encanador" },
+        pia: { categoryId: "reformas-reparos", label: "Encanador" },
+        desentupir: { categoryId: "reformas-reparos", label: "Encanador" },
+        esgoto: { categoryId: "reformas-reparos", label: "Encanador" },
 
-        "pintor": { categoryId: "reformas-reparos", label: "Pintor", scoreMultiplier: 2.0 },
-        "pintura": { categoryId: "reformas-reparos", label: "Pintor" },
-        "pintar": { categoryId: "reformas-reparos", label: "Pintor" },
+        pintor: {
+          categoryId: "reformas-reparos",
+          label: "Pintor",
+          scoreMultiplier: 2.0,
+        },
+        pintura: { categoryId: "reformas-reparos", label: "Pintor" },
+        pintar: { categoryId: "reformas-reparos", label: "Pintor" },
         "massa corrida": { categoryId: "reformas-reparos", label: "Pintor" },
-        "verniz": { categoryId: "reformas-reparos", label: "Pintor" },
-        "portao": { categoryId: "reformas-reparos", label: "Pintor" },
-        "parede": { categoryId: "reformas-reparos", label: "Pintor" },
+        verniz: { categoryId: "reformas-reparos", label: "Pintor" },
+        portao: { categoryId: "reformas-reparos", label: "Pintor" },
+        parede: { categoryId: "reformas-reparos", label: "Pintor" },
 
-        "pedreiro": { categoryId: "reformas-reparos", label: "Pedreiro", scoreMultiplier: 2.0 },
-        "reforma": { categoryId: "reformas-reparos", label: "Pedreiro" },
-        "construir": { categoryId: "reformas-reparos", label: "Pedreiro" },
-        "tijolo": { categoryId: "reformas-reparos", label: "Pedreiro" },
-        "cimento": { categoryId: "reformas-reparos", label: "Pedreiro" },
-        "azulejo": { categoryId: "reformas-reparos", label: "Pedreiro" },
-        "piso": { categoryId: "reformas-reparos", label: "Pedreiro" },
-        "reboco": { categoryId: "reformas-reparos", label: "Pedreiro" },
+        pedreiro: {
+          categoryId: "reformas-reparos",
+          label: "Pedreiro",
+          scoreMultiplier: 2.0,
+        },
+        reforma: { categoryId: "reformas-reparos", label: "Pedreiro" },
+        construir: { categoryId: "reformas-reparos", label: "Pedreiro" },
+        tijolo: { categoryId: "reformas-reparos", label: "Pedreiro" },
+        cimento: { categoryId: "reformas-reparos", label: "Pedreiro" },
+        azulejo: { categoryId: "reformas-reparos", label: "Pedreiro" },
+        piso: { categoryId: "reformas-reparos", label: "Pedreiro" },
+        reboco: { categoryId: "reformas-reparos", label: "Pedreiro" },
 
-        "marceneiro": { categoryId: "reformas-reparos", label: "Montagem de Móveis" },
-        "marcenaria": { categoryId: "reformas-reparos", label: "Montagem de Móveis" },
-        "moveis": { categoryId: "reformas-reparos", label: "Montagem de Móveis" },
-        "armario": { categoryId: "reformas-reparos", label: "Montagem de Móveis" },
-        "guarda-roupa": { categoryId: "reformas-reparos", label: "Montagem de Móveis" },
-        "madeira": { categoryId: "reformas-reparos", label: "Montagem de Móveis" },
-        "montagem": { categoryId: "reformas-reparos", label: "Montagem de Móveis" },
-        "montar": { categoryId: "reformas-reparos", label: "Montagem de Móveis" },
-        "desmontar": { categoryId: "reformas-reparos", label: "Montagem de Móveis" },
+        marceneiro: {
+          categoryId: "reformas-reparos",
+          label: "Montagem de Móveis",
+        },
+        marcenaria: {
+          categoryId: "reformas-reparos",
+          label: "Montagem de Móveis",
+        },
+        moveis: { categoryId: "reformas-reparos", label: "Montagem de Móveis" },
+        armario: {
+          categoryId: "reformas-reparos",
+          label: "Montagem de Móveis",
+        },
+        "guarda-roupa": {
+          categoryId: "reformas-reparos",
+          label: "Montagem de Móveis",
+        },
+        madeira: {
+          categoryId: "reformas-reparos",
+          label: "Montagem de Móveis",
+        },
+        montagem: {
+          categoryId: "reformas-reparos",
+          label: "Montagem de Móveis",
+        },
+        montar: { categoryId: "reformas-reparos", label: "Montagem de Móveis" },
+        desmontar: {
+          categoryId: "reformas-reparos",
+          label: "Montagem de Móveis",
+        },
 
-        "chaveiro": { categoryId: "reformas-reparos", label: "Chaveiro", scoreMultiplier: 2.0 },
-        "chave": { categoryId: "reformas-reparos", label: "Chaveiro" },
-        "fechadura": { categoryId: "reformas-reparos", label: "Chaveiro" },
-        "cadeado": { categoryId: "reformas-reparos", label: "Chaveiro" },
+        chaveiro: {
+          categoryId: "reformas-reparos",
+          label: "Chaveiro",
+          scoreMultiplier: 2.0,
+        },
+        chave: { categoryId: "reformas-reparos", label: "Chaveiro" },
+        fechadura: { categoryId: "reformas-reparos", label: "Chaveiro" },
+        cadeado: { categoryId: "reformas-reparos", label: "Chaveiro" },
         "abrir porta": { categoryId: "reformas-reparos", label: "Chaveiro" },
 
-        "diarista": { categoryId: "servicos-domesticos", label: "Diarista", scoreMultiplier: 2.0 },
-        "faxina": { categoryId: "servicos-domesticos", label: "Faxineira" },
-        "faxineira": { categoryId: "servicos-domesticos", label: "Faxineira" },
-        "limpeza": { categoryId: "servicos-domesticos", label: "Diarista" },
-        "passadeira": { categoryId: "servicos-domesticos", label: "Passadeira" },
-        "passar roupa": { categoryId: "servicos-domesticos", label: "Passadeira" },
-        "baba": { categoryId: "servicos-domesticos", label: "Babá" },
-        "crianca": { categoryId: "servicos-domesticos", label: "Babá" },
+        diarista: {
+          categoryId: "servicos-domesticos",
+          label: "Diarista",
+          scoreMultiplier: 2.0,
+        },
+        faxina: { categoryId: "servicos-domesticos", label: "Faxineira" },
+        faxineira: { categoryId: "servicos-domesticos", label: "Faxineira" },
+        limpeza: { categoryId: "servicos-domesticos", label: "Diarista" },
+        passadeira: { categoryId: "servicos-domesticos", label: "Passadeira" },
+        "passar roupa": {
+          categoryId: "servicos-domesticos",
+          label: "Passadeira",
+        },
+        baba: { categoryId: "servicos-domesticos", label: "Babá" },
+        crianca: { categoryId: "servicos-domesticos", label: "Babá" },
 
-        "jardineiro": { categoryId: "servicos-externos", label: "Jardinagem", scoreMultiplier: 2.0 },
-        "jardim": { categoryId: "servicos-externos", label: "Jardinagem" },
-        "grama": { categoryId: "servicos-externos", label: "Jardinagem" },
-        "podar": { categoryId: "servicos-externos", label: "Jardinagem" },
-        "plantas": { categoryId: "servicos-externos", label: "Jardinagem" },
+        jardineiro: {
+          categoryId: "servicos-externos",
+          label: "Jardinagem",
+          scoreMultiplier: 2.0,
+        },
+        jardim: { categoryId: "servicos-externos", label: "Jardinagem" },
+        grama: { categoryId: "servicos-externos", label: "Jardinagem" },
+        podar: { categoryId: "servicos-externos", label: "Jardinagem" },
+        plantas: { categoryId: "servicos-externos", label: "Jardinagem" },
 
-        "piscineiro": { categoryId: "servicos-externos", label: "Piscineiro" },
-        "piscina": { categoryId: "servicos-externos", label: "Piscineiro" },
-        "limpar piscina": { categoryId: "servicos-externos", label: "Piscineiro" },
+        piscineiro: { categoryId: "servicos-externos", label: "Piscineiro" },
+        piscina: { categoryId: "servicos-externos", label: "Piscineiro" },
+        "limpar piscina": {
+          categoryId: "servicos-externos",
+          label: "Piscineiro",
+        },
 
-        "tecnico": { categoryId: "assistencia-tecnica", label: "Assistência Técnica" },
-        "conserto": { categoryId: "assistencia-tecnica", label: "Assistência Técnica" },
-        "celular": { categoryId: "assistencia-tecnica", label: "Conserto de Celular" },
-        "tela quebrada": { categoryId: "assistencia-tecnica", label: "Conserto de Celular" },
-        "notebook": { categoryId: "assistencia-tecnica", label: "Técnico de Notebook" },
-        "computador": { categoryId: "assistencia-tecnica", label: "Técnico de Notebook" },
-        "ar-condicionado": { categoryId: "assistencia-tecnica", label: "Ar-condicionado" },
-        "ar condicionado": { categoryId: "assistencia-tecnica", label: "Ar-condicionado" },
-        "geladeira": { categoryId: "assistencia-tecnica", label: "Conserto de Geladeira" },
-        "maquina de lavar": { categoryId: "assistencia-tecnica", label: "Conserto de Máquina" },
+        tecnico: {
+          categoryId: "assistencia-tecnica",
+          label: "Assistência Técnica",
+        },
+        conserto: {
+          categoryId: "assistencia-tecnica",
+          label: "Assistência Técnica",
+        },
+        celular: {
+          categoryId: "assistencia-tecnica",
+          label: "Conserto de Celular",
+        },
+        "tela quebrada": {
+          categoryId: "assistencia-tecnica",
+          label: "Conserto de Celular",
+        },
+        notebook: {
+          categoryId: "assistencia-tecnica",
+          label: "Técnico de Notebook",
+        },
+        computador: {
+          categoryId: "assistencia-tecnica",
+          label: "Técnico de Notebook",
+        },
+        "ar-condicionado": {
+          categoryId: "assistencia-tecnica",
+          label: "Ar-condicionado",
+        },
+        "ar condicionado": {
+          categoryId: "assistencia-tecnica",
+          label: "Ar-condicionado",
+        },
+        geladeira: {
+          categoryId: "assistencia-tecnica",
+          label: "Conserto de Geladeira",
+        },
+        "maquina de lavar": {
+          categoryId: "assistencia-tecnica",
+          label: "Conserto de Máquina",
+        },
 
-        "mecanico": { categoryId: "automotivo", label: "Mecânico" },
-        "oficina": { categoryId: "automotivo", label: "Mecânico" },
-        "carro": { categoryId: "automotivo", label: "Mecânico" },
-        "pneu": { categoryId: "automotivo", label: "Mecânico" },
-        "motor": { categoryId: "automotivo", label: "Mecânico" },
-        "freio": { categoryId: "automotivo", label: "Mecânico" },
+        mecanico: { categoryId: "automotivo", label: "Mecânico" },
+        oficina: { categoryId: "automotivo", label: "Mecânico" },
+        carro: { categoryId: "automotivo", label: "Mecânico" },
+        pneu: { categoryId: "automotivo", label: "Mecânico" },
+        motor: { categoryId: "automotivo", label: "Mecânico" },
+        freio: { categoryId: "automotivo", label: "Mecânico" },
         "lava rapido": { categoryId: "automotivo", label: "Lava Rápido" },
         "lavar carro": { categoryId: "automotivo", label: "Lava Rápido" },
 
-        "barbeiro": { categoryId: "beleza-estetica", label: "Barbeiro" },
-        "barba": { categoryId: "beleza-estetica", label: "Barbeiro" },
-        "cabelo": { categoryId: "beleza-estetica", label: "Barbeiro" },
-        "cabeleireiro": { categoryId: "beleza-estetica", label: "Barbeiro" },
-        "manicure": { categoryId: "beleza-estetica", label: "Manicure" },
-        "unha": { categoryId: "beleza-estetica", label: "Manicure" },
-        "sobrancelha": { categoryId: "beleza-estetica", label: "Sobrancelhas" },
-        "cilios": { categoryId: "beleza-estetica", label: "Sobrancelhas" },
+        barbeiro: { categoryId: "beleza-estetica", label: "Barbeiro" },
+        barba: { categoryId: "beleza-estetica", label: "Barbeiro" },
+        cabelo: { categoryId: "beleza-estetica", label: "Barbeiro" },
+        cabeleireiro: { categoryId: "beleza-estetica", label: "Barbeiro" },
+        manicure: { categoryId: "beleza-estetica", label: "Manicure" },
+        unha: { categoryId: "beleza-estetica", label: "Manicure" },
+        sobrancelha: { categoryId: "beleza-estetica", label: "Sobrancelhas" },
+        cilios: { categoryId: "beleza-estetica", label: "Sobrancelhas" },
       };
 
-      const matchScores: Record<string, { type: "category" | "subcategory"; id: string; name: string; score: number }> = {};
-      const words = queryNorm.split(/\s+/).filter(w => w.length > 2);
+      const matchScores: Record<
+        string,
+        {
+          type: "category" | "subcategory";
+          id: string;
+          name: string;
+          score: number;
+        }
+      > = {};
+      const words = queryNorm.split(/\s+/).filter((w) => w.length > 2);
 
       for (const [kw, mapInfo] of Object.entries(keywordMap)) {
         const kwNorm = normalize(kw);
         if (queryNorm.includes(kwNorm)) {
           const multiplier = mapInfo.scoreMultiplier || 1.0;
           const points = 10 * multiplier;
-          
+
           if (mapInfo.categoryId) {
-            const matchedSub = allSubs.find(s => normalize(s.name).includes(normalize(mapInfo.label)) && s.categoryId === mapInfo.categoryId);
+            const matchedSub = allSubs.find(
+              (s) =>
+                normalize(s.name).includes(normalize(mapInfo.label)) &&
+                s.categoryId === mapInfo.categoryId,
+            );
             if (matchedSub) {
               const key = `sub-${matchedSub.id}`;
               matchScores[key] = {
                 type: "subcategory",
                 id: matchedSub.id,
                 name: matchedSub.name,
-                score: (matchScores[key]?.score || 0) + points
+                score: (matchScores[key]?.score || 0) + points,
               };
             } else {
               const key = `cat-${mapInfo.categoryId}`;
               matchScores[key] = {
                 type: "category",
                 id: mapInfo.categoryId,
-                name: allCats.find(c => c.id === mapInfo.categoryId)?.name || mapInfo.categoryId,
-                score: (matchScores[key]?.score || 0) + points
+                name:
+                  allCats.find((c) => c.id === mapInfo.categoryId)?.name ||
+                  mapInfo.categoryId,
+                score: (matchScores[key]?.score || 0) + points,
               };
             }
           }
         }
       }
 
-      allCats.forEach(c => {
+      allCats.forEach((c) => {
         const catNorm = normalize(c.name);
         let score = 0;
-        
+
         if (queryNorm === catNorm) score += 50;
         else if (queryNorm.includes(catNorm)) score += 30;
         else {
-          words.forEach(w => {
+          words.forEach((w) => {
             if (catNorm.includes(w)) score += 5;
           });
         }
@@ -765,19 +990,19 @@ export const providersRouter = router({
             type: "category",
             id: c.id,
             name: c.name,
-            score: (matchScores[key]?.score || 0) + score
+            score: (matchScores[key]?.score || 0) + score,
           };
         }
       });
 
-      allSubs.forEach(s => {
+      allSubs.forEach((s) => {
         const subNorm = normalize(s.name);
         let score = 0;
 
         if (queryNorm === subNorm) score += 50;
         else if (queryNorm.includes(subNorm)) score += 40;
         else {
-          words.forEach(w => {
+          words.forEach((w) => {
             if (subNorm.includes(w)) score += 8;
           });
         }
@@ -788,12 +1013,17 @@ export const providersRouter = router({
             type: "subcategory",
             id: s.id,
             name: s.name,
-            score: (matchScores[key]?.score || 0) + score
+            score: (matchScores[key]?.score || 0) + score,
           };
         }
       });
 
-      let bestMatch: { type: "category" | "subcategory"; id: string; name: string; score: number } | null = null;
+      let bestMatch: {
+        type: "category" | "subcategory";
+        id: string;
+        name: string;
+        score: number;
+      } | null = null;
       for (const item of Object.values(matchScores)) {
         if (!bestMatch || item.score > bestMatch.score) {
           bestMatch = item;
@@ -809,7 +1039,7 @@ export const providersRouter = router({
           finalCatId = bestMatch.id;
         } else {
           finalSubId = bestMatch.id;
-          const subObj = allSubs.find(s => s.id === bestMatch!.id);
+          const subObj = allSubs.find((s) => s.id === bestMatch!.id);
           finalCatId = subObj?.categoryId;
         }
 
@@ -827,84 +1057,89 @@ export const providersRouter = router({
       return {
         success: false,
         reason: "LOW_CONFIDENCE",
-        suggestedCategories: allCats.slice(0, 5).map(c => ({ id: c.id, name: c.name })),
+        suggestedCategories: allCats
+          .slice(0, 5)
+          .map((c) => ({ id: c.id, name: c.name })),
       };
     }),
 
-  getById: publicProcedure
-    .input(z.string())
-    .query(async ({ input, ctx }) => {
-      const dbInstance = await db.getDb();
-      if (!dbInstance) return null;
-      
-      const res = await dbInstance
-        .select({
-          provider: providers,
-          permissions: businessPermissions,
-        })
-        .from(providers)
-        .leftJoin(businessPermissions, eq(businessPermissions.businessId, providers.id))
-        .where(
-          or(
-            eq(providers.id, input),
-            eq(providers.userId, input)
-          )
-        )
-        .limit(1);
-        
-      if (res.length === 0) return null;
-      
-      const providerData = {
-        ...res[0].provider,
-        maxServicos: res[0].permissions?.maxServicos ?? 1,
-        permissionsStatus: res[0].permissions?.status ?? "ativo",
-      };
-      
-      return sanitizeProviderForUser(providerData, ctx.user);
-    }),
+  getById: publicProcedure.input(z.string()).query(async ({ input, ctx }) => {
+    const dbInstance = await db.getDb();
+    if (!dbInstance) return null;
 
-  getReviews: publicProcedure
-    .input(z.string())
-    .query(async ({ input }) => {
-      const dbReviews = await db.getReviewsByProfessional(input);
-      let mockReviews: any[] = [];
-      try {
-        mockReviews = getMockReviewsByProfessional(input);
-      } catch (err) {
-        console.warn("[tRPC] Failed to fetch mock reviews:", err);
-      }
+    const res = await dbInstance
+      .select({
+        provider: providers,
+        permissions: businessPermissions,
+      })
+      .from(providers)
+      .leftJoin(
+        businessPermissions,
+        eq(businessPermissions.businessId, providers.id),
+      )
+      .where(or(eq(providers.id, input), eq(providers.userId, input)))
+      .limit(1);
 
-      const formattedDb = dbReviews.map((r) => ({
-        id: r.id,
-        professionalId: r.professionalId,
-        userName: r.userName,
-        userAvatar: r.userAvatar,
-        rating: r.rating,
-        comment: r.comment || "",
-        createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString().split("T")[0] : String(r.createdAt),
-      }));
+    if (res.length === 0) return null;
 
-      return [...formattedDb, ...mockReviews];
-    }),
+    const providerData = {
+      ...res[0].provider,
+      maxServicos: res[0].permissions?.maxServicos ?? 1,
+      permissionsStatus: res[0].permissions?.status ?? "ativo",
+    };
+
+    return sanitizeProviderForUser(providerData, ctx.user);
+  }),
+
+  getReviews: publicProcedure.input(z.string()).query(async ({ input }) => {
+    const dbReviews = await db.getReviewsByProfessional(input);
+    let mockReviews: any[] = [];
+    try {
+      mockReviews = getMockReviewsByProfessional(input);
+    } catch (err) {
+      console.warn("[tRPC] Failed to fetch mock reviews:", err);
+    }
+
+    const formattedDb = dbReviews.map((r) => ({
+      id: r.id,
+      professionalId: r.professionalId,
+      userName: r.userName,
+      userAvatar: r.userAvatar,
+      rating: r.rating,
+      comment: r.comment || "",
+      createdAt:
+        r.createdAt instanceof Date
+          ? r.createdAt.toISOString().split("T")[0]
+          : String(r.createdAt),
+    }));
+
+    return [...formattedDb, ...mockReviews];
+  }),
 
   submitReview: publicProcedure
-    .input(z.object({
-      providerId: z.string(),
-      rating: z.number().min(1).max(5),
-      comment: z.string().optional(),
-      userName: z.string().optional(),
-      userAvatar: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        providerId: z.string(),
+        rating: z.number().min(1).max(5),
+        comment: z.string().optional(),
+        userName: z.string().optional(),
+        userAvatar: z.string().optional(),
+      }),
+    )
     .mutation(async ({ input, ctx }) => {
       const dbInstance = await db.getDb();
       if (!dbInstance) throw new Error("DB not found");
 
-      const res = await dbInstance.select().from(providers).where(
-        or(
-          eq(providers.id, input.providerId),
-          eq(providers.userId, input.providerId)
+      const res = await dbInstance
+        .select()
+        .from(providers)
+        .where(
+          or(
+            eq(providers.id, input.providerId),
+            eq(providers.userId, input.providerId),
+          ),
         )
-      ).limit(1);
+        .limit(1);
 
       if (res.length === 0) {
         throw new Error("Provider not found");
@@ -915,16 +1150,23 @@ export const providersRouter = router({
       const oldRatingCount = provider.ratingCount || 0;
 
       const newRatingCount = oldRatingCount + 1;
-      const newRating = ((oldRating * oldRatingCount) + input.rating) / newRatingCount;
+      const newRating =
+        (oldRating * oldRatingCount + input.rating) / newRatingCount;
 
-      await dbInstance.update(providers).set({
-        rating: Number(newRating.toFixed(2)),
-        ratingCount: newRatingCount,
-        updatedAt: new Date(),
-      }).where(eq(providers.id, provider.id));
+      await dbInstance
+        .update(providers)
+        .set({
+          rating: Number(newRating.toFixed(2)),
+          ratingCount: newRatingCount,
+          updatedAt: new Date(),
+        })
+        .where(eq(providers.id, provider.id));
 
-      const reviewerName = input.userName || ctx.user?.name || "Cliente Anônimo";
-      const reviewerAvatar = input.userAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(reviewerName)}`;
+      const reviewerName =
+        input.userName || ctx.user?.name || "Cliente Anônimo";
+      const reviewerAvatar =
+        input.userAvatar ||
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(reviewerName)}`;
       const reviewId = `rev-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
       await db.createReview({
@@ -941,99 +1183,123 @@ export const providersRouter = router({
     }),
 
   // Admin routes (preserved)
-  create: adminWriteProcedure
-    .input(z.any())
-    .mutation(async ({ input }) => {
-      // Used by admin dashboard
-      const all = await db.getProviders(false);
-      const maxOrder = all.length > 0 ? Math.max(...all.map((p) => p.displayOrder)) : -1;
-      const id = uid();
+  create: adminWriteProcedure.input(z.any()).mutation(async ({ input }) => {
+    // Used by admin dashboard
+    const all = await db.getProviders(false);
+    const maxOrder =
+      all.length > 0 ? Math.max(...all.map((p) => p.displayOrder)) : -1;
+    const id = uid();
 
-      let latitude = input.latitude !== undefined && input.latitude !== null ? Number(input.latitude) : null;
-      let longitude = input.longitude !== undefined && input.longitude !== null ? Number(input.longitude) : null;
-      if (latitude === null || longitude === null) {
-        const coords = await geocodeAddress(input.address, input.neighborhood, input.city);
-        if (coords) {
-          latitude = coords.latitude;
-          longitude = coords.longitude;
-        }
+    let latitude =
+      input.latitude !== undefined && input.latitude !== null
+        ? Number(input.latitude)
+        : null;
+    let longitude =
+      input.longitude !== undefined && input.longitude !== null
+        ? Number(input.longitude)
+        : null;
+    if (latitude === null || longitude === null) {
+      const coords = await geocodeAddress(
+        input.address,
+        input.neighborhood,
+        input.city,
+      );
+      if (coords) {
+        latitude = coords.latitude;
+        longitude = coords.longitude;
       }
+    }
 
-      return db.createProvider({
-        id,
-        name: input.name,
-        category: input.category || null,
-        categoryId: input.categoryId || null,
-        city: input.city || null,
-        neighborhood: input.neighborhood || null,
-        phone: input.phone || null,
-        plan: input.plan || "free",
-        serviceId: input.serviceId || null,
-        serviceName: input.serviceName || null,
-        subcategoryId: input.subcategoryId || null,
-        subcategoryName: input.subcategoryName || null,
-        whatsapp: input.whatsapp || null,
-        description: input.description || null,
-        address: input.address || null,
-        avatarUri: input.avatarUri || null,
-        avatarThumbnailUri: input.avatarThumbnailUri || null,
-        gallery: input.gallery || null,
-        rating: 0,
-        ratingCount: 0,
-        isActive: input.isActive ?? true,
-        displayOrder: maxOrder + 1,
-        destaque: input.destaque ?? false,
-        latitude,
-        longitude,
-        coverUri: input.coverUri || null,
-        coverThumbnailUri: input.coverThumbnailUri || null,
-        isVerified: input.isVerified ?? false,
-        onlineStatus: input.onlineStatus ?? false,
-        responseTime: input.responseTime || null,
-        clientsServed: input.clientsServed !== undefined ? Number(input.clientsServed) : 0,
-        foundedYear: input.foundedYear !== undefined ? Number(input.foundedYear) : null,
-        topBadge: input.topBadge || null,
-        popularServices: safeStringify(input.popularServices),
-        tags: safeStringify(input.tags),
-        workingHours: safeStringify(input.workingHours),
-        hasCatalog: input.hasCatalog ?? false,
-      });
-    }),
+    return db.createProvider({
+      id,
+      name: input.name,
+      category: input.category || null,
+      categoryId: input.categoryId || null,
+      city: input.city || null,
+      neighborhood: input.neighborhood || null,
+      phone: input.phone || null,
+      plan: input.plan || "free",
+      serviceId: input.serviceId || null,
+      serviceName: input.serviceName || null,
+      subcategoryId: input.subcategoryId || null,
+      subcategoryName: input.subcategoryName || null,
+      whatsapp: input.whatsapp || null,
+      description: input.description || null,
+      address: input.address || null,
+      avatarUri: input.avatarUri || null,
+      avatarThumbnailUri: input.avatarThumbnailUri || null,
+      gallery: input.gallery || null,
+      rating: 0,
+      ratingCount: 0,
+      isActive: input.isActive ?? true,
+      displayOrder: maxOrder + 1,
+      destaque: input.destaque ?? false,
+      latitude,
+      longitude,
+      coverUri: input.coverUri || null,
+      coverThumbnailUri: input.coverThumbnailUri || null,
+      isVerified: input.isVerified ?? false,
+      onlineStatus: input.onlineStatus ?? false,
+      responseTime: input.responseTime || null,
+      clientsServed:
+        input.clientsServed !== undefined ? Number(input.clientsServed) : 0,
+      foundedYear:
+        input.foundedYear !== undefined ? Number(input.foundedYear) : null,
+      topBadge: input.topBadge || null,
+      popularServices: safeStringify(input.popularServices),
+      tags: safeStringify(input.tags),
+      workingHours: safeStringify(input.workingHours),
+      hasCatalog: input.hasCatalog ?? false,
+    });
+  }),
 
-  update: adminWriteProcedure
-    .input(z.any())
-    .mutation(async ({ input }) => {
-      const { id, ...data } = input;
-      const dbInstance = await db.getDb();
-      if (dbInstance) {
-        const existing = await dbInstance.select().from(providers).where(eq(providers.id, id)).limit(1);
-        if (existing.length > 0) {
-          const hasAddressChanged = 
-            (data.address !== undefined && existing[0].address !== data.address) ||
-            (data.neighborhood !== undefined && existing[0].neighborhood !== data.neighborhood) ||
-            (data.city !== undefined && existing[0].city !== data.city);
+  update: adminWriteProcedure.input(z.any()).mutation(async ({ input }) => {
+    const { id, ...data } = input;
+    const dbInstance = await db.getDb();
+    if (dbInstance) {
+      const existing = await dbInstance
+        .select()
+        .from(providers)
+        .where(eq(providers.id, id))
+        .limit(1);
+      if (existing.length > 0) {
+        const hasAddressChanged =
+          (data.address !== undefined &&
+            existing[0].address !== data.address) ||
+          (data.neighborhood !== undefined &&
+            existing[0].neighborhood !== data.neighborhood) ||
+          (data.city !== undefined && existing[0].city !== data.city);
 
-          if (hasAddressChanged && (data.latitude === undefined || data.latitude === null)) {
-            const coords = await geocodeAddress(
-              data.address !== undefined ? data.address : existing[0].address,
-              data.neighborhood !== undefined ? data.neighborhood : existing[0].neighborhood,
-              data.city !== undefined ? data.city : existing[0].city
-            );
-            if (coords) {
-              data.latitude = coords.latitude;
-              data.longitude = coords.longitude;
-            }
+        if (
+          hasAddressChanged &&
+          (data.latitude === undefined || data.latitude === null)
+        ) {
+          const coords = await geocodeAddress(
+            data.address !== undefined ? data.address : existing[0].address,
+            data.neighborhood !== undefined
+              ? data.neighborhood
+              : existing[0].neighborhood,
+            data.city !== undefined ? data.city : existing[0].city,
+          );
+          if (coords) {
+            data.latitude = coords.latitude;
+            data.longitude = coords.longitude;
           }
         }
       }
-      if (data.popularServices !== undefined) data.popularServices = safeStringify(data.popularServices);
-      if (data.tags !== undefined) data.tags = safeStringify(data.tags);
-      if (data.workingHours !== undefined) data.workingHours = safeStringify(data.workingHours);
-      if (data.clientsServed !== undefined) data.clientsServed = Number(data.clientsServed);
-      if (data.foundedYear !== undefined) data.foundedYear = data.foundedYear ? Number(data.foundedYear) : null;
-      
-      await db.updateProvider(id, data);
-    }),
+    }
+    if (data.popularServices !== undefined)
+      data.popularServices = safeStringify(data.popularServices);
+    if (data.tags !== undefined) data.tags = safeStringify(data.tags);
+    if (data.workingHours !== undefined)
+      data.workingHours = safeStringify(data.workingHours);
+    if (data.clientsServed !== undefined)
+      data.clientsServed = Number(data.clientsServed);
+    if (data.foundedYear !== undefined)
+      data.foundedYear = data.foundedYear ? Number(data.foundedYear) : null;
+
+    await db.updateProvider(id, data);
+  }),
 
   delete: adminWriteProcedure
     .input(z.object({ id: z.string() }))
@@ -1042,15 +1308,17 @@ export const providersRouter = router({
     }),
 
   updatePermissions: adminProcedure
-    .input(z.object({
-      businessId: z.string(),
-      maxServicos: z.number().int().min(-1),
-      status: z.string(),
-    }))
+    .input(
+      z.object({
+        businessId: z.string(),
+        maxServicos: z.number().int().min(-1),
+        status: z.string(),
+      }),
+    )
     .mutation(async ({ input }) => {
       const dbInstance = await db.getDb();
       if (!dbInstance) throw new Error("DB not found");
-      
+
       const existing = await dbInstance
         .select()
         .from(businessPermissions)
@@ -1067,15 +1335,12 @@ export const providersRouter = router({
           })
           .where(eq(businessPermissions.businessId, input.businessId));
       } else {
-        await dbInstance
-          .insert(businessPermissions)
-          .values({
-            businessId: input.businessId,
-            maxServicos: input.maxServicos,
-            status: input.status,
-          });
+        await dbInstance.insert(businessPermissions).values({
+          businessId: input.businessId,
+          maxServicos: input.maxServicos,
+          status: input.status,
+        });
       }
       return { success: true };
     }),
 });
-

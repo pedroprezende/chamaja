@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { db, type DatabaseUser, type Commerce, type Professional } from "../lib/database-schema";
+import {
+  db,
+  type DatabaseUser,
+  type Commerce,
+  type Professional,
+} from "../lib/database-schema";
 
 describe("Database Schema Tests", () => {
   beforeEach(() => {

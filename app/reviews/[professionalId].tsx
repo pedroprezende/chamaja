@@ -22,33 +22,56 @@ export default function ReviewsScreen() {
   const { professionalId } = useLocalSearchParams<{ professionalId: string }>();
 
   // Busca o profissional no banco de dados real
-  const { data: professional, isLoading: loadingProfessional } = trpc.providers.getById.useQuery(professionalId || "");
-  
+  const { data: professional, isLoading: loadingProfessional } =
+    trpc.providers.getById.useQuery(professionalId || "");
+
   // Busca as avaliações no banco de dados (mescladas com mocks no backend)
-  const { data: dbReviews, isLoading: loadingReviews } = trpc.providers.getReviews.useQuery(professionalId || "", {
-    enabled: !!professionalId,
-  });
+  const { data: dbReviews, isLoading: loadingReviews } =
+    trpc.providers.getReviews.useQuery(professionalId || "", {
+      enabled: !!professionalId,
+    });
 
   const isLoading = loadingProfessional || loadingReviews;
   const allReviews = dbReviews || [];
 
   if (isLoading) {
     return (
-      <ScreenContainer edges={["left", "right"]} className="items-center justify-center">
+      <ScreenContainer
+        edges={["left", "right"]}
+        className="items-center justify-center"
+      >
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={{ color: colors.muted, marginTop: 12, fontWeight: "600" }}>Carregando avaliações...</Text>
+        <Text style={{ color: colors.muted, marginTop: 12, fontWeight: "600" }}>
+          Carregando avaliações...
+        </Text>
       </ScreenContainer>
     );
   }
 
   if (!professional) {
     return (
-      <ScreenContainer edges={["left", "right"]} className="items-center justify-center">
+      <ScreenContainer
+        edges={["left", "right"]}
+        className="items-center justify-center"
+      >
         <MaterialIcons name="person-off" size={64} color={colors.muted} />
-        <Text style={[styles.errorText, { marginTop: 16, color: colors.foreground, fontWeight: "700" }]}>Profissional não encontrado</Text>
-        <Pressable 
+        <Text
+          style={[
+            styles.errorText,
+            { marginTop: 16, color: colors.foreground, fontWeight: "700" },
+          ]}
+        >
+          Profissional não encontrado
+        </Text>
+        <Pressable
           onPress={() => router.back()}
-          style={{ marginTop: 24, backgroundColor: colors.primary, paddingHorizontal: 32, paddingVertical: 14, borderRadius: 16 }}
+          style={{
+            marginTop: 24,
+            backgroundColor: colors.primary,
+            paddingHorizontal: 32,
+            paddingVertical: 14,
+            borderRadius: 16,
+          }}
         >
           <Text style={{ color: "#FFF", fontWeight: "700" }}>Voltar</Text>
         </Pressable>
@@ -72,17 +95,32 @@ export default function ReviewsScreen() {
   };
 
   const renderReviewItem = ({ item }: any) => (
-    <View style={[styles.reviewCard, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}>
+    <View
+      style={[
+        styles.reviewCard,
+        {
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
+          borderWidth: 1,
+        },
+      ]}
+    >
       <View style={styles.reviewHeader}>
         <Image source={{ uri: item.userAvatar }} style={styles.userAvatar} />
         <View style={styles.reviewInfo}>
-          <Text style={[styles.userName, { color: colors.foreground }]}>{item.userName}</Text>
-          <Text style={[styles.reviewDate, { color: colors.muted }]}>{item.createdAt}</Text>
+          <Text style={[styles.userName, { color: colors.foreground }]}>
+            {item.userName}
+          </Text>
+          <Text style={[styles.reviewDate, { color: colors.muted }]}>
+            {item.createdAt}
+          </Text>
         </View>
         {renderStars(item.rating)}
       </View>
       {item.comment ? (
-        <Text style={[styles.reviewComment, { color: colors.muted }]}>{item.comment}</Text>
+        <Text style={[styles.reviewComment, { color: colors.muted }]}>
+          {item.comment}
+        </Text>
       ) : null}
     </View>
   );
@@ -91,40 +129,88 @@ export default function ReviewsScreen() {
     <ScreenContainer edges={["left", "right"]} className="">
       {/* Header */}
       <LinearGradient
-        colors={colors.background === "#F8F9FA" ? ["#FFFFFF", "#F8F9FA"] : ["#1E293B", "#0F172A"]}
+        colors={
+          colors.background === "#F8F9FA"
+            ? ["#FFFFFF", "#F8F9FA"]
+            : ["#1E293B", "#0F172A"]
+        }
         style={[styles.header, { borderBottomColor: colors.border }]}
       >
         <Pressable
-          style={({ pressed }) => [styles.backBtn, { backgroundColor: colors.background }, pressed && { opacity: 0.6 }]}
+          style={({ pressed }) => [
+            styles.backBtn,
+            { backgroundColor: colors.background },
+            pressed && { opacity: 0.6 },
+          ]}
           onPress={() => router.back()}
         >
-          <MaterialIcons name="arrow-back" size={24} color={colors.foreground} />
+          <MaterialIcons
+            name="arrow-back"
+            size={24}
+            color={colors.foreground}
+          />
         </Pressable>
-        <Text style={[styles.title, { color: colors.foreground }]}>Avaliações</Text>
+        <Text style={[styles.title, { color: colors.foreground }]}>
+          Avaliações
+        </Text>
         <View style={{ width: 42 }} />
       </LinearGradient>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
         {/* Professional Info */}
-        <View style={[styles.profCard, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}>
-          <Image 
-            source={{ uri: professional!.avatarUri || `https://ui-avatars.com/api/?name=${encodeURIComponent(professional!.name)}` }} 
-            style={styles.profAvatar} 
+        <View
+          style={[
+            styles.profCard,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+              borderWidth: 1,
+            },
+          ]}
+        >
+          <Image
+            source={{
+              uri:
+                professional!.avatarUri ||
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(professional!.name)}`,
+            }}
+            style={styles.profAvatar}
           />
           <View style={styles.profInfo}>
-            <Text style={[styles.profName, { color: colors.foreground }]}>{professional!.name}</Text>
+            <Text style={[styles.profName, { color: colors.foreground }]}>
+              {professional!.name}
+            </Text>
             <View style={styles.ratingContainer}>
               {renderStars(Number(professional!.rating) || 0)}
               <Text style={[styles.ratingText, { color: colors.muted }]}>
-                {Number(professional!.rating).toFixed(1)} ({professional!.ratingCount || 0} avaliações)
+                {Number(professional!.rating).toFixed(1)} (
+                {professional!.ratingCount || 0} avaliações)
               </Text>
             </View>
           </View>
         </View>
 
         {/* Stats Section */}
-        <View style={[styles.statsSection, { backgroundColor: colors.surface, marginHorizontal: 16, padding: 20, borderRadius: 20, borderWidth: 1, borderColor: colors.border, marginBottom: 24 }]}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Distribuição de avaliações</Text>
+        <View
+          style={[
+            styles.statsSection,
+            {
+              backgroundColor: colors.surface,
+              marginHorizontal: 16,
+              padding: 20,
+              borderRadius: 20,
+              borderWidth: 1,
+              borderColor: colors.border,
+              marginBottom: 24,
+            },
+          ]}
+        >
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+            Distribuição de avaliações
+          </Text>
           {[5, 4, 3, 2, 1].map((stars) => {
             const count = allReviews.filter((r) => r.rating === stars).length;
             const percentage =
@@ -132,10 +218,17 @@ export default function ReviewsScreen() {
             return (
               <View key={stars} style={styles.statRow}>
                 <View style={styles.starLabel}>
-                  <Text style={[styles.statText, { color: colors.foreground }]}>{stars}</Text>
+                  <Text style={[styles.statText, { color: colors.foreground }]}>
+                    {stars}
+                  </Text>
                   <MaterialIcons name="star" size={14} color="#F59E0B" />
                 </View>
-                <View style={[styles.barContainer, { backgroundColor: colors.background }]}>
+                <View
+                  style={[
+                    styles.barContainer,
+                    { backgroundColor: colors.background },
+                  ]}
+                >
                   <View
                     style={[
                       styles.bar,
@@ -143,7 +236,9 @@ export default function ReviewsScreen() {
                     ]}
                   />
                 </View>
-                <Text style={[styles.countText, { color: colors.muted }]}>{count}</Text>
+                <Text style={[styles.countText, { color: colors.muted }]}>
+                  {count}
+                </Text>
               </View>
             );
           })}
@@ -151,7 +246,9 @@ export default function ReviewsScreen() {
 
         {/* Reviews List */}
         <View style={styles.reviewsSection}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Comentários dos clientes</Text>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+            Comentários dos clientes
+          </Text>
           {allReviews.length > 0 ? (
             <FlatList
               data={allReviews}
@@ -161,9 +258,24 @@ export default function ReviewsScreen() {
               ItemSeparatorComponent={() => <View style={styles.separator} />}
             />
           ) : (
-            <View style={[styles.emptyContainer, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}>
-              <MaterialIcons name="rate-review" size={48} color={colors.muted + "40"} />
-              <Text style={[styles.noReviewsText, { color: colors.muted }]}>Nenhuma avaliação detalhada ainda</Text>
+            <View
+              style={[
+                styles.emptyContainer,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                  borderWidth: 1,
+                },
+              ]}
+            >
+              <MaterialIcons
+                name="rate-review"
+                size={48}
+                color={colors.muted + "40"}
+              />
+              <Text style={[styles.noReviewsText, { color: colors.muted }]}>
+                Nenhuma avaliação detalhada ainda
+              </Text>
             </View>
           )}
         </View>
@@ -186,8 +298,11 @@ const styles = StyleSheet.create({
     borderRadius: 21,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05, shadowRadius: 5, elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
   },
   title: {
     fontSize: 20,

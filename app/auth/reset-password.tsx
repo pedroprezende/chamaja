@@ -24,7 +24,7 @@ export default function ResetPasswordScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  
+
   const confirmPasswordRef = useRef<TextInput>(null);
 
   const handleUpdatePassword = async () => {
@@ -51,10 +51,13 @@ export default function ResetPasswordScreen() {
       });
 
       if (error) throw error;
-      
+
       setIsSuccess(true);
     } catch (error: any) {
-      Alert.alert("Erro", error.message || "Não foi possível atualizar sua senha");
+      Alert.alert(
+        "Erro",
+        error.message || "Não foi possível atualizar sua senha",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -69,29 +72,50 @@ export default function ResetPasswordScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Pressable
-            style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
+            style={({ pressed }) => [
+              styles.backBtn,
+              pressed && { opacity: 0.6 },
+            ]}
             onPress={() => router.replace("/auth/login" as any)}
           >
-            <MaterialIcons name="arrow-back" size={24} color={colors.foreground} />
+            <MaterialIcons
+              name="arrow-back"
+              size={24}
+              color={colors.foreground}
+            />
           </Pressable>
-          <Text style={[styles.title, { color: colors.foreground }]}>Nova Senha</Text>
+          <Text style={[styles.title, { color: colors.foreground }]}>
+            Nova Senha
+          </Text>
         </View>
 
         {isSuccess ? (
           // Success State
           <View style={styles.successContainer}>
-            <View style={[styles.successIconBox, { backgroundColor: colors.success + "20" }]}>
-              <MaterialIcons name="check-circle" size={64} color={colors.success || "#22C55E"} />
+            <View
+              style={[
+                styles.successIconBox,
+                { backgroundColor: colors.success + "20" },
+              ]}
+            >
+              <MaterialIcons
+                name="check-circle"
+                size={64}
+                color={colors.success || "#22C55E"}
+              />
             </View>
-            <Text style={[styles.successTitle, { color: colors.foreground }]}>Senha atualizada!</Text>
+            <Text style={[styles.successTitle, { color: colors.foreground }]}>
+              Senha atualizada!
+            </Text>
             <Text style={[styles.successMessage, { color: colors.muted }]}>
-              Sua senha foi redefinida com sucesso. Agora você já pode acessar o aplicativo normalmente.
+              Sua senha foi redefinida com sucesso. Agora você já pode acessar o
+              aplicativo normalmente.
             </Text>
             <Pressable
               style={({ pressed }) => [
                 styles.backToLoginBtn,
                 { backgroundColor: colors.primary },
-                pressed && { opacity: 0.85 }
+                pressed && { opacity: 0.85 },
               ]}
               onPress={() => router.replace("/" as any)}
             >
@@ -102,14 +126,29 @@ export default function ResetPasswordScreen() {
           // Form State
           <View style={styles.form}>
             <Text style={[styles.description, { color: colors.muted }]}>
-              Digite e confirme a sua nova senha de acesso abaixo para redefini-la com segurança.
+              Digite e confirme a sua nova senha de acesso abaixo para
+              redefini-la com segurança.
             </Text>
 
             {/* New Password */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.foreground }]}>Nova Senha</Text>
-              <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <MaterialIcons name="lock-outline" size={18} color={colors.muted} />
+              <Text style={[styles.label, { color: colors.foreground }]}>
+                Nova Senha
+              </Text>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <MaterialIcons
+                  name="lock-outline"
+                  size={18}
+                  color={colors.muted}
+                />
                 <TextInput
                   style={[styles.input, { color: colors.foreground }]}
                   placeholder="Mínimo 6 caracteres"
@@ -134,9 +173,23 @@ export default function ResetPasswordScreen() {
 
             {/* Confirm New Password */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.foreground }]}>Confirmar Nova Senha</Text>
-              <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <MaterialIcons name="lock-outline" size={18} color={colors.muted} />
+              <Text style={[styles.label, { color: colors.foreground }]}>
+                Confirmar Nova Senha
+              </Text>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <MaterialIcons
+                  name="lock-outline"
+                  size={18}
+                  color={colors.muted}
+                />
                 <TextInput
                   style={[styles.input, { color: colors.foreground }]}
                   placeholder="Confirme sua nova senha"

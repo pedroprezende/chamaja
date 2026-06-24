@@ -2,7 +2,9 @@ require("dotenv").config();
 const postgres = require("postgres");
 
 async function runMigration() {
-  console.log("--- Executando Migração da Tabela de Assinaturas (Subscriptions) ---");
+  console.log(
+    "--- Executando Migração da Tabela de Assinaturas (Subscriptions) ---",
+  );
   const dbUrl = process.env.DATABASE_URL;
   if (!dbUrl) {
     console.error("Erro: DATABASE_URL não definida no arquivo .env.");
@@ -39,7 +41,7 @@ async function runMigration() {
     await sql`DROP POLICY IF EXISTS "Admin full access to subscriptions" ON public.subscriptions;`;
 
     console.log("4. Criando políticas RLS...");
-    
+
     // User select policy
     await sql`
       CREATE POLICY "Allow users to read own provider subscriptions" 
@@ -62,14 +64,18 @@ async function runMigration() {
       USING (public.is_admin());
     `;
 
-    console.log("5. Buscando profissionais atuais para semear a tabela de assinaturas...");
+    console.log(
+      "5. Buscando profissionais atuais para semear a tabela de assinaturas...",
+    );
     const currentProviders = await sql`
       SELECT id, name, plan, plan_expires_at, is_active, status, created_at 
       FROM public.providers 
       WHERE plan IN ('monthly', 'annual');
     `;
 
-    console.log(`Encontrados ${currentProviders.length} profissionais com planos contratados.`);
+    console.log(
+      `Encontrados ${currentProviders.length} profissionais com planos contratados.`,
+    );
 
     let insertedCount = 0;
     for (const prov of currentProviders) {
@@ -81,19 +87,24 @@ async function runMigration() {
       if (existing.length === 0) {
         const planType = prov.plan; // 'monthly' or 'annual'
         const priceCents = planType === "monthly" ? 2990 : 29900;
-        
+
         let status = "active";
         const now = new Date();
-        const expiresAt = prov.plan_expires_at ? new Date(prov.plan_expires_at) : null;
-        
+        const expiresAt = prov.plan_expires_at
+          ? new Date(prov.plan_expires_at)
+          : null;
+
         if (expiresAt && expiresAt < now) {
           status = "past_due";
         } else if (prov.status === "suspenso" || prov.is_active === false) {
           status = "canceled";
         }
 
-        const periodStart = prov.created_at ? new Date(prov.created_at) : new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        const periodEnd = expiresAt || new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        const periodStart = prov.created_at
+          ? new Date(prov.created_at)
+          : new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        const periodEnd =
+          expiresAt || new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
         await sql`
           INSERT INTO public.subscriptions (
@@ -112,15 +123,17 @@ async function runMigration() {
             ${priceCents},
             ${periodStart},
             ${periodEnd},
-            ${'mock_cus_' + prov.id.substring(0, 10)},
-            ${'mock_sub_' + prov.id.substring(0, 10)}
+            ${"mock_cus_" + prov.id.substring(0, 10)},
+            ${"mock_sub_" + prov.id.substring(0, 10)}
           );
         `;
         insertedCount++;
       }
     }
 
-    console.log(`Semeados ${insertedCount} registros de assinaturas na tabela!`);
+    console.log(
+      `Semeados ${insertedCount} registros de assinaturas na tabela!`,
+    );
     console.log("Migração concluída com sucesso!");
   } catch (error) {
     console.error("Erro ao rodar migração de assinaturas:", error);

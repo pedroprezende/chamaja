@@ -22,8 +22,9 @@ type AdsCarouselProps = {
 
 export function AdsCarousel({ ads }: AdsCarouselProps) {
   const { width: WINDOW_WIDTH } = useWindowDimensions();
-  const SCREEN_WIDTH = Platform.OS === "web" ? Math.min(WINDOW_WIDTH, 500) : WINDOW_WIDTH;
-  const CARD_WIDTH = SCREEN_WIDTH - 32; 
+  const SCREEN_WIDTH =
+    Platform.OS === "web" ? Math.min(WINDOW_WIDTH, 500) : WINDOW_WIDTH;
+  const CARD_WIDTH = SCREEN_WIDTH - 32;
   const CARD_HEIGHT = 180;
   const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
@@ -31,13 +32,10 @@ export function AdsCarousel({ ads }: AdsCarouselProps) {
   const autoplayRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isUserScrolling = useRef(false);
 
-  const scrollToIndex = useCallback(
-    (index: number) => {
-      scrollRef.current?.scrollTo({ x: index * CARD_WIDTH, animated: true });
-      setActiveIndex(index);
-    },
-    []
-  );
+  const scrollToIndex = useCallback((index: number) => {
+    scrollRef.current?.scrollTo({ x: index * CARD_WIDTH, animated: true });
+    setActiveIndex(index);
+  }, []);
 
   const stopAutoplay = useCallback(() => {
     if (autoplayRef.current) {
@@ -93,13 +91,19 @@ export function AdsCarousel({ ads }: AdsCarouselProps) {
         {ads.map((item) => (
           <Pressable
             key={item.id}
-            style={({ pressed }) => [styles.card, { width: CARD_WIDTH, height: CARD_HEIGHT }, pressed && { opacity: 0.92 }]}
+            style={({ pressed }) => [
+              styles.card,
+              { width: CARD_WIDTH, height: CARD_HEIGHT },
+              pressed && { opacity: 0.92 },
+            ]}
             onPress={() => {
               if (item.providerId) {
                 router.push(`/professional/${item.providerId}` as any);
               } else {
                 // Fallback para categoria se não houver prestador vinculado
-                router.push(`/professionals/${item.title.split(" ")[0].toLowerCase()}` as any);
+                router.push(
+                  `/professionals/${item.title.split(" ")[0].toLowerCase()}` as any,
+                );
               }
             }}
           >
@@ -118,7 +122,9 @@ export function AdsCarousel({ ads }: AdsCarouselProps) {
         <View style={styles.dots}>
           {ads.map((_, i) => (
             <Pressable key={i} onPress={() => scrollToIndex(i)}>
-              <View style={[styles.dot, i === activeIndex && styles.dotActive]} />
+              <View
+                style={[styles.dot, i === activeIndex && styles.dotActive]}
+              />
             </Pressable>
           ))}
         </View>
@@ -127,7 +133,7 @@ export function AdsCarousel({ ads }: AdsCarouselProps) {
       {/* Navigation Arrows */}
       {ads.length > 1 && (
         <>
-          <Pressable 
+          <Pressable
             style={[styles.arrowBtn, styles.arrowLeft]}
             onPress={() => {
               stopAutoplay();
@@ -139,7 +145,7 @@ export function AdsCarousel({ ads }: AdsCarouselProps) {
             <MaterialIcons name="chevron-left" size={24} color="#374151" />
           </Pressable>
 
-          <Pressable 
+          <Pressable
             style={[styles.arrowBtn, styles.arrowRight]}
             onPress={() => {
               stopAutoplay();

@@ -20,15 +20,15 @@ export const utmRouter = router({
     const registrations = await dbInstance
       .select({
         utmSource: appEvents.utmSource,
-        count: count()
+        count: count(),
       })
       .from(appEvents)
       .where(
         and(
           eq(appEvents.tipoEvento, "cadastro"),
           isNotNull(appEvents.utmSource),
-          ne(appEvents.utmSource, "")
-        )
+          ne(appEvents.utmSource, ""),
+        ),
       )
       .groupBy(appEvents.utmSource);
 
@@ -36,7 +36,7 @@ export const utmRouter = router({
 
     return links.map((link) => ({
       ...link,
-      registrationsCount: regMap.get(link.source) || 0
+      registrationsCount: regMap.get(link.source) || 0,
     }));
   }),
 
@@ -46,8 +46,8 @@ export const utmRouter = router({
         source: z.string().min(1),
         medium: z.string().min(1),
         campaign: z.string().min(1),
-        linkCompleto: z.string().min(1)
-      })
+        linkCompleto: z.string().min(1),
+      }),
     )
     .mutation(async ({ input }) => {
       const dbInstance = await db.getDb();
@@ -58,9 +58,9 @@ export const utmRouter = router({
         medium: input.medium,
         campaign: input.campaign,
         linkCompleto: input.linkCompleto,
-        criadoEm: new Date()
+        criadoEm: new Date(),
       });
 
       return { success: true };
-    })
+    }),
 });

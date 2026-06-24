@@ -25,9 +25,18 @@ export default function AdminIndexScreen() {
   }, [user, isLoading, isAdmin, router]);
 
   return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#FFF" }}>
+    <View
+      style={{
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "#FFF",
+      }}
+    >
       <ActivityIndicator size="large" color="#25D366" />
-      <Text style={{ marginTop: 16, color: "#6B7280", fontSize: 14 }}>Verificando acesso...</Text>
+      <Text style={{ marginTop: 16, color: "#6B7280", fontSize: 14 }}>
+        Verificando acesso...
+      </Text>
     </View>
   );
 }

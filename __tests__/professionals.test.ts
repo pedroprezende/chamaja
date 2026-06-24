@@ -30,7 +30,7 @@ describe.skip("Professional System", () => {
       const electricians = getProfessionalsByRanking("eletricista");
       expect(electricians.length).toBeGreaterThan(0);
       expect(electricians.every((p) => p.categoryId === "eletricista")).toBe(
-        true
+        true,
       );
     });
 

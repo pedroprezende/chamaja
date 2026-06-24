@@ -1,8 +1,15 @@
 import { Platform } from "react-native";
 import { vanillaTrpc } from "./trpc";
 
-
-type LogCategory = "AUTH" | "STORAGE" | "PAYMENT" | "ADMIN" | "NETWORK" | "SYSTEM" | "CRASH" | "UI";
+type LogCategory =
+  | "AUTH"
+  | "STORAGE"
+  | "PAYMENT"
+  | "ADMIN"
+  | "NETWORK"
+  | "SYSTEM"
+  | "CRASH"
+  | "UI";
 
 class Logger {
   private static instance: Logger;
@@ -43,7 +50,12 @@ class Logger {
     this.sendToServer("error", category, message, errorDetails);
   }
 
-  private async sendToServer(level: "info" | "warn" | "error", category: string, message: string, details?: any) {
+  private async sendToServer(
+    level: "info" | "warn" | "error",
+    category: string,
+    message: string,
+    details?: any,
+  ) {
     try {
       // DISABLED: Sending logs to server is causing `vanillaTrpc` to call `supabase.auth.getSession()`
       // repeatedly during app initialization, which freezes the app.

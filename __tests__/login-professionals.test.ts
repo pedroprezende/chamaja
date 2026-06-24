@@ -9,7 +9,7 @@ describe("Login e Cadastro de Prestadores", () => {
       const admin = await adminDB.createAdmin(
         email,
         "senha123456",
-        "Admin Teste"
+        "Admin Teste",
       );
 
       expect(admin.email).toBe(email);
@@ -50,11 +50,7 @@ describe("Login e Cadastro de Prestadores", () => {
 
     it("should validate password minimum length", async () => {
       try {
-        await adminDB.createAdmin(
-          "admin@example.com",
-          "123",
-          "Admin"
-        );
+        await adminDB.createAdmin("admin@example.com", "123", "Admin");
         expect.fail("Should have thrown an error");
       } catch (err) {
         // Senha com menos de 6 caracteres deve ser rejeitada
@@ -108,7 +104,7 @@ describe("Login e Cadastro de Prestadores", () => {
     it("should have PREMIUM professionals in the list", async () => {
       const professionals = getProfessionalsByRanking();
       const premiumProfessionals = professionals.filter(
-        (p) => p.type === "PREMIUM"
+        (p) => p.type === "PREMIUM",
       );
       expect(premiumProfessionals.length).toBeGreaterThan(0);
     });
@@ -141,7 +137,7 @@ describe("Login e Cadastro de Prestadores", () => {
     it("PREMIUM professional should have all required fields", async () => {
       const professionals = getProfessionalsByRanking();
       const premiumProfessional = professionals.find(
-        (p) => p.type === "PREMIUM"
+        (p) => p.type === "PREMIUM",
       );
 
       expect(premiumProfessional).toBeDefined();
@@ -157,7 +153,7 @@ describe("Login e Cadastro de Prestadores", () => {
     it("PREMIUM professional should have type field set to 'PREMIUM'", async () => {
       const professionals = getProfessionalsByRanking();
       const premiumProfessionals = professionals.filter(
-        (p) => p.type === "PREMIUM"
+        (p) => p.type === "PREMIUM",
       );
 
       premiumProfessionals.forEach((p) => {
@@ -182,7 +178,7 @@ describe("Login e Cadastro de Prestadores", () => {
     it("should have correct number of PREMIUM professionals", async () => {
       const professionals = getProfessionalsByRanking();
       const premiumCount = professionals.filter(
-        (p) => p.type === "PREMIUM"
+        (p) => p.type === "PREMIUM",
       ).length;
 
       expect(premiumCount).toBeGreaterThan(0);
@@ -191,9 +187,7 @@ describe("Login e Cadastro de Prestadores", () => {
 
     it("should have correct number of FREE professionals", async () => {
       const professionals = getProfessionalsByRanking();
-      const freeCount = professionals.filter(
-        (p) => p.type === "FREE"
-      ).length;
+      const freeCount = professionals.filter((p) => p.type === "FREE").length;
 
       expect(freeCount).toBeGreaterThan(0);
       expect(freeCount).toBeLessThanOrEqual(professionals.length);
@@ -202,11 +196,9 @@ describe("Login e Cadastro de Prestadores", () => {
     it("total professionals should match PREMIUM + FREE count", async () => {
       const professionals = getProfessionalsByRanking();
       const premiumCount = professionals.filter(
-        (p) => p.type === "PREMIUM"
+        (p) => p.type === "PREMIUM",
       ).length;
-      const freeCount = professionals.filter(
-        (p) => p.type === "FREE"
-      ).length;
+      const freeCount = professionals.filter((p) => p.type === "FREE").length;
 
       expect(professionals.length).toBe(premiumCount + freeCount);
     });
@@ -273,7 +265,7 @@ describe("Login e Cadastro de Prestadores", () => {
     it("PREMIUM professional should have higher visibility", async () => {
       const professionals = getProfessionalsByRanking();
       const premiumProfessionals = professionals.filter(
-        (p) => p.type === "PREMIUM"
+        (p) => p.type === "PREMIUM",
       );
 
       // PREMIUM professionals devem aparecer nos primeiros índices

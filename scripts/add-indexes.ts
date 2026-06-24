@@ -1,6 +1,6 @@
-import 'dotenv/config';
-import { getDb } from '../server/db';
-import { sql } from 'drizzle-orm';
+import "dotenv/config";
+import { getDb } from "../server/db";
+import { sql } from "drizzle-orm";
 
 async function main() {
   console.log("Iniciando aplicação dos índices de performance...");
@@ -27,7 +27,7 @@ async function main() {
     `CREATE INDEX IF NOT EXISTS "favorites_user_id_idx" ON "favorites" ("user_id");`,
     `CREATE INDEX IF NOT EXISTS "favorites_provider_id_idx" ON "favorites" ("provider_id");`,
     `CREATE INDEX IF NOT EXISTS "app_events_prestador_id_idx" ON "app_events" ("prestador_id");`,
-    `CREATE INDEX IF NOT EXISTS "app_events_usuario_id_idx" ON "app_events" ("usuario_id");`
+    `CREATE INDEX IF NOT EXISTS "app_events_usuario_id_idx" ON "app_events" ("usuario_id");`,
   ];
 
   for (const query of indexes) {

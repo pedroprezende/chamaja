@@ -9,19 +9,26 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 export default function OAuthCallback() {
   const router = useRouter();
   const { isSignedIn, isLoading, user } = useAuth();
-  const [status, setStatus] = useState<"processing" | "success" | "error">("processing");
+  const [status, setStatus] = useState<"processing" | "success" | "error">(
+    "processing",
+  );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (isLoading) return;
 
     if (isSignedIn) {
-      console.log("[OAuth Callback] Sessão encontrada e processada via AuthContext:", user?.email);
+      console.log(
+        "[OAuth Callback] Sessão encontrada e processada via AuthContext:",
+        user?.email,
+      );
       setStatus("success");
-      
+
       const checkRedirect = async () => {
         try {
-          const isBusinessFlag = await AsyncStorage.getItem("@chamaja_login_as_business");
+          const isBusinessFlag = await AsyncStorage.getItem(
+            "@chamaja_login_as_business",
+          );
           if (isBusinessFlag === "true") {
             router.replace("/become-provider" as any);
           } else {
@@ -39,7 +46,7 @@ export default function OAuthCallback() {
       console.log("[OAuth Callback] Nenhuma sessão ativa encontrada.");
       setStatus("error");
       setErrorMessage("Nenhum token de autenticação recebido.");
-      
+
       setTimeout(() => {
         router.replace("/auth/login");
       }, 3000);

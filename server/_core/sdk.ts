@@ -39,15 +39,18 @@ class SDKServer {
     let authUser, error;
     try {
       const authPromise = supabase.auth.getUser(sessionCookie);
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("Supabase Auth Timeout")), 5000)
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Supabase Auth Timeout")), 5000),
       );
-      
-      const result = await Promise.race([authPromise, timeoutPromise]) as any;
+
+      const result = (await Promise.race([authPromise, timeoutPromise])) as any;
       authUser = result.data?.user;
       error = result.error;
     } catch (e: any) {
-      console.error("[Auth] Supabase verification failed or timed out:", e.message);
+      console.error(
+        "[Auth] Supabase verification failed or timed out:",
+        e.message,
+      );
       throw ForbiddenError("Authentication service timeout or failure");
     }
 
@@ -58,7 +61,7 @@ class SDKServer {
 
     const sessionUserId = authUser.id;
     const signedInAt = new Date();
-    
+
     let user = await db.getUserByOpenId(sessionUserId);
 
     // If user not in DB, sync from Supabase automatically
@@ -66,7 +69,10 @@ class SDKServer {
       try {
         await db.upsertUser({
           openId: sessionUserId,
-          name: authUser.user_metadata?.full_name || authUser.email?.split("@")[0] || null,
+          name:
+            authUser.user_metadata?.full_name ||
+            authUser.email?.split("@")[0] ||
+            null,
           email: authUser.email ?? null,
           loginMethod: authUser.app_metadata?.provider ?? "email",
           lastSignedIn: signedInAt,

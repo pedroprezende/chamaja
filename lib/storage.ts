@@ -6,15 +6,21 @@ import { decode } from "base64-arraybuffer";
 import { logger } from "./logger";
 
 export const storage = {
-  async uploadImage(uri: string, bucket: string = "providers"): Promise<string | null> {
-    logger.info("STORAGE", `Iniciando upload de imagem para o bucket: ${bucket}`);
-    
+  async uploadImage(
+    uri: string,
+    bucket: string = "providers",
+  ): Promise<string | null> {
+    logger.info(
+      "STORAGE",
+      `Iniciando upload de imagem para o bucket: ${bucket}`,
+    );
+
     try {
       if (!uri) {
         logger.warn("STORAGE", "URI de imagem vazia recebida no upload");
         return null;
       }
-      
+
       if (uri.startsWith("http")) {
         logger.info("STORAGE", "URI já é uma URL remota, ignorando upload");
         return uri;
@@ -41,9 +47,11 @@ export const storage = {
           throw new Error("Arquivo não encontrado no caminho especificado.");
         }
         fileSize = fileInfo.size || 0;
-        
+
         const cleanUri = uri.split("?")[0].split("#")[0];
-        const ext = cleanUri.substring(cleanUri.lastIndexOf(".") + 1).toLowerCase();
+        const ext = cleanUri
+          .substring(cleanUri.lastIndexOf(".") + 1)
+          .toLowerCase();
         if (ext === "jpg" || ext === "jpeg") {
           fileType = "image/jpeg";
         } else if (ext === "png") {
@@ -55,25 +63,46 @@ export const storage = {
         }
       }
 
-      logger.info("STORAGE", `Validando arquivo: tamanho = ${fileSize} bytes, tipo = ${fileType}`);
+      logger.info(
+        "STORAGE",
+        `Validando arquivo: tamanho = ${fileSize} bytes, tipo = ${fileType}`,
+      );
 
       const MAX_SIZE = 5 * 1024 * 1024; // 5MB
       if (fileSize > MAX_SIZE) {
-        logger.error("STORAGE", `Arquivo excede o limite de tamanho: ${fileSize} > ${MAX_SIZE}`);
+        logger.error(
+          "STORAGE",
+          `Arquivo excede o limite de tamanho: ${fileSize} > ${MAX_SIZE}`,
+        );
         throw new Error("O arquivo excede o limite de tamanho de 5MB.");
       }
 
-      const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+      const ALLOWED_TYPES = [
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/webp",
+      ];
       if (!ALLOWED_TYPES.includes(fileType.toLowerCase())) {
         logger.error("STORAGE", `Tipo de arquivo não permitido: ${fileType}`);
-        throw new Error("Formato de arquivo inválido. Apenas imagens JPG, PNG e WEBP são permitidas.");
+        throw new Error(
+          "Formato de arquivo inválido. Apenas imagens JPG, PNG e WEBP são permitidas.",
+        );
       }
 
-      const ext = fileType.toLowerCase() === "image/png" ? "png" : fileType.toLowerCase() === "image/webp" ? "webp" : "jpg";
+      const ext =
+        fileType.toLowerCase() === "image/png"
+          ? "png"
+          : fileType.toLowerCase() === "image/webp"
+            ? "webp"
+            : "jpg";
       const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
       const filePath = fileName;
 
-      logger.info("STORAGE", `Processando imagem local: ${uri.substring(0, 50)}...`);
+      logger.info(
+        "STORAGE",
+        `Processando imagem local: ${uri.substring(0, 50)}...`,
+      );
 
       let publicUrl = "";
 
@@ -82,21 +111,30 @@ export const storage = {
         const blob = await response.blob();
         const { data, error } = await supabase.storage
           .from(bucket)
-          .upload(filePath, blob, { contentType: fileType, cacheControl: "3600", upsert: true });
-        
+          .upload(filePath, blob, {
+            contentType: fileType,
+            cacheControl: "3600",
+            upsert: true,
+          });
+
         if (error) throw error;
-        
-        const { data: { publicUrl: url } } = supabase.storage.from(bucket).getPublicUrl(filePath);
+
+        const {
+          data: { publicUrl: url },
+        } = supabase.storage.from(bucket).getPublicUrl(filePath);
         publicUrl = url;
       } else {
         logger.info("STORAGE", "Lendo arquivo local como Base64...");
         const base64 = await FileSystem.readAsStringAsync(uri, {
           encoding: (FileSystem as any).EncodingType?.Base64 || "base64",
         });
-        
-        logger.info("STORAGE", `Decodificando Base64 (${base64.length} chars)...`);
+
+        logger.info(
+          "STORAGE",
+          `Decodificando Base64 (${base64.length} chars)...`,
+        );
         const body = decode(base64);
-        
+
         logger.info("STORAGE", "Enviando para o Supabase via SDK...");
         const { data, error } = await supabase.storage
           .from(bucket)
@@ -107,11 +145,17 @@ export const storage = {
           });
 
         if (error) {
-          logger.error("STORAGE", "Erro no upload via SDK (Base64 Mode)", error);
+          logger.error(
+            "STORAGE",
+            "Erro no upload via SDK (Base64 Mode)",
+            error,
+          );
           throw error;
         }
 
-        const { data: { publicUrl: url } } = supabase.storage.from(bucket).getPublicUrl(filePath);
+        const {
+          data: { publicUrl: url },
+        } = supabase.storage.from(bucket).getPublicUrl(filePath);
         publicUrl = url;
       }
 
@@ -121,34 +165,51 @@ export const storage = {
       logger.error("STORAGE", "Falha crítica no helper de upload", e);
       if (Platform.OS !== "web") {
         const { Alert } = require("react-native");
-        Alert.alert("Erro de Armazenamento", `Não foi possível enviar a foto: ${e.message || "Verifique sua conexão"}`);
+        Alert.alert(
+          "Erro de Armazenamento",
+          `Não foi possível enviar a foto: ${e.message || "Verifique sua conexão"}`,
+        );
       }
       throw e;
     }
   },
 
-  async uploadOptimizedImage(uri: string, bucket: string = "providers"): Promise<{ imageUrl: string | null, thumbnailUrl: string | null }> {
+  async uploadOptimizedImage(
+    uri: string,
+    bucket: string = "providers",
+  ): Promise<{ imageUrl: string | null; thumbnailUrl: string | null }> {
     if (!uri) return { imageUrl: null, thumbnailUrl: null };
     if (uri.startsWith("http")) return { imageUrl: uri, thumbnailUrl: uri };
 
     try {
-      const { optimizeImage, generateThumbnail } = await import("./image-optimizer");
-      
-      logger.info("STORAGE", "Iniciando otimização de imagem e geração de miniatura...");
+      const { optimizeImage, generateThumbnail } =
+        await import("./image-optimizer");
+
+      logger.info(
+        "STORAGE",
+        "Iniciando otimização de imagem e geração de miniatura...",
+      );
       const [optimizedUri, thumbnailUri] = await Promise.all([
         optimizeImage(uri, 1000, 0.8),
-        generateThumbnail(uri)
+        generateThumbnail(uri),
       ]);
 
-      logger.info("STORAGE", "Fazendo upload das imagens otimizadas para o Supabase...");
+      logger.info(
+        "STORAGE",
+        "Fazendo upload das imagens otimizadas para o Supabase...",
+      );
       const [imageUrl, thumbnailUrl] = await Promise.all([
         this.uploadImage(optimizedUri, bucket),
-        this.uploadImage(thumbnailUri, bucket)
+        this.uploadImage(thumbnailUri, bucket),
       ]);
 
       return { imageUrl, thumbnailUrl };
     } catch (err) {
-      logger.error("STORAGE", "Erro no upload otimizado, usando fallback de upload normal:", err);
+      logger.error(
+        "STORAGE",
+        "Erro no upload otimizado, usando fallback de upload normal:",
+        err,
+      );
       const imageUrl = await this.uploadImage(uri, bucket);
       return { imageUrl, thumbnailUrl: imageUrl };
     }

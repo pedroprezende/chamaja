@@ -72,7 +72,7 @@ export const PAYMENT_PLANS: PaymentPlan[] = [
 export async function createPaymentPreference(
   professionalId: string,
   planId: string,
-  methodId: string
+  methodId: string,
 ): Promise<PaymentPreference> {
   const plan = PAYMENT_PLANS.find((p) => p.id === planId);
   const method = PAYMENT_METHODS.find((m) => m.id === methodId);
@@ -102,7 +102,7 @@ export async function createPaymentPreference(
  */
 export async function processPayment(
   preference: PaymentPreference,
-  paymentData: any
+  paymentData: any,
 ): Promise<{ success: boolean; paymentId?: string; error?: string }> {
   try {
     // In production, this would call your backend API
@@ -143,7 +143,7 @@ export async function getPaymentStatus(paymentId: string): Promise<string> {
  * Cancel a payment preference
  */
 export async function cancelPaymentPreference(
-  preferenceId: string
+  preferenceId: string,
 ): Promise<boolean> {
   try {
     // In production, this would call your backend API

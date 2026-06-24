@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { providersDB } from "@/lib/providers-database";
 import { storage } from "@/lib/storage";
@@ -50,9 +56,26 @@ export interface ProviderService {
 }
 
 export const PLANS = {
-  free: { label: "Gratuito", price: 0, priceLabel: "Grátis", period: "sempre", savings: undefined },
-  monthly: { label: "Mensal", price: 10, priceLabel: "R$ 10,00/mês", period: "mês" },
-  annual: { label: "Anual", price: 99.9, priceLabel: "R$ 99,90/ano", period: "ano", savings: "Economize 58%" },
+  free: {
+    label: "Gratuito",
+    price: 0,
+    priceLabel: "Grátis",
+    period: "sempre",
+    savings: undefined,
+  },
+  monthly: {
+    label: "Mensal",
+    price: 10,
+    priceLabel: "R$ 10,00/mês",
+    period: "mês",
+  },
+  annual: {
+    label: "Anual",
+    price: 99.9,
+    priceLabel: "R$ 99,90/ano",
+    period: "ano",
+    savings: "Economize 58%",
+  },
 };
 
 const STORAGE_KEY = "@chamaja_provider";
@@ -61,16 +84,32 @@ interface ProviderContextType {
   provider: ProviderProfile | null;
   isProvider: boolean;
   isLoading: boolean;
-  registerProvider: (data: Omit<ProviderProfile, "userId" | "plan" | "planExpiresAt" | "isActive" | "createdAt" | "services">, userId: string, plan: PlanType) => Promise<void>;
+  registerProvider: (
+    data: Omit<
+      ProviderProfile,
+      | "userId"
+      | "plan"
+      | "planExpiresAt"
+      | "isActive"
+      | "createdAt"
+      | "services"
+    >,
+    userId: string,
+    plan: PlanType,
+  ) => Promise<void>;
   updateProvider: (data: Partial<ProviderProfile>) => Promise<void>;
-  addService: (service: Omit<ProviderService, "id" | "createdAt">) => Promise<void>;
+  addService: (
+    service: Omit<ProviderService, "id" | "createdAt">,
+  ) => Promise<void>;
   updateService: (id: string, data: Partial<ProviderService>) => Promise<void>;
   deleteService: (id: string) => Promise<void>;
   cancelPlan: () => Promise<void>;
   renewPlan: (plan: PlanType) => Promise<void>;
 }
 
-const ProviderContext = createContext<ProviderContextType | undefined>(undefined);
+const ProviderContext = createContext<ProviderContextType | undefined>(
+  undefined,
+);
 
 export function ProviderContextProvider({ children }: { children: ReactNode }) {
   const [provider, setProvider] = useState<ProviderProfile | null>(null);
@@ -128,7 +167,10 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
           await save(syncedProvider);
         }
       } catch (err) {
-        console.error("[ProviderContext] Failed to sync provider with database:", err);
+        console.error(
+          "[ProviderContext] Failed to sync provider with database:",
+          err,
+        );
       }
     } else {
       setProvider(null);
@@ -142,23 +184,37 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
   };
 
   const registerProvider = async (
-    data: Omit<ProviderProfile, "userId" | "plan" | "planExpiresAt" | "isActive" | "createdAt" | "services">,
+    data: Omit<
+      ProviderProfile,
+      | "userId"
+      | "plan"
+      | "planExpiresAt"
+      | "isActive"
+      | "createdAt"
+      | "services"
+    >,
     userId: string,
-    plan: PlanType
+    plan: PlanType,
   ) => {
     const now = new Date();
     let expiresAt: string | null = null;
     if (plan === "monthly") {
-      expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      expiresAt = new Date(
+        now.getTime() + 30 * 24 * 60 * 60 * 1000,
+      ).toISOString();
     } else if (plan === "annual") {
-      expiresAt = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString();
+      expiresAt = new Date(
+        now.getTime() + 365 * 24 * 60 * 60 * 1000,
+      ).toISOString();
     }
 
     // Upload do avatar se for local com otimização
     let finalAvatar = data.avatar;
     let finalAvatarThumbnail = data.avatarThumbnailUri || undefined;
     if (data.avatar && !data.avatar.startsWith("http")) {
-      const { imageUrl, thumbnailUrl } = await storage.uploadOptimizedImage(data.avatar);
+      const { imageUrl, thumbnailUrl } = await storage.uploadOptimizedImage(
+        data.avatar,
+      );
       if (imageUrl) finalAvatar = imageUrl;
       if (thumbnailUrl) finalAvatarThumbnail = thumbnailUrl || undefined;
     }
@@ -167,7 +223,9 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
     let finalCover = data.coverUri || undefined;
     let finalCoverThumbnail = data.coverThumbnailUri || undefined;
     if (data.coverUri && !data.coverUri.startsWith("http")) {
-      const { imageUrl, thumbnailUrl } = await storage.uploadOptimizedImage(data.coverUri);
+      const { imageUrl, thumbnailUrl } = await storage.uploadOptimizedImage(
+        data.coverUri,
+      );
       if (imageUrl) finalCover = imageUrl;
       if (thumbnailUrl) finalCoverThumbnail = thumbnailUrl || undefined;
     }
@@ -225,14 +283,18 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
 
     // Upload do avatar se houver alteração
     if (data.avatar && !data.avatar.startsWith("http")) {
-      const { imageUrl, thumbnailUrl } = await storage.uploadOptimizedImage(data.avatar);
+      const { imageUrl, thumbnailUrl } = await storage.uploadOptimizedImage(
+        data.avatar,
+      );
       if (imageUrl) updated.avatar = imageUrl;
       if (thumbnailUrl) updated.avatarThumbnailUri = thumbnailUrl;
     }
 
     // Upload da capa se houver alteração
     if (data.coverUri && !data.coverUri.startsWith("http")) {
-      const { imageUrl, thumbnailUrl } = await storage.uploadOptimizedImage(data.coverUri);
+      const { imageUrl, thumbnailUrl } = await storage.uploadOptimizedImage(
+        data.coverUri,
+      );
       if (imageUrl) updated.coverUri = imageUrl;
       if (thumbnailUrl) updated.coverThumbnailUri = thumbnailUrl;
     }
@@ -264,7 +326,9 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const addService = async (service: Omit<ProviderService, "id" | "createdAt">) => {
+  const addService = async (
+    service: Omit<ProviderService, "id" | "createdAt">,
+  ) => {
     if (!provider) return;
 
     // Upload da imagem principal do serviço com otimização
@@ -298,10 +362,15 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
       id: `svc-${Date.now()}`,
       createdAt: new Date().toISOString(),
     };
-    const updated = { ...provider, services: [...provider.services, newService] };
+    const updated = {
+      ...provider,
+      services: [...provider.services, newService],
+    };
     await save(updated);
     // Sincronizar com o banco global
-    await providersDB.updateProvider(provider.userId, { services: updated.services });
+    await providersDB.updateProvider(provider.userId, {
+      services: updated.services,
+    });
   };
 
   const updateService = async (id: string, data: Partial<ProviderService>) => {
@@ -335,22 +404,33 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
 
     const updated = {
       ...provider,
-      services: provider.services.map((s) => (s.id === id ? { ...s, ...updates } : s)),
+      services: provider.services.map((s) =>
+        s.id === id ? { ...s, ...updates } : s,
+      ),
     };
     await save(updated);
     // Sincronizar com o banco global
-    await providersDB.updateProvider(provider.userId, { services: updated.services });
+    await providersDB.updateProvider(provider.userId, {
+      services: updated.services,
+    });
   };
 
   const deleteService = async (id: string) => {
     if (!provider) return;
-    const updated = { ...provider, services: provider.services.filter((s) => s.id !== id) };
+    const updated = {
+      ...provider,
+      services: provider.services.filter((s) => s.id !== id),
+    };
     await save(updated);
   };
 
   const cancelPlan = async () => {
     if (!provider) return;
-    const updated = { ...provider, plan: null as PlanType, planExpiresAt: null };
+    const updated = {
+      ...provider,
+      plan: null as PlanType,
+      planExpiresAt: null,
+    };
     await save(updated);
   };
 
@@ -359,9 +439,13 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
     const now = new Date();
     let expiresAt: string | null = null;
     if (plan === "monthly") {
-      expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      expiresAt = new Date(
+        now.getTime() + 30 * 24 * 60 * 60 * 1000,
+      ).toISOString();
     } else if (plan === "annual") {
-      expiresAt = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString();
+      expiresAt = new Date(
+        now.getTime() + 365 * 24 * 60 * 60 * 1000,
+      ).toISOString();
     }
     const updated = { ...provider, plan, planExpiresAt: expiresAt };
     await save(updated);
@@ -371,7 +455,10 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
     <ProviderContext.Provider
       value={{
         provider,
-        isProvider: provider !== null && provider.isActive && provider.permissionsStatus !== "bloqueado",
+        isProvider:
+          provider !== null &&
+          provider.isActive &&
+          provider.permissionsStatus !== "bloqueado",
         isLoading,
         registerProvider,
         updateProvider,
@@ -389,6 +476,9 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
 
 export function useProvider() {
   const ctx = useContext(ProviderContext);
-  if (!ctx) throw new Error("useProvider deve ser usado dentro de ProviderContextProvider");
+  if (!ctx)
+    throw new Error(
+      "useProvider deve ser usado dentro de ProviderContextProvider",
+    );
   return ctx;
 }

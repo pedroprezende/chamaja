@@ -21,7 +21,10 @@ import { adminProvidersDB, type AdminProvider } from "@/lib/admin-providers-db";
 import { trpc } from "@/lib/trpc";
 import { useMemo } from "react";
 import { useLocation } from "@/lib/location-context";
-import { calculateHaversineDistance, formatDistancePtBr } from "@/lib/location-utils";
+import {
+  calculateHaversineDistance,
+  formatDistancePtBr,
+} from "@/lib/location-utils";
 
 // ─── Tipo unificado ───────────────────────────────────────────────────────────
 type DisplayItem = {
@@ -88,10 +91,13 @@ function openWhatsApp(phone: string, name: string) {
   let number = phone.replace(/\D/g, "");
   if (!number.startsWith("55")) number = "55" + number;
   const msg = encodeURIComponent(
-    `Olá! Vi o serviço "${name}" no XamaJá e gostaria de mais informações. 😊`
+    `Olá! Vi o serviço "${name}" no XamaJá e gostaria de mais informações. 😊`,
   );
   Linking.openURL(`https://wa.me/${number}?text=${msg}`).catch(() =>
-    Alert.alert("WhatsApp não encontrado", "Verifique se o WhatsApp está instalado.")
+    Alert.alert(
+      "WhatsApp não encontrado",
+      "Verifique se o WhatsApp está instalado.",
+    ),
   );
 }
 
@@ -107,45 +113,57 @@ export default function SubcategoryScreen() {
   const { coords } = useLocation();
 
   const subcategoryTitle =
-    title ||
-    getSubcategoryById(subcategoryId)?.name ||
-    "Subcategoria";
+    title || getSubcategoryById(subcategoryId)?.name || "Subcategoria";
 
-  const { data: dbServices = [], isLoading: loadingServices } = trpc.services.getByCategory.useQuery(
-    { categoryId: subcategoryId || "" },
-    { enabled: !!subcategoryId }
-  );
+  const { data: dbServices = [], isLoading: loadingServices } =
+    trpc.services.getByCategory.useQuery(
+      { categoryId: subcategoryId || "" },
+      { enabled: !!subcategoryId },
+    );
 
-  const { data: dbProviders = [], isLoading: loadingProviders } = trpc.providers.getByCategory.useQuery(
-    subcategoryId || "",
-    { enabled: !!subcategoryId }
-  );
+  const { data: dbProviders = [], isLoading: loadingProviders } =
+    trpc.providers.getByCategory.useQuery(subcategoryId || "", {
+      enabled: !!subcategoryId,
+    });
 
   const items = useMemo(() => {
     if (loadingServices || loadingProviders) return [];
 
     // 1. Serviços (Admins)
-    const adminItems = dbServices.filter(s => s.isActive).map(s => ({
-      id: s.id,
-      name: s.name,
-      image: s.imageUri ?? undefined,
-      whatsapp: s.whatsapp ?? undefined,
-      address: s.address ?? undefined,
-      description: s.description ?? undefined,
-      gallery: s.gallery ?? undefined,
-      isAdmin: true,
-      isProvider: false,
-      isAdminProvider: false,
-    }));
+    const adminItems = dbServices
+      .filter((s) => s.isActive)
+      .map((s) => ({
+        id: s.id,
+        name: s.name,
+        image: s.imageUri ?? undefined,
+        whatsapp: s.whatsapp ?? undefined,
+        address: s.address ?? undefined,
+        description: s.description ?? undefined,
+        gallery: s.gallery ?? undefined,
+        isAdmin: true,
+        isProvider: false,
+        isAdminProvider: false,
+      }));
 
     // 2. Prestadores
-    const providerItems = dbProviders.map(p => {
+    const providerItems = dbProviders.map((p) => {
       let distance = "";
-      if (coords && p.latitude !== null && p.latitude !== undefined && p.longitude !== null && p.longitude !== undefined) {
+      if (
+        coords &&
+        p.latitude !== null &&
+        p.latitude !== undefined &&
+        p.longitude !== null &&
+        p.longitude !== undefined
+      ) {
         const lat = Number(p.latitude);
         const lon = Number(p.longitude);
         if (!isNaN(lat) && !isNaN(lon)) {
-          const distKm = calculateHaversineDistance(coords.latitude, coords.longitude, lat, lon);
+          const distKm = calculateHaversineDistance(
+            coords.latitude,
+            coords.longitude,
+            lat,
+            lon,
+          );
           distance = formatDistancePtBr(distKm);
         }
       }
@@ -160,8 +178,14 @@ export default function SubcategoryScreen() {
         isAdmin: false,
         isProvider: true,
         isAdminProvider: false,
-        latitude: p.latitude !== null && p.latitude !== undefined ? Number(p.latitude) : undefined,
-        longitude: p.longitude !== null && p.longitude !== undefined ? Number(p.longitude) : undefined,
+        latitude:
+          p.latitude !== null && p.latitude !== undefined
+            ? Number(p.latitude)
+            : undefined,
+        longitude:
+          p.longitude !== null && p.longitude !== undefined
+            ? Number(p.longitude)
+            : undefined,
         distance,
       };
     });
@@ -206,7 +230,11 @@ export default function SubcategoryScreen() {
     >
       {/* Imagem */}
       {item.image ? (
-        <Image source={{ uri: item.image }} style={styles.cardImage} resizeMode="cover" />
+        <Image
+          source={{ uri: item.image }}
+          style={styles.cardImage}
+          resizeMode="cover"
+        />
       ) : (
         <View style={[styles.cardImage, styles.cardImagePlaceholder]}>
           <MaterialIcons name="person" size={28} color="#9CA3AF" />
@@ -223,7 +251,9 @@ export default function SubcategoryScreen() {
         <View style={styles.cardAddressRow}>
           <MaterialIcons name="place" size={10} color="#9CA3AF" />
           <Text style={styles.cardAddress} numberOfLines={1}>
-            {item.address ? `${item.address}${item.distance ? ` • ${item.distance}` : ""}` : item.distance}
+            {item.address
+              ? `${item.address}${item.distance ? ` • ${item.distance}` : ""}`
+              : item.distance}
           </Text>
         </View>
       )}
@@ -238,7 +268,10 @@ export default function SubcategoryScreen() {
       {/* Botão WhatsApp */}
       {!!item.whatsapp && (
         <Pressable
-          style={({ pressed }) => [styles.whatsappBtn, pressed && { opacity: 0.7 }]}
+          style={({ pressed }) => [
+            styles.whatsappBtn,
+            pressed && { opacity: 0.7 },
+          ]}
           onPress={(e) => {
             e.stopPropagation?.();
             openWhatsApp(item.whatsapp!, item.name);
@@ -270,7 +303,8 @@ export default function SubcategoryScreen() {
       {!loading && (
         <View style={styles.countRow}>
           <Text style={styles.countText}>
-            {items.length} profissional{items.length !== 1 ? "is" : ""} encontrado{items.length !== 1 ? "s" : ""}
+            {items.length} profissional{items.length !== 1 ? "is" : ""}{" "}
+            encontrado{items.length !== 1 ? "s" : ""}
           </Text>
         </View>
       )}
@@ -295,7 +329,8 @@ export default function SubcategoryScreen() {
               <MaterialIcons name="search-off" size={48} color="#D1D5DB" />
               <Text style={styles.emptyTitle}>Em breve</Text>
               <Text style={styles.emptyText}>
-                Ainda não há profissionais cadastrados para "{subcategoryTitle}".
+                Ainda não há profissionais cadastrados para "{subcategoryTitle}
+                ".
               </Text>
               <Text style={styles.emptyHint}>
                 Seja o primeiro a oferecer este serviço!

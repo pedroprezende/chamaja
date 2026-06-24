@@ -60,7 +60,11 @@ function AdCard({
     <View style={styles.adCard}>
       {/* Banner */}
       {item.imageUrl ? (
-        <Image source={{ uri: item.imageUrl }} style={styles.adBanner} resizeMode="cover" />
+        <Image
+          source={{ uri: item.imageUrl }}
+          style={styles.adBanner}
+          resizeMode="cover"
+        />
       ) : (
         <View style={styles.adBannerPlaceholder}>
           <MaterialIcons name="image" size={32} color="#CBD5E1" />
@@ -69,9 +73,24 @@ function AdCard({
       )}
 
       {/* Badge de status */}
-      <View style={[styles.statusBadge, item.isActive ? styles.statusBadgeActive : styles.statusBadgeInactive]}>
-        <View style={[styles.statusDot, item.isActive ? styles.statusDotActive : styles.statusDotInactive]} />
-        <Text style={[styles.statusText, item.isActive ? styles.statusTextActive : styles.statusTextInactive]}>
+      <View
+        style={[
+          styles.statusBadge,
+          item.isActive ? styles.statusBadgeActive : styles.statusBadgeInactive,
+        ]}
+      >
+        <View
+          style={[
+            styles.statusDot,
+            item.isActive ? styles.statusDotActive : styles.statusDotInactive,
+          ]}
+        />
+        <Text
+          style={[
+            styles.statusText,
+            item.isActive ? styles.statusTextActive : styles.statusTextInactive,
+          ]}
+        >
           {item.isActive ? "Ativo" : "Inativo"}
         </Text>
       </View>
@@ -90,7 +109,11 @@ function AdCard({
         <View style={styles.adMeta}>
           <View style={styles.adMetaItem}>
             <MaterialIcons name="person" size={13} color="#64748B" />
-            <Text style={styles.adMetaText} numberOfLines={1} ellipsizeMode="tail">
+            <Text
+              style={styles.adMetaText}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
               {item.providerName}
             </Text>
           </View>
@@ -103,7 +126,11 @@ function AdCard({
         {/* Ações */}
         <View style={styles.adActions}>
           <Pressable
-            style={({ pressed }) => [styles.adActionBtn, styles.adToggleBtn, pressed && { opacity: 0.7 }]}
+            style={({ pressed }) => [
+              styles.adActionBtn,
+              styles.adToggleBtn,
+              pressed && { opacity: 0.7 },
+            ]}
             onPress={onToggle}
           >
             <MaterialIcons
@@ -111,21 +138,35 @@ function AdCard({
               size={14}
               color="#64748B"
             />
-            <Text style={styles.adActionText}>{item.isActive ? "Desativar" : "Ativar"}</Text>
+            <Text style={styles.adActionText}>
+              {item.isActive ? "Desativar" : "Ativar"}
+            </Text>
           </Pressable>
           <Pressable
-            style={({ pressed }) => [styles.adActionBtn, styles.adEditBtn, pressed && { opacity: 0.7 }]}
+            style={({ pressed }) => [
+              styles.adActionBtn,
+              styles.adEditBtn,
+              pressed && { opacity: 0.7 },
+            ]}
             onPress={onEdit}
           >
             <MaterialIcons name="edit" size={14} color="#2563EB" />
-            <Text style={[styles.adActionText, { color: "#2563EB" }]}>Editar</Text>
+            <Text style={[styles.adActionText, { color: "#2563EB" }]}>
+              Editar
+            </Text>
           </Pressable>
           <Pressable
-            style={({ pressed }) => [styles.adActionBtn, styles.adDeleteBtn, pressed && { opacity: 0.7 }]}
+            style={({ pressed }) => [
+              styles.adActionBtn,
+              styles.adDeleteBtn,
+              pressed && { opacity: 0.7 },
+            ]}
             onPress={onDelete}
           >
             <MaterialIcons name="delete-outline" size={14} color="#DC2626" />
-            <Text style={[styles.adActionText, { color: "#DC2626" }]}>Excluir</Text>
+            <Text style={[styles.adActionText, { color: "#DC2626" }]}>
+              Excluir
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -177,7 +218,9 @@ export default function AdminAdsScreen() {
   const allProviders = useMemo<PickerProvider[]>(() => {
     const realNames = new Set(realProviders.map((p) => p.name.toLowerCase()));
     const adminNames = new Set(adminServices.map((s) => s.name.toLowerCase()));
-    const adminProvNames = new Set(adminProviders.map((p) => p.name.toLowerCase()));
+    const adminProvNames = new Set(
+      adminProviders.map((p) => p.name.toLowerCase()),
+    );
 
     // 1. Prestadores cadastrados na tela "Prestadores" do admin (prioridade máxima)
     const fromAdminProviders: PickerProvider[] = adminProviders.map((p) => ({
@@ -216,7 +259,7 @@ export default function AdminAdsScreen() {
         (p) =>
           !realNames.has(p.name.toLowerCase()) &&
           !adminNames.has(p.name.toLowerCase()) &&
-          !adminProvNames.has(p.name.toLowerCase())
+          !adminProvNames.has(p.name.toLowerCase()),
       )
       .map((p) => ({
         id: p.id,
@@ -235,7 +278,7 @@ export default function AdminAdsScreen() {
     return allProviders.filter(
       (p) =>
         p.name.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q)
+        p.category.toLowerCase().includes(q),
     );
   }, [allProviders, pickerSearch]);
 
@@ -292,7 +335,10 @@ export default function AdminAdsScreen() {
       return;
     }
     if (!form.providerId) {
-      Alert.alert("Campo obrigatório", "Selecione um prestador para o anúncio.");
+      Alert.alert(
+        "Campo obrigatório",
+        "Selecione um prestador para o anúncio.",
+      );
       return;
     }
     if (!form.imageUrl) {
@@ -316,21 +362,17 @@ export default function AdminAdsScreen() {
   };
 
   const handleDelete = (ad: Ad) => {
-    Alert.alert(
-      "Excluir anúncio",
-      `Deseja excluir "${ad.title}"?`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Excluir",
-          style: "destructive",
-          onPress: async () => {
-            await adsDB.delete(ad.id);
-            await loadAds();
-          },
+    Alert.alert("Excluir anúncio", `Deseja excluir "${ad.title}"?`, [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Excluir",
+        style: "destructive",
+        onPress: async () => {
+          await adsDB.delete(ad.id);
+          await loadAds();
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleToggle = async (ad: Ad) => {
@@ -342,7 +384,6 @@ export default function AdminAdsScreen() {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-
       {/* ── Header ── */}
       <View style={styles.header}>
         <Pressable
@@ -354,10 +395,15 @@ export default function AdminAdsScreen() {
         </Pressable>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Anúncios</Text>
-          <Text style={styles.headerSub}>{ads.length} total · {activeCount} ativos</Text>
+          <Text style={styles.headerSub}>
+            {ads.length} total · {activeCount} ativos
+          </Text>
         </View>
         <Pressable
-          style={({ pressed }) => [styles.addBtn, pressed && { opacity: 0.8, transform: [{ scale: 0.96 }] }]}
+          style={({ pressed }) => [
+            styles.addBtn,
+            pressed && { opacity: 0.8, transform: [{ scale: 0.96 }] },
+          ]}
           onPress={openCreate}
         >
           <MaterialIcons name="add" size={20} color="#FFFFFF" />
@@ -419,11 +465,16 @@ export default function AdminAdsScreen() {
                   {editingAd ? "Editar Anúncio" : "Novo Anúncio"}
                 </Text>
                 <Text style={styles.modalSubtitle}>
-                  {editingAd ? "Atualize as informações abaixo" : "Preencha os dados do anúncio"}
+                  {editingAd
+                    ? "Atualize as informações abaixo"
+                    : "Preencha os dados do anúncio"}
                 </Text>
               </View>
               <Pressable
-                style={({ pressed }) => [styles.modalCloseBtn, pressed && { opacity: 0.6 }]}
+                style={({ pressed }) => [
+                  styles.modalCloseBtn,
+                  pressed && { opacity: 0.6 },
+                ]}
                 onPress={() => setModalVisible(false)}
                 hitSlop={8}
               >
@@ -440,22 +491,43 @@ export default function AdminAdsScreen() {
               <View style={styles.formSection}>
                 <Text style={styles.sectionTitle}>Imagem do Banner</Text>
                 <Pressable
-                  style={({ pressed }) => [styles.bannerPicker, pressed && { opacity: 0.85 }]}
+                  style={({ pressed }) => [
+                    styles.bannerPicker,
+                    pressed && { opacity: 0.85 },
+                  ]}
                   onPress={handlePickImage}
                 >
                   {form.imageUrl ? (
                     <View style={{ position: "relative" }}>
-                      <Image source={{ uri: form.imageUrl }} style={styles.bannerPreview} resizeMode="cover" />
+                      <Image
+                        source={{ uri: form.imageUrl }}
+                        style={styles.bannerPreview}
+                        resizeMode="cover"
+                      />
                       <View style={styles.bannerOverlay}>
-                        <MaterialIcons name="photo-camera" size={18} color="#FFFFFF" />
-                        <Text style={styles.bannerOverlayText}>Trocar imagem</Text>
+                        <MaterialIcons
+                          name="photo-camera"
+                          size={18}
+                          color="#FFFFFF"
+                        />
+                        <Text style={styles.bannerOverlayText}>
+                          Trocar imagem
+                        </Text>
                       </View>
                     </View>
                   ) : (
                     <View style={styles.bannerPlaceholder}>
-                      <MaterialIcons name="add-photo-alternate" size={36} color="#94A3B8" />
-                      <Text style={styles.bannerPlaceholderTitle}>Adicionar banner</Text>
-                      <Text style={styles.bannerPlaceholderSub}>Recomendado: proporção 16:9</Text>
+                      <MaterialIcons
+                        name="add-photo-alternate"
+                        size={36}
+                        color="#94A3B8"
+                      />
+                      <Text style={styles.bannerPlaceholderTitle}>
+                        Adicionar banner
+                      </Text>
+                      <Text style={styles.bannerPlaceholderSub}>
+                        Recomendado: proporção 16:9
+                      </Text>
                     </View>
                   )}
                 </Pressable>
@@ -467,7 +539,12 @@ export default function AdminAdsScreen() {
 
                 <Text style={styles.fieldLabel}>Título *</Text>
                 <View style={styles.inputWrap}>
-                  <MaterialIcons name="title" size={17} color="#94A3B8" style={styles.inputIcon} />
+                  <MaterialIcons
+                    name="title"
+                    size={17}
+                    color="#94A3B8"
+                    style={styles.inputIcon}
+                  />
                   <TextInput
                     style={styles.input}
                     placeholder="Ex: Elétrica do Zé — 20 anos de experiência"
@@ -486,7 +563,9 @@ export default function AdminAdsScreen() {
                     placeholder="Breve descrição do anúncio..."
                     placeholderTextColor="#94A3B8"
                     value={form.description}
-                    onChangeText={(v) => setForm((f) => ({ ...f, description: v }))}
+                    onChangeText={(v) =>
+                      setForm((f) => ({ ...f, description: v }))
+                    }
                     multiline
                     numberOfLines={3}
                     maxLength={160}
@@ -496,13 +575,20 @@ export default function AdminAdsScreen() {
 
                 <Text style={styles.fieldLabel}>Ordem de exibição</Text>
                 <View style={styles.inputWrap}>
-                  <MaterialIcons name="sort" size={17} color="#94A3B8" style={styles.inputIcon} />
+                  <MaterialIcons
+                    name="sort"
+                    size={17}
+                    color="#94A3B8"
+                    style={styles.inputIcon}
+                  />
                   <TextInput
                     style={styles.input}
                     placeholder="1"
                     placeholderTextColor="#94A3B8"
                     value={String(form.displayOrder)}
-                    onChangeText={(v) => setForm((f) => ({ ...f, displayOrder: parseInt(v) || 1 }))}
+                    onChangeText={(v) =>
+                      setForm((f) => ({ ...f, displayOrder: parseInt(v) || 1 }))
+                    }
                     keyboardType="number-pad"
                     returnKeyType="done"
                   />
@@ -517,21 +603,40 @@ export default function AdminAdsScreen() {
                   /* Prestador selecionado */
                   <View style={styles.providerSelected}>
                     <View style={styles.providerSelectedIcon}>
-                      <MaterialIcons name="check-circle" size={22} color="#16A34A" />
+                      <MaterialIcons
+                        name="check-circle"
+                        size={22}
+                        color="#16A34A"
+                      />
                     </View>
-                    <Text style={styles.providerSelectedName} numberOfLines={1} ellipsizeMode="tail">
+                    <Text
+                      style={styles.providerSelectedName}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
                       {form.providerName}
                     </Text>
                     <Pressable
-                      style={({ pressed }) => [styles.changeProviderBtn, pressed && { opacity: 0.7 }]}
+                      style={({ pressed }) => [
+                        styles.changeProviderBtn,
+                        pressed && { opacity: 0.7 },
+                      ]}
                       onPress={() => {
-                        setForm((f) => ({ ...f, providerId: "", providerName: "" }));
+                        setForm((f) => ({
+                          ...f,
+                          providerId: "",
+                          providerName: "",
+                        }));
                         setPickerSearch("");
                         loadRealProviders();
                         setShowProviderPicker(true);
                       }}
                     >
-                      <MaterialIcons name="swap-horiz" size={15} color="#2563EB" />
+                      <MaterialIcons
+                        name="swap-horiz"
+                        size={15}
+                        color="#2563EB"
+                      />
                       <Text style={styles.changeProviderText}>Trocar</Text>
                     </Pressable>
                   </View>
@@ -549,8 +654,14 @@ export default function AdminAdsScreen() {
                       setShowProviderPicker((v) => !v);
                     }}
                   >
-                    <MaterialIcons name="person-add" size={17} color="#94A3B8" />
-                    <Text style={styles.providerPickerBtnText}>Selecionar prestador...</Text>
+                    <MaterialIcons
+                      name="person-add"
+                      size={17}
+                      color="#94A3B8"
+                    />
+                    <Text style={styles.providerPickerBtnText}>
+                      Selecionar prestador...
+                    </Text>
                     <MaterialIcons
                       name={showProviderPicker ? "expand-less" : "expand-more"}
                       size={20}
@@ -574,8 +685,15 @@ export default function AdminAdsScreen() {
                         returnKeyType="search"
                       />
                       {pickerSearch.length > 0 && (
-                        <Pressable onPress={() => setPickerSearch("")} hitSlop={8}>
-                          <MaterialIcons name="close" size={14} color="#94A3B8" />
+                        <Pressable
+                          onPress={() => setPickerSearch("")}
+                          hitSlop={8}
+                        >
+                          <MaterialIcons
+                            name="close"
+                            size={14}
+                            color="#94A3B8"
+                          />
                         </Pressable>
                       )}
                     </View>
@@ -583,48 +701,88 @@ export default function AdminAdsScreen() {
                     {loadingProviders ? (
                       <View style={styles.providerLoadingRow}>
                         <ActivityIndicator size="small" color="#25D366" />
-                        <Text style={styles.providerLoadingText}>Carregando...</Text>
+                        <Text style={styles.providerLoadingText}>
+                          Carregando...
+                        </Text>
                       </View>
                     ) : filteredProviders.length === 0 ? (
                       <View style={styles.providerEmptyRow}>
                         <Text style={styles.providerEmptyText}>
-                          {pickerSearch ? `Sem resultados para "${pickerSearch}"` : "Nenhum prestador encontrado"}
+                          {pickerSearch
+                            ? `Sem resultados para "${pickerSearch}"`
+                            : "Nenhum prestador encontrado"}
                         </Text>
                       </View>
                     ) : (
                       filteredProviders.slice(0, 8).map((item) => (
                         <Pressable
                           key={item.id}
-                          style={({ pressed }) => [styles.providerItem, pressed && { backgroundColor: "#F0FDF4" }]}
+                          style={({ pressed }) => [
+                            styles.providerItem,
+                            pressed && { backgroundColor: "#F0FDF4" },
+                          ]}
                           onPress={() => {
-                            setForm((f) => ({ ...f, providerId: item.id, providerName: item.name }));
+                            setForm((f) => ({
+                              ...f,
+                              providerId: item.id,
+                              providerName: item.name,
+                            }));
                             setShowProviderPicker(false);
                           }}
                         >
                           {item.avatar ? (
-                            <Image source={{ uri: item.avatar }} style={styles.providerAvatar} />
+                            <Image
+                              source={{ uri: item.avatar }}
+                              style={styles.providerAvatar}
+                            />
                           ) : (
-                            <View style={[styles.providerAvatar, styles.providerAvatarFallback]}>
-                              <MaterialIcons name="person" size={18} color="#94A3B8" />
+                            <View
+                              style={[
+                                styles.providerAvatar,
+                                styles.providerAvatarFallback,
+                              ]}
+                            >
+                              <MaterialIcons
+                                name="person"
+                                size={18}
+                                color="#94A3B8"
+                              />
                             </View>
                           )}
                           <View style={styles.providerItemInfo}>
                             <View style={styles.providerItemNameRow}>
-                              <Text style={styles.providerItemName} numberOfLines={1} ellipsizeMode="tail">
+                              <Text
+                                style={styles.providerItemName}
+                                numberOfLines={1}
+                                ellipsizeMode="tail"
+                              >
                                 {item.name}
                               </Text>
                               {item.isReal && (
                                 <View style={styles.verifiedBadge}>
-                                  <MaterialIcons name="verified" size={9} color="#FFFFFF" />
-                                  <Text style={styles.verifiedBadgeText}>App</Text>
+                                  <MaterialIcons
+                                    name="verified"
+                                    size={9}
+                                    color="#FFFFFF"
+                                  />
+                                  <Text style={styles.verifiedBadgeText}>
+                                    App
+                                  </Text>
                                 </View>
                               )}
                             </View>
-                            <Text style={styles.providerItemCategory} numberOfLines={1}>
+                            <Text
+                              style={styles.providerItemCategory}
+                              numberOfLines={1}
+                            >
                               {item.category}
                             </Text>
                           </View>
-                          <MaterialIcons name="chevron-right" size={18} color="#CBD5E1" />
+                          <MaterialIcons
+                            name="chevron-right"
+                            size={18}
+                            color="#CBD5E1"
+                          />
                         </Pressable>
                       ))
                     )}
@@ -637,19 +795,32 @@ export default function AdminAdsScreen() {
                 <Text style={styles.sectionTitle}>Configurações</Text>
                 <View style={styles.toggleCard}>
                   <View style={styles.toggleCardLeft}>
-                    <View style={[styles.toggleCardIcon, form.isActive && styles.toggleCardIconOn]}>
-                      <MaterialIcons name="campaign" size={18} color={form.isActive ? "#15803D" : "#94A3B8"} />
+                    <View
+                      style={[
+                        styles.toggleCardIcon,
+                        form.isActive && styles.toggleCardIconOn,
+                      ]}
+                    >
+                      <MaterialIcons
+                        name="campaign"
+                        size={18}
+                        color={form.isActive ? "#15803D" : "#94A3B8"}
+                      />
                     </View>
                     <View style={styles.toggleCardText}>
                       <Text style={styles.toggleCardTitle}>Anúncio ativo</Text>
                       <Text style={styles.toggleCardSub}>
-                        {form.isActive ? "Visível na tela inicial" : "Oculto da tela inicial"}
+                        {form.isActive
+                          ? "Visível na tela inicial"
+                          : "Oculto da tela inicial"}
                       </Text>
                     </View>
                   </View>
                   <Switch
                     value={form.isActive}
-                    onValueChange={(v) => setForm((f) => ({ ...f, isActive: v }))}
+                    onValueChange={(v) =>
+                      setForm((f) => ({ ...f, isActive: v }))
+                    }
                     trackColor={{ false: "#E2E8F0", true: "#BBF7D0" }}
                     thumbColor={form.isActive ? "#25D366" : "#CBD5E1"}
                   />
@@ -659,7 +830,10 @@ export default function AdminAdsScreen() {
               {/* ── Botões de ação ── */}
               <View style={styles.modalActions}>
                 <Pressable
-                  style={({ pressed }) => [styles.cancelBtn, pressed && { opacity: 0.7 }]}
+                  style={({ pressed }) => [
+                    styles.cancelBtn,
+                    pressed && { opacity: 0.7 },
+                  ]}
                   onPress={() => setModalVisible(false)}
                 >
                   <Text style={styles.cancelBtnText}>Cancelar</Text>
@@ -677,7 +851,11 @@ export default function AdminAdsScreen() {
                     <ActivityIndicator color="#FFFFFF" size="small" />
                   ) : (
                     <>
-                      <MaterialIcons name={editingAd ? "check" : "add"} size={18} color="#FFFFFF" />
+                      <MaterialIcons
+                        name={editingAd ? "check" : "add"}
+                        size={18}
+                        color="#FFFFFF"
+                      />
                       <Text style={styles.saveBtnText}>
                         {editingAd ? "Salvar Alterações" : "Criar Anúncio"}
                       </Text>
@@ -708,7 +886,12 @@ const styles = StyleSheet.create({
     borderBottomColor: "#F1F5F9",
     gap: 12,
     ...Platform.select({
-      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3 },
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+      },
       android: { elevation: 2 },
     }),
   },
@@ -721,7 +904,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   headerCenter: { flex: 1 },
-  headerTitle: { fontSize: 18, fontWeight: "700", color: "#0F172A", letterSpacing: -0.3 },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#0F172A",
+    letterSpacing: -0.3,
+  },
   headerSub: { fontSize: 12, color: "#64748B", marginTop: 1 },
   addBtn: {
     flexDirection: "row",
@@ -735,9 +923,19 @@ const styles = StyleSheet.create({
   addBtnText: { fontSize: 14, fontWeight: "700", color: "#FFFFFF" },
 
   // Loading / Empty
-  loadingBox: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
+  loadingBox: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+  },
   loadingText: { fontSize: 14, color: "#64748B" },
-  emptyState: { alignItems: "center", paddingVertical: 64, paddingHorizontal: 32, gap: 10 },
+  emptyState: {
+    alignItems: "center",
+    paddingVertical: 64,
+    paddingHorizontal: 32,
+    gap: 10,
+  },
   emptyIconBox: {
     width: 80,
     height: 80,
@@ -748,7 +946,12 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   emptyTitle: { fontSize: 16, fontWeight: "600", color: "#374151" },
-  emptySubtitle: { fontSize: 13, color: "#94A3B8", textAlign: "center", lineHeight: 20 },
+  emptySubtitle: {
+    fontSize: 13,
+    color: "#94A3B8",
+    textAlign: "center",
+    lineHeight: 20,
+  },
 
   // List
   listContent: { padding: 16, gap: 12, paddingBottom: 40 },
@@ -761,7 +964,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#F1F5F9",
     ...Platform.select({
-      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8 },
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.07,
+        shadowRadius: 8,
+      },
       android: { elevation: 3 },
     }),
   },
@@ -795,9 +1003,19 @@ const styles = StyleSheet.create({
   statusTextActive: { color: "#15803D" },
   statusTextInactive: { color: "#64748B" },
   adContent: { padding: 14, gap: 6 },
-  adTitle: { fontSize: 15, fontWeight: "700", color: "#0F172A", lineHeight: 22 },
+  adTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#0F172A",
+    lineHeight: 22,
+  },
   adDesc: { fontSize: 13, color: "#64748B", lineHeight: 18 },
-  adMeta: { flexDirection: "row", alignItems: "center", gap: 14, flexWrap: "wrap" },
+  adMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    flexWrap: "wrap",
+  },
   adMetaItem: { flexDirection: "row", alignItems: "center", gap: 4 },
   adMetaText: { fontSize: 12, color: "#64748B", maxWidth: 150 },
   adActions: { flexDirection: "row", gap: 8, marginTop: 6, flexWrap: "wrap" },
@@ -809,13 +1027,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
-  adToggleBtn: { backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#E2E8F0" },
-  adEditBtn: { backgroundColor: "#EFF6FF", borderWidth: 1, borderColor: "#BFDBFE" },
-  adDeleteBtn: { backgroundColor: "#FEF2F2", borderWidth: 1, borderColor: "#FECACA" },
+  adToggleBtn: {
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  adEditBtn: {
+    backgroundColor: "#EFF6FF",
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+  },
+  adDeleteBtn: {
+    backgroundColor: "#FEF2F2",
+    borderWidth: 1,
+    borderColor: "#FECACA",
+  },
   adActionText: { fontSize: 12, fontWeight: "600", color: "#64748B" },
 
   // Modal
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
   modalSheet: {
     backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 28,
@@ -851,7 +1085,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  modalScrollContent: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 16 },
+  modalScrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 4,
+    paddingBottom: 16,
+  },
 
   // Form sections
   formSection: {
@@ -946,7 +1184,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  providerSelectedName: { flex: 1, fontSize: 14, fontWeight: "600", color: "#0F172A" },
+  providerSelectedName: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#0F172A",
+  },
   changeProviderBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -968,7 +1211,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: Platform.OS === "ios" ? 12 : 10,
   },
-  providerPickerBtnOpen: { borderColor: "#25D366", borderBottomLeftRadius: 0, borderBottomRightRadius: 0 },
+  providerPickerBtnOpen: {
+    borderColor: "#25D366",
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+  },
   providerPickerBtnText: { flex: 1, fontSize: 14, color: "#94A3B8" },
   providerList: {
     backgroundColor: "#FFFFFF",
@@ -1019,7 +1266,12 @@ const styles = StyleSheet.create({
   },
   providerItemInfo: { flex: 1 },
   providerItemNameRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  providerItemName: { fontSize: 14, fontWeight: "600", color: "#0F172A", flexShrink: 1 },
+  providerItemName: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#0F172A",
+    flexShrink: 1,
+  },
   verifiedBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -1044,7 +1296,12 @@ const styles = StyleSheet.create({
     borderColor: "#E2E8F0",
     gap: 12,
   },
-  toggleCardLeft: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
+  toggleCardLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+  },
   toggleCardIcon: {
     width: 36,
     height: 36,
@@ -1080,7 +1337,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 6,
     ...Platform.select({
-      ios: { shadowColor: "#25D366", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
+      ios: {
+        shadowColor: "#25D366",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
       android: { elevation: 4 },
     }),
   },

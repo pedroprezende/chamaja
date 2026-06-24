@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { publicProcedure, adminProcedure, adminWriteProcedure, router } from "../_core/trpc";
+import {
+  publicProcedure,
+  adminProcedure,
+  adminWriteProcedure,
+  router,
+} from "../_core/trpc";
 import * as db from "../db";
 
 const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -20,7 +25,11 @@ export const servicesRouter = router({
     .input(z.object({ categoryId: z.string() }))
     .query(async ({ input }) => {
       const all = await db.getServices(true);
-      return all.filter(s => s.categoryId === input.categoryId || s.subcategoryId === input.categoryId);
+      return all.filter(
+        (s) =>
+          s.categoryId === input.categoryId ||
+          s.subcategoryId === input.categoryId,
+      );
     }),
 
   getById: publicProcedure
@@ -30,26 +39,29 @@ export const servicesRouter = router({
     }),
 
   create: adminWriteProcedure
-    .input(z.object({
-      name: z.string().min(1),
-      category: z.string(),
-      categoryId: z.string().optional(),
-      subcategoryId: z.string().optional(),
-      subcategoryName: z.string().optional(),
-      description: z.string().optional(),
-      icon: z.string().optional(),
-      imageUri: z.string().optional(),
-      whatsapp: z.string().optional(),
-      address: z.string().optional(),
-      gallery: z.array(z.string()).optional(),
-      showOnHome: z.boolean().optional(),
-    }))
+    .input(
+      z.object({
+        name: z.string().min(1),
+        category: z.string(),
+        categoryId: z.string().optional(),
+        subcategoryId: z.string().optional(),
+        subcategoryName: z.string().optional(),
+        description: z.string().optional(),
+        icon: z.string().optional(),
+        imageUri: z.string().optional(),
+        whatsapp: z.string().optional(),
+        address: z.string().optional(),
+        gallery: z.array(z.string()).optional(),
+        showOnHome: z.boolean().optional(),
+      }),
+    )
     .mutation(async ({ input, ctx }) => {
       const id = uid();
       const allServices = await db.getServices(false);
-      const maxOrder = allServices.length > 0
-        ? Math.max(...allServices.map((s) => s.displayOrder))
-        : -1;
+      const maxOrder =
+        allServices.length > 0
+          ? Math.max(...allServices.map((s) => s.displayOrder))
+          : -1;
 
       return db.createService({
         id,
@@ -72,23 +84,25 @@ export const servicesRouter = router({
     }),
 
   update: adminWriteProcedure
-    .input(z.object({
-      id: z.string(),
-      name: z.string().min(1).optional(),
-      category: z.string().optional(),
-      categoryId: z.string().optional(),
-      subcategoryId: z.string().optional(),
-      subcategoryName: z.string().optional(),
-      description: z.string().optional(),
-      icon: z.string().optional(),
-      imageUri: z.string().optional(),
-      whatsapp: z.string().optional(),
-      address: z.string().optional(),
-      gallery: z.array(z.string()).optional(),
-      showOnHome: z.boolean().optional(),
-      isActive: z.boolean().optional(),
-      displayOrder: z.number().optional(),
-    }))
+    .input(
+      z.object({
+        id: z.string(),
+        name: z.string().min(1).optional(),
+        category: z.string().optional(),
+        categoryId: z.string().optional(),
+        subcategoryId: z.string().optional(),
+        subcategoryName: z.string().optional(),
+        description: z.string().optional(),
+        icon: z.string().optional(),
+        imageUri: z.string().optional(),
+        whatsapp: z.string().optional(),
+        address: z.string().optional(),
+        gallery: z.array(z.string()).optional(),
+        showOnHome: z.boolean().optional(),
+        isActive: z.boolean().optional(),
+        displayOrder: z.number().optional(),
+      }),
+    )
     .mutation(async ({ input }) => {
       const { id, ...data } = input;
       await db.updateService(id, data);
@@ -104,7 +118,7 @@ export const servicesRouter = router({
     .input(z.object({ ids: z.array(z.string()) }))
     .mutation(async ({ input }) => {
       await Promise.all(
-        input.ids.map((id, idx) => db.updateService(id, { displayOrder: idx }))
+        input.ids.map((id, idx) => db.updateService(id, { displayOrder: idx })),
       );
     }),
 });

@@ -30,8 +30,10 @@ const MOCK_ADS: Ad[] = [
   {
     id: "ad-1",
     title: "Elétrica do Zé — 20 anos de experiência",
-    description: "Serviços elétricos residenciais e comerciais. Orçamento grátis!",
-    imageUrl: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800&q=80",
+    description:
+      "Serviços elétricos residenciais e comerciais. Orçamento grátis!",
+    imageUrl:
+      "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800&q=80",
     providerId: "eletrica-ze",
     providerName: "Elétrica do Zé",
     isActive: true,
@@ -43,7 +45,8 @@ const MOCK_ADS: Ad[] = [
     id: "ad-2",
     title: "Barbearia do João — Cortes modernos",
     description: "Barba, cabelo e bigode com navalha. Agende já!",
-    imageUrl: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800&q=80",
+    imageUrl:
+      "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800&q=80",
     providerId: "barbeiro-1",
     providerName: "Barbearia do João",
     isActive: true,
@@ -55,7 +58,8 @@ const MOCK_ADS: Ad[] = [
     id: "ad-3",
     title: "Foto & Arte — Fotografia profissional",
     description: "Casamentos, eventos e ensaios. Imagens que contam histórias.",
-    imageUrl: "https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=800&q=80",
+    imageUrl:
+      "https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=800&q=80",
     providerId: "fotografo-1",
     providerName: "Foto & Arte",
     isActive: true,
@@ -124,7 +128,10 @@ export const adsDB = {
     return ad;
   },
 
-  async update(id: string, input: Partial<CreateAdInput>): Promise<Ad | undefined> {
+  async update(
+    id: string,
+    input: Partial<CreateAdInput>,
+  ): Promise<Ad | undefined> {
     await ensureInitialized();
     const idx = _ads.findIndex((a) => a.id === id);
     if (idx === -1) return undefined;

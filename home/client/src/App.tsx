@@ -6,7 +6,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Parceiros from "./pages/Parceiros";
-
+import Parceiro from "./pages/Parceiro";
 
 function Router() {
   return (
@@ -14,6 +14,7 @@ function Router() {
       <Route path={"/"} component={Home} />
       <Route path={"/cadastro"} component={Home} />
       <Route path={"/parceiros"} component={Parceiros} />
+      <Route path={"/parceiro"} component={Parceiro} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

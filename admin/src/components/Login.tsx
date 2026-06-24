@@ -21,10 +21,11 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       let dbUser: any = null;
 
       // 1. Tenta login normal via Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { data: authData, error: authError } =
+        await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
       if (authError) {
         throw new Error(authError.message || "E-mail ou senha incorretos.");
@@ -40,7 +41,9 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
         if (dbError || !adminData) {
           await supabase.auth.signOut();
-          throw new Error("Acesso não autorizado. Apenas administradores cadastrados podem acessar este painel.");
+          throw new Error(
+            "Acesso não autorizado. Apenas administradores cadastrados podem acessar este painel.",
+          );
         }
 
         dbUser = adminData;
@@ -62,12 +65,14 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     <div className="login-container">
       <div className="login-bg-glow"></div>
       <div className="login-bg-glow-bottom"></div>
-      
+
       <div className="login-card">
         <div className="login-header">
           <div className="logo-container">
             <Shield className="logo-icon" size={36} />
-            <h1 className="logo-text">Chama<span>Já</span></h1>
+            <h1 className="logo-text">
+              Chama<span>Já</span>
+            </h1>
           </div>
           <p className="login-subtitle">Painel Administrativo</p>
         </div>
