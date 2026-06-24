@@ -427,7 +427,7 @@ async function startServer() {
 
   // ── Rotas do Sistema de Parceiros de Negócios (Prestadores e Comércios) ─────
 
-  // Registro de Parceiro de Negócio (Prestador / Comércio)
+  // Registro de Parceiro de Negócio (Prestador / Comércio / Cliente)
   app.post("/api/business-partner/register", async (req, res) => {
     try {
       const { name, email, password, whatsapp, city, type } = req.body;
@@ -437,7 +437,7 @@ async function startServer() {
           .json({ success: false, error: "Todos os campos são obrigatórios." });
       }
 
-      if (type !== "prestador" && type !== "comercio") {
+      if (type !== "prestador" && type !== "comercio" && type !== "cliente") {
         return res
           .status(400)
           .json({ success: false, error: "Tipo de parceiro inválido." });
@@ -470,6 +470,42 @@ async function startServer() {
         tipo: type,
         lastSignedIn: new Date(),
       });
+
+      if (type === "cliente") {
+        // Gerar código único de indicação (Primeiro nome + 3 números aleatórios)
+        const firstName = name
+          .trim()
+          .split(" ")[0]
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toUpperCase()
+          .replace(/[^A-Z]/g, "");
+        const randomNum = Math.floor(100 + Math.random() * 900);
+        const codigoIndicacao = `${firstName}${randomNum}`;
+
+        // Criar registro na tabela partners
+        await db.createPartner({
+          id: data.user.id,
+          nome: name,
+          email,
+          telefone: whatsapp,
+          cidade: city,
+          codigoIndicacao,
+        });
+
+        // Log event
+        await db.createAppEvent({
+          tipoEvento: "cadastro",
+          valor: `parceiro_cliente`,
+          cidade: city,
+          usuarioId: data.user.id,
+        });
+
+        return res.json({
+          success: true,
+          message: "Cadastro realizado com sucesso! Você já pode acessar seu painel.",
+        });
+      }
 
       const providerId = `prov_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -582,6 +618,7 @@ async function startServer() {
       if (
         userProfile.tipo !== "prestador" &&
         userProfile.tipo !== "comercio" &&
+        userProfile.tipo !== "cliente" &&
         userProfile.role !== "admin" &&
         !businessProfile
       ) {
@@ -608,6 +645,35 @@ async function startServer() {
         userProfile.tipo = nextTipo;
       }
 
+      // Buscar ou auto-criar perfil de parceiro para indicações se for cliente ou admin
+      let partnerProfile = await db.getPartnerById(data.user.id);
+      if (
+        !partnerProfile &&
+        (userProfile.tipo === "cliente" || userProfile.role === "admin")
+      ) {
+        const nameToUse =
+          userProfile.name || data.user.email?.split("@")[0] || "PARCEIRO";
+        const firstName = nameToUse
+          .trim()
+          .split(" ")[0]
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toUpperCase()
+          .replace(/[^A-Z]/g, "");
+        const randomNum = Math.floor(100 + Math.random() * 900);
+        const codigoIndicacao = `${firstName}${randomNum}`;
+
+        await db.createPartner({
+          id: data.user.id,
+          nome: nameToUse,
+          email: userProfile.email || data.user.email || "",
+          telefone: userProfile.phone || "",
+          cidade: "",
+          codigoIndicacao,
+        });
+        partnerProfile = await db.getPartnerById(data.user.id);
+      }
+
       res.json({
         success: true,
         sessionToken: data.session.access_token,
@@ -626,6 +692,7 @@ async function startServer() {
               categoryId: businessProfile.categoryId,
               city: businessProfile.city,
               neighborhood: businessProfile.neighborhood,
+              cep: businessProfile.cep,
               phone: businessProfile.phone,
               whatsapp: businessProfile.whatsapp,
               description: businessProfile.description,
@@ -638,6 +705,16 @@ async function startServer() {
               services: businessProfile.services
                 ? JSON.parse(businessProfile.services)
                 : [],
+            }
+          : null,
+        partner: partnerProfile
+          ? {
+              id: partnerProfile.id,
+              nome: partnerProfile.nome,
+              email: partnerProfile.email,
+              telefone: partnerProfile.telefone,
+              cidade: partnerProfile.cidade,
+              codigoIndicacao: partnerProfile.codigoIndicacao,
             }
           : null,
       });
@@ -683,19 +760,56 @@ async function startServer() {
           .json({ success: false, error: "Perfil de usuário não encontrado." });
       }
 
-      if (!businessProfile) {
+      if (
+        !businessProfile &&
+        userProfile.tipo !== "cliente" &&
+        userProfile.role !== "admin"
+      ) {
         return res
           .status(404)
           .json({ success: false, error: "Perfil de negócio não encontrado." });
       }
 
+      // Buscar ou auto-criar perfil de parceiro para indicações
+      let partnerProfile = await db.getPartnerById(authUser.id);
+      if (
+        !partnerProfile &&
+        (userProfile.tipo === "cliente" || userProfile.role === "admin")
+      ) {
+        const nameToUse =
+          userProfile.name || authUser.email?.split("@")[0] || "PARCEIRO";
+        const firstName = nameToUse
+          .trim()
+          .split(" ")[0]
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toUpperCase()
+          .replace(/[^A-Z]/g, "");
+        const randomNum = Math.floor(100 + Math.random() * 900);
+        const codigoIndicacao = `${firstName}${randomNum}`;
+
+        await db.createPartner({
+          id: authUser.id,
+          nome: nameToUse,
+          email: userProfile.email || authUser.email || "",
+          telefone: userProfile.phone || "",
+          cidade: "",
+          codigoIndicacao,
+        });
+        partnerProfile = await db.getPartnerById(authUser.id);
+      }
+
+      const referralsList = partnerProfile
+        ? await db.getReferralsByPartnerId(authUser.id)
+        : [];
+
       // Buscar as categorias do sistema para permitir que ele selecione uma
       const categories = await db.getCategories();
 
       // Buscar permissões de limite de serviços
-      const permissions = await db.getBusinessPermissionByProviderId(
-        businessProfile.id,
-      );
+      const permissions = businessProfile
+        ? await db.getBusinessPermissionByProviderId(businessProfile.id)
+        : null;
 
       res.json({
         success: true,
@@ -705,26 +819,40 @@ async function startServer() {
           email: userProfile.email,
           tipo: userProfile.tipo,
         },
-        business: {
-          id: businessProfile.id,
-          name: businessProfile.name,
-          category: businessProfile.category,
-          categoryId: businessProfile.categoryId,
-          city: businessProfile.city,
-          neighborhood: businessProfile.neighborhood,
-          phone: businessProfile.phone,
-          whatsapp: businessProfile.whatsapp,
-          description: businessProfile.description,
-          address: businessProfile.address,
-          avatarUri: businessProfile.avatarUri,
-          coverUri: businessProfile.coverUri,
-          gallery: businessProfile.gallery || [],
-          isActive: businessProfile.isActive,
-          status: businessProfile.status,
-          services: businessProfile.services
-            ? JSON.parse(businessProfile.services)
-            : [],
-        },
+        business: businessProfile
+          ? {
+              id: businessProfile.id,
+              name: businessProfile.name,
+              category: businessProfile.category,
+              categoryId: businessProfile.categoryId,
+              city: businessProfile.city,
+              neighborhood: businessProfile.neighborhood,
+              cep: businessProfile.cep,
+              phone: businessProfile.phone,
+              whatsapp: businessProfile.whatsapp,
+              description: businessProfile.description,
+              address: businessProfile.address,
+              avatarUri: businessProfile.avatarUri,
+              coverUri: businessProfile.coverUri,
+              gallery: businessProfile.gallery || [],
+              isActive: businessProfile.isActive,
+              status: businessProfile.status,
+              services: businessProfile.services
+                ? JSON.parse(businessProfile.services)
+                : [],
+            }
+          : null,
+        partner: partnerProfile
+          ? {
+              id: partnerProfile.id,
+              nome: partnerProfile.nome,
+              email: partnerProfile.email,
+              telefone: partnerProfile.telefone,
+              cidade: partnerProfile.cidade,
+              codigoIndicacao: partnerProfile.codigoIndicacao,
+            }
+          : null,
+        referrals: referralsList || [],
         permissions: permissions
           ? {
               maxServicos: permissions.maxServicos,
@@ -766,10 +894,43 @@ async function startServer() {
       }
 
       const businessProfile = await db.getProviderByUserId(authUser.id);
+
+      // Se for cliente, atualiza dados na tabela users e partners
       if (!businessProfile) {
-        return res
-          .status(404)
-          .json({ success: false, error: "Perfil de negócio não encontrado." });
+        const { name, whatsapp, city } = req.body;
+        if (!name) {
+          return res
+            .status(400)
+            .json({ success: false, error: "Nome é obrigatório." });
+        }
+
+        // 1. Atualizar na tabela users
+        await db.upsertUser({
+          openId: authUser.id,
+          name,
+          phone: whatsapp,
+        });
+
+        // 2. Atualizar na tabela partners
+        const dbInstance = await db.getDb();
+        if (dbInstance) {
+          const { partners } = await import("../../drizzle/schema");
+          const { eq } = await import("drizzle-orm");
+          await dbInstance
+            .update(partners)
+            .set({
+              nome: name,
+              telefone: whatsapp || "",
+              cidade: city || "",
+              updatedAt: new Date(),
+            })
+            .where(eq(partners.id, authUser.id));
+        }
+
+        return res.json({
+          success: true,
+          message: "Perfil atualizado com sucesso!",
+        });
       }
 
       const {
@@ -782,6 +943,7 @@ async function startServer() {
         address,
         city,
         neighborhood,
+        cep,
         avatarUri,
         coverUri,
         gallery,
@@ -837,6 +999,7 @@ async function startServer() {
         address: address || null,
         city: city || null,
         neighborhood: neighborhood || null,
+        cep: cep || null,
         latitude,
         longitude,
         avatarUri: avatarUri || null,

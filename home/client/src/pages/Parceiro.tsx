@@ -25,6 +25,8 @@ import {
   X,
   CreditCard,
   Compass,
+  Users,
+  Copy,
 } from "lucide-react";
 
 interface Service {
@@ -59,7 +61,7 @@ interface UserProfile {
   id: string;
   name: string;
   email: string;
-  tipo: "prestador" | "comercio";
+  tipo: "prestador" | "comercio" | "cliente";
 }
 
 interface BusinessPermissions {
@@ -83,6 +85,9 @@ export default function Parceiro() {
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [business, setBusiness] = useState<BusinessProfile | null>(null);
+  const [partner, setPartner] = useState<any | null>(null);
+  const [referrals, setReferrals] = useState<any[]>([]);
+  const [copied, setCopied] = useState(false);
   const [permissions, setPermissions] = useState<BusinessPermissions | null>(
     null
   );
@@ -94,7 +99,9 @@ export default function Parceiro() {
   const [regName, setRegName] = useState("");
   const [regWhatsapp, setRegWhatsapp] = useState("");
   const [regCity, setRegCity] = useState("");
-  const [regType, setRegType] = useState<"prestador" | "comercio">("prestador");
+  const [regType, setRegType] = useState<"prestador" | "comercio" | "cliente">(
+    "prestador"
+  );
 
   // Dashboard active tab
   const [activeTab, setActiveTab] = useState<
@@ -112,6 +119,7 @@ export default function Parceiro() {
   const [busAddress, setBusAddress] = useState("");
   const [busCity, setBusCity] = useState("");
   const [busNeighborhood, setBusNeighborhood] = useState("");
+  const [busCep, setBusCep] = useState("");
 
   const [busAvatarUri, setBusAvatarUri] = useState("");
   const [busCoverUri, setBusCoverUri] = useState("");
@@ -157,25 +165,34 @@ export default function Parceiro() {
       const result = await response.json();
       if (response.ok && result.success) {
         setBusiness(result.business);
+        setPartner(result.partner);
+        setReferrals(result.referrals || []);
         setPermissions(result.permissions);
         setCategories(result.categories || []);
 
         // Populate form fields
-        setBusName(result.business.name || "");
-        setBusDescription(result.business.description || "");
-        setBusPhone(result.business.phone || "");
-        setBusWhatsapp(result.business.whatsapp || "");
-        setBusCategoryId(result.business.categoryId || "");
-        setBusCategoryName(result.business.category || "");
+        if (result.business) {
+          setBusName(result.business.name || "");
+          setBusDescription(result.business.description || "");
+          setBusPhone(result.business.phone || "");
+          setBusWhatsapp(result.business.whatsapp || "");
+          setBusCategoryId(result.business.categoryId || "");
+          setBusCategoryName(result.business.category || "");
 
-        setBusAddress(result.business.address || "");
-        setBusCity(result.business.city || "");
-        setBusNeighborhood(result.business.neighborhood || "");
+          setBusAddress(result.business.address || "");
+          setBusCity(result.business.city || "");
+          setBusNeighborhood(result.business.neighborhood || "");
+          setBusCep(result.business.cep || "");
 
-        setBusAvatarUri(result.business.avatarUri || "");
-        setBusCoverUri(result.business.coverUri || "");
-        setBusGallery(result.business.gallery || []);
-        setServicesList(result.business.services || []);
+          setBusAvatarUri(result.business.avatarUri || "");
+          setBusCoverUri(result.business.coverUri || "");
+          setBusGallery(result.business.gallery || []);
+          setServicesList(result.business.services || []);
+        } else if (result.partner) {
+          setBusName(result.partner.nome || "");
+          setBusWhatsapp(result.partner.telefone || "");
+          setBusCity(result.partner.cidade || "");
+        }
       } else {
         toast.error(result.error || "Falha ao carregar informações do perfil.");
         if (response.status === 401) {
@@ -241,6 +258,7 @@ export default function Parceiro() {
 
         setSessionToken(result.sessionToken);
         setUser(result.user);
+        setPartner(result.partner);
         toast.success(`Bem-vindo, ${result.user.name}!`);
         setView("dashboard");
       } else {
@@ -262,6 +280,8 @@ export default function Parceiro() {
     setSessionToken(null);
     setUser(null);
     setBusiness(null);
+    setPartner(null);
+    setReferrals([]);
     setPermissions(null);
     setCategories([]);
     setView("select");
@@ -270,25 +290,33 @@ export default function Parceiro() {
 
   const saveProfile = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!sessionToken || !business) return;
+    if (!sessionToken) return;
 
     setIsLoading(true);
     try {
-      const payload = {
-        name: busName,
-        description: busDescription,
-        phone: busPhone,
-        whatsapp: busWhatsapp,
-        categoryId: busCategoryId || null,
-        category: busCategoryName || null,
-        address: busAddress,
-        city: busCity,
-        neighborhood: busNeighborhood,
-        avatarUri: busAvatarUri || null,
-        coverUri: busCoverUri || null,
-        gallery: busGallery,
-        services: servicesList,
-      };
+      const payload =
+        user?.tipo === "cliente"
+          ? {
+              name: busName,
+              whatsapp: busWhatsapp,
+              city: busCity,
+            }
+          : {
+              name: busName,
+              description: busDescription,
+              phone: busPhone,
+              whatsapp: busWhatsapp,
+              categoryId: busCategoryId || null,
+              category: busCategoryName || null,
+              address: busAddress,
+              city: busCity,
+              neighborhood: busNeighborhood,
+              cep: busCep,
+              avatarUri: busAvatarUri || null,
+              coverUri: busCoverUri || null,
+              gallery: busGallery,
+              services: servicesList,
+            };
 
       const response = await fetch("/api/business-partner/profile", {
         method: "PUT",
@@ -532,7 +560,7 @@ export default function Parceiro() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col">
         {view === "select" && (
-          <section className="flex-1 py-16 md:py-28 bg-gradient-to-b from-background via-[#0c0d1e] to-background flex items-center justify-center">
+          <section className="flex-1 py-16 md:py-28 bg-background flex items-center justify-center">
             <div className="container mx-auto px-4 max-w-4xl text-center space-y-12">
               <div className="space-y-4 max-w-2xl mx-auto">
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/10 border border-primary/20 rounded-full">
@@ -605,7 +633,7 @@ export default function Parceiro() {
 
         {/* Login Form View */}
         {view === "login" && (
-          <section className="flex-1 py-16 bg-gradient-to-b from-background to-background/50 flex items-center justify-center">
+          <section className="flex-1 py-16 bg-background flex items-center justify-center">
             <div className="container mx-auto px-4 max-w-md space-y-6">
               <button
                 onClick={() => setView("select")}
@@ -697,7 +725,7 @@ export default function Parceiro() {
 
         {/* Register Form View */}
         {view === "register" && (
-          <section className="flex-1 py-12 bg-gradient-to-b from-background to-background/50 flex items-center justify-center">
+          <section className="flex-1 py-12 bg-background flex items-center justify-center">
             <div className="container mx-auto px-4 max-w-xl space-y-6">
               <button
                 onClick={() => setView("select")}
@@ -719,7 +747,7 @@ export default function Parceiro() {
                 </div>
 
                 {/* Partner Type Selector cards */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div
                     onClick={() => setRegType("prestador")}
                     className={`cursor-pointer rounded-2xl p-4 border flex flex-col items-center gap-2 text-center transition-all ${
@@ -731,8 +759,8 @@ export default function Parceiro() {
                     <Wrench
                       className={`h-6 w-6 ${regType === "prestador" ? "text-primary" : "text-zinc-500"}`}
                     />
-                    <span className="text-sm font-bold">
-                      Prestador de Serviço
+                    <span className="text-xs font-bold leading-tight">
+                      Prestador
                     </span>
                   </div>
                   <div
@@ -746,20 +774,43 @@ export default function Parceiro() {
                     <Store
                       className={`h-6 w-6 ${regType === "comercio" ? "text-primary" : "text-zinc-500"}`}
                     />
-                    <span className="text-sm font-bold">Comércio / Loja</span>
+                    <span className="text-xs font-bold leading-tight">
+                      Comércio
+                    </span>
+                  </div>
+                  <div
+                    onClick={() => setRegType("cliente")}
+                    className={`cursor-pointer rounded-2xl p-4 border flex flex-col items-center gap-2 text-center transition-all ${
+                      regType === "cliente"
+                        ? "border-primary bg-primary/5 text-white"
+                        : "border-border bg-background text-zinc-400 hover:border-zinc-700"
+                    }`}
+                  >
+                    <User
+                      className={`h-6 w-6 ${regType === "cliente" ? "text-primary" : "text-zinc-500"}`}
+                    />
+                    <span className="text-xs font-bold leading-tight">
+                      Cliente
+                    </span>
                   </div>
                 </div>
 
                 <form onSubmit={handleRegister} className="space-y-4">
                   <div className="space-y-1">
                     <label className="text-[11px] font-bold text-white uppercase tracking-wider">
-                      Nome Completo / Nome do Negócio
+                      {regType === "cliente"
+                        ? "Nome Completo"
+                        : "Nome Completo / Nome do Negócio"}
                     </label>
                     <div className="relative">
                       <User className="absolute left-4 top-3.5 h-4.5 w-4.5 text-zinc-500" />
                       <Input
                         type="text"
-                        placeholder="Ex: Pedro Reformas ou Mercadinho Real"
+                        placeholder={
+                          regType === "cliente"
+                            ? "Ex: Pedro Silva"
+                            : "Ex: Pedro Reformas ou Mercadinho Real"
+                        }
                         required
                         value={regName}
                         onChange={e => setRegName(e.target.value)}
@@ -806,13 +857,17 @@ export default function Parceiro() {
 
                   <div className="space-y-1">
                     <label className="text-[11px] font-bold text-white uppercase tracking-wider">
-                      E-mail corporativo
+                      {regType === "cliente" ? "E-mail" : "E-mail corporativo"}
                     </label>
                     <div className="relative">
                       <Mail className="absolute left-4 top-3.5 h-4.5 w-4.5 text-zinc-500" />
                       <Input
                         type="email"
-                        placeholder="Ex: contato@seu-negocio.com"
+                        placeholder={
+                          regType === "cliente"
+                            ? "Ex: seu-nome@exemplo.com"
+                            : "Ex: contato@seu-negocio.com"
+                        }
                         required
                         value={authEmail}
                         onChange={e => setAuthEmail(e.target.value)}
@@ -873,718 +928,1001 @@ export default function Parceiro() {
           </section>
         )}
 
-        {/* Dashboard "Meu negócio" Panel */}
+        {/* Dashboard Panel */}
         {view === "dashboard" && user && (
-          <section className="flex-1 py-12 bg-gradient-to-b from-background to-background/50">
+          <section className="flex-1 py-12 bg-background">
             <div className="container mx-auto px-4 max-w-6xl space-y-8">
-              {/* Dashboard Top Header */}
-              {business && (
-                <div className="bg-card border border-border rounded-3xl p-6 md:p-8 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent pointer-events-none"></div>
+              {user.tipo === "cliente" ? (
+                /* Cliente/Usuário comum Referral Dashboard */
+                <div className="space-y-8">
+                  {/* Dashboard Top Header */}
+                  <div className="bg-card border border-border rounded-3xl p-6 md:p-8 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent pointer-events-none"></div>
 
-                  <div className="flex items-center gap-5 relative z-10">
-                    <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-zinc-800 border border-zinc-700/50 flex items-center justify-center overflow-hidden flex-shrink-0">
-                      {business.avatarUri ? (
-                        <img
-                          src={business.avatarUri}
-                          alt="Logo Negócio"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : user.tipo === "comercio" ? (
-                        <Store className="h-8 w-8 text-primary" />
-                      ) : (
-                        <Wrench className="h-8 w-8 text-primary" />
-                      )}
-                    </div>
+                    <div className="flex items-center gap-5 relative z-10">
+                      <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-zinc-900 border border-border flex items-center justify-center overflow-hidden flex-shrink-0">
+                        <User className="h-8 w-8 text-primary" />
+                      </div>
 
-                    <div className="space-y-1.5">
-                      <h1 className="text-2xl md:text-3xl font-black text-white leading-tight">
-                        {business.name || user.name}
-                      </h1>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs text-muted-foreground font-semibold bg-zinc-800 px-2.5 py-1 rounded-lg border border-zinc-700/50 flex items-center gap-1">
-                          {user.tipo === "comercio" ? (
-                            <Store className="h-3 w-3 text-primary" />
-                          ) : (
-                            <Wrench className="h-3 w-3 text-primary" />
-                          )}
-                          {user.tipo === "comercio"
-                            ? "Comércio"
-                            : "Prestador de Serviço"}
-                        </span>
-                        {business.status === "pendente" && (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 gap-1 animate-pulse">
-                            <Clock className="h-3 w-3" /> Pendente de Aprovação
+                      <div className="space-y-1.5">
+                        <h1 className="text-2xl md:text-3xl font-black text-white leading-tight">
+                          Olá, <span className="text-primary">{partner?.nome || user.name}</span>!
+                        </h1>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs text-muted-foreground font-semibold bg-zinc-800 px-2.5 py-1 rounded-lg border border-zinc-700/50 flex items-center gap-1">
+                            <User className="h-3 w-3 text-primary" />
+                            Cliente Indicador
                           </span>
-                        )}
-                        {business.status === "ativo" && (
                           <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 gap-1">
-                            <ShieldCheck className="h-3 w-3" /> Negócio Ativo
+                            <ShieldCheck className="h-3 w-3" /> Programa de Indicações
                           </span>
-                        )}
-                        {business.status === "rejeitado" && (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20">
-                            Rejeitado
-                          </span>
-                        )}
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-3 relative z-10 w-full md:w-auto">
-                    <Button
-                      onClick={() => saveProfile()}
-                      disabled={isLoading}
-                      className="bg-primary text-primary-foreground font-bold hover:bg-primary/90 h-11 px-6 rounded-xl flex items-center justify-center gap-2 w-full sm:w-auto"
-                    >
-                      {isLoading ? (
-                        <span className="loader-btn w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></span>
-                      ) : (
-                        "Salvar Alterações"
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              )}
+                  {/* Main Grid for Referral Code and Referred List */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    {/* Left: Referral details */}
+                    <div className="lg:col-span-4 space-y-6">
+                      <div className="bg-card border border-border rounded-3xl p-6 shadow-xl space-y-6">
+                        <div className="flex items-center gap-3 pb-4 border-b border-border">
+                          <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20 text-primary">
+                            <Users className="h-6 w-6" />
+                          </div>
+                          <div>
+                            <h2 className="text-lg font-bold text-white">
+                              Sua Identidade
+                            </h2>
+                            <p className="text-xs text-muted-foreground">
+                              Indique novos parceiros
+                            </p>
+                          </div>
+                        </div>
 
-              {/* Sub-warning for pending profiles */}
-              {business?.status === "pendente" && (
-                <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-4 text-amber-400 text-sm flex items-start gap-3">
-                  <Clock className="h-5 w-5 flex-shrink-0 mt-0.5 animate-pulse" />
-                  <div>
-                    <strong>Seu negócio está pendente de aprovação:</strong>{" "}
-                    Você já pode preencher os dados, cadastrar fotos e adicionar
-                    serviços. No entanto, o seu perfil não aparecerá nas buscas
-                    públicas dos clientes até que um administrador aprove seu
-                    cadastro.
-                  </div>
-                </div>
-              )}
+                        {partner && (
+                          <>
+                            <div className="space-y-2">
+                              <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
+                                Seu Código Único
+                              </span>
+                              <div className="bg-background border border-border rounded-2xl px-6 py-4 flex items-center justify-center border-dashed border-primary/30">
+                                <span className="text-3xl font-black tracking-widest text-primary font-mono">
+                                  {partner.codigoIndicacao}
+                                </span>
+                              </div>
+                            </div>
 
-              {/* Tab Selector & Main Layout */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                {/* Sidebar Navigation */}
-                <div className="lg:col-span-3 space-y-3">
-                  {[
-                    { id: "dados", label: "Dados do Negócio", icon: User },
-                    {
-                      id: "localizacao",
-                      label: "Endereço & Localização",
-                      icon: MapPin,
-                    },
-                    { id: "fotos", label: "Fotos & Galeria", icon: ImageIcon },
-                    { id: "servicos", label: "Meus Serviços", icon: Wrench },
-                    {
-                      id: "assinatura",
-                      label: "Plano & Limites",
-                      icon: CreditCard,
-                    },
-                  ].map(tab => {
-                    const Icon = tab.icon;
-                    return (
-                      <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id as any)}
-                        className={`w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl font-bold text-sm transition-all border ${
-                          activeTab === tab.id
-                            ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/5"
-                            : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-card/85"
-                        }`}
-                      >
-                        <Icon className="h-4.5 w-4.5" />
-                        <span>{tab.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+                            <div className="space-y-2">
+                              <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
+                                Link de Indicação
+                              </span>
+                              <div className="relative">
+                                <input
+                                  type="text"
+                                  readOnly
+                                  value={`${window.location.origin}/cadastro?ref=${partner.codigoIndicacao}`}
+                                  className="w-full bg-background border border-border text-muted-foreground rounded-2xl pl-4 pr-14 py-3.5 focus:outline-none text-xs text-ellipsis overflow-hidden"
+                                />
+                                <button
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(
+                                      `${window.location.origin}/cadastro?ref=${partner.codigoIndicacao}`
+                                    );
+                                    setCopied(true);
+                                    toast.success("Link de indicação copiado!");
+                                    setTimeout(() => setCopied(false), 2000);
+                                  }}
+                                  className="absolute right-2 top-2 p-2 rounded-xl bg-card border border-border text-foreground hover:text-primary hover:border-primary/50 transition"
+                                  title="Copiar Link"
+                                >
+                                  {copied ? (
+                                    <CheckCircle className="h-4 w-4 text-emerald-400" />
+                                  ) : (
+                                    <Copy className="h-4 w-4 text-zinc-400" />
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                          </>
+                        )}
 
-                {/* Tabs Panels Container */}
-                <div className="lg:col-span-9">
-                  <div className="bg-card border border-border rounded-3xl p-6 md:p-8 shadow-xl min-h-[500px]">
-                    {/* DADOS PANEL */}
-                    {activeTab === "dados" && (
-                      <div className="space-y-6">
-                        <div className="pb-4 border-b border-border">
-                          <h2 className="text-xl font-black text-white">
-                            Dados Principais
-                          </h2>
-                          <p className="text-xs text-muted-foreground">
-                            Configure as informações comerciais exibidas aos
-                            clientes.
+                        <div className="pt-2 text-xs text-muted-foreground leading-relaxed flex items-start gap-2 bg-primary/5 border border-primary/10 rounded-2xl p-4">
+                          <CheckCircle className="h-4.5 w-4.5 text-primary flex-shrink-0 mt-0.5" />
+                          <p>
+                            Compartilhe este link com prestadores ou comércios. Ao
+                            se cadastrarem, eles serão vinculados automaticamente à
+                            sua conta.
                           </p>
                         </div>
 
-                        <form onSubmit={saveProfile} className="space-y-5">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div className="space-y-2">
-                              <label className="text-xs font-bold text-white uppercase tracking-wider">
-                                Nome Comercial do Negócio *
+                        {/* Edit Profile Form for Client */}
+                        <div className="border-t border-border pt-6 space-y-4">
+                          <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                            Editar Meus Dados
+                          </h3>
+                          <form onSubmit={saveProfile} className="space-y-4">
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                                Nome Completo
                               </label>
                               <Input
                                 type="text"
                                 required
                                 value={busName}
                                 onChange={e => setBusName(e.target.value)}
-                                className="bg-background border-border h-12 rounded-xl focus-visible:ring-primary focus-visible:border-primary text-sm"
+                                className="bg-background border-border h-10 rounded-xl focus-visible:ring-primary text-xs"
                               />
                             </div>
-                            <div className="space-y-2">
-                              <label className="text-xs font-bold text-white uppercase tracking-wider font-body">
-                                Categoria Principal *
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                                WhatsApp / Celular
                               </label>
-                              <select
+                              <Input
+                                type="tel"
                                 required
-                                value={busCategoryId}
-                                onChange={e =>
-                                  handleCategorySelect(e.target.value)
-                                }
-                                className="w-full bg-background border border-border text-foreground rounded-xl px-4 h-12 focus:border-primary focus:outline-none transition text-sm"
-                              >
-                                <option value="">
-                                  Selecione uma categoria...
-                                </option>
-                                {categories.map(cat => (
-                                  <option
-                                    key={cat.id}
-                                    value={cat.id}
-                                    className="bg-card"
-                                  >
-                                    {cat.name}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div className="space-y-2">
-                              <label className="text-xs font-bold text-white uppercase tracking-wider">
-                                Telefone Fixo / Comercial
-                              </label>
-                              <Input
-                                type="tel"
-                                placeholder="Ex: (11) 4033-1234"
-                                value={busPhone}
-                                onChange={e => setBusPhone(e.target.value)}
-                                className="bg-background border-border h-12 rounded-xl focus-visible:ring-primary focus-visible:border-primary text-sm"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-xs font-bold text-white uppercase tracking-wider">
-                                WhatsApp para Contato Direto
-                              </label>
-                              <Input
-                                type="tel"
-                                placeholder="Ex: (11) 99999-9999"
                                 value={busWhatsapp}
                                 onChange={e => setBusWhatsapp(e.target.value)}
-                                className="bg-background border-border h-12 rounded-xl focus-visible:ring-primary focus-visible:border-primary text-sm"
+                                className="bg-background border-border h-10 rounded-xl focus-visible:ring-primary text-xs"
                               />
                             </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <label className="text-xs font-bold text-white uppercase tracking-wider">
-                              Descrição Detalhada do Negócio
-                            </label>
-                            <Textarea
-                              rows={5}
-                              placeholder="Descreva brevemente o seu negócio, os produtos que vende ou serviços que oferece para os clientes na busca..."
-                              value={busDescription}
-                              onChange={e => setBusDescription(e.target.value)}
-                              className="bg-background border-border rounded-xl focus-visible:ring-primary focus-visible:border-primary text-sm resize-none"
-                            />
-                          </div>
-
-                          <div className="pt-4 border-t border-border flex justify-end">
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                                Cidade
+                              </label>
+                              <Input
+                                type="text"
+                                required
+                                value={busCity}
+                                onChange={e => setBusCity(e.target.value)}
+                                className="bg-background border-border h-10 rounded-xl focus-visible:ring-primary text-xs"
+                              />
+                            </div>
                             <Button
                               type="submit"
                               disabled={isLoading}
-                              className="bg-primary text-primary-foreground font-bold hover:bg-primary/95 h-11 px-6 rounded-xl flex items-center gap-2"
+                              className="w-full bg-primary text-primary-foreground font-bold hover:bg-primary/90 h-10 rounded-xl text-xs flex items-center justify-center gap-1.5"
                             >
-                              {isLoading && (
-                                <span className="loader-btn w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></span>
-                              )}
-                              Salvar Dados
+                              {isLoading ? "Salvando..." : "Salvar Dados"}
                             </Button>
-                          </div>
-                        </form>
+                          </form>
+                        </div>
                       </div>
-                    )}
+                    </div>
 
-                    {/* LOCALIZACAO PANEL */}
-                    {activeTab === "localizacao" && (
-                      <div className="space-y-6">
-                        <div className="pb-4 border-b border-border">
-                          <h2 className="text-xl font-black text-white">
-                            Localização Física
-                          </h2>
-                          <p className="text-xs text-muted-foreground">
-                            Cadastre o endereço do seu comércio ou sua base de
-                            atuação. O endereço é utilizado para geolocalização
-                            dos clientes.
-                          </p>
+                    {/* Right: Referrals list */}
+                    <div className="lg:col-span-8">
+                      <div className="bg-card border border-border rounded-3xl shadow-xl overflow-hidden min-h-[400px] flex flex-col">
+                        <div className="px-6 py-5 border-b border-border flex items-center justify-between bg-card">
+                          <div className="space-y-1">
+                            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                              Indicações Realizadas
+                            </h2>
+                            <p className="text-xs text-muted-foreground">
+                              Acompanhe o andamento dos parceiros que você indicou
+                            </p>
+                          </div>
+                          <span className="bg-zinc-800 text-zinc-200 px-3 py-1 rounded-full text-xs font-bold font-mono">
+                            {referrals.length}{" "}
+                            {referrals.length === 1 ? "indicação" : "indicações"}
+                          </span>
                         </div>
 
-                        <form onSubmit={saveProfile} className="space-y-5">
-                          <div className="space-y-2">
-                            <label className="text-xs font-bold text-white uppercase tracking-wider">
-                              Endereço Completo (Rua, Número, Complemento) *
-                            </label>
-                            <Input
-                              type="text"
-                              required
-                              placeholder="Ex: Av. Salvador Markowicz, 123 - Sala 4"
-                              value={busAddress}
-                              onChange={e => setBusAddress(e.target.value)}
-                              className="bg-background border-border h-12 rounded-xl focus-visible:ring-primary focus-visible:border-primary text-sm"
+                        {referrals.length === 0 ? (
+                          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-4">
+                            <div className="w-16 h-16 rounded-full bg-zinc-800/50 flex items-center justify-center text-zinc-600">
+                              <Users className="h-8 w-8" />
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-base font-bold text-white">
+                                Nenhuma indicação ainda
+                              </p>
+                              <p className="text-sm text-muted-foreground max-w-sm">
+                                Compartilhe seu link exclusivo com prestadores
+                                locais para começar a registrar indicações!
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="overflow-x-auto flex-1">
+                            <table className="w-full text-left border-collapse">
+                              <thead>
+                                <tr className="border-b border-border bg-background/30">
+                                  <th className="px-6 py-4 text-xs font-bold text-zinc-400 uppercase tracking-wider">
+                                    Profissional / Comércio
+                                  </th>
+                                  <th className="px-6 py-4 text-xs font-bold text-zinc-400 uppercase tracking-wider">
+                                    Telefone
+                                  </th>
+                                  <th className="px-6 py-4 text-xs font-bold text-zinc-400 uppercase tracking-wider">
+                                    Data
+                                  </th>
+                                  <th className="px-6 py-4 text-xs font-bold text-zinc-400 uppercase tracking-wider text-right">
+                                    Status
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-border/60">
+                                {referrals.map(ref => (
+                                  <tr
+                                    key={ref.id}
+                                    className="hover:bg-zinc-800/10 transition"
+                                  >
+                                    <td className="px-6 py-4">
+                                      <span className="text-sm font-bold text-white">
+                                        {ref.nomeIndicado}
+                                      </span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                      <span className="text-sm text-zinc-300 font-mono">
+                                        {ref.telefoneIndicado}
+                                      </span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                      <span className="text-sm text-zinc-400">
+                                        {new Date(ref.createdAt).toLocaleDateString(
+                                          "pt-BR"
+                                        )}
+                                      </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-right">
+                                      {ref.status === "novo" && (
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-zinc-500/10 text-zinc-400 border border-zinc-500/20">
+                                          Novo
+                                        </span>
+                                      )}
+                                      {ref.status === "contatado" && (
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                          Contatado
+                                        </span>
+                                      )}
+                                      {ref.status === "cadastrado" && (
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                                          Cadastrado
+                                        </span>
+                                      )}
+                                      {ref.status === "ativo" && (
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+                                          Ativo
+                                        </span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Business partner dashboard */
+                <div className="space-y-8">
+                  {/* Dashboard Top Header */}
+                  {business && (
+                    <div className="bg-card border border-border rounded-3xl p-6 md:p-8 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent pointer-events-none"></div>
+
+                      <div className="flex items-center gap-5 relative z-10">
+                        <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-zinc-800 border border-zinc-700/50 flex items-center justify-center overflow-hidden flex-shrink-0">
+                          {business.avatarUri ? (
+                            <img
+                              src={business.avatarUri}
+                              alt="Logo Negócio"
+                              className="w-full h-full object-cover"
                             />
-                          </div>
+                          ) : user.tipo === "comercio" ? (
+                            <Store className="h-8 w-8 text-primary" />
+                          ) : (
+                            <Wrench className="h-8 w-8 text-primary" />
+                          )}
+                        </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div className="space-y-2">
-                              <label className="text-xs font-bold text-white uppercase tracking-wider">
-                                Bairro *
-                              </label>
-                              <Input
-                                type="text"
-                                required
-                                placeholder="Ex: Centro"
-                                value={busNeighborhood}
-                                onChange={e =>
-                                  setBusNeighborhood(e.target.value)
-                                }
-                                className="bg-background border-border h-12 rounded-xl focus-visible:ring-primary focus-visible:border-primary text-sm"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-xs font-bold text-white uppercase tracking-wider">
-                                Cidade *
-                              </label>
-                              <Input
-                                type="text"
-                                required
-                                placeholder="Ex: Bragança Paulista"
-                                value={busCity}
-                                onChange={e => setBusCity(e.target.value)}
-                                className="bg-background border-border h-12 rounded-xl focus-visible:ring-primary focus-visible:border-primary text-sm"
-                              />
-                            </div>
+                        <div className="space-y-1.5">
+                          <h1 className="text-2xl md:text-3xl font-black text-white leading-tight">
+                            {business.name || user.name}
+                          </h1>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs text-muted-foreground font-semibold bg-zinc-800 px-2.5 py-1 rounded-lg border border-zinc-700/50 flex items-center gap-1">
+                              {user.tipo === "comercio" ? (
+                                <Store className="h-3 w-3 text-primary" />
+                              ) : (
+                                <Wrench className="h-3 w-3 text-primary" />
+                              )}
+                              {user.tipo === "comercio"
+                                ? "Comércio"
+                                : "Prestador de Serviço"}
+                            </span>
+                            {business.status === "pendente" && (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 gap-1 animate-pulse">
+                                <Clock className="h-3 w-3" /> Pendente de Aprovação
+                              </span>
+                            )}
+                            {business.status === "ativo" && (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 gap-1">
+                                <ShieldCheck className="h-3 w-3" /> Negócio Ativo
+                              </span>
+                            )}
+                            {business.status === "rejeitado" && (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20">
+                                Rejeitado
+                              </span>
+                            )}
                           </div>
+                        </div>
+                      </div>
 
-                          {/* Coordinates debug */}
-                          {business &&
-                            (business.latitude || business.longitude) && (
-                              <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4 flex items-center gap-3">
-                                <Compass className="h-5 w-5 text-primary flex-shrink-0" />
-                                <div className="text-xs text-muted-foreground">
-                                  <span className="text-white font-bold block mb-0.5">
-                                    Geolocalização Ativa:
-                                  </span>
-                                  Latitude:{" "}
-                                  <span className="font-mono text-white mr-4">
-                                    {business.latitude?.toFixed(6)}
-                                  </span>
-                                  Longitude:{" "}
-                                  <span className="font-mono text-white">
-                                    {business.longitude?.toFixed(6)}
-                                  </span>
+                      <div className="flex flex-col sm:flex-row gap-3 relative z-10 w-full md:w-auto">
+                        <Button
+                          onClick={() => saveProfile()}
+                          disabled={isLoading}
+                          className="bg-primary text-primary-foreground font-bold hover:bg-primary/90 h-11 px-6 rounded-xl flex items-center justify-center gap-2 w-full sm:w-auto"
+                        >
+                          {isLoading ? (
+                            <span className="loader-btn w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></span>
+                          ) : (
+                            "Salvar Alterações"
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Sub-warning for pending profiles */}
+                  {business?.status === "pendente" && (
+                    <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-4 text-amber-400 text-sm flex items-start gap-3">
+                      <Clock className="h-5 w-5 flex-shrink-0 mt-0.5 animate-pulse" />
+                      <div>
+                        <strong>Seu negócio está pendente de aprovação:</strong>{" "}
+                        Você já pode preencher os dados, cadastrar fotos e adicionar
+                        serviços. No entanto, o seu perfil não aparecerá nas buscas
+                        públicas dos clientes até que um administrador aprove seu
+                        cadastro.
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tab Selector & Main Layout */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    {/* Sidebar Navigation */}
+                    <div className="lg:col-span-3 space-y-3">
+                      {[
+                        { id: "dados", label: "Dados do Negócio", icon: User },
+                        {
+                          id: "localizacao",
+                          label: "Endereço & Localização",
+                          icon: MapPin,
+                        },
+                        { id: "fotos", label: "Fotos & Galeria", icon: ImageIcon },
+                        { id: "servicos", label: "Meus Serviços", icon: Wrench },
+                        {
+                          id: "assinatura",
+                          label: "Plano & Limites",
+                          icon: CreditCard,
+                        },
+                      ].map(tab => {
+                        const Icon = tab.icon;
+                        return (
+                          <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id as any)}
+                            className={`w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl font-bold text-sm transition-all border ${
+                              activeTab === tab.id
+                                ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/5"
+                                : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-card/85"
+                            }`}
+                          >
+                            <Icon className="h-4.5 w-4.5" />
+                            <span>{tab.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Tabs Panels Container */}
+                    <div className="lg:col-span-9">
+                      <div className="bg-card border border-border rounded-3xl p-6 md:p-8 shadow-xl min-h-[500px]">
+                        {/* DADOS PANEL */}
+                        {activeTab === "dados" && (
+                          <div className="space-y-6">
+                            <div className="pb-4 border-b border-border">
+                              <h2 className="text-xl font-black text-white">
+                                Dados Principais
+                              </h2>
+                              <p className="text-xs text-muted-foreground">
+                                Configure as informações comerciais exibidas aos
+                                clientes.
+                              </p>
+                            </div>
+
+                            <form onSubmit={saveProfile} className="space-y-5">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div className="space-y-2">
+                                  <label className="text-xs font-bold text-white uppercase tracking-wider">
+                                    Nome Comercial do Negócio *
+                                  </label>
+                                  <Input
+                                    type="text"
+                                    required
+                                    value={busName}
+                                    onChange={e => setBusName(e.target.value)}
+                                    className="bg-background border-border h-12 rounded-xl focus-visible:ring-primary focus-visible:border-primary text-sm"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <label className="text-xs font-bold text-white uppercase tracking-wider font-body">
+                                    Categoria Principal *
+                                  </label>
+                                  <select
+                                    required
+                                    value={busCategoryId}
+                                    onChange={e =>
+                                      handleCategorySelect(e.target.value)
+                                    }
+                                    className="w-full bg-background border border-border text-foreground rounded-xl px-4 h-12 focus:border-primary focus:outline-none transition text-sm"
+                                  >
+                                    <option value="">
+                                      Selecione uma categoria...
+                                    </option>
+                                    {categories.map(cat => (
+                                      <option
+                                        key={cat.id}
+                                        value={cat.id}
+                                        className="bg-card"
+                                      >
+                                        {cat.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div className="space-y-2">
+                                  <label className="text-xs font-bold text-white uppercase tracking-wider">
+                                    Telefone Fixo / Comercial
+                                  </label>
+                                  <Input
+                                    type="tel"
+                                    placeholder="Ex: (11) 4033-1234"
+                                    value={busPhone}
+                                    onChange={e => setBusPhone(e.target.value)}
+                                    className="bg-background border-border h-12 rounded-xl focus-visible:ring-primary focus-visible:border-primary text-sm"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <label className="text-xs font-bold text-white uppercase tracking-wider">
+                                    WhatsApp para Contato Direto
+                                  </label>
+                                  <Input
+                                    type="tel"
+                                    placeholder="Ex: (11) 99999-9999"
+                                    value={busWhatsapp}
+                                    onChange={e => setBusWhatsapp(e.target.value)}
+                                    className="bg-background border-border h-12 rounded-xl focus-visible:ring-primary focus-visible:border-primary text-sm"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-white uppercase tracking-wider">
+                                  Descrição Detalhada do Negócio
+                                </label>
+                                <Textarea
+                                  rows={5}
+                                  placeholder="Descreva brevemente o seu negócio, os produtos que vende ou serviços que oferece para os clientes na busca..."
+                                  value={busDescription}
+                                  onChange={e => setBusDescription(e.target.value)}
+                                  className="bg-background border-border rounded-xl focus-visible:ring-primary focus-visible:border-primary text-sm resize-none"
+                                />
+                              </div>
+
+                              <div className="pt-4 border-t border-border flex justify-end">
+                                <Button
+                                  type="submit"
+                                  disabled={isLoading}
+                                  className="bg-primary text-primary-foreground font-bold hover:bg-primary/95 h-11 px-6 rounded-xl flex items-center gap-2"
+                                >
+                                  {isLoading && (
+                                    <span className="loader-btn w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></span>
+                                  )}
+                                  Salvar Dados
+                                </Button>
+                              </div>
+                            </form>
+                          </div>
+                        )}
+
+                        {/* LOCALIZACAO PANEL */}
+                        {activeTab === "localizacao" && (
+                          <div className="space-y-6">
+                            <div className="pb-4 border-b border-border">
+                              <h2 className="text-xl font-black text-white">
+                                Localização Física
+                              </h2>
+                              <p className="text-xs text-muted-foreground">
+                                Cadastre o endereço do seu comércio ou sua base de
+                                atuação. O endereço é utilizado para geolocalização
+                                dos clientes.
+                              </p>
+                            </div>
+
+                            <form onSubmit={saveProfile} className="space-y-5">
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-white uppercase tracking-wider">
+                                  Endereço Completo (Rua, Número, Complemento) *
+                                </label>
+                                <Input
+                                  type="text"
+                                  required
+                                  placeholder="Ex: Av. Salvador Markowicz, 123 - Sala 4"
+                                  value={busAddress}
+                                  onChange={e => setBusAddress(e.target.value)}
+                                  className="bg-background border-border h-12 rounded-xl focus-visible:ring-primary focus-visible:border-primary text-sm"
+                                />
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                <div className="space-y-2">
+                                  <label className="text-xs font-bold text-white uppercase tracking-wider">
+                                    CEP *
+                                  </label>
+                                  <Input
+                                    type="text"
+                                    required
+                                    placeholder="00000-000"
+                                    value={busCep}
+                                    onChange={e => setBusCep(e.target.value)}
+                                    className="bg-background border-border h-12 rounded-xl focus-visible:ring-primary focus-visible:border-primary text-sm font-mono text-white"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <label className="text-xs font-bold text-white uppercase tracking-wider">
+                                    Bairro *
+                                  </label>
+                                  <Input
+                                    type="text"
+                                    required
+                                    placeholder="Ex: Centro"
+                                    value={busNeighborhood}
+                                    onChange={e =>
+                                      setBusNeighborhood(e.target.value)
+                                    }
+                                    className="bg-background border-border h-12 rounded-xl focus-visible:ring-primary focus-visible:border-primary text-sm"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <label className="text-xs font-bold text-white uppercase tracking-wider">
+                                    Cidade *
+                                  </label>
+                                  <Input
+                                    type="text"
+                                    required
+                                    placeholder="Ex: Bragança Paulista"
+                                    value={busCity}
+                                    onChange={e => setBusCity(e.target.value)}
+                                    className="bg-background border-border h-12 rounded-xl focus-visible:ring-primary focus-visible:border-primary text-sm"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Coordinates debug */}
+                              {business &&
+                                (business.latitude || business.longitude) && (
+                                  <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4 flex items-center gap-3">
+                                    <Compass className="h-5 w-5 text-primary flex-shrink-0" />
+                                    <div className="text-xs text-muted-foreground">
+                                      <span className="text-white font-bold block mb-0.5">
+                                        Geolocalização Ativa:
+                                      </span>
+                                      Latitude:{" "}
+                                      <span className="font-mono text-white mr-4">
+                                        {business.latitude?.toFixed(6)}
+                                      </span>
+                                      Longitude:{" "}
+                                      <span className="font-mono text-white">
+                                        {business.longitude?.toFixed(6)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
+
+                              <div className="pt-4 border-t border-border flex justify-end">
+                                <Button
+                                  type="submit"
+                                  disabled={isLoading}
+                                  className="bg-primary text-primary-foreground font-bold hover:bg-primary/95 h-11 px-6 rounded-xl flex items-center gap-2"
+                                >
+                                  {isLoading && (
+                                    <span className="loader-btn w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></span>
+                                  )}
+                                  Salvar Endereço
+                                </Button>
+                              </div>
+                            </form>
+                          </div>
+                        )}
+
+                        {/* FOTOS PANEL */}
+                        {activeTab === "fotos" && (
+                          <div className="space-y-6">
+                            <div className="pb-4 border-b border-border">
+                              <h2 className="text-xl font-black text-white">
+                                Identidade Visual & Galeria
+                              </h2>
+                              <p className="text-xs text-muted-foreground">
+                                Insira as URLs das fotos do seu negócio (logotipo,
+                                capa e imagens dos seus produtos/serviços).
+                              </p>
+                            </div>
+
+                            <form onSubmit={saveProfile} className="space-y-6">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Avatar Link */}
+                                <div className="space-y-3 bg-background/30 border border-border rounded-2xl p-5">
+                                  <label className="text-xs font-bold text-white uppercase tracking-wider block">
+                                    Foto de Perfil (Logo ou Avatar)
+                                  </label>
+                                  <div className="w-16 h-16 rounded-xl bg-zinc-800 border border-zinc-700/50 overflow-hidden flex items-center justify-center mb-3">
+                                    {busAvatarUri ? (
+                                      <img
+                                        src={busAvatarUri}
+                                        alt="Preview Avatar"
+                                        className="w-full h-full object-cover"
+                                      />
+                                    ) : (
+                                      <ImageIcon className="h-6 w-6 text-zinc-500" />
+                                    )}
+                                  </div>
+                                  <Input
+                                    type="text"
+                                    placeholder="https://imagem.com/logo.jpg"
+                                    value={busAvatarUri}
+                                    onChange={e => setBusAvatarUri(e.target.value)}
+                                    className="bg-background border-border text-xs rounded-xl focus-visible:ring-primary"
+                                  />
+                                </div>
+
+                                {/* Cover Link */}
+                                <div className="space-y-3 bg-background/30 border border-border rounded-2xl p-5">
+                                  <label className="text-xs font-bold text-white uppercase tracking-wider block">
+                                    Foto de Capa do Perfil
+                                  </label>
+                                  <div className="w-full h-16 rounded-xl bg-zinc-800 border border-zinc-700/50 overflow-hidden flex items-center justify-center mb-3">
+                                    {busCoverUri ? (
+                                      <img
+                                        src={busCoverUri}
+                                        alt="Preview Cover"
+                                        className="w-full h-full object-cover"
+                                      />
+                                    ) : (
+                                      <span className="text-xs text-zinc-500">
+                                        Sem Capa
+                                      </span>
+                                    )}
+                                  </div>
+                                  <Input
+                                    type="text"
+                                    placeholder="https://imagem.com/capa.jpg"
+                                    value={busCoverUri}
+                                    onChange={e => setBusCoverUri(e.target.value)}
+                                    className="bg-background border-border text-xs rounded-xl focus-visible:ring-primary"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Gallery Link Lists */}
+                              <div className="space-y-4 bg-background/30 border border-border rounded-2xl p-5">
+                                <label className="text-xs font-bold text-white uppercase tracking-wider block">
+                                  Galeria de Fotos (Destaques)
+                                </label>
+
+                                <div className="flex gap-2">
+                                  <Input
+                                    type="text"
+                                    placeholder="Insira a URL de uma foto para adicionar à galeria"
+                                    value={galleryInput}
+                                    onChange={e => setGalleryInput(e.target.value)}
+                                    className="bg-background border-border rounded-xl focus-visible:ring-primary focus-visible:border-primary text-sm flex-1"
+                                  />
+                                  <Button
+                                    type="button"
+                                    onClick={addGalleryImage}
+                                    className="bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700 font-bold px-4 rounded-xl flex items-center gap-1.5"
+                                  >
+                                    <Plus className="h-4 w-4 text-primary" />{" "}
+                                    Adicionar
+                                  </Button>
+                                </div>
+
+                                {/* Grid of gallery preview items */}
+                                <div className="grid grid-cols-3 md:grid-cols-5 gap-4 pt-3">
+                                  {busGallery.map((imgUrl, index) => (
+                                    <div
+                                      key={index}
+                                      className="relative group aspect-square rounded-xl bg-zinc-800 border border-zinc-700 overflow-hidden shadow-inner"
+                                    >
+                                      <img
+                                        src={imgUrl}
+                                        alt={`Foto Galeria ${index}`}
+                                        className="w-full h-full object-cover"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => removeGalleryImage(index)}
+                                        className="absolute top-1.5 right-1.5 p-1 rounded-lg bg-black/70 hover:bg-red-600/90 text-white transition duration-200"
+                                        title="Remover Foto"
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                  {busGallery.length === 0 && (
+                                    <div className="col-span-full py-8 text-center text-xs text-muted-foreground border border-dashed border-border rounded-xl flex flex-col items-center justify-center gap-1">
+                                      <ImageIcon className="h-6 w-6 text-zinc-600" />
+                                      <span>
+                                        Nenhuma foto na galeria. Adicione URLs
+                                        acima.
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="pt-4 border-t border-border flex justify-end">
+                                <Button
+                                  type="submit"
+                                  disabled={isLoading}
+                                  className="bg-primary text-primary-foreground font-bold hover:bg-primary/95 h-11 px-6 rounded-xl flex items-center gap-2"
+                                >
+                                  {isLoading && (
+                                    <span className="loader-btn w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></span>
+                                  )}
+                                  Salvar Fotos
+                                </Button>
+                              </div>
+                            </form>
+                          </div>
+                        )}
+
+                        {/* SERVICOS PANEL */}
+                        {activeTab === "servicos" && (
+                          <div className="space-y-6">
+                            <div className="pb-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                              <div>
+                                <h2 className="text-xl font-black text-white">
+                                  Meus Serviços
+                                </h2>
+                                <p className="text-xs text-muted-foreground">
+                                  Cadastre os serviços prestados pelo seu negócio e
+                                  os respectivos valores.
+                                </p>
+                              </div>
+                              <Button
+                                type="button"
+                                onClick={openAddServiceModal}
+                                disabled={isLimitReached}
+                                className="bg-primary text-primary-foreground font-black hover:bg-primary/95 h-11 px-5 rounded-xl flex items-center gap-1.5 shadow-lg shadow-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <Plus className="h-4.5 w-4.5" /> Adicionar Serviço
+                              </Button>
+                            </div>
+
+                            {/* Services count / Limits banner */}
+                            <div className="bg-zinc-800/40 border border-border rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                              <div className="space-y-1">
+                                <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider block">
+                                  Uso do Plano
+                                </span>
+                                <span className="text-base font-black text-white">
+                                  {servicesList.length} de{" "}
+                                  {maxServicos === -1
+                                    ? "Ilimitados"
+                                    : `${maxServicos} serviço(s)`}{" "}
+                                  cadastrado(s)
+                                </span>
+                              </div>
+                              {isLimitReached && (
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                  Limite Atingido
+                                </span>
+                              )}
+                            </div>
+
+                            {isLimitReached && (
+                              <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-start gap-3.5">
+                                <Sparkles className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                                <div className="space-y-2">
+                                  <p className="text-sm text-zinc-200 leading-relaxed">
+                                    <strong>Precisa de mais serviços?</strong> Faça
+                                    o upgrade para o plano Premium e cadastre
+                                    serviços ilimitados, ganhe selo de verificação e
+                                    destaque nas buscas.
+                                  </p>
+                                  <button
+                                    type="button"
+                                    onClick={() => setActiveTab("assinatura")}
+                                    className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
+                                  >
+                                    Ver planos disponíveis{" "}
+                                    <ArrowRight className="h-3 w-3" />
+                                  </button>
                                 </div>
                               </div>
                             )}
 
-                          <div className="pt-4 border-t border-border flex justify-end">
-                            <Button
-                              type="submit"
-                              disabled={isLoading}
-                              className="bg-primary text-primary-foreground font-bold hover:bg-primary/95 h-11 px-6 rounded-xl flex items-center gap-2"
-                            >
-                              {isLoading && (
-                                <span className="loader-btn w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></span>
-                              )}
-                              Salvar Endereço
-                            </Button>
-                          </div>
-                        </form>
-                      </div>
-                    )}
-
-                    {/* FOTOS PANEL */}
-                    {activeTab === "fotos" && (
-                      <div className="space-y-6">
-                        <div className="pb-4 border-b border-border">
-                          <h2 className="text-xl font-black text-white">
-                            Identidade Visual & Galeria
-                          </h2>
-                          <p className="text-xs text-muted-foreground">
-                            Insira as URLs das fotos do seu negócio (logotipo,
-                            capa e imagens dos seus produtos/serviços).
-                          </p>
-                        </div>
-
-                        <form onSubmit={saveProfile} className="space-y-6">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Avatar Link */}
-                            <div className="space-y-3 bg-background/30 border border-border rounded-2xl p-5">
-                              <label className="text-xs font-bold text-white uppercase tracking-wider block">
-                                Foto de Perfil (Logo ou Avatar)
-                              </label>
-                              <div className="w-16 h-16 rounded-xl bg-zinc-800 border border-zinc-700/50 overflow-hidden flex items-center justify-center mb-3">
-                                {busAvatarUri ? (
-                                  <img
-                                    src={busAvatarUri}
-                                    alt="Preview Avatar"
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <ImageIcon className="h-6 w-6 text-zinc-500" />
-                                )}
-                              </div>
-                              <Input
-                                type="text"
-                                placeholder="https://imagem.com/logo.jpg"
-                                value={busAvatarUri}
-                                onChange={e => setBusAvatarUri(e.target.value)}
-                                className="bg-background border-border text-xs rounded-xl focus-visible:ring-primary"
-                              />
-                            </div>
-
-                            {/* Cover Link */}
-                            <div className="space-y-3 bg-background/30 border border-border rounded-2xl p-5">
-                              <label className="text-xs font-bold text-white uppercase tracking-wider block">
-                                Foto de Capa do Perfil
-                              </label>
-                              <div className="w-full h-16 rounded-xl bg-zinc-800 border border-zinc-700/50 overflow-hidden flex items-center justify-center mb-3">
-                                {busCoverUri ? (
-                                  <img
-                                    src={busCoverUri}
-                                    alt="Preview Cover"
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <span className="text-xs text-zinc-500">
-                                    Sem Capa
-                                  </span>
-                                )}
-                              </div>
-                              <Input
-                                type="text"
-                                placeholder="https://imagem.com/capa.jpg"
-                                value={busCoverUri}
-                                onChange={e => setBusCoverUri(e.target.value)}
-                                className="bg-background border-border text-xs rounded-xl focus-visible:ring-primary"
-                              />
-                            </div>
-                          </div>
-
-                          {/* Gallery Link Lists */}
-                          <div className="space-y-4 bg-background/30 border border-border rounded-2xl p-5">
-                            <label className="text-xs font-bold text-white uppercase tracking-wider block">
-                              Galeria de Fotos (Destaques)
-                            </label>
-
-                            <div className="flex gap-2">
-                              <Input
-                                type="text"
-                                placeholder="Insira a URL de uma foto para adicionar à galeria"
-                                value={galleryInput}
-                                onChange={e => setGalleryInput(e.target.value)}
-                                className="bg-background border-border rounded-xl focus-visible:ring-primary focus-visible:border-primary text-sm flex-1"
-                              />
-                              <Button
-                                type="button"
-                                onClick={addGalleryImage}
-                                className="bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700 font-bold px-4 rounded-xl flex items-center gap-1.5"
-                              >
-                                <Plus className="h-4 w-4 text-primary" />{" "}
-                                Adicionar
-                              </Button>
-                            </div>
-
-                            {/* Grid of gallery preview items */}
-                            <div className="grid grid-cols-3 md:grid-cols-5 gap-4 pt-3">
-                              {busGallery.map((imgUrl, index) => (
+                            {/* Services List Table/Grid */}
+                            <div className="space-y-4">
+                              {servicesList.map(srv => (
                                 <div
-                                  key={index}
-                                  className="relative group aspect-square rounded-xl bg-zinc-800 border border-zinc-700 overflow-hidden shadow-inner"
+                                  key={srv.id}
+                                  className="bg-background/40 hover:bg-background/80 border border-border rounded-2xl p-5 flex items-start justify-between gap-4 transition duration-200"
                                 >
-                                  <img
-                                    src={imgUrl}
-                                    alt={`Foto Galeria ${index}`}
-                                    className="w-full h-full object-cover"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => removeGalleryImage(index)}
-                                    className="absolute top-1.5 right-1.5 p-1 rounded-lg bg-black/70 hover:bg-red-600/90 text-white transition duration-200"
-                                    title="Remover Foto"
-                                  >
-                                    <X className="h-3 w-3" />
-                                  </button>
+                                  <div className="space-y-1.5 flex-1">
+                                    <div className="flex items-center gap-3">
+                                      <h3 className="text-base font-bold text-white leading-snug">
+                                        {srv.name}
+                                      </h3>
+                                      <span className="text-sm font-black text-primary font-mono bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-lg">
+                                        R$ {srv.price.toFixed(2)}
+                                      </span>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground leading-relaxed max-w-2xl">
+                                      {srv.description}
+                                    </p>
+                                  </div>
+
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => openEditServiceModal(srv)}
+                                      className="p-2 rounded-xl bg-card border border-border text-zinc-400 hover:text-white hover:border-zinc-700 transition"
+                                      title="Editar Serviço"
+                                    >
+                                      <Edit2 className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => deleteService(srv.id)}
+                                      className="p-2 rounded-xl bg-card border border-border text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition"
+                                      title="Excluir Serviço"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
                                 </div>
                               ))}
-                              {busGallery.length === 0 && (
-                                <div className="col-span-full py-8 text-center text-xs text-muted-foreground border border-dashed border-border rounded-xl flex flex-col items-center justify-center gap-1">
-                                  <ImageIcon className="h-6 w-6 text-zinc-600" />
-                                  <span>
-                                    Nenhuma foto na galeria. Adicione URLs
-                                    acima.
-                                  </span>
+
+                              {servicesList.length === 0 && (
+                                <div className="py-16 text-center text-sm text-muted-foreground border border-dashed border-border rounded-3xl flex flex-col items-center justify-center gap-2">
+                                  <Wrench className="h-8 w-8 text-zinc-700" />
+                                  <p className="font-bold text-white">
+                                    Nenhum serviço cadastrado
+                                  </p>
+                                  <p className="text-xs max-w-sm">
+                                    Cadastre seus serviços e defina os valores para
+                                    que os clientes saibam exatamente o que você
+                                    oferece.
+                                  </p>
                                 </div>
                               )}
-                            </div>
-                          </div>
-
-                          <div className="pt-4 border-t border-border flex justify-end">
-                            <Button
-                              type="submit"
-                              disabled={isLoading}
-                              className="bg-primary text-primary-foreground font-bold hover:bg-primary/95 h-11 px-6 rounded-xl flex items-center gap-2"
-                            >
-                              {isLoading && (
-                                <span className="loader-btn w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></span>
-                              )}
-                              Salvar Fotos
-                            </Button>
-                          </div>
-                        </form>
-                      </div>
-                    )}
-
-                    {/* SERVICOS PANEL */}
-                    {activeTab === "servicos" && (
-                      <div className="space-y-6">
-                        <div className="pb-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                          <div>
-                            <h2 className="text-xl font-black text-white">
-                              Meus Serviços
-                            </h2>
-                            <p className="text-xs text-muted-foreground">
-                              Cadastre os serviços prestados pelo seu negócio e
-                              os respectivos valores.
-                            </p>
-                          </div>
-                          <Button
-                            type="button"
-                            onClick={openAddServiceModal}
-                            disabled={isLimitReached}
-                            className="bg-primary text-primary-foreground font-black hover:bg-primary/95 h-11 px-5 rounded-xl flex items-center gap-1.5 shadow-lg shadow-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <Plus className="h-4.5 w-4.5" /> Adicionar Serviço
-                          </Button>
-                        </div>
-
-                        {/* Services count / Limits banner */}
-                        <div className="bg-zinc-800/40 border border-border rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                          <div className="space-y-1">
-                            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider block">
-                              Uso do Plano
-                            </span>
-                            <span className="text-base font-black text-white">
-                              {servicesList.length} de{" "}
-                              {maxServicos === -1
-                                ? "Ilimitados"
-                                : `${maxServicos} serviço(s)`}{" "}
-                              cadastrado(s)
-                            </span>
-                          </div>
-                          {isLimitReached && (
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                              Limite Atingido
-                            </span>
-                          )}
-                        </div>
-
-                        {isLimitReached && (
-                          <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-start gap-3.5">
-                            <Sparkles className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                            <div className="space-y-2">
-                              <p className="text-sm text-zinc-200 leading-relaxed">
-                                <strong>Precisa de mais serviços?</strong> Faça
-                                o upgrade para o plano Premium e cadastre
-                                serviços ilimitados, ganhe selo de verificação e
-                                destaque nas buscas.
-                              </p>
-                              <button
-                                type="button"
-                                onClick={() => setActiveTab("assinatura")}
-                                className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
-                              >
-                                Ver planos disponíveis{" "}
-                                <ArrowRight className="h-3 w-3" />
-                              </button>
                             </div>
                           </div>
                         )}
 
-                        {/* Services List Table/Grid */}
-                        <div className="space-y-4">
-                          {servicesList.map(srv => (
-                            <div
-                              key={srv.id}
-                              className="bg-background/40 hover:bg-background/80 border border-border rounded-2xl p-5 flex items-start justify-between gap-4 transition duration-200"
-                            >
-                              <div className="space-y-1.5 flex-1">
-                                <div className="flex items-center gap-3">
-                                  <h3 className="text-base font-bold text-white leading-snug">
-                                    {srv.name}
+                        {/* ASSINATURA & PLANOS PANEL */}
+                        {activeTab === "assinatura" && (
+                          <div className="space-y-6">
+                            <div className="pb-4 border-b border-border">
+                              <h2 className="text-xl font-black text-white">
+                                Plano & Limites de Assinatura
+                              </h2>
+                              <p className="text-xs text-muted-foreground">
+                                Gerencie seus limites corporativos e consulte os
+                                benefícios dos planos do XamaJá.
+                              </p>
+                            </div>
+
+                            {/* Plan Summary Card */}
+                            <div className="grid md:grid-cols-2 gap-6">
+                              <div className="bg-[#0c0c0e] border border-primary/20 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between">
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl"></div>
+
+                                <div className="space-y-4">
+                                  <div className="inline-block px-3 py-1 bg-primary/10 border border-primary/20 rounded-full">
+                                    <span className="text-primary text-[10px] font-black uppercase tracking-wider">
+                                      Seu plano atual
+                                    </span>
+                                  </div>
+
+                                  <h3 className="text-3xl font-black text-white">
+                                    Plano Grátis
                                   </h3>
-                                  <span className="text-sm font-black text-primary font-mono bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-lg">
-                                    R$ {srv.price.toFixed(2)}
-                                  </span>
+                                  <p className="text-xs text-muted-foreground leading-relaxed">
+                                    Limite inicial para novos cadastros. Permite
+                                    configurar o seu perfil completo de negócio e
+                                    listar até 1 serviço.
+                                  </p>
                                 </div>
-                                <p className="text-xs text-muted-foreground leading-relaxed max-w-2xl">
-                                  {srv.description}
-                                </p>
+
+                                <div className="pt-6 border-t border-border mt-6 space-y-2">
+                                  <div className="flex justify-between text-xs text-muted-foreground">
+                                    <span>Limite de Serviços:</span>
+                                    <span className="text-white font-bold">
+                                      {servicesList.length} / {maxServicos}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between text-xs text-muted-foreground">
+                                    <span>Selo de Verificação:</span>
+                                    <span className="text-red-400 font-bold">
+                                      Não ativo
+                                    </span>
+                                  </div>
+                                </div>
                               </div>
 
-                              <div className="flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => openEditServiceModal(srv)}
-                                  className="p-2 rounded-xl bg-card border border-border text-zinc-400 hover:text-white hover:border-zinc-700 transition"
-                                  title="Editar Serviço"
-                                >
-                                  <Edit2 className="h-4 w-4" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => deleteService(srv.id)}
-                                  className="p-2 rounded-xl bg-card border border-border text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition"
-                                  title="Excluir Serviço"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              </div>
-                            </div>
-                          ))}
+                              {/* Premium Plan Offer */}
+                              <div className="bg-card border border-border rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden group hover:border-primary/50 transition duration-300">
+                                <div className="absolute top-0 right-0 w-28 h-28 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-all"></div>
 
-                          {servicesList.length === 0 && (
-                            <div className="py-16 text-center text-sm text-muted-foreground border border-dashed border-border rounded-3xl flex flex-col items-center justify-center gap-2">
-                              <Wrench className="h-8 w-8 text-zinc-700" />
-                              <p className="font-bold text-white">
-                                Nenhum serviço cadastrado
-                              </p>
-                              <p className="text-xs max-w-sm">
-                                Cadastre seus serviços e defina os valores para
-                                que os clientes saibam exatamente o que você
-                                oferece.
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
+                                <div className="space-y-4">
+                                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 border border-primary/30 rounded-full">
+                                    <Sparkles className="h-3 w-3 text-primary" />
+                                    <span className="text-primary text-[10px] font-black uppercase tracking-wider">
+                                      Recomendado
+                                    </span>
+                                  </div>
 
-                    {/* ASSINATURA & PLANOS PANEL */}
-                    {activeTab === "assinatura" && (
-                      <div className="space-y-6">
-                        <div className="pb-4 border-b border-border">
-                          <h2 className="text-xl font-black text-white">
-                            Plano & Limites de Assinatura
-                          </h2>
-                          <p className="text-xs text-muted-foreground">
-                            Gerencie seus limites corporativos e consulte os
-                            benefícios dos planos do XamaJá.
-                          </p>
-                        </div>
+                                  <h3 className="text-3xl font-black text-white">
+                                    Plano Premium
+                                  </h3>
+                                  <p className="text-xs text-muted-foreground leading-relaxed">
+                                    Desbloqueie todo o potencial da plataforma com
+                                    serviços ilimitados, relevância nas buscas e
+                                    suporte prioritário.
+                                  </p>
+                                </div>
 
-                        {/* Plan Summary Card */}
-                        <div className="grid md:grid-cols-2 gap-6">
-                          <div className="bg-[#0c0d1e] border border-primary/20 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between">
-                            <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl"></div>
+                                <div className="pt-6 space-y-4">
+                                  <ul className="space-y-2.5 text-xs text-zinc-300">
+                                    <li className="flex items-center gap-2">
+                                      <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
+                                      <span>Serviços Ilimitados</span>
+                                    </li>
+                                    <li className="flex items-center gap-2">
+                                      <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
+                                      <span>Selo de Verificação Premium</span>
+                                    </li>
+                                    <li className="flex items-center gap-2">
+                                      <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
+                                      <span>Destaque nas buscas de clientes</span>
+                                    </li>
+                                  </ul>
 
-                            <div className="space-y-4">
-                              <div className="inline-block px-3 py-1 bg-primary/10 border border-primary/20 rounded-full">
-                                <span className="text-primary text-[10px] font-black uppercase tracking-wider">
-                                  Seu plano atual
-                                </span>
-                              </div>
-
-                              <h3 className="text-3xl font-black text-white">
-                                Plano Grátis
-                              </h3>
-                              <p className="text-xs text-muted-foreground leading-relaxed">
-                                Limite inicial para novos cadastros. Permite
-                                configurar o seu perfil completo de negócio e
-                                listar até 1 serviço.
-                              </p>
-                            </div>
-
-                            <div className="pt-6 border-t border-border mt-6 space-y-2">
-                              <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>Limite de Serviços:</span>
-                                <span className="text-white font-bold">
-                                  {servicesList.length} / {maxServicos}
-                                </span>
-                              </div>
-                              <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>Selo de Verificação:</span>
-                                <span className="text-red-400 font-bold">
-                                  Não ativo
-                                </span>
+                                  <Button
+                                    type="button"
+                                    onClick={() =>
+                                      toast.info(
+                                        "Funcionalidade de pagamento online será ativada em breve. Fale com o administrador."
+                                      )
+                                    }
+                                    className="w-full bg-primary text-primary-foreground font-black uppercase tracking-wider h-11 rounded-xl flex items-center justify-center gap-2 hover:bg-primary/95 transition shadow-lg shadow-primary/10"
+                                  >
+                                    <span>Quero ser Premium</span>
+                                    <ArrowRight className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </div>
                             </div>
                           </div>
-
-                          {/* Premium Plan Offer */}
-                          <div className="bg-card border border-border rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden group hover:border-primary/50 transition duration-300">
-                            <div className="absolute top-0 right-0 w-28 h-28 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-all"></div>
-
-                            <div className="space-y-4">
-                              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 border border-primary/30 rounded-full">
-                                <Sparkles className="h-3 w-3 text-primary" />
-                                <span className="text-primary text-[10px] font-black uppercase tracking-wider">
-                                  Recomendado
-                                </span>
-                              </div>
-
-                              <h3 className="text-3xl font-black text-white">
-                                Plano Premium
-                              </h3>
-                              <p className="text-xs text-muted-foreground leading-relaxed">
-                                Desbloqueie todo o potencial da plataforma com
-                                serviços ilimitados, relevância nas buscas e
-                                suporte prioritário.
-                              </p>
-                            </div>
-
-                            <div className="pt-6 space-y-4">
-                              <ul className="space-y-2.5 text-xs text-zinc-300">
-                                <li className="flex items-center gap-2">
-                                  <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
-                                  <span>Serviços Ilimitados</span>
-                                </li>
-                                <li className="flex items-center gap-2">
-                                  <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
-                                  <span>Selo de Verificação Premium</span>
-                                </li>
-                                <li className="flex items-center gap-2">
-                                  <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
-                                  <span>Destaque nas buscas de clientes</span>
-                                </li>
-                              </ul>
-
-                              <Button
-                                type="button"
-                                onClick={() =>
-                                  toast.info(
-                                    "Funcionalidade de pagamento online será ativada em breve. Fale com o administrador."
-                                  )
-                                }
-                                className="w-full bg-primary text-primary-foreground font-black uppercase tracking-wider h-11 rounded-xl flex items-center justify-center gap-2 hover:bg-primary/95 transition shadow-lg shadow-primary/10"
-                              >
-                                <span>Quero ser Premium</span>
-                                <ArrowRight className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
+                        )}
                       </div>
-                    )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </section>
         )}

@@ -124,6 +124,7 @@ export const providers = pgTable(
     categoryId: varchar("category_id", { length: 64 }),
     city: varchar("city", { length: 255 }),
     neighborhood: varchar("neighborhood", { length: 255 }),
+    cep: varchar("cep", { length: 20 }),
     phone: varchar("phone", { length: 20 }),
     plan: varchar("plan", { length: 20 }),
     planExpiresAt: timestamp("plan_expires_at"),
