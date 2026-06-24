@@ -575,11 +575,15 @@ async function startServer() {
           .json({ success: false, error: "Usuário não encontrado." });
       }
 
-      // Validar tipo
+      // 3. Buscar perfil de negócio vinculado
+      const businessProfile = await db.getProviderByUserId(data.user.id);
+
+      // Validar tipo ou existência de perfil de negócio
       if (
         userProfile.tipo !== "prestador" &&
         userProfile.tipo !== "comercio" &&
-        userProfile.role !== "admin"
+        userProfile.role !== "admin" &&
+        !businessProfile
       ) {
         return res.status(403).json({
           success: false,
@@ -587,8 +591,22 @@ async function startServer() {
         });
       }
 
-      // 3. Buscar perfil de negócio vinculado
-      const businessProfile = await db.getProviderByUserId(data.user.id);
+      // Se possui perfil de negócio mas o tipo de usuário está desatualizado no banco local, corrige
+      if (
+        businessProfile &&
+        userProfile.tipo !== "prestador" &&
+        userProfile.tipo !== "comercio"
+      ) {
+        const nextTipo =
+          businessProfile.businessType === "comercio"
+            ? "comercio"
+            : "prestador";
+        await db.upsertUser({
+          openId: data.user.id,
+          tipo: nextTipo,
+        });
+        userProfile.tipo = nextTipo;
+      }
 
       res.json({
         success: true,

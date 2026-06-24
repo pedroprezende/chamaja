@@ -161,7 +161,7 @@ export default function Home() {
               Para comércios
             </a>
             <a
-              href="/parceiro"
+              href="/parceiros"
               className="text-primary font-semibold hover:text-primary/80 transition"
             >
               Seja um Parceiro ✦
@@ -768,10 +768,10 @@ export default function Home() {
             </div>
             <div className="flex-shrink-0 w-full md:w-auto">
               <Button
-                onClick={() => (window.location.href = "/parceiro")}
+                onClick={() => (window.location.href = "/indique")}
                 className="w-full md:w-auto bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-8 py-6 rounded-xl flex items-center justify-center gap-2"
               >
-                <span>Ser um Parceiro</span>
+                <span>Indicar Negócios</span>
                 <ArrowRight className="h-5 w-5" />
               </Button>
             </div>
@@ -853,10 +853,18 @@ export default function Home() {
                 </li>
                 <li>
                   <a
-                    href="/parceiro"
+                    href="/parceiros"
                     className="text-primary hover:text-primary/80 transition font-semibold"
                   >
                     Seja um Parceiro ✦
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/indique"
+                    className="text-zinc-400 hover:text-foreground transition"
+                  >
+                    Indique e Ganhe ✦
                   </a>
                 </li>
               </ul>
