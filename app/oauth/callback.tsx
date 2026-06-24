@@ -3,71 +3,48 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/lib/auth-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function OAuthCallback() {
   const router = useRouter();
+  const { isSignedIn, isLoading, user } = useAuth();
   const [status, setStatus] = useState<"processing" | "success" | "error">("processing");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const handleCallback = async () => {
-      try {
-        console.log("[OAuth Callback] Verificando URL...");
-        
-        // No navegador (Web), o Supabase processa automaticamente os tokens na hash (#access_token=...)
-        // ao inicializar ou ao chamar getSession()
-        console.log("[OAuth Callback] Verificando sessão...");
-        const { data: { session }, error } = await supabase.auth.getSession();
+    if (isLoading) return;
 
-        if (error) {
-          console.error("[OAuth Callback] Erro ao obter sessão:", error);
-          throw error;
-        }
-
-        if (session) {
-          console.log("[OAuth Callback] Sessão encontrada e processada");
-          setStatus("success");
-          setTimeout(() => {
+    if (isSignedIn) {
+      console.log("[OAuth Callback] Sessão encontrada e processada via AuthContext:", user?.email);
+      setStatus("success");
+      
+      const checkRedirect = async () => {
+        try {
+          const isBusinessFlag = await AsyncStorage.getItem("@chamaja_login_as_business");
+          if (isBusinessFlag === "true") {
+            router.replace("/become-provider" as any);
+          } else {
             router.replace("/(tabs)");
-          }, 1000);
-          return;
-        }
-        
-        // Se não encontrou token (pode ser o App Nativo onde o deep link é resolvido no AuthContext)
-        console.log("[OAuth Callback] Nenhum token direto na URL. Verificando estado atual...");
-        
-        // Verifica se já não foi autenticado (fallback)
-        const { data: { session: existingSession } } = await supabase.auth.getSession();
-        if (existingSession) {
-          setStatus("success");
+          }
+        } catch {
           router.replace("/(tabs)");
-          return;
         }
+      };
 
-        // Se realmente não tiver nada, joga erro
-        setStatus("error");
-        setErrorMessage("Nenhum token de autenticação recebido.");
-        
-        // Redireciona de volta para login após falha
-        setTimeout(() => {
-          router.replace("/auth/login");
-        }, 3000);
-        
-      } catch (error) {
-        console.error("[OAuth Callback] Erro geral:", error);
-        setStatus("error");
-        setErrorMessage(
-          error instanceof Error ? error.message : "Falha ao completar a autenticação"
-        );
-        setTimeout(() => {
-          router.replace("/auth/login");
-        }, 3000);
-      }
-    };
-
-    handleCallback();
-  }, [router]);
+      setTimeout(() => {
+        checkRedirect();
+      }, 1000);
+    } else {
+      console.log("[OAuth Callback] Nenhuma sessão ativa encontrada.");
+      setStatus("error");
+      setErrorMessage("Nenhum token de autenticação recebido.");
+      
+      setTimeout(() => {
+        router.replace("/auth/login");
+      }, 3000);
+    }
+  }, [isLoading, isSignedIn, router, user]);
 
   return (
     <SafeAreaView className="flex-1" edges={["top", "bottom", "left", "right"]}>

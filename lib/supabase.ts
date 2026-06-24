@@ -16,3 +16,19 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
   },
 });
+
+let cachedSessionToken: string | null = null;
+
+export function getCachedSessionToken(): string | null {
+  return cachedSessionToken;
+}
+
+export function setCachedSessionToken(token: string | null) {
+  cachedSessionToken = token;
+}
+
+// Subscreve para atualizar o token em memória sempre que a sessão mudar
+supabase.auth.onAuthStateChange((event, session) => {
+  cachedSessionToken = session?.access_token || null;
+});
+

@@ -94,7 +94,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     await setSessionToken(access_token);
 
-    const userRole = await getCurrentUserRole(authUser.id, authUser.email || "");
+    // Recupera a role do cache síncrono/local se existir para evitar travamentos ou atrasos na interface
+    let initialRole: UserRole = "user";
+    try {
+      const cached = await AsyncStorage.getItem("@chamaja_user");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.id === authUser.id) {
+          initialRole = parsed.role || "user";
+        }
+      }
+    } catch (e) {
+      logger.warn("AUTH", "Erro ao carregar cache de role para login rápido", e);
+    }
 
     const dbUser: User = {
       id: authUser.id,
@@ -102,13 +114,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       name: authUser.user_metadata?.full_name || authUser.email?.split("@")[0] || "Usuário",
       avatar: authUser.user_metadata?.avatar_url,
       provider: (authUser.app_metadata?.provider as AuthProvider) || "email",
-      role: userRole,
+      role: initialRole,
       createdAt: authUser.created_at,
     };
 
+    // Atualiza o estado imediatamente para liberar a navegação do usuário
     setUser(dbUser);
     await AsyncStorage.setItem("@chamaja_user", JSON.stringify(dbUser));
-    logger.info("AUTH", "Sessão de usuário persistida com sucesso");
+    logger.info("AUTH", "Sessão de usuário persistida temporariamente com a role inicial");
+
+    // Consulta a role atualizada do banco em background de forma não-bloqueante
+    getCurrentUserRole(authUser.id, authUser.email || "")
+      .then(async (userRole) => {
+        if (userRole !== initialRole) {
+          logger.info("AUTH", `Atualizando role do usuário em background: de ${initialRole} para ${userRole}`);
+          const updatedUser = { ...dbUser, role: userRole };
+          setUser(updatedUser);
+          await AsyncStorage.setItem("@chamaja_user", JSON.stringify(updatedUser));
+        }
+      })
+      .catch((err) => {
+        logger.warn("AUTH", "Falha ao sincronizar role em background", err);
+      });
   };
 
   useEffect(() => {
@@ -121,6 +148,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(JSON.parse(cachedUser));
         }
 
+        // Se for um callback de OAuth na Web, evitamos chamar getSession() concorrentemente
+        // para prevenir deadlocks no cliente do Supabase, deixando o onAuthStateChange cuidar disso
+        const isOAuthCallback = Platform.OS === "web" && (
+          window.location.hash.includes("access_token=") ||
+          window.location.search.includes("code=")
+        );
+
+        if (isOAuthCallback) {
+          logger.info("AUTH", "Callback OAuth detectado, pulando getSession inicial para evitar concorrência");
+          return;
+        }
+
         // Recupera sessão do Supabase com timeout de segurança de 15 segundos
         const sessionResult = await Promise.race([
           supabase.auth.getSession(),
@@ -129,7 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           )
         ]).catch(err => {
           logger.warn("AUTH", "Timeout ou falha ao obter sessão do Supabase", err);
-          return { data: { session: null } };
+          return { data: { session: undefined } }; // Retorna undefined para diferenciar de 'null' (sem sessão)
         });
 
         const session = sessionResult.data?.session;
@@ -144,10 +183,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           ]).catch(err => {
             logger.warn("AUTH", "Sincronização lenta ou falhou durante inicialização", err);
           });
-        } else {
-          logger.info("AUTH", "Nenhuma sessão ativa encontrada");
+        } else if (session === null) {
+          logger.info("AUTH", "Nenhuma sessão ativa encontrada (confirmado pelo servidor)");
           setUser(null);
           await removeSessionToken();
+        } else {
+          logger.info("AUTH", "Manter usuário cacheado devido a falha ou timeout de rede");
         }
       } catch (err) {
         logger.error("AUTH", "Erro crítico ao restaurar sessão", err);

@@ -14,15 +14,21 @@ export type User = {
 export async function getSessionToken(): Promise<string | null> {
   console.log("[Auth Debug v2] Iniciando recuperação de token...");
   try {
-    // On Web and Native, try to get the session from Supabase first
-    const { supabase } = await import("../supabase");
+    // Tenta primeiro obter o token do cache síncrono em memória
+    const { getCachedSessionToken, supabase } = await import("../supabase");
+    const cachedToken = getCachedSessionToken();
+    if (cachedToken) {
+      return cachedToken;
+    }
+
+    // Caso não esteja no cache, recupera a sessão do Supabase de forma assíncrona
     const { data: { session } } = await supabase.auth.getSession();
     
     if (session?.access_token) {
       return session.access_token;
     }
 
-    // Fallback for native if Supabase session is not available
+    // Fallback para plataforma nativa caso a sessão do Supabase não esteja disponível
     if (Platform.OS !== "web") {
       const token = await SecureStore.getItemAsync(SESSION_TOKEN_KEY);
       return token;
