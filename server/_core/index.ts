@@ -3,6 +3,7 @@ import express from "express";
 import { createServer } from "http";
 import net from "net";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
@@ -111,10 +112,12 @@ async function startServer() {
     }),
   );
 
-  // Servir website institucional
+  // Servir website institucional (React SPA em home/dist/public ou legado em server/public)
   const rootDir = process.cwd();
   
-  const publicPath = path.resolve(rootDir, "server", "public");
+  const reactWebsitePath = path.resolve(rootDir, "home", "dist", "public");
+  const legacyPublicPath = path.resolve(rootDir, "server", "public");
+  const publicPath = fs.existsSync(reactWebsitePath) ? reactWebsitePath : legacyPublicPath;
   app.use(express.static(publicPath));
 
   const projectAssetsPath = path.resolve(rootDir, "assets");
@@ -414,6 +417,24 @@ async function startServer() {
     res.sendFile(path.join(webDistPath, "index.html"), (err) => {
       if (err) {
         res.status(404).send("Frontend assets not found. Make sure to run the web build first.");
+      }
+    });
+  });
+
+  // Fallback para rotas SPA do website institucional
+  app.get("*", (req, res) => {
+    // Evitamos interceptar rotas de API, arquivos estáticos e do aplicativo Expo Web
+    if (
+      req.url.startsWith("/api/") ||
+      req.url.startsWith("/app") ||
+      req.url.startsWith("/_expo/") ||
+      req.url.startsWith("/assets/")
+    ) {
+      return res.status(404).send("Not found");
+    }
+    res.sendFile(path.join(publicPath, "index.html"), (err) => {
+      if (err) {
+        res.status(404).send("Website assets not found.");
       }
     });
   });

@@ -157,6 +157,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (isOAuthCallback) {
           logger.info("AUTH", "Callback OAuth detectado, pulando getSession inicial para evitar concorrência");
+          // Configura um timeout de segurança de 10 segundos para desativar o loading se nada acontecer
+          setTimeout(() => {
+            setIsLoading((prev) => {
+              if (prev) {
+                logger.warn("AUTH", "Timeout de segurança no callback OAuth, forçando isLoading = false");
+                return false;
+              }
+              return prev;
+            });
+          }, 10000);
           return;
         }
 
@@ -193,7 +203,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (err) {
         logger.error("AUTH", "Erro crítico ao restaurar sessão", err);
       } finally {
-        setIsLoading(false);
+        const isOAuthCallback = Platform.OS === "web" && (
+          window.location.hash.includes("access_token=") ||
+          window.location.search.includes("code=")
+        );
+        if (!isOAuthCallback) {
+          setIsLoading(false);
+        }
       }
     };
 

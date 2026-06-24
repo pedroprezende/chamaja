@@ -12,6 +12,7 @@ import { useColors } from "@/hooks/use-colors";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ProviderContextProvider, useProvider } from "@/lib/provider-context";
+import InitialLoadingScreen from "@/components/initial-loading-screen";
 import { FavoritesProvider } from "@/lib/favorites-context";
 import { NotificationsProvider } from "@/lib/notifications-context";
 import { CartProvider } from "@/lib/cart-context";
@@ -26,7 +27,7 @@ import type { EdgeInsets, Metrics, Rect } from "react-native-safe-area-context";
 import { trpc, createTRPCClient } from "@/lib/trpc";
 import { initManusRuntime, subscribeSafeAreaInsets } from "@/lib/_core/manus-runtime";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { LocationProvider } from "@/lib/location-context";
+import { LocationProvider, useLocation } from "@/lib/location-context";
 
 const DEFAULT_WEB_INSETS: EdgeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 const DEFAULT_WEB_FRAME: Rect = { x: 0, y: 0, width: 0, height: 0 };
@@ -36,8 +37,9 @@ export const unstable_settings = {
 };
 
 function RootLayoutNav() {
-  const { isSignedIn, isLoading } = useAuth();
+  const { isSignedIn, isLoading: isAuthLoading } = useAuth();
   const { provider, isLoading: isProviderLoading } = useProvider();
+  const { loading: isLocationLoading } = useLocation();
   const segments = useSegments();
   const router = useRouter();
   const [hasMounted, setHasMounted] = useState(false);
@@ -50,15 +52,16 @@ function RootLayoutNav() {
 
   // Safety timeout: if loading takes more than 8 seconds, force render
   useEffect(() => {
-    if (!isLoading) return;
+    if (!isAuthLoading && !isLocationLoading) return;
     const timer = setTimeout(() => {
       console.warn("[RootLayoutNav] Loading timed out after 8s, forcing render");
       setLoadingTimedOut(true);
     }, 8000);
     return () => clearTimeout(timer);
-  }, [isLoading]);
+  }, [isAuthLoading, isLocationLoading]);
 
-  const shouldRender = hasMounted && (!isLoading || loadingTimedOut);
+  const appIsLoading = (isAuthLoading || isLocationLoading) && !loadingTimedOut;
+  const shouldRender = hasMounted && !appIsLoading;
 
   useEffect(() => {
     if (!shouldRender) return;
@@ -76,14 +79,22 @@ function RootLayoutNav() {
         hasNavigated.current = true;
         router.replace("/auth/login" as any);
       }
-    } else if (isSignedIn && inAuthGroup) {
-      // User is signed in but still on auth screens — redirect to appropriate home
-      hasNavigated.current = true;
+    } else if (isSignedIn) {
+      // User is signed in — redirect to appropriate dashboard or home
       (async () => {
         try {
           const isBusinessFlag = await AsyncStorage.getItem("@chamaja_login_as_business");
-          if (isBusinessFlag === "true") {
-            if (isProviderLoading && !loadingTimedOut) return;
+          const isBusiness = isBusinessFlag === "true";
+          const firstSegment = segments[0] as string | undefined;
+          const segmentsLength = segments.length as number;
+          const inTabsGroup = firstSegment === "(tabs)" || segmentsLength === 0 || !firstSegment;
+
+          if (isBusiness && (inAuthGroup || inTabsGroup)) {
+            // Se for negócio e estiver no grupo de autenticação ou de abas comuns, redireciona para a área de prestador
+            if (isProviderLoading && !loadingTimedOut) {
+              return;
+            }
+            hasNavigated.current = true;
             if (provider) {
               if (provider.status === "pendente" || !provider.isActive) {
                 router.replace("/become-provider" as any);
@@ -93,10 +104,13 @@ function RootLayoutNav() {
             } else {
               router.replace("/register-professional" as any);
             }
-          } else {
+          } else if (!isBusiness && (inAuthGroup || segments[0] === "provider-dashboard")) {
+            // Se não for negócio mas tentar acessar login/painel do prestador, redireciona para a home
+            hasNavigated.current = true;
             router.replace("/(tabs)" as any);
           }
         } catch {
+          hasNavigated.current = true;
           router.replace("/(tabs)" as any);
         } finally {
           // Allow future navigations on dependency changes
@@ -104,15 +118,10 @@ function RootLayoutNav() {
         }
       })();
     }
-  }, [isSignedIn, isLoading, segments, router, shouldRender, provider, isProviderLoading, loadingTimedOut]);
+  }, [isSignedIn, isAuthLoading, isLocationLoading, segments, router, shouldRender, provider, isProviderLoading, loadingTimedOut]);
 
   if (!shouldRender) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#F8F9FA" }}>
-        <ActivityIndicator size="large" color="#25D366" />
-        <Text style={{ marginTop: 16, fontSize: 14, color: "#6B7280" }}>Carregando...</Text>
-      </View>
-    );
+    return <InitialLoadingScreen />;
   }
 
   return (

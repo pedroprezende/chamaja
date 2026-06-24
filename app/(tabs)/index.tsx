@@ -940,6 +940,17 @@ export default function HomeScreen() {
     </View>
   );
 
+  const isInitialLoading = (loadingServices || loadingCats || loadingProviders) && cachedCategories.length === 0;
+
+  if (isInitialLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color="#25D366" />
+        <Text style={{ marginTop: 16, fontSize: 14, color: colors.foreground }}>Carregando dados...</Text>
+      </View>
+    );
+  }
+
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScreenContainer style={{ backgroundColor: colors.background }} edges={["top", "left", "right"]}>
