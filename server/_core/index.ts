@@ -183,12 +183,10 @@ async function startServer() {
         !neighborhood ||
         !description
       ) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            error: "Preencha todos os campos obrigatórios.",
-          });
+        return res.status(400).json({
+          success: false,
+          error: "Preencha todos os campos obrigatórios.",
+        });
       }
 
       const CATEGORY_MAP: Record<string, string> = {
@@ -265,12 +263,10 @@ async function startServer() {
       res.json({ success: true });
     } catch (error: any) {
       console.error("[Web API] Failed to register provider:", error);
-      res
-        .status(500)
-        .json({
-          success: false,
-          error: error.message || "Erro interno no servidor.",
-        });
+      res.status(500).json({
+        success: false,
+        error: error.message || "Erro interno no servidor.",
+      });
     }
   });
 
@@ -297,12 +293,10 @@ async function startServer() {
       }
 
       if (!data.user) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            error: "Falha ao criar conta de autenticação.",
-          });
+        return res.status(400).json({
+          success: false,
+          error: "Falha ao criar conta de autenticação.",
+        });
       }
 
       // 2. Gerar código único de indicação (Primeiro nome + 3 números aleatórios)
@@ -329,12 +323,10 @@ async function startServer() {
       res.json({ success: true, message: "Parceiro cadastrado com sucesso!" });
     } catch (error: any) {
       console.error("[Web API] Erro no cadastro de parceiro:", error);
-      res
-        .status(500)
-        .json({
-          success: false,
-          error: error.message || "Erro interno no servidor.",
-        });
+      res.status(500).json({
+        success: false,
+        error: error.message || "Erro interno no servidor.",
+      });
     }
   });
 
@@ -367,12 +359,10 @@ async function startServer() {
       // 2. Buscar perfil de parceiro no banco de dados
       const partner = await db.getPartnerById(data.user.id);
       if (!partner) {
-        return res
-          .status(404)
-          .json({
-            success: false,
-            error: "Perfil de parceiro não encontrado no banco local.",
-          });
+        return res.status(404).json({
+          success: false,
+          error: "Perfil de parceiro não encontrado no banco local.",
+        });
       }
 
       res.json({
@@ -389,12 +379,10 @@ async function startServer() {
       });
     } catch (error: any) {
       console.error("[Web API] Erro no login de parceiro:", error);
-      res
-        .status(500)
-        .json({
-          success: false,
-          error: error.message || "Erro interno no servidor.",
-        });
+      res.status(500).json({
+        success: false,
+        error: error.message || "Erro interno no servidor.",
+      });
     }
   });
 
@@ -430,12 +418,10 @@ async function startServer() {
       });
     } catch (error: any) {
       console.error("[Web API] Erro ao carregar dashboard do parceiro:", error);
-      res
-        .status(500)
-        .json({
-          success: false,
-          error: error.message || "Erro interno no servidor.",
-        });
+      res.status(500).json({
+        success: false,
+        error: error.message || "Erro interno no servidor.",
+      });
     }
   });
 
@@ -468,12 +454,10 @@ async function startServer() {
       }
 
       if (!data.user) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            error: "Falha ao criar conta de autenticação.",
-          });
+        return res.status(400).json({
+          success: false,
+          error: "Falha ao criar conta de autenticação.",
+        });
       }
 
       // 2. Salvar no banco local (users)
@@ -535,12 +519,10 @@ async function startServer() {
         "[Web API] Erro no cadastro de parceiro de negócio:",
         error,
       );
-      res
-        .status(500)
-        .json({
-          success: false,
-          error: error.message || "Erro interno no servidor.",
-        });
+      res.status(500).json({
+        success: false,
+        error: error.message || "Erro interno no servidor.",
+      });
     }
   });
 
@@ -599,12 +581,10 @@ async function startServer() {
         userProfile.tipo !== "comercio" &&
         userProfile.role !== "admin"
       ) {
-        return res
-          .status(403)
-          .json({
-            success: false,
-            error: "Acesso negado. Apenas parceiros podem acessar esta área.",
-          });
+        return res.status(403).json({
+          success: false,
+          error: "Acesso negado. Apenas parceiros podem acessar esta área.",
+        });
       }
 
       // 3. Buscar perfil de negócio vinculado
@@ -645,12 +625,10 @@ async function startServer() {
       });
     } catch (error: any) {
       console.error("[Web API] Erro no login de parceiro de negócio:", error);
-      res
-        .status(500)
-        .json({
-          success: false,
-          error: error.message || "Erro interno no servidor.",
-        });
+      res.status(500).json({
+        success: false,
+        error: error.message || "Erro interno no servidor.",
+      });
     }
   });
 
@@ -739,12 +717,10 @@ async function startServer() {
       });
     } catch (error: any) {
       console.error("[Web API] Erro ao carregar perfil do parceiro:", error);
-      res
-        .status(500)
-        .json({
-          success: false,
-          error: error.message || "Erro interno no servidor.",
-        });
+      res.status(500).json({
+        success: false,
+        error: error.message || "Erro interno no servidor.",
+      });
     }
   });
 
@@ -868,12 +844,10 @@ async function startServer() {
       });
     } catch (error: any) {
       console.error("[Web API] Erro ao atualizar perfil do parceiro:", error);
-      res
-        .status(500)
-        .json({
-          success: false,
-          error: error.message || "Erro interno no servidor.",
-        });
+      res.status(500).json({
+        success: false,
+        error: error.message || "Erro interno no servidor.",
+      });
     }
   });
 
@@ -922,12 +896,10 @@ async function startServer() {
         "[Web API] Erro ao carregar indicações para o admin:",
         error,
       );
-      res
-        .status(500)
-        .json({
-          success: false,
-          error: error.message || "Erro interno no servidor.",
-        });
+      res.status(500).json({
+        success: false,
+        error: error.message || "Erro interno no servidor.",
+      });
     }
   });
 
@@ -975,12 +947,10 @@ async function startServer() {
       res.json({ success: true });
     } catch (error: any) {
       console.error("[Web API] Erro ao alterar status da indicação:", error);
-      res
-        .status(500)
-        .json({
-          success: false,
-          error: error.message || "Erro interno no servidor.",
-        });
+      res.status(500).json({
+        success: false,
+        error: error.message || "Erro interno no servidor.",
+      });
     }
   });
 

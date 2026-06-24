@@ -126,8 +126,9 @@ export default function Parceiro() {
   const [srvDescription, setSrvDescription] = useState("");
   const [srvPrice, setSrvPrice] = useState("");
 
-  // Check storage on load
+  // Check storage on load and set page title
   useEffect(() => {
+    document.title = "Área de Parceiros XamaJá";
     const token = localStorage.getItem("bp_session_token");
     const savedUser = localStorage.getItem("bp_user_profile");
     if (token && savedUser) {
