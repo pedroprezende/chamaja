@@ -11,6 +11,7 @@ import {
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { useAuth } from "@/lib/auth-context";
@@ -49,7 +50,39 @@ export default function SignupScreen() {
       }
 
       setIsLoading(true);
-      await auth.signUpWithEmail(email, password, name);
+      const result = await auth.signUpWithEmail(email, password, name);
+      
+      if (result.needsConfirmation) {
+        Alert.alert(
+          "Cadastro Realizado!",
+          "Enviamos um e-mail de confirmação. Por favor, acesse seu e-mail e clique no link de ativação para poder realizar o login.",
+          [
+            {
+              text: "Entendi",
+              onPress: () => router.replace("/auth/login" as any),
+            },
+          ]
+        );
+      } else {
+        // Redirecionamento explícito
+        Alert.alert(
+          "Sucesso!",
+          "Conta criada com sucesso!",
+          [
+            {
+              text: "Avançar",
+              onPress: async () => {
+                const isBusinessFlag = await AsyncStorage.getItem("@chamaja_login_as_business");
+                if (isBusinessFlag === "true") {
+                  router.replace("/register-professional" as any);
+                } else {
+                  router.replace("/(tabs)" as any);
+                }
+              },
+            },
+          ]
+        );
+      }
     } catch (error: any) {
       Alert.alert("Erro", error.message || "Não foi possível criar a conta");
     } finally {

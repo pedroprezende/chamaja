@@ -325,7 +325,21 @@ export default function LoginScreen() {
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerTextNormal}>Ainda não tem conta? </Text>
-            <Pressable onPress={() => router.push("/auth/signup" as any)} disabled={isLoading}>
+            <Pressable
+              onPress={async () => {
+                try {
+                  if (isBusiness) {
+                    await AsyncStorage.setItem("@chamaja_login_as_business", "true");
+                  } else {
+                    await AsyncStorage.removeItem("@chamaja_login_as_business");
+                  }
+                } catch (e) {
+                  console.warn("Failed to set business flag on signup navigation", e);
+                }
+                router.push("/auth/signup" as any);
+              }}
+              disabled={isLoading}
+            >
               <Text style={styles.footerTextLink}>Criar conta</Text>
             </Pressable>
           </View>

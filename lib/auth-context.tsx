@@ -34,7 +34,7 @@ export interface AuthContextType {
   signInWithGoogle: () => Promise<void>;
   signInWithMicrosoft: () => Promise<void>;
   signInWithApple: () => Promise<void>;
-  signUpWithEmail: (email: string, password: string, name: string) => Promise<void>;
+  signUpWithEmail: (email: string, password: string, name: string) => Promise<{ needsConfirmation: boolean }>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshRole: () => Promise<void>;
@@ -174,7 +174,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             await removeSessionToken();
           }
         } finally {
-          setIsLoading(false);
+          // Apenas define loading como falso se não for o INITIAL_SESSION, 
+          // que é tratado de forma assíncrona por restoreSession()
+          if (event !== "INITIAL_SESSION") {
+            setIsLoading(false);
+          }
         }
       }
     );
@@ -328,7 +332,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signUpWithEmail = async (email: string, password: string, name: string) => {
+  const translateAuthError = (error: any): Error => {
+    if (!error) return new Error("Erro desconhecido");
+    const msg = error.message || String(error);
+    let translated = msg;
+    if (msg.includes("User already registered") || msg.includes("already registered")) {
+      translated = "Este e-mail já está cadastrado.";
+    } else if (msg.includes("Invalid login credentials") || msg.includes("credentials")) {
+      translated = "E-mail ou senha incorretos.";
+    } else if (msg.includes("Email not confirmed") || msg.includes("confirmed")) {
+      translated = "Por favor, confirme seu e-mail na caixa de entrada antes de fazer login.";
+    } else if (msg.includes("Password should be at least 6 characters")) {
+      translated = "A senha deve ter pelo menos 6 caracteres.";
+    } else if (msg.includes("Invalid signup email") || msg.includes("invalid email")) {
+      translated = "Formato de e-mail inválido.";
+    }
+    return new Error(translated);
+  };
+
+  const signUpWithEmail = async (email: string, password: string, name: string): Promise<{ needsConfirmation: boolean }> => {
     logger.info("AUTH", `Iniciando cadastro por e-mail: ${email}`);
     
     let utmSource: string | null = null;
@@ -350,12 +372,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     if (error) {
       logger.error("AUTH", "Erro no cadastro por e-mail", error);
-      throw error;
+      throw translateAuthError(error);
     }
 
     if (data?.session) {
       await syncUserSession(data.session);
+      return { needsConfirmation: false };
     } else {
+      let signedIn = false;
       try {
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email,
@@ -363,10 +387,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         if (!signInError && signInData?.session) {
           await syncUserSession(signInData.session);
+          signedIn = true;
         }
       } catch (e) {
         logger.warn("AUTH", "Auto-login pós-cadastro falhou ou exige confirmação de e-mail");
       }
+      return { needsConfirmation: !signedIn };
     }
   };
 
@@ -375,7 +401,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       logger.error("AUTH", "Erro no login por e-mail", error);
-      throw error;
+      throw translateAuthError(error);
     }
   };
 
