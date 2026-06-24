@@ -254,7 +254,7 @@ const SVGVerticalBarChart: React.FC<SVGVerticalBarChartProps> = ({ data, color, 
 };
 
 export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => {
-  const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "advertisers" | "reports" | "financial" | "settings">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "advertisers" | "reports" | "financial" | "settings" | "referrals">("dashboard");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
@@ -268,6 +268,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
   const [subscriptionsList, setSubscriptionsList] = useState<any[]>([]);
   const [appSettingsList, setAppSettingsList] = useState<any[]>([]);
   const [activityLogsList, setActivityLogsList] = useState<any[]>([]);
+  const [referralsList, setReferralsList] = useState<any[]>([]);
+  const [partnersList, setPartnersList] = useState<any[]>([]);
+
+  // Search & Filter states for referrals
+  const [searchReferral, setSearchReferral] = useState("");
+  const [filterReferralStatus, setFilterReferralStatus] = useState<"all" | "novo" | "contatado" | "cadastrado" | "ativo">("all");
   
   // Settings tab states
   const [searchLogQuery, setSearchLogQuery] = useState("");
@@ -437,6 +443,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
       
       if (categoriesError) console.warn("Erro ao buscar categorias:", categoriesError);
 
+      // Fetch referrals
+      const { data: referrals, error: referralsError } = await supabase
+        .from("referrals")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (referralsError) console.warn("Erro ao buscar indicações:", referralsError);
+
+      // Fetch partners
+      const { data: partners, error: partnersError } = await supabase
+        .from("partners")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (partnersError) console.warn("Erro ao buscar parceiros:", partnersError);
+
       setUsersList(users || []);
       setProvidersList(providers || []);
       setPaymentsList(payments || []);
@@ -447,6 +469,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
       setAppSettingsList(settings || []);
       setActivityLogsList(activityLogs || []);
       setCategoriesList(categories || []);
+      setReferralsList(referrals || []);
+      setPartnersList(partners || []);
 
       // Initialize settings form states with current database values
       if (settings) {
@@ -1272,6 +1296,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
     }
   };
 
+  const handleUpdateReferralStatus = async (referralId: number, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from("referrals")
+        .update({ status: newStatus })
+        .eq("id", referralId);
+
+      if (error) throw error;
+
+      alert("Status da indicação atualizado com sucesso!");
+      await logAdminActivity("update_referral_status", `Status da indicação ID ${referralId} alterado para ${newStatus}`);
+      await fetchData();
+    } catch (err: any) {
+      console.error("Erro ao atualizar status da indicação:", err);
+      alert(`Erro: ${err.message || "Não foi possível atualizar o status."}`);
+    }
+  };
+
   // Date helper for registrations in the last 7 days
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -1633,6 +1675,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
     return matchesSearch && matchesPlan && matchesStatus;
   });
 
+  // Filtered lists for Indicações (Referrals)
+  const filteredReferrals = referralsList.filter((ref) => {
+    const term = searchReferral.toLowerCase();
+    const partner = partnersList.find(p => p.id === ref.partner_id);
+    const partnerName = partner ? partner.nome.toLowerCase() : "desconhecido";
+    const leadName = ref.nome_indicado.toLowerCase();
+    const phone = ref.telefone_indicado;
+
+    const matchesSearch = 
+      partnerName.includes(term) ||
+      leadName.includes(term) ||
+      phone.includes(term) ||
+      (partner && partner.codigo_indicacao.toLowerCase().includes(term));
+
+    const matchesStatus = filterReferralStatus === "all" || ref.status === filterReferralStatus;
+
+    return matchesSearch && matchesStatus;
+  });
+
   // Helper: Get monthly revenue for past 6 months
   const getMonthlyRevenueData = () => {
     const monthlyRevenue: { [key: string]: number } = {};
@@ -1804,6 +1865,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
               Financeiro
             </button>
           </li>
+          <li className={`sidebar-item ${activeTab === "referrals" ? "active" : ""}`}>
+            <button onClick={() => setActiveTab("referrals")}>
+              <UserCheck size={18} />
+              Indicações ({referralsList.length})
+            </button>
+          </li>
           <li className={`sidebar-item ${activeTab === "settings" ? "active" : ""}`}>
             <button onClick={() => setActiveTab("settings")}>
               <Settings size={18} />
@@ -1839,6 +1906,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
               {activeTab === "reports" && "Gestão de Denúncias"}
               {activeTab === "financial" && "Módulo Financeiro"}
               {activeTab === "settings" && "Configurações Administrativas"}
+              {activeTab === "referrals" && "Controle de Indicações"}
             </h1>
             <p>
               {activeTab === "dashboard" && "Visão analítica em tempo real do ecossistema ChamaJá"}
@@ -1847,6 +1915,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
               {activeTab === "reports" && "Análise de reclamações, moderação de perfis e histórico de resoluções"}
               {activeTab === "financial" && "Acompanhamento de receita, assinaturas de profissionais e status de planos SaaS"}
               {activeTab === "settings" && "Controle de permissões, logs de atividades e parametrização geral do aplicativo"}
+              {activeTab === "referrals" && "Painel administrativo de controle de parceiros e acompanhamento do status de leads indicados"}
             </p>
           </div>
 
@@ -2751,6 +2820,116 @@ export const Dashboard: React.FC<DashboardProps> = ({ adminUser, onLogout }) => 
             </div>
           );
         })()}
+
+        {/* REFERRALS (INDICAÇÕES) TAB */}
+        {activeTab === "referrals" && (
+          <div className="section-container">
+            <div className="section-header" style={{ flexWrap: "wrap", gap: "1rem" }}>
+              <div className="section-title">
+                <h2>Gerenciar Indicações ({filteredReferrals.length})</h2>
+              </div>
+              
+              <div className="filter-row">
+                <div className="search-box">
+                  <Search className="search-icon" size={16} />
+                  <input
+                    type="text"
+                    placeholder="Buscar por parceiro, lead, telefone ou código..."
+                    value={searchReferral}
+                    onChange={(e) => setSearchReferral(e.target.value)}
+                  />
+                </div>
+
+                <select 
+                  className="filter-select"
+                  value={filterReferralStatus}
+                  onChange={(e) => setFilterReferralStatus(e.target.value as any)}
+                >
+                  <option value="all">Todos os Status</option>
+                  <option value="novo">Novo</option>
+                  <option value="contatado">Contatado</option>
+                  <option value="cadastrado">Cadastrado</option>
+                  <option value="ativo">Ativo</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="table-wrapper">
+              {filteredReferrals.length === 0 ? (
+                <div className="empty-state">
+                  <UserCheck className="empty-state-icon" size={32} style={{ color: "var(--text-muted)" }} />
+                  <p>Nenhuma indicação correspondente aos filtros.</p>
+                </div>
+              ) : (
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Parceiro</th>
+                      <th>Código</th>
+                      <th>Lead Indicado</th>
+                      <th>Telefone</th>
+                      <th>Data de Criação</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredReferrals.map((ref) => {
+                      const partner = partnersList.find(p => p.id === ref.partner_id);
+                      const partnerName = partner ? partner.nome : "Desconhecido";
+                      const partnerCode = partner ? partner.codigo_indicacao : ref.codigo_indicacao;
+                      
+                      return (
+                        <tr key={ref.id}>
+                          <td>
+                            <div style={{ fontWeight: 600 }}>{partnerName}</div>
+                            <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{partner?.email || "-"}</div>
+                          </td>
+                          <td>
+                            <span className="badge badge-admin" style={{ fontFamily: "monospace" }}>
+                              {partnerCode}
+                            </span>
+                          </td>
+                          <td style={{ fontWeight: 600 }}>{ref.nome_indicado}</td>
+                          <td style={{ fontFamily: "monospace" }}>{ref.telefone_indicado}</td>
+                          <td>{formatDate(ref.created_at || ref.createdAt)}</td>
+                          <td>
+                            <select 
+                              className="filter-select"
+                              style={{ 
+                                fontSize: "0.8rem", 
+                                padding: "0.3rem 0.5rem", 
+                                width: "auto",
+                                backgroundColor: 
+                                  ref.status === "ativo" ? "rgba(37, 211, 102, 0.15)" :
+                                  ref.status === "cadastrado" ? "rgba(168, 85, 247, 0.15)" :
+                                  ref.status === "contatado" ? "rgba(245, 158, 11, 0.15)" : "rgba(59, 130, 246, 0.15)",
+                                color: 
+                                  ref.status === "ativo" ? "var(--accent-primary)" :
+                                  ref.status === "cadastrado" ? "var(--accent-purple)" :
+                                  ref.status === "contatado" ? "var(--accent-orange)" : "var(--accent-blue)",
+                                borderColor: 
+                                  ref.status === "ativo" ? "rgba(37, 211, 102, 0.2)" :
+                                  ref.status === "cadastrado" ? "rgba(168, 85, 247, 0.2)" :
+                                  ref.status === "contatado" ? "rgba(245, 158, 11, 0.2)" : "rgba(59, 130, 246, 0.2)"
+                              }}
+                              value={ref.status}
+                              onChange={(e) => handleUpdateReferralStatus(ref.id, e.target.value)}
+                            >
+                              <option value="novo" style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }}>Novo</option>
+                              <option value="contatado" style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }}>Contatado</option>
+                              <option value="cadastrado" style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }}>Cadastrado</option>
+                              <option value="ativo" style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }}>Ativo</option>
+                            </select>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* SETTINGS (CONFIGURAÇÕES) TAB */}
         {activeTab === "settings" && (() => {

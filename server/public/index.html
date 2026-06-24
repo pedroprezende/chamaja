@@ -7,6 +7,13 @@
     if (window.location.hash && (window.location.hash.indexOf('access_token=') !== -1 || window.location.hash.indexOf('error=') !== -1)) {
       window.location.replace('/app/' + window.location.hash);
     }
+
+    // Capturar o código de indicação da URL (?ref=...) e salvar no localStorage
+    const urlParams = new URLSearchParams(window.location.search);
+    const refCode = urlParams.get('ref');
+    if (refCode) {
+      localStorage.setItem('ref_code', refCode);
+    }
   </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">

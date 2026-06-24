@@ -15,6 +15,8 @@ import {
   admins,
   businessPermissions,
   InsertBusinessPermission,
+  partners,
+  referrals,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -426,4 +428,64 @@ export async function createAppEvent(data: typeof appEvents.$inferInsert): Promi
     console.error("[Database] Failed to insert app event:", error);
   }
 }
+
+// ── Partners & Referrals ──────────────────────────────────────────────────────
+export async function createPartner(data: typeof partners.$inferInsert): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(partners).values(data);
+}
+
+export async function getPartnerById(id: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(partners).where(eq(partners.id, id)).limit(1);
+  return result[0];
+}
+
+export async function getPartnerByCode(code: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(partners).where(eq(partners.codigoIndicacao, code)).limit(1);
+  return result[0];
+}
+
+export async function getReferralsByPartnerId(partnerId: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(referrals).where(eq(referrals.partnerId, partnerId)).orderBy(desc(referrals.createdAt));
+}
+
+export async function createReferral(data: typeof referrals.$inferInsert) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(referrals).values(data);
+}
+
+export async function getAllReferrals() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  // Consulta customizada com join para exibir o nome do parceiro
+  return db
+    .select({
+      id: referrals.id,
+      codigoIndicacao: referrals.codigoIndicacao,
+      nomeIndicado: referrals.nomeIndicado,
+      telefoneIndicado: referrals.telefoneIndicado,
+      status: referrals.status,
+      createdAt: referrals.createdAt,
+      partnerName: partners.nome,
+    })
+    .from(referrals)
+    .innerJoin(partners, eq(referrals.partnerId, partners.id))
+    .orderBy(desc(referrals.createdAt));
+}
+
+export async function updateReferralStatus(id: number, status: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(referrals).set({ status }).where(eq(referrals.id, id));
+}
+
 

@@ -11,6 +11,13 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { getPrivacyPolicyHtml, getDeletionPolicyHtml } from "./privacy";
 import * as db from "../db";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.EXPO_PUBLIC_SUPABASE_URL || "",
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || ""
+);
+
  
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -133,7 +140,7 @@ async function startServer() {
   // Rota de Cadastro de Prestador via Web
   app.post("/api/web-register-provider", async (req, res) => {
     try {
-      const { name, email, phone, categoryId, otherCategory, city, neighborhood, description } = req.body;
+      const { name, email, phone, categoryId, otherCategory, city, neighborhood, description, refCode } = req.body;
 
       if (!name || !email || !phone || !categoryId || !city || !neighborhood || !description) {
         return res.status(400).json({ success: false, error: "Preencha todos os campos obrigatórios." });
@@ -181,12 +188,226 @@ async function startServer() {
       });
 
       console.log(`[Web API] Provider registered successfully: ${name} (${providerId}) in category: ${finalCategory}`);
+
+      // Se houver código de indicação, associa o lead ao parceiro
+      if (refCode) {
+        try {
+          const partner = await db.getPartnerByCode(refCode);
+          if (partner) {
+            await db.createReferral({
+              partnerId: partner.id,
+              codigoIndicacao: refCode,
+              nomeIndicado: name,
+              telefoneIndicado: phone,
+              status: "novo",
+            });
+            console.log(`[Web API] Lead/referral registered successfully for partner: ${partner.nome} (${refCode})`);
+          } else {
+            console.warn(`[Web API] Partner with code ${refCode} not found`);
+          }
+        } catch (refErr) {
+          console.error("[Web API] Failed to create referral entry:", refErr);
+        }
+      }
+
       res.json({ success: true });
     } catch (error: any) {
       console.error("[Web API] Failed to register provider:", error);
       res.status(500).json({ success: false, error: error.message || "Erro interno no servidor." });
     }
   });
+
+  // ── Rotas do Sistema de Parceiros ───────────────────────────────────────────
+  
+  // Registro de Parceiro
+  app.post("/api/partners/register", async (req, res) => {
+    try {
+      const { nome, email, telefone, cidade, senha } = req.body;
+      if (!nome || !email || !telefone || !cidade || !senha) {
+        return res.status(400).json({ success: false, error: "Todos os campos são obrigatórios." });
+      }
+
+      // 1. Criar usuário no Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password: senha,
+      });
+
+      if (error) {
+        return res.status(400).json({ success: false, error: error.message });
+      }
+
+      if (!data.user) {
+        return res.status(400).json({ success: false, error: "Falha ao criar conta de autenticação." });
+      }
+
+      // 2. Gerar código único de indicação (Primeiro nome + 3 números aleatórios)
+      const firstName = nome.trim().split(" ")[0].normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z]/g, "");
+      const randomNum = Math.floor(100 + Math.random() * 900);
+      const codigoIndicacao = `${firstName}${randomNum}`;
+
+      // 3. Salvar perfil de parceiro no banco de dados local
+      await db.createPartner({
+        id: data.user.id,
+        nome,
+        email,
+        telefone,
+        cidade,
+        codigoIndicacao,
+      });
+
+      res.json({ success: true, message: "Parceiro cadastrado com sucesso!" });
+    } catch (error: any) {
+      console.error("[Web API] Erro no cadastro de parceiro:", error);
+      res.status(500).json({ success: false, error: error.message || "Erro interno no servidor." });
+    }
+  });
+
+  // Login de Parceiro
+  app.post("/api/partners/login", async (req, res) => {
+    try {
+      const { email, senha } = req.body;
+      if (!email || !senha) {
+        return res.status(400).json({ success: false, error: "E-mail e senha são obrigatórios." });
+      }
+
+      // 1. Login no Supabase Auth
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password: senha,
+      });
+
+      if (error) {
+        return res.status(400).json({ success: false, error: error.message });
+      }
+
+      if (!data.user || !data.session) {
+        return res.status(400).json({ success: false, error: "Falha ao iniciar sessão." });
+      }
+
+      // 2. Buscar perfil de parceiro no banco de dados
+      const partner = await db.getPartnerById(data.user.id);
+      if (!partner) {
+        return res.status(404).json({ success: false, error: "Perfil de parceiro não encontrado no banco local." });
+      }
+
+      res.json({
+        success: true,
+        sessionToken: data.session.access_token,
+        partner: {
+          id: partner.id,
+          nome: partner.nome,
+          email: partner.email,
+          telefone: partner.telefone,
+          cidade: partner.cidade,
+          codigoIndicacao: partner.codigoIndicacao,
+        }
+      });
+    } catch (error: any) {
+      console.error("[Web API] Erro no login de parceiro:", error);
+      res.status(500).json({ success: false, error: error.message || "Erro interno no servidor." });
+    }
+  });
+
+  // Dashboard de Indicações do Parceiro
+  app.get("/api/partners/dashboard", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ success: false, error: "Não autorizado. Token ausente." });
+      }
+
+      const token = authHeader.split(" ")[1];
+
+      // 1. Validar token no Supabase
+      const { data: { user }, error } = await supabase.auth.getUser(token);
+      if (error || !user) {
+        return res.status(401).json({ success: false, error: "Sessão inválida ou expirada." });
+      }
+
+      // 2. Buscar indicações associadas ao parceiro
+      const referralsList = await db.getReferralsByPartnerId(user.id);
+
+      res.json({
+        success: true,
+        referrals: referralsList,
+      });
+    } catch (error: any) {
+      console.error("[Web API] Erro ao carregar dashboard do parceiro:", error);
+      res.status(500).json({ success: false, error: error.message || "Erro interno no servidor." });
+    }
+  });
+
+  // ── Rotas do Painel Administrativo de Indicações ───────────────────────────
+  
+  // Listar todas as indicações (Admin)
+  app.get("/api/admin/referrals", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ success: false, error: "Não autorizado." });
+      }
+
+      const token = authHeader.split(" ")[1];
+      const { data: { user }, error } = await supabase.auth.getUser(token);
+      if (error || !user) {
+        return res.status(401).json({ success: false, error: "Sessão inválida." });
+      }
+
+      // Verificar se é admin
+      const userProfile = await db.getUserByOpenId(user.id);
+      const isAdmin = userProfile?.role === "admin" || userProfile?.email === "pedroprezende33@gmail.com";
+      
+      if (!isAdmin) {
+        return res.status(403).json({ success: false, error: "Acesso não autorizado." });
+      }
+
+      const allReferrals = await db.getAllReferrals();
+      res.json({
+        success: true,
+        referrals: allReferrals,
+      });
+    } catch (error: any) {
+      console.error("[Web API] Erro ao carregar indicações para o admin:", error);
+      res.status(500).json({ success: false, error: error.message || "Erro interno no servidor." });
+    }
+  });
+
+  // Alterar Status da Indicação (Admin)
+  app.post("/api/admin/referrals/status", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ success: false, error: "Não autorizado." });
+      }
+
+      const token = authHeader.split(" ")[1];
+      const { data: { user }, error } = await supabase.auth.getUser(token);
+      if (error || !user) {
+        return res.status(401).json({ success: false, error: "Sessão inválida." });
+      }
+
+      // Verificar se é admin
+      const userProfile = await db.getUserByOpenId(user.id);
+      const isAdmin = userProfile?.role === "admin" || userProfile?.email === "pedroprezende33@gmail.com";
+      
+      if (!isAdmin) {
+        return res.status(403).json({ success: false, error: "Acesso não autorizado." });
+      }
+
+      const { id, status } = req.body;
+      if (!id || !status) {
+        return res.status(400).json({ success: false, error: "ID e status são obrigatórios." });
+      }
+
+      await db.updateReferralStatus(Number(id), status);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("[Web API] Erro ao alterar status da indicação:", error);
+      res.status(500).json({ success: false, error: error.message || "Erro interno no servidor." });
+    }
+  });
+
 
   // Fallback para rotas SPA do aplicativo Expo Web
   app.get("/app*", (req, res) => {

@@ -83,6 +83,7 @@ document.addEventListener("DOMContentLoaded", () => {
       setLoading(true);
 
       try {
+        const refCode = localStorage.getItem("ref_code") || undefined;
         const response = await fetch("/api/web-register-provider", {
           method: "POST",
           headers: {
@@ -97,6 +98,7 @@ document.addEventListener("DOMContentLoaded", () => {
             city,
             neighborhood,
             description,
+            refCode,
           }),
         });
 

@@ -332,5 +332,40 @@ export const businessPermissions = pgTable("business_permissions", {
 export type BusinessPermission = typeof businessPermissions.$inferSelect;
 export type InsertBusinessPermission = typeof businessPermissions.$inferInsert;
 
+// ── Partners ──────────────────────────────────────────────────────────────────
+export const partners = pgTable("partners", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  nome: text("nome").notNull(),
+  email: varchar("email", { length: 320 }).notNull().unique(),
+  telefone: varchar("telefone", { length: 50 }).notNull(),
+  cidade: varchar("cidade", { length: 255 }).notNull(),
+  codigoIndicacao: varchar("codigo_indicacao", { length: 50 }).notNull().unique(),
+  comissao: real("comissao").default(0),
+  pagamentoComissao: real("pagamento_comissao").default(0),
+  planoAssociado: varchar("plano_associado", { length: 50 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type Partner = typeof partners.$inferSelect;
+export type InsertPartner = typeof partners.$inferInsert;
+
+// ── Referrals ─────────────────────────────────────────────────────────────────
+export const referrals = pgTable("referrals", {
+  id: serial("id").primaryKey(),
+  partnerId: varchar("partner_id", { length: 64 })
+    .notNull()
+    .references(() => partners.id, { onDelete: "cascade" }),
+  codigoIndicacao: varchar("codigo_indicacao", { length: 50 }).notNull(),
+  nomeIndicado: text("nome_indicado").notNull(),
+  telefoneIndicado: varchar("telefone_indicado", { length: 50 }).notNull(),
+  status: varchar("status", { length: 50 }).default("novo").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type Referral = typeof referrals.$inferSelect;
+export type InsertReferral = typeof referrals.$inferInsert;
+
+
 
 
