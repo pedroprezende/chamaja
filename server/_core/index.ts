@@ -43,6 +43,7 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 
 async function startServer() {
   const app = express();
+  app.set("trust proxy", true);
   const server = createServer(app);
 
   // Enable CORS for allowed origins only
@@ -120,7 +121,10 @@ async function startServer() {
     const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || "";
     const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "";
     const host = req.get("host") || "";
-    const protocol = req.protocol;
+    let protocol = req.protocol;
+    if (host.includes("xamaja.com.br")) {
+      protocol = "https";
+    }
     const baseUrl = `${protocol}://${host}`;
     const appRedirect = req.query.app_redirect as string | undefined;
 
