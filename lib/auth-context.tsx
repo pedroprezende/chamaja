@@ -12,6 +12,7 @@ import { supabase } from "./supabase";
 import { Platform } from "react-native";
 import { setSessionToken, removeSessionToken } from "./_core/auth";
 import { logger } from "./logger";
+import { getApiBaseUrl } from "@/constants/oauth";
 import * as AppleAuthentication from "expo-apple-authentication";
 import * as Crypto from "expo-crypto";
 
@@ -352,39 +353,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           ? `${window.location.origin}/app/oauth/callback`
           : Linking.createURL("/oauth/callback");
 
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo,
-          skipBrowserRedirect: Platform.OS !== "web",
-        },
-      });
+      if (Platform.OS === "web") {
+        // Web: use Supabase directly with PKCE
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider,
+          options: { redirectTo, skipBrowserRedirect: false },
+        });
+        if (error) throw error;
+        return;
+      }
 
-      if (error) throw error;
+      // Native: use server proxy to avoid Supabase dashboard redirect URL issues
+      const serverUrl = getApiBaseUrl();
+      const authUrl = `${serverUrl}/api/auth/google?app_redirect=${encodeURIComponent(redirectTo)}`;
+      const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectTo);
+      logger.info("AUTH", `Resultado do WebBrowser: ${result.type}`);
 
-      if (Platform.OS !== "web" && data?.url) {
-        const result = await WebBrowser.openAuthSessionAsync(
-          data.url,
-          redirectTo,
-        );
-        logger.info("AUTH", `Resultado do WebBrowser: ${result.type}`);
+      if (result.type === "success" && result.url) {
+        const url = result.url.replace("#", "?");
+        const params = Linking.parse(url).queryParams;
+        const accessToken = params?.access_token as string;
+        const refreshToken = params?.refresh_token as string;
 
-        if (result.type === "success" && result.url) {
-          const url = result.url.replace("#", "?");
-          const params = Linking.parse(url).queryParams;
-          const accessToken = params?.access_token as string;
-          const refreshToken = params?.refresh_token as string;
-
-          if (accessToken && refreshToken) {
-            logger.info(
-              "AUTH",
-              "Token recebido via OAuth, estabelecendo sessão...",
-            );
-            await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken,
-            });
-          }
+        if (accessToken && refreshToken) {
+          logger.info(
+            "AUTH",
+            "Token recebido via OAuth, estabelecendo sessao...",
+          );
+          await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
         }
       }
     } catch (error) {

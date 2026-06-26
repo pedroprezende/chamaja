@@ -113,30 +113,29 @@ async function startServer() {
     });
   });
 
-  // Google OAuth initiation — redirects to Supabase OAuth
-  // The callback goes to Supabase's default redirect, then to /api/auth/google-callback-server
+  // Google OAuth initiation — proxies through server so Supabase only needs server URL
+  // app_redirect: deep link for native apps (e.g. exp://192.168.x.x:8081)
   app.get("/api/auth/google", (req, res) => {
     const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || "";
     const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "";
     const host = req.get("host");
     const protocol = req.protocol;
     const baseUrl = `${protocol}://${host}`;
-    // Supabase will redirect to this URL after Google auth
-    const callbackUrl = `${baseUrl}/api/auth/google-callback-server`;
+    const appRedirect = req.query.app_redirect as string | undefined;
+
+    const callbackParams = appRedirect ? `?app_redirect=${encodeURIComponent(appRedirect)}` : "";
+    const callbackUrl = `${baseUrl}/api/auth/google-callback-server${callbackParams}`;
+
     const oauthUrl = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(callbackUrl)}&apikey=${supabaseAnonKey}`;
     res.redirect(oauthUrl);
   });
 
-  // Server-side Google OAuth callback — receives tokens from Supabase, creates session, sets cookie
+  // Server-side Google OAuth callback — extracts tokens and redirects appropriately
   app.get("/api/auth/google-callback-server", async (req, res) => {
     try {
-      // Supabase redirects here with tokens in hash fragment
-      // But since this is a server endpoint, we need to handle the HTML page that extracts tokens
-      const host = req.get("host");
-      const protocol = req.protocol;
-      const baseUrl = `${protocol}://${host}`;
+      const appRedirect = req.query.app_redirect as string | undefined;
 
-      // Return an HTML page that extracts tokens from hash and posts to our callback
+      // Return an HTML page that extracts tokens from hash fragment
       res.send(`<!DOCTYPE html>
 <html><head><title>Autenticando...</title></head>
 <body>
@@ -146,25 +145,35 @@ async function startServer() {
   var params = new URLSearchParams(hash);
   var accessToken = params.get('access_token');
   var refreshToken = params.get('refresh_token');
-  if (accessToken && refreshToken) {
-    fetch('/api/auth/google-callback', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ access_token: accessToken, refresh_token: refreshToken })
-    }).then(function(r) { return r.json(); }).then(function(data) {
-      if (data.success) {
-        localStorage.setItem('bp_session_token', data.sessionToken);
-        localStorage.setItem('bp_user_profile', JSON.stringify(data.user));
-        window.location.href = '/parceiro';
-      } else {
-        window.location.href = '/parceiro?auth_error=' + encodeURIComponent(data.error || 'Falha na autenticação');
-      }
-    }).catch(function() {
-      window.location.href = '/parceiro?auth_error=Erro+de+conexao';
-    });
-  } else {
+  if (!accessToken || !refreshToken) {
     window.location.href = '/parceiro?auth_error=Tokens+nao+recebidos';
+    return;
   }
+
+  var appRedirect = ${JSON.stringify(appRedirect || null)};
+
+  if (appRedirect) {
+    // Native app — redirect to deep link with tokens in hash
+    window.location.href = appRedirect + '#access_token=' + encodeURIComponent(accessToken) + '&refresh_token=' + encodeURIComponent(refreshToken);
+    return;
+  }
+
+  // Web — exchange tokens via POST and save to localStorage
+  fetch('/api/auth/google-callback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ access_token: accessToken, refresh_token: refreshToken })
+  }).then(function(r) { return r.json(); }).then(function(data) {
+    if (data.success) {
+      localStorage.setItem('bp_session_token', data.sessionToken);
+      localStorage.setItem('bp_user_profile', JSON.stringify(data.user));
+      window.location.href = '/parceiro';
+    } else {
+      window.location.href = '/parceiro?auth_error=' + encodeURIComponent(data.error || 'Falha na autenticacao');
+    }
+  }).catch(function() {
+    window.location.href = '/parceiro?auth_error=Erro+de+conexao';
+  });
 })();
 </script>
 <p>Autenticando com Google...</p>
