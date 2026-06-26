@@ -75,9 +75,9 @@ interface CategoryOption {
 }
 
 export default function Parceiro() {
-  // Page states: 'select' | 'login' | 'register' | 'dashboard'
+  // Page states: 'select' | 'login' | 'register' | 'dashboard' | 'complete-profile'
   const [view, setView] = useState<
-    "select" | "login" | "register" | "dashboard"
+    "select" | "login" | "register" | "dashboard" | "complete-profile"
   >("select");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -102,6 +102,13 @@ export default function Parceiro() {
   const [regType, setRegType] = useState<"prestador" | "comercio" | "cliente">(
     "prestador"
   );
+
+  // Complete profile fields
+  const [completeType, setCompleteType] = useState<"prestador" | "comercio">(
+    "prestador"
+  );
+  const [completeWhatsapp, setCompleteWhatsapp] = useState("");
+  const [completeCity, setCompleteCity] = useState("");
 
   // Dashboard active tab
   const [activeTab, setActiveTab] = useState<
@@ -146,13 +153,26 @@ export default function Parceiro() {
       window.history.replaceState(null, "", window.location.pathname);
     }
 
+    const completeRegParam = urlParams.get("complete_registration");
+    if (completeRegParam) {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+
     // Check for existing session
     const token = localStorage.getItem("bp_session_token");
     const savedUser = localStorage.getItem("bp_user_profile");
     if (token && savedUser) {
+      const parsedUser = JSON.parse(savedUser);
       setSessionToken(token);
-      setUser(JSON.parse(savedUser));
-      setView("dashboard");
+      setUser(parsedUser);
+      
+      if (parsedUser.tipo === "prestador" || parsedUser.tipo === "comercio") {
+        setView("dashboard");
+      } else if (completeRegParam || parsedUser.tipo === "cliente") {
+        setView("complete-profile");
+      } else {
+        setView("dashboard");
+      }
     }
   }, []);
 
@@ -283,6 +303,52 @@ export default function Parceiro() {
     } catch (err) {
       console.error("Login error:", err);
       toast.error("Erro de conexão ao fazer login.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCompleteProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!sessionToken) {
+      toast.error("Sessão expirada. Faça login novamente.");
+      setView("login");
+      return;
+    }
+    if (!completeWhatsapp || !completeCity) {
+      toast.error("Por favor, preencha todos os campos obrigatórios.");
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/business-partner/complete-registration", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionToken}`,
+        },
+        body: JSON.stringify({
+          type: completeType,
+          whatsapp: completeWhatsapp,
+          city: completeCity,
+        }),
+      });
+      const result = await response.json();
+      if (response.ok && result.success) {
+        toast.success("Cadastro concluído com sucesso!");
+        if (user) {
+          const updatedUser = { ...user, tipo: completeType };
+          setUser(updatedUser);
+          localStorage.setItem("bp_user_profile", JSON.stringify(updatedUser));
+        }
+        await fetchProfile();
+        setView("dashboard");
+      } else {
+        toast.error(result.error || "Erro ao completar cadastro.");
+      }
+    } catch (err) {
+      console.error("Error completing registration:", err);
+      toast.error("Erro de conexão ao salvar informações.");
     } finally {
       setIsLoading(false);
     }
@@ -639,6 +705,124 @@ export default function Parceiro() {
                     <span>Criar conta</span>
                     <ArrowRight className="h-4 w-4" />
                   </Button>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Complete Profile View */}
+        {view === "complete-profile" && (
+          <section className="flex-1 py-16 bg-background flex items-center justify-center">
+            <div className="container mx-auto px-4 max-w-md space-y-6">
+              <div className="bg-card border border-border rounded-3xl p-8 shadow-2xl space-y-6">
+                <div className="space-y-2 text-center">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 border border-primary/20 rounded-full mb-2">
+                    <Sparkles className="h-3.5 w-3.5 text-primary animate-pulse" />
+                    <span className="text-primary text-[10px] font-bold uppercase tracking-wider">
+                      Google Conectado
+                    </span>
+                  </div>
+                  <h1 className="text-3xl font-black text-white">
+                    Completar Cadastro
+                  </h1>
+                  <p className="text-sm text-muted-foreground">
+                    Para acessar o painel de parceiros, precisamos de mais alguns dados do seu negócio.
+                  </p>
+                </div>
+
+                {/* Partner Type Selector cards */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div
+                    onClick={() => setCompleteType("prestador")}
+                    className={`cursor-pointer rounded-2xl p-4 border flex flex-col items-center gap-2 text-center transition-all duration-300 ${
+                      completeType === "prestador"
+                        ? "border-primary bg-primary/5 text-white shadow-lg shadow-primary/5"
+                        : "border-border bg-background text-zinc-400 hover:border-zinc-700"
+                    }`}
+                  >
+                    <Wrench
+                      className={`h-6 w-6 transition-colors duration-300 ${completeType === "prestador" ? "text-primary" : "text-zinc-500"}`}
+                    />
+                    <span className="text-xs font-bold leading-tight">
+                      Prestador de Serviços
+                    </span>
+                  </div>
+                  <div
+                    onClick={() => setCompleteType("comercio")}
+                    className={`cursor-pointer rounded-2xl p-4 border flex flex-col items-center gap-2 text-center transition-all duration-300 ${
+                      completeType === "comercio"
+                        ? "border-primary bg-primary/5 text-white shadow-lg shadow-primary/5"
+                        : "border-border bg-background text-zinc-400 hover:border-zinc-700"
+                    }`}
+                  >
+                    <Store
+                      className={`h-6 w-6 transition-colors duration-300 ${completeType === "comercio" ? "text-primary" : "text-zinc-500"}`}
+                    />
+                    <span className="text-xs font-bold leading-tight">
+                      Comércio / Loja
+                    </span>
+                  </div>
+                </div>
+
+                <form onSubmit={handleCompleteProfile} className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-white uppercase tracking-wider">
+                      WhatsApp / Celular
+                    </label>
+                    <div className="relative">
+                      <Phone className="absolute left-4 top-3.5 h-4.5 w-4.5 text-zinc-500" />
+                      <Input
+                        type="tel"
+                        placeholder="Ex: (11) 99999-9999"
+                        required
+                        value={completeWhatsapp}
+                        onChange={e => setCompleteWhatsapp(e.target.value)}
+                        className="bg-background border-border pl-12 h-12 rounded-xl focus-visible:ring-primary focus-visible:border-primary text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-white uppercase tracking-wider">
+                      Cidade de Atuação
+                    </label>
+                    <div className="relative">
+                      <MapPin className="absolute left-4 top-3.5 h-4.5 w-4.5 text-zinc-500" />
+                      <Input
+                        type="text"
+                        placeholder="Ex: São Paulo"
+                        required
+                        value={completeCity}
+                        onChange={e => setCompleteCity(e.target.value)}
+                        className="bg-background border-border pl-12 h-12 rounded-xl focus-visible:ring-primary focus-visible:border-primary text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full bg-primary text-primary-foreground font-black uppercase tracking-wider h-12 rounded-xl mt-4 hover:bg-primary/95 transition shadow-lg shadow-primary/10 disabled:opacity-70 flex items-center justify-center gap-2"
+                  >
+                    {isLoading ? (
+                      <span className="loader-btn w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></span>
+                    ) : (
+                      <>
+                        <span>Concluir Cadastro</span>
+                        <ArrowRight className="h-4 w-4" />
+                      </>
+                    )}
+                  </Button>
+                </form>
+
+                <div className="text-center pt-2">
+                  <button
+                    onClick={handleLogout}
+                    className="text-xs text-red-400 hover:text-red-300 font-bold transition hover:underline"
+                  >
+                    Sair da conta
+                  </button>
                 </div>
               </div>
             </div>

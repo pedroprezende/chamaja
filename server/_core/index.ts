@@ -174,7 +174,7 @@ async function startServer() {
   var accessToken = params.get('access_token');
   var refreshToken = params.get('refresh_token');
   if (!accessToken || !refreshToken) {
-    window.location.href = '/parceiro?auth_error=Tokens+nao+recebidos';
+    window.location.href = '/parceiros?auth_error=Tokens+nao+recebidos';
     return;
   }
 
@@ -193,12 +193,16 @@ async function startServer() {
     if (data.success) {
       localStorage.setItem('bp_session_token', data.sessionToken);
       localStorage.setItem('bp_user_profile', JSON.stringify(data.user));
-      window.location.href = '/parceiro';
+      if (data.user && (data.user.tipo === 'prestador' || data.user.tipo === 'comercio')) {
+        window.location.href = '/parceiros';
+      } else {
+        window.location.href = '/parceiros?complete_registration=true';
+      }
     } else {
-      window.location.href = '/parceiro?auth_error=' + encodeURIComponent(data.error || 'Falha na autenticacao');
+      window.location.href = '/parceiros?auth_error=' + encodeURIComponent(data.error || 'Falha na autenticacao');
     }
   }).catch(function() {
-    window.location.href = '/parceiro?auth_error=Erro+de+conexao';
+    window.location.href = '/parceiros?auth_error=Erro+de+conexao';
   });
 })();
 </script>
@@ -228,6 +232,22 @@ async function startServer() {
 
       // Find or create user profile
       let userProfile = await db.getUserByOpenId(data.user.id);
+      if (!userProfile && data.user.email) {
+        const existingUser = await db.getUserByEmail(data.user.email);
+        if (existingUser) {
+          if (existingUser.openId !== data.user.id) {
+            // Delete the dummy user with the new openId if it exists to avoid unique constraint violations
+            const dummyUser = await db.getUserByOpenId(data.user.id);
+            if (dummyUser) {
+              await db.deleteUserFully(data.user.id);
+            }
+            // Link the existing account
+            await db.updateUserOpenId(existingUser.openId, data.user.id);
+          }
+          userProfile = await db.getUserByOpenId(data.user.id);
+        }
+      }
+
       if (!userProfile) {
         const name = data.user.user_metadata?.full_name || data.user.email?.split("@")[0] || "Usuário";
         await db.upsertUser({
@@ -1123,6 +1143,138 @@ async function startServer() {
       });
     } catch (error: any) {
       console.error("[Web API] Erro ao carregar perfil do parceiro:", error);
+      res.status(500).json({
+        success: false,
+        error: error.message || "Erro interno no servidor.",
+      });
+    }
+  });
+
+  // Completar Cadastro de Parceiro de Negócio (vindo do Google OAuth que inicia como cliente)
+  app.put("/api/business-partner/complete-registration", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res
+          .status(401)
+          .json({ success: false, error: "Não autorizado. Token ausente." });
+      }
+
+      const token = authHeader.split(" ")[1];
+
+      // 1. Validar token no Supabase
+      const {
+        data: { user: authUser },
+        error,
+      } = await supabase.auth.getUser(token);
+      if (error || !authUser) {
+        return res
+          .status(401)
+          .json({ success: false, error: "Sessão inválida ou expirada." });
+      }
+
+      const { type, whatsapp, city } = req.body;
+      if (!type || !whatsapp || !city) {
+        return res
+          .status(400)
+          .json({ success: false, error: "Todos os campos são obrigatórios." });
+      }
+
+      if (type !== "prestador" && type !== "comercio") {
+        return res
+          .status(400)
+          .json({ success: false, error: "Tipo de parceiro inválido." });
+      }
+
+      // 2. Buscar usuário localmente
+      const userProfile = await db.getUserByOpenId(authUser.id);
+      if (!userProfile) {
+        return res
+          .status(404)
+          .json({ success: false, error: "Perfil de usuário não encontrado." });
+      }
+
+      // 3. Atualizar dados do usuário (users)
+      await db.updateUserProfile(authUser.id, {
+        tipo: type,
+        phone: whatsapp,
+      });
+
+      // 4. Atualizar/criar parceiro (partners)
+      let partnerProfile = await db.getPartnerById(authUser.id);
+      if (partnerProfile) {
+        await db.updatePartner(authUser.id, {
+          telefone: whatsapp,
+          cidade: city,
+        });
+      } else {
+        const nameToUse = userProfile.name || authUser.email?.split("@")[0] || "PARCEIRO";
+        const firstName = nameToUse
+          .trim()
+          .split(" ")[0]
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toUpperCase()
+          .replace(/[^A-Z]/g, "");
+        const randomNum = Math.floor(100 + Math.random() * 900);
+        const codigoIndicacao = `${firstName}${randomNum}`;
+
+        await db.createPartner({
+          id: authUser.id,
+          nome: nameToUse,
+          email: userProfile.email || authUser.email || "",
+          telefone: whatsapp,
+          cidade: city,
+          codigoIndicacao,
+        });
+      }
+
+      // 5. Salvar/Atualizar perfil de negócio (providers) se ainda não existir
+      let businessProfile = await db.getProviderByUserId(authUser.id);
+      if (!businessProfile) {
+        const providerId = `prov_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        await db.createProvider({
+          id: providerId,
+          userId: authUser.id,
+          name: userProfile.name || "Negócio Parceiro",
+          phone: whatsapp,
+          whatsapp,
+          city,
+          isActive: false, // Requer aprovação do admin
+          status: "pendente",
+          businessType: type === "comercio" ? "comercio" : "servicos",
+          categoryId: type === "comercio" ? "comercios" : null,
+          category: type === "comercio" ? "Comércios" : null,
+          services: "[]",
+          rating: 5,
+          ratingCount: 0,
+          priceLevel: 2,
+          onlineStatus: false,
+        });
+
+        // 6. Salvar permissões do negócio (businessPermissions)
+        await db.createBusinessPermission({
+          businessId: providerId,
+          maxServicos: 1,
+          status: "pendente",
+        });
+
+        // Log event
+        await db.createAppEvent({
+          tipoEvento: "cadastro",
+          valor: `parceiro_completou_${type}`,
+          cidade: city,
+          prestadorId: providerId,
+          usuarioId: authUser.id,
+        });
+      }
+
+      res.json({
+        success: true,
+        message: "Cadastro de parceiro concluído com sucesso!",
+      });
+    } catch (error: any) {
+      console.error("[Web API] Erro ao completar cadastro de parceiro:", error);
       res.status(500).json({
         success: false,
         error: error.message || "Erro interno no servidor.",

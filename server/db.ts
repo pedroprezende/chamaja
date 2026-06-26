@@ -118,6 +118,108 @@ export async function getUserByOpenId(openId: string) {
   return undefined;
 }
 
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get user by email: database not available");
+    return undefined;
+  }
+  const result = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+  if (result.length > 0) {
+    const user = result[0];
+    const adminRecord = await db
+      .select()
+      .from(admins)
+      .where(eq(admins.openId, user.openId))
+      .limit(1);
+    if (adminRecord.length > 0) {
+      return {
+        ...user,
+        role: "admin" as const,
+        adminRole: adminRecord[0].adminRole,
+      };
+    }
+    return user;
+  }
+  return undefined;
+}
+
+export async function updateUserOpenId(oldOpenId: string, newOpenId: string) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot update user openId: database not available");
+    return;
+  }
+
+  // 1. Fetch user's favorites
+  const userFavs = await db.select().from(favorites).where(eq(favorites.userId, oldOpenId));
+  // 2. Delete user's favorites
+  if (userFavs.length > 0) {
+    await db.delete(favorites).where(eq(favorites.userId, oldOpenId));
+  }
+
+  // 3. Fetch referrals for this partner
+  const partnerRefs = await db.select().from(referrals).where(eq(referrals.partnerId, oldOpenId));
+  // 4. Delete referrals
+  if (partnerRefs.length > 0) {
+    await db.delete(referrals).where(eq(referrals.partnerId, oldOpenId));
+  }
+
+  // 5. Update providers where userId is oldOpenId
+  await db.update(providers).set({ userId: newOpenId }).where(eq(providers.userId, oldOpenId));
+
+  // 6. Update admins where openId is oldOpenId
+  await db.update(admins).set({ openId: newOpenId }).where(eq(admins.openId, oldOpenId));
+
+  // 7. Update partners where id is oldOpenId
+  await db.update(partners).set({ id: newOpenId }).where(eq(partners.id, oldOpenId));
+
+  // 8. Finally, update users openId
+  await db.update(users).set({ openId: newOpenId }).where(eq(users.openId, oldOpenId));
+
+  // 9. Re-insert favorites with newOpenId
+  for (const fav of userFavs) {
+    await db.insert(favorites).values({
+      userId: newOpenId,
+      providerId: fav.providerId,
+      createdAt: fav.createdAt,
+    }).catch(err => console.error("Error re-inserting favorite:", err));
+  }
+
+  // 10. Re-insert referrals with newOpenId
+  for (const ref of partnerRefs) {
+    await db.insert(referrals).values({
+      partnerId: newOpenId,
+      codigoIndicacao: ref.codigoIndicacao,
+      nomeIndicado: ref.nomeIndicado,
+      telefoneIndicado: ref.telefoneIndicado,
+      status: ref.status,
+      createdAt: ref.createdAt,
+    }).catch(err => console.error("Error re-inserting referral:", err));
+  }
+}
+
+export async function updateUserProfile(openId: string, updates: { tipo?: string; phone?: string; name?: string }) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot update user profile: database not available");
+    return;
+  }
+  await db
+    .update(users)
+    .set({
+      ...(updates.tipo ? { tipo: updates.tipo } : {}),
+      ...(updates.phone ? { phone: updates.phone } : {}),
+      ...(updates.name ? { name: updates.name } : {}),
+      updatedAt: new Date(),
+    })
+    .where(eq(users.openId, openId));
+}
+
 export async function deleteUserFully(openId: string): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -609,6 +711,18 @@ export async function getPartnerById(id: string) {
     .where(eq(partners.id, id))
     .limit(1);
   return result[0];
+}
+
+export async function updatePartner(
+  id: string,
+  data: Partial<typeof partners.$inferInsert>
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db
+    .update(partners)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(partners.id, id));
 }
 
 export async function getPartnerByCode(code: string) {
