@@ -131,9 +131,16 @@ async function startServer() {
         httpOnly: true,
         sameSite: "lax",
       });
+    } else {
+      // If no appRedirect, it came from the partner website tab, so we flag it
+      res.cookie("oauth_redirect_target", "partner", {
+        maxAge: 10 * 60 * 1000,
+        httpOnly: true,
+        sameSite: "lax",
+      });
     }
 
-    const callbackUrl = `${baseUrl}/parceiros/auth-callback`;
+    const callbackUrl = `${baseUrl}/oauth/callback`;
     const oauthUrl = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(callbackUrl)}&apikey=${supabaseAnonKey}`;
     res.redirect(oauthUrl);
   });
@@ -338,6 +345,17 @@ async function startServer() {
 
   // Redireciona a URL de callback do Supabase da raiz para dentro da pasta do aplicativo (/app)
   app.get("/oauth/callback", (req, res) => {
+    const cookies = parseCookieHeader(req.headers.cookie || "");
+    const redirectTarget = cookies["oauth_redirect_target"];
+
+    if (redirectTarget === "partner") {
+      res.clearCookie("oauth_redirect_target");
+      return res.redirect(
+        302,
+        "/parceiros/auth-callback" + req.url.slice("/oauth/callback".length),
+      );
+    }
+
     res.redirect(
       302,
       "/app/oauth/callback" + req.url.slice("/oauth/callback".length),
