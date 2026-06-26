@@ -119,25 +119,28 @@ async function startServer() {
   app.get("/api/auth/google", (req, res) => {
     const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || "";
     const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "";
-    const host = req.get("host");
+    const host = req.get("host") || "";
     const protocol = req.protocol;
     const baseUrl = `${protocol}://${host}`;
     const appRedirect = req.query.app_redirect as string | undefined;
 
-    // Store deep link in cookie so callback can read it without query params
+    const cookieOptions: any = {
+      maxAge: 10 * 60 * 1000,
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      secure: process.env.NODE_ENV === "production",
+    };
+
+    if (host.includes("xamaja.com.br")) {
+      cookieOptions.domain = ".xamaja.com.br";
+    }
+
     if (appRedirect) {
-      res.cookie("oauth_app_redirect", appRedirect, {
-        maxAge: 10 * 60 * 1000,
-        httpOnly: true,
-        sameSite: "lax",
-      });
+      res.cookie("oauth_app_redirect", appRedirect, cookieOptions);
     } else {
       // If no appRedirect, it came from the partner website tab, so we flag it
-      res.cookie("oauth_redirect_target", "partner", {
-        maxAge: 10 * 60 * 1000,
-        httpOnly: true,
-        sameSite: "lax",
-      });
+      res.cookie("oauth_redirect_target", "partner", cookieOptions);
     }
 
     const callbackUrl = `${baseUrl}/app/oauth/callback`;
@@ -150,7 +153,15 @@ async function startServer() {
     const cookies = parseCookieHeader(req.headers.cookie || "");
     const appRedirect = cookies["oauth_app_redirect"];
 
-    res.clearCookie("oauth_app_redirect");
+    const host = req.get("host") || "";
+    const cookieOptions: any = {
+      path: "/",
+      secure: process.env.NODE_ENV === "production",
+    };
+    if (host.includes("xamaja.com.br")) {
+      cookieOptions.domain = ".xamaja.com.br";
+    }
+    res.clearCookie("oauth_app_redirect", cookieOptions);
 
     // HTML page that extracts tokens from hash fragment and redirects appropriately
     res.send(`<!DOCTYPE html>
@@ -349,7 +360,16 @@ async function startServer() {
     const redirectTarget = cookies["oauth_redirect_target"];
 
     if (redirectTarget === "partner") {
-      res.clearCookie("oauth_redirect_target");
+      const host = req.get("host") || "";
+      const cookieOptions: any = {
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      };
+      if (host.includes("xamaja.com.br")) {
+        cookieOptions.domain = ".xamaja.com.br";
+      }
+      res.clearCookie("oauth_redirect_target", cookieOptions);
+
       return res.redirect(
         302,
         "/parceiros/auth-callback" + req.url.slice("/app/oauth/callback".length),
