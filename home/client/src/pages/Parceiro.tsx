@@ -138,19 +138,15 @@ export default function Parceiro() {
   useEffect(() => {
     document.title = "Área de Parceiros XamaJá";
 
-    // Handle Google OAuth callback (hash fragment with tokens)
-    const hash = window.location.hash;
-    if (hash.includes("access_token=")) {
-      const params = new URLSearchParams(hash.substring(1));
-      const accessToken = params.get("access_token");
-      const refreshToken = params.get("refresh_token");
-      if (accessToken && refreshToken) {
-        handleGoogleCallback(accessToken, refreshToken);
-        window.history.replaceState(null, "", window.location.pathname);
-        return;
-      }
+    // Check for auth error from OAuth callback
+    const urlParams = new URLSearchParams(window.location.search);
+    const authError = urlParams.get("auth_error");
+    if (authError) {
+      toast.error(decodeURIComponent(authError));
+      window.history.replaceState(null, "", window.location.pathname);
     }
 
+    // Check for existing session
     const token = localStorage.getItem("bp_session_token");
     const savedUser = localStorage.getItem("bp_user_profile");
     if (token && savedUser) {
@@ -159,34 +155,6 @@ export default function Parceiro() {
       setView("dashboard");
     }
   }, []);
-
-  const handleGoogleCallback = async (accessToken: string, refreshToken: string) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/auth/google-callback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ access_token: accessToken, refresh_token: refreshToken }),
-      });
-      const result = await response.json();
-      if (response.ok && result.success) {
-        localStorage.setItem("bp_session_token", result.sessionToken);
-        localStorage.setItem("bp_user_profile", JSON.stringify(result.user));
-        setSessionToken(result.sessionToken);
-        setUser(result.user);
-        setPartner(result.partner);
-        toast.success(`Bem-vindo, ${result.user.name}!`);
-        setView("dashboard");
-      } else {
-        toast.error(result.error || "Falha ao autenticar com Google.");
-      }
-    } catch (err) {
-      console.error("Google OAuth callback error:", err);
-      toast.error("Erro ao processar login com Google.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleGoogleLogin = () => {
     window.location.href = "/api/auth/google";
