@@ -52,12 +52,12 @@ let _adminsInitialized = false;
 let _services: Service[] = [];
 let _admins: AdminAccount[] = [];
 
-// ── Admin padrão ────────────────────────────────────────────────────────────
+// ── Admin padrão (credenciais gerenciadas via Supabase, não hardcoded) ────
 const DEFAULT_ADMIN: AdminAccount = {
   id: "admin-pedro",
-  email: "pedroprezende33@gmail.com",
-  password: "3404001#Sayajins",
-  name: "Pedro Prezende",
+  email: "admin@chamaja.com",
+  password: "",
+  name: "Admin",
   role: "ADMIN",
   createdAt: "2024-01-01T00:00:00.000Z",
   updatedAt: "2024-01-01T00:00:00.000Z",

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { supabase } from "./supabase";
 import type { UserRole } from "./roles-permissions";
 
 export interface AdminUser {
@@ -26,13 +27,8 @@ const AdminAuthContext = createContext<AdminAuthContextType | undefined>(
   undefined,
 );
 
-// Dados de admin hardcoded (em produção, isso viria do backend)
-const ADMIN_CREDENTIALS = {
-  email: "pedroprezende33@gmail.com",
-  password: "admin123456", // Em produção, usar hash bcrypt
-  name: "Pedro Prezende",
-  id: "admin-001",
-};
+// Admin validation is handled server-side via Supabase + role check.
+// No hardcoded credentials are stored client-side.
 
 export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AdminUser | null>(null);
@@ -62,25 +58,40 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     setError(null);
 
     try {
-      // Validar credenciais
-      if (email !== ADMIN_CREDENTIALS.email) {
-        throw new Error("E-mail não autorizado para acesso admin");
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (authError) {
+        throw new Error("Credenciais inválidas");
       }
 
-      if (password !== ADMIN_CREDENTIALS.password) {
-        throw new Error("Senha incorreta");
+      if (!data.user) {
+        throw new Error("Falha ao autenticar");
+      }
+
+      const { data: profile } = await supabase
+        .from("users")
+        .select("role, name")
+        .eq("open_id", data.user.id)
+        .single();
+
+      const userRole = (profile?.role as UserRole) || "user";
+      if (userRole !== "admin") {
+        await supabase.auth.signOut();
+        throw new Error("Acesso não autorizado");
       }
 
       const adminUser: AdminUser = {
-        id: ADMIN_CREDENTIALS.id,
-        email: ADMIN_CREDENTIALS.email,
-        name: ADMIN_CREDENTIALS.name,
+        id: data.user.id,
+        email: data.user.email || email,
+        name: profile?.name || data.user.email?.split("@")[0] || "Admin",
         role: "admin",
-        createdAt: new Date().toISOString(),
+        createdAt: data.user.created_at,
         lastLogin: new Date().toISOString(),
       };
 
-      // Salvar sessão
       await AsyncStorage.setItem("@admin_user", JSON.stringify(adminUser));
       setUser(adminUser);
     } catch (err) {
@@ -95,6 +106,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
+      await supabase.auth.signOut();
       await AsyncStorage.removeItem("@admin_user");
       setUser(null);
     } catch (err) {

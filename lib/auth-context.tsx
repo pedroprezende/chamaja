@@ -594,8 +594,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value: AuthContextType = {
     user,
     role: user?.role || null,
-    isAdmin:
-      user?.role === "admin" || user?.email === "pedroprezende33@gmail.com",
+    isAdmin: user?.role === "admin",
     isLoading,
     isSignedIn: user !== null,
     signInWithGoogle,

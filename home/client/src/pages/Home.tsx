@@ -168,7 +168,10 @@ export default function Home() {
             </a>
           </nav>
 
-          <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+          <Button
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+            onClick={() => (window.location.href = "/app")}
+          >
             Entrar
           </Button>
         </div>

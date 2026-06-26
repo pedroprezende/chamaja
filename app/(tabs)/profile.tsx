@@ -45,7 +45,7 @@ export default function ProfileScreen() {
   const colors = useColors();
   const router = useRouter();
   const { user, signOut, isAdmin } = useAuth();
-  const { isProvider, provider } = useProvider();
+  const { isProvider, provider, hasProviderProfile, providerStatus } = useProvider();
   const { favorites } = useFavorites();
   const { unreadCount } = useNotifications();
   const { coords } = useLocation();
@@ -608,9 +608,19 @@ export default function ProfileScreen() {
     },
     {
       id: "provider",
-      label: isProvider ? "Minha área de prestador" : "Seja um prestador",
-      icon: isProvider ? "work" : "add-business",
-      highlight: !isProvider,
+      label: isProvider
+        ? "Minha área de prestador"
+        : hasProviderProfile
+          ? providerStatus === "pendente"
+            ? "Meu Negócio (Aguardando aprovação)"
+            : "Meu Negócio"
+          : "Seja um prestador",
+      icon: isProvider
+        ? "work"
+        : hasProviderProfile
+          ? "store"
+          : "add-business",
+      highlight: !hasProviderProfile,
     },
     { id: "help", label: "Ajuda e suporte", icon: "help-outline" },
     { id: "about", label: "Sobre o XamaJá", icon: "info-outline" },
@@ -641,9 +651,13 @@ export default function ProfileScreen() {
         router.push("/notifications" as any);
         break;
       case "provider":
-        router.push(
-          isProvider ? "/provider-dashboard" : ("/become-provider" as any),
-        );
+        if (isProvider) {
+          router.push("/provider-dashboard" as any);
+        } else if (hasProviderProfile) {
+          router.push("/become-provider" as any);
+        } else {
+          router.push("/become-provider" as any);
+        }
         break;
       case "admin":
         router.push("/admin" as any);

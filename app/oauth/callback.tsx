@@ -30,7 +30,17 @@ export default function OAuthCallback() {
             "@chamaja_login_as_business",
           );
           if (isBusinessFlag === "true") {
-            router.replace("/become-provider" as any);
+            const { providersDB } = await import("@/lib/providers-database");
+            const existingProvider = await providersDB.getById(user?.id || "");
+            if (existingProvider) {
+              if (existingProvider.isActive && existingProvider.status !== "bloqueado") {
+                router.replace("/provider-dashboard" as any);
+              } else {
+                router.replace("/become-provider" as any);
+              }
+            } else {
+              router.replace("/register-professional" as any);
+            }
           } else {
             router.replace("/(tabs)");
           }

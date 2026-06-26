@@ -96,11 +96,6 @@ class SDKServer {
       throw ForbiddenError("User not found after sync");
     }
 
-    // Failsafe: Se for o e-mail do dono, força admin
-    if (user.email === "pedroprezende33@gmail.com") {
-      user.role = "admin";
-    }
-
     await db.upsertUser({
       openId: user.openId,
       lastSignedIn: signedInAt,

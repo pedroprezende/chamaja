@@ -1672,9 +1672,9 @@ export function upgradeToPremium(
   const now = new Date();
   const expiresAt = new Date(
     now.getTime() +
-      (plan.period === "monthly"
-        ? 30 * 24 * 60 * 60 * 1000
-        : 365 * 24 * 60 * 60 * 1000),
+    (plan.period === "monthly"
+      ? 30 * 24 * 60 * 60 * 1000
+      : 365 * 24 * 60 * 60 * 1000),
   );
   professional.type = "PREMIUM";
   professional.premiumExpiresAt = expiresAt.toISOString().split("T")[0];

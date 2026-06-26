@@ -83,6 +83,8 @@ const STORAGE_KEY = "@chamaja_provider";
 interface ProviderContextType {
   provider: ProviderProfile | null;
   isProvider: boolean;
+  hasProviderProfile: boolean;
+  providerStatus: string | null;
   isLoading: boolean;
   registerProvider: (
     data: Omit<
@@ -459,6 +461,8 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
           provider !== null &&
           provider.isActive &&
           provider.permissionsStatus !== "bloqueado",
+        hasProviderProfile: provider !== null,
+        providerStatus: provider?.status || null,
         isLoading,
         registerProvider,
         updateProvider,

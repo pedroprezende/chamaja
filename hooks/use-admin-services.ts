@@ -15,8 +15,7 @@ export function useAdminServices(onlyHome = false) {
   const firstLoad = useRef(true);
 
   const { user } = useAuth();
-  const isAdmin =
-    user?.role === "admin" || user?.email === "pedroprezende33@gmail.com";
+  const isAdmin = user?.role === "admin";
 
   // tRPC Queries and Mutations (enabled only for admins)
   const { data: serverServices, refetch: refetchServer } =

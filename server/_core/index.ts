@@ -13,6 +13,8 @@ import { createContext } from "./context";
 import { getPrivacyPolicyHtml, getDeletionPolicyHtml } from "./privacy";
 import * as db from "../db";
 import { createClient } from "@supabase/supabase-js";
+import { rateLimit } from "./rate-limit";
+import { COOKIE_NAME } from "../../shared/const.js";
 
 const supabase = createClient(
   process.env.EXPO_PUBLIC_SUPABASE_URL || "",
@@ -42,10 +44,16 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
 
-  // Enable CORS for all routes - reflect the request origin to support credentials
+  // Enable CORS for allowed origins only
+  const ALLOWED_ORIGINS = [
+    "https://chamaja-production.up.railway.app",
+    "http://localhost:3000",
+    "http://localhost:8081",
+  ];
+
   app.use((req, res, next) => {
     const origin = req.headers.origin;
-    if (origin) {
+    if (origin && ALLOWED_ORIGINS.includes(origin)) {
       res.header("Access-Control-Allow-Origin", origin);
     }
     res.header(
@@ -58,7 +66,6 @@ async function startServer() {
     );
     res.header("Access-Control-Allow-Credentials", "true");
 
-    // Handle preflight requests
     if (req.method === "OPTIONS") {
       res.sendStatus(200);
       return;
@@ -99,15 +106,127 @@ async function startServer() {
   });
 
   app.get("/api/health", (_req, res) => {
-    res.json({ ok: true, timestamp: Date.now() });
-  });
-
-  app.get("/api/health", (req, res) => {
     res.json({
       status: "ok",
       message: "Servidor ChamaJá está ONLINE!",
       database: !!process.env.DATABASE_URL,
     });
+  });
+
+  // Google OAuth initiation — redirects to Supabase OAuth
+  app.get("/api/auth/google", (req, res) => {
+    const redirectTo = req.query.redirect_to as string || `${req.protocol}://${req.get("host")}/parceiro`;
+    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || "";
+    const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "";
+    const oauthUrl = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}&apikey=${supabaseAnonKey}`;
+    res.redirect(oauthUrl);
+  });
+
+  // Google OAuth callback — exchange tokens for session
+  app.post(
+    "/api/auth/google-callback",
+    rateLimit({ windowMs: 5 * 60 * 1000, max: 10, message: "Muitas requisições." }),
+    async (req, res) => {
+    try {
+      const { access_token, refresh_token } = req.body;
+      if (!access_token || !refresh_token) {
+        return res.status(400).json({ success: false, error: "Tokens ausentes." });
+      }
+
+      const { data, error } = await supabase.auth.setSession({
+        access_token,
+        refresh_token,
+      });
+
+      if (error || !data.session || !data.user) {
+        return res.status(401).json({ success: false, error: "Sessão inválida." });
+      }
+
+      // Find or create user profile
+      let userProfile = await db.getUserByOpenId(data.user.id);
+      if (!userProfile) {
+        const name = data.user.user_metadata?.full_name || data.user.email?.split("@")[0] || "Usuário";
+        await db.upsertUser({
+          openId: data.user.id,
+          name,
+          email: data.user.email ?? null,
+          loginMethod: "google",
+          tipo: "cliente",
+        });
+        userProfile = await db.getUserByOpenId(data.user.id);
+      }
+
+      // Find or create partner profile
+      let partnerProfile = await db.getPartnerById(data.user.id);
+      if (!partnerProfile && userProfile) {
+        const nameToUse = userProfile.name || data.user.email?.split("@")[0] || "PARCEIRO";
+        const firstName = nameToUse.trim().split(" ")[0].normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z]/g, "");
+        const randomNum = Math.floor(100 + Math.random() * 900);
+        const codigoIndicacao = `${firstName}${randomNum}`;
+        await db.createPartner({
+          id: data.user.id,
+          nome: nameToUse,
+          email: userProfile.email || data.user.email || "",
+          telefone: userProfile.phone || "",
+          cidade: "",
+          codigoIndicacao,
+        });
+        partnerProfile = await db.getPartnerById(data.user.id);
+      }
+
+      // Find business profile
+      const businessProfile = await db.getProviderByUserId(data.user.id);
+
+      // Set httpOnly cookie for secure session management
+      res.cookie(COOKIE_NAME, data.session.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 30,
+      });
+
+      res.json({
+        success: true,
+        sessionToken: data.session.access_token,
+        user: {
+          id: data.user.id,
+          name: userProfile?.name || data.user.email?.split("@")[0] || "Usuário",
+          email: data.user.email,
+          tipo: userProfile?.tipo || "cliente",
+          role: userProfile?.role || "user",
+        },
+        business: businessProfile ? {
+          id: businessProfile.id,
+          name: businessProfile.name,
+          category: businessProfile.category,
+          categoryId: businessProfile.categoryId,
+          city: businessProfile.city,
+          neighborhood: businessProfile.neighborhood,
+          phone: businessProfile.phone,
+          whatsapp: businessProfile.whatsapp,
+          description: businessProfile.description,
+          address: businessProfile.address,
+          avatarUri: businessProfile.avatarUri,
+          coverUri: businessProfile.coverUri,
+          gallery: businessProfile.gallery || [],
+          isActive: businessProfile.isActive,
+          status: businessProfile.status,
+          services: businessProfile.services ? JSON.parse(businessProfile.services) : [],
+        } : null,
+        partner: partnerProfile ? {
+          id: partnerProfile.id,
+          nome: partnerProfile.nome,
+          email: partnerProfile.email,
+          telefone: partnerProfile.telefone,
+          cidade: partnerProfile.cidade,
+          codigoIndicacao: partnerProfile.codigoIndicacao,
+        } : null,
+      });
+    } catch (error: any) {
+      console.error("[Web API] Erro no callback Google OAuth:", error);
+      res.status(500).json({ success: false, error: error.message || "Erro interno." });
+    }
   });
 
   app.use(
@@ -160,7 +279,10 @@ async function startServer() {
   });
 
   // Rota de Cadastro de Prestador via Web
-  app.post("/api/web-register-provider", async (req, res) => {
+  app.post(
+    "/api/web-register-provider",
+    rateLimit({ windowMs: 15 * 60 * 1000, max: 5, message: "Muitos cadastros. Aguarde 15 minutos." }),
+    async (req, res) => {
     try {
       const {
         name,
@@ -273,7 +395,10 @@ async function startServer() {
   // ── Rotas do Sistema de Parceiros ───────────────────────────────────────────
 
   // Registro de Parceiro
-  app.post("/api/partners/register", async (req, res) => {
+  app.post(
+    "/api/partners/register",
+    rateLimit({ windowMs: 15 * 60 * 1000, max: 5, message: "Muitos cadastros. Aguarde 15 minutos." }),
+    async (req, res) => {
     try {
       const { nome, email, telefone, cidade, senha } = req.body;
       if (!nome || !email || !telefone || !cidade || !senha) {
@@ -331,7 +456,10 @@ async function startServer() {
   });
 
   // Login de Parceiro
-  app.post("/api/partners/login", async (req, res) => {
+  app.post(
+    "/api/partners/login",
+    rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: "Muitas tentativas de login. Aguarde 15 minutos." }),
+    async (req, res) => {
     try {
       const { email, senha } = req.body;
       if (!email || !senha) {
@@ -364,6 +492,15 @@ async function startServer() {
           error: "Perfil de parceiro não encontrado no banco local.",
         });
       }
+
+      // Set httpOnly cookie for secure session management
+      res.cookie(COOKIE_NAME, data.session.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 30,
+      });
 
       res.json({
         success: true,
@@ -428,7 +565,10 @@ async function startServer() {
   // ── Rotas do Sistema de Parceiros de Negócios (Prestadores e Comércios) ─────
 
   // Registro de Parceiro de Negócio (Prestador / Comércio / Cliente)
-  app.post("/api/business-partner/register", async (req, res) => {
+  app.post(
+    "/api/business-partner/register",
+    rateLimit({ windowMs: 15 * 60 * 1000, max: 5, message: "Muitos cadastros. Aguarde 15 minutos." }),
+    async (req, res) => {
     try {
       const { name, email, password, whatsapp, city, type } = req.body;
       if (!name || !email || !password || !whatsapp || !city || !type) {
@@ -563,7 +703,10 @@ async function startServer() {
   });
 
   // Login de Parceiro de Negócio (Prestador / Comércio)
-  app.post("/api/business-partner/login", async (req, res) => {
+  app.post(
+    "/api/business-partner/login",
+    rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: "Muitas tentativas de login. Aguarde 15 minutos." }),
+    async (req, res) => {
     try {
       const { email, password } = req.body;
       if (!email || !password) {
@@ -673,6 +816,15 @@ async function startServer() {
         });
         partnerProfile = await db.getPartnerById(data.user.id);
       }
+
+      // Set httpOnly cookie for secure session management
+      res.cookie(COOKIE_NAME, data.session.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 30,
+      });
 
       res.json({
         success: true,
@@ -1057,9 +1209,7 @@ async function startServer() {
 
       // Verificar se é admin
       const userProfile = await db.getUserByOpenId(user.id);
-      const isAdmin =
-        userProfile?.role === "admin" ||
-        userProfile?.email === "pedroprezende33@gmail.com";
+      const isAdmin = userProfile?.role === "admin";
 
       if (!isAdmin) {
         return res
@@ -1107,9 +1257,7 @@ async function startServer() {
 
       // Verificar se é admin
       const userProfile = await db.getUserByOpenId(user.id);
-      const isAdmin =
-        userProfile?.role === "admin" ||
-        userProfile?.email === "pedroprezende33@gmail.com";
+      const isAdmin = userProfile?.role === "admin";
 
       if (!isAdmin) {
         return res

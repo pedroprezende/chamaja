@@ -289,19 +289,6 @@ const SEED_SUBSERVICES: Record<string, any[]> = {
 
 export const categoriesRouter = router({
   list: publicProcedure.query(async ({ ctx }) => {
-    // Auto-fix admin for owner
-    try {
-      const owner = await db.getUserByOpenId(ctx?.user?.openId || "");
-      if (
-        owner &&
-        owner.email === "pedroprezende33@gmail.com" &&
-        owner.role !== "admin"
-      ) {
-        console.log("[AdminFix] Elevating owner to admin role...");
-        await db.upsertUser({ openId: owner.openId, role: "admin" });
-      }
-    } catch (e) {}
-
     const allCats = await db.getAllCategories();
     console.log(`[Categories] Found ${allCats.length} total categories`);
 

@@ -31,8 +31,7 @@ export const adminProcedure = t.procedure.use(
     const hasAdminAccess =
       ctx.user &&
       (ctx.user.role === "admin" ||
-        ctx.user.adminRole !== null ||
-        ctx.user.email === "pedroprezende33@gmail.com");
+        ctx.user.adminRole !== null);
 
     if (!hasAdminAccess) {
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
@@ -55,8 +54,7 @@ export const adminWriteProcedure = t.procedure.use(
       ctx.user &&
       ctx.user.role === "admin" &&
       ((ctx.user as any).adminRole === "principal" ||
-        (ctx.user as any).adminRole === "secundario" ||
-        ctx.user.email === "pedroprezende33@gmail.com");
+        (ctx.user as any).adminRole === "secundario");
 
     if (!isMasterOrWriteAdmin) {
       throw new TRPCError({
@@ -82,8 +80,7 @@ export const adminMasterProcedure = t.procedure.use(
     const isMasterAdmin =
       ctx.user &&
       ctx.user.role === "admin" &&
-      ((ctx.user as any).adminRole === "principal" ||
-        ctx.user.email === "pedroprezende33@gmail.com");
+      (ctx.user as any).adminRole === "principal";
 
     if (!isMasterAdmin) {
       throw new TRPCError({
