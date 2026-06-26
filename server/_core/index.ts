@@ -140,7 +140,7 @@ async function startServer() {
       });
     }
 
-    const callbackUrl = `${baseUrl}/oauth/callback`;
+    const callbackUrl = `${baseUrl}/app/oauth/callback`;
     const oauthUrl = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(callbackUrl)}&apikey=${supabaseAnonKey}`;
     res.redirect(oauthUrl);
   });
@@ -343,8 +343,8 @@ async function startServer() {
     res.sendFile(path.resolve(webDistPath, "favicon.ico")),
   );
 
-  // Redireciona a URL de callback do Supabase da raiz para dentro da pasta do aplicativo (/app)
-  app.get("/oauth/callback", (req, res) => {
+  // Intercepta callback do aplicativo Expo Web para parceiros antes de servir a SPA do app
+  app.get("/app/oauth/callback", (req, res, next) => {
     const cookies = parseCookieHeader(req.headers.cookie || "");
     const redirectTarget = cookies["oauth_redirect_target"];
 
@@ -352,10 +352,14 @@ async function startServer() {
       res.clearCookie("oauth_redirect_target");
       return res.redirect(
         302,
-        "/parceiros/auth-callback" + req.url.slice("/oauth/callback".length),
+        "/parceiros/auth-callback" + req.url.slice("/app/oauth/callback".length),
       );
     }
+    next();
+  });
 
+  // Redireciona a URL de callback do Supabase da raiz para dentro da pasta do aplicativo (/app)
+  app.get("/oauth/callback", (req, res) => {
     res.redirect(
       302,
       "/app/oauth/callback" + req.url.slice("/oauth/callback".length),
