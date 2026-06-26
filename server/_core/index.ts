@@ -15,6 +15,7 @@ import * as db from "../db";
 import { createClient } from "@supabase/supabase-js";
 import { rateLimit } from "./rate-limit";
 import { COOKIE_NAME } from "../../shared/const.js";
+import { parse as parseCookieHeader } from "cookie";
 
 const supabase = createClient(
   process.env.EXPO_PUBLIC_SUPABASE_URL || "",
@@ -123,20 +124,29 @@ async function startServer() {
     const baseUrl = `${protocol}://${host}`;
     const appRedirect = req.query.app_redirect as string | undefined;
 
-    const callbackParams = appRedirect ? `?app_redirect=${encodeURIComponent(appRedirect)}` : "";
-    const callbackUrl = `${baseUrl}/api/auth/google-callback-server${callbackParams}`;
+    // Store deep link in cookie so callback can read it without query params
+    if (appRedirect) {
+      res.cookie("oauth_app_redirect", appRedirect, {
+        maxAge: 10 * 60 * 1000,
+        httpOnly: true,
+        sameSite: "lax",
+      });
+    }
 
+    const callbackUrl = `${baseUrl}/parceiros/auth-callback`;
     const oauthUrl = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(callbackUrl)}&apikey=${supabaseAnonKey}`;
     res.redirect(oauthUrl);
   });
 
-  // Server-side Google OAuth callback — extracts tokens and redirects appropriately
-  app.get("/api/auth/google-callback-server", async (req, res) => {
-    try {
-      const appRedirect = req.query.app_redirect as string | undefined;
+  // Google OAuth callback at /parceiros/auth-callback (matches Supabase redirect wildcard)
+  app.get("/parceiros/auth-callback", (req, res) => {
+    const cookies = parseCookieHeader(req.headers.cookie || "");
+    const appRedirect = cookies["oauth_app_redirect"];
 
-      // Return an HTML page that extracts tokens from hash fragment
-      res.send(`<!DOCTYPE html>
+    res.clearCookie("oauth_app_redirect");
+
+    // HTML page that extracts tokens from hash fragment and redirects appropriately
+    res.send(`<!DOCTYPE html>
 <html><head><title>Autenticando...</title></head>
 <body>
 <script>
@@ -153,12 +163,10 @@ async function startServer() {
   var appRedirect = ${JSON.stringify(appRedirect || null)};
 
   if (appRedirect) {
-    // Native app — redirect to deep link with tokens in hash
     window.location.href = appRedirect + '#access_token=' + encodeURIComponent(accessToken) + '&refresh_token=' + encodeURIComponent(refreshToken);
     return;
   }
 
-  // Web — exchange tokens via POST and save to localStorage
   fetch('/api/auth/google-callback', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -178,9 +186,6 @@ async function startServer() {
 </script>
 <p>Autenticando com Google...</p>
 </body></html>`);
-    } catch (err) {
-      res.redirect("/parceiro?auth_error=Erro+no+callback");
-    }
   });
 
   // Google OAuth callback — exchange tokens for session
