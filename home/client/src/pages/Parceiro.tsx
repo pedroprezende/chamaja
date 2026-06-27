@@ -177,6 +177,7 @@ export default function Parceiro() {
   }, []);
 
   const handleGoogleLogin = () => {
+    localStorage.setItem("oauth_redirect_target", "partner");
     window.location.href = "/api/auth/google";
   };
 

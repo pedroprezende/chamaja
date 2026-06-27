@@ -383,6 +383,7 @@ async function startServer() {
     const cookies = parseCookieHeader(req.headers.cookie || "");
     const redirectTarget = cookies["oauth_redirect_target"];
 
+    // 1. Server-side cookie check (fastest, standard browsers)
     if (redirectTarget === "partner") {
       const host = req.get("host") || "";
       const cookieOptions: any = {
@@ -399,7 +400,32 @@ async function startServer() {
         "/parceiros/auth-callback" + req.url.slice("/app/oauth/callback".length),
       );
     }
-    next();
+
+    // 2. Skip intercept query check to serve normal Expo Web App index.html
+    if (req.query.skip_intercept === "true") {
+      const webDistPath = path.resolve(process.cwd(), "dist", "web");
+      return res.sendFile(path.resolve(webDistPath, "index.html"));
+    }
+
+    // 3. Client-side localStorage fallback check (Safari / Brave / ITP cookies blocked)
+    res.send(`<!DOCTYPE html>
+<html>
+<head>
+<script>
+(function() {
+  if (localStorage.getItem("oauth_redirect_target") === "partner") {
+    localStorage.removeItem("oauth_redirect_target");
+    window.location.href = "/parceiros/auth-callback" + window.location.search + window.location.hash;
+  } else {
+    var search = window.location.search || "";
+    var separator = search ? "&" : "?";
+    window.location.href = window.location.pathname + search + separator + "skip_intercept=true" + window.location.hash;
+  }
+})();
+</script>
+</head>
+<body>Carregando...</body>
+</html>`);
   });
 
   // Redireciona a URL de callback do Supabase da raiz para dentro da pasta do aplicativo (/app)
