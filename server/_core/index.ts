@@ -44,6 +44,16 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   app.set("trust proxy", true);
+
+  // Redirect non-www to www in production
+  app.use((req, res, next) => {
+    const host = req.get("host") || "";
+    if (host === "xamaja.com.br") {
+      return res.redirect(301, `https://www.xamaja.com.br${req.originalUrl}`);
+    }
+    next();
+  });
+
   const server = createServer(app);
 
   // Enable CORS for allowed origins only
@@ -147,7 +157,8 @@ async function startServer() {
       res.cookie("oauth_redirect_target", "partner", cookieOptions);
     }
 
-    const callbackUrl = `${baseUrl}/app/oauth/callback`;
+    const targetParam = appRedirect ? "" : "?target=partner";
+    const callbackUrl = `${baseUrl}/app/oauth/callback${targetParam}`;
     const stateParam = appRedirect ? "" : "&state=partner";
     const oauthUrl = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(callbackUrl)}&apikey=${supabaseAnonKey}${stateParam}`;
     res.redirect(oauthUrl);
@@ -383,7 +394,7 @@ async function startServer() {
   app.get("/app/oauth/callback", (req, res, next) => {
     const cookies = parseCookieHeader(req.headers.cookie || "");
     const redirectTarget = cookies["oauth_redirect_target"];
-    const isPartnerState = req.query.state === "partner";
+    const isPartnerState = req.query.state === "partner" || req.query.target === "partner";
 
     // 1. Server-side cookie check OR state parameter check (100% reliable)
     if (redirectTarget === "partner" || isPartnerState) {
