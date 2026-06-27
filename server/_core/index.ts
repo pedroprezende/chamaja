@@ -148,7 +148,8 @@ async function startServer() {
     }
 
     const callbackUrl = `${baseUrl}/app/oauth/callback`;
-    const oauthUrl = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(callbackUrl)}&apikey=${supabaseAnonKey}`;
+    const stateParam = appRedirect ? "" : "&state=partner";
+    const oauthUrl = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(callbackUrl)}&apikey=${supabaseAnonKey}${stateParam}`;
     res.redirect(oauthUrl);
   });
 
@@ -382,9 +383,10 @@ async function startServer() {
   app.get("/app/oauth/callback", (req, res, next) => {
     const cookies = parseCookieHeader(req.headers.cookie || "");
     const redirectTarget = cookies["oauth_redirect_target"];
+    const isPartnerState = req.query.state === "partner";
 
-    // 1. Server-side cookie check (fastest, standard browsers)
-    if (redirectTarget === "partner") {
+    // 1. Server-side cookie check OR state parameter check (100% reliable)
+    if (redirectTarget === "partner" || isPartnerState) {
       const host = req.get("host") || "";
       const cookieOptions: any = {
         path: "/",
