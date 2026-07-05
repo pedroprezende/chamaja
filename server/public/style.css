@@ -3,18 +3,18 @@
 /* Smooth scroll behavior */
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 80px; /* matches header height */
+  scroll-padding-top: 80px;
 }
 
-/* Mobile Nav Drawer Slide-In Transition */
+/* ─── Mobile Nav Drawer ─── */
 .mobile-nav {
   position: fixed;
   top: 0;
   right: -100%;
   width: 300px;
   height: 100%;
-  background-color: #0e0e11; /* matches theme card color */
-  border-left: 1px solid #1f1f24; /* matches theme border color */
+  background-color: #0e0e11;
+  border-left: 1px solid #1f1f24;
   z-index: 200;
   padding: 80px 40px;
   display: flex;
@@ -34,29 +34,247 @@ html {
   right: 24px;
 }
 
-/* Custom Float Animation for Hero Graphic & Mascot */
+/* ─── Float Animation ─── */
 @keyframes float {
-  0% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-12px);
-  }
-  100% {
-    transform: translateY(0px);
-  }
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
 }
 
 .animate-float {
   animation: float 6s ease-in-out infinite;
 }
 
-/* Form Loader Spinner Custom Styling */
+/* ─── Scroll Reveal System ─── */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+[data-reveal="left"] {
+  transform: translateX(-32px);
+}
+
+[data-reveal="right"] {
+  transform: translateX(32px);
+}
+
+[data-reveal="scale"] {
+  transform: scale(0.95);
+}
+
+[data-reveal="fade"] {
+  transform: none;
+}
+
+[data-reveal].revealed {
+  opacity: 1;
+  transform: translateY(0) translateX(0) scale(1);
+}
+
+/* Stagger children inside a revealed parent */
+[data-reveal].revealed .stagger-child {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-reveal].revealed .stagger-child:nth-child(1) { transition-delay: 0.05s; }
+[data-reveal].revealed .stagger-child:nth-child(2) { transition-delay: 0.1s; }
+[data-reveal].revealed .stagger-child:nth-child(3) { transition-delay: 0.15s; }
+[data-reveal].revealed .stagger-child:nth-child(4) { transition-delay: 0.2s; }
+[data-reveal].revealed .stagger-child:nth-child(5) { transition-delay: 0.25s; }
+[data-reveal].revealed .stagger-child:nth-child(6) { transition-delay: 0.3s; }
+[data-reveal].revealed .stagger-child:nth-child(7) { transition-delay: 0.35s; }
+[data-reveal].revealed .stagger-child:nth-child(8) { transition-delay: 0.4s; }
+[data-reveal].revealed .stagger-child:nth-child(9) { transition-delay: 0.45s; }
+[data-reveal].revealed .stagger-child:nth-child(10) { transition-delay: 0.5s; }
+
+[data-reveal].revealed .stagger-child {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── Header Scroll Shadow ─── */
+header {
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+header.scrolled {
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* ─── Hero Pulse Ring ─── */
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 0.4; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+.hero-pulse {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px solid #CCFF00;
+  animation: pulse-ring 2.5s ease-out infinite;
+  pointer-events: none;
+}
+
+.hero-pulse:nth-child(2) {
+  animation-delay: 0.8s;
+}
+
+/* ─── Button Micro-Interactions ─── */
+a[href]:not(.mobile-link):not(.mobile-nav-close),
+button {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-primary-glow {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary-glow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.15) 50%, transparent 60%);
+  transform: translateX(-100%);
+  transition: transform 0.5s ease;
+}
+
+.btn-primary-glow:hover::after {
+  transform: translateX(100%);
+}
+
+/* ─── Stat Counter Animation ─── */
+.stat-number {
+  display: inline-block;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.stat-number:hover {
+  transform: scale(1.05);
+  color: #CCFF00;
+}
+
+/* ─── Card Hover Lift ─── */
+.card-hover {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.3s ease,
+              border-color 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* ─── How It Works Step Connector ─── */
+.step-connector {
+  position: relative;
+}
+
+.step-connector::after {
+  content: '';
+  position: absolute;
+  top: 24px;
+  right: -50%;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, #CCFF00 0%, transparent 100%);
+  opacity: 0.3;
+}
+
+.step-connector:last-child::after {
+  display: none;
+}
+
+/* ─── Form Focus Enhancement ─── */
+input:focus, select:focus, textarea:focus {
+  box-shadow: 0 0 0 3px rgba(204, 255, 0, 0.15);
+  border-color: #CCFF00 !important;
+}
+
+/* ─── Scrollbar Styling ─── */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ─── Image Reveal ─── */
+@keyframes image-reveal {
+  from {
+    clip-path: inset(0 100% 0 0);
+    opacity: 0;
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+}
+
+.img-reveal {
+  animation: image-reveal 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ─── Gradient Text Shimmer ─── */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.shimmer-text {
+  background: linear-gradient(90deg, #CCFF00 0%, #A3E635 25%, #CCFF00 50%, #A3E635 75%, #CCFF00 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ─── Reduced Motion ─── */
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  [data-reveal].revealed .stagger-child {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .animate-float {
+    animation: none;
+  }
+  .hero-pulse {
+    animation: none;
+  }
+  .btn-primary-glow::after {
+    display: none;
+  }
+  .shimmer-text {
+    animation: none;
+  }
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* ─── Loader Spinner ─── */
 .loader-form {
   border-right-color: transparent;
 }
 
-/* Hero Mask to fade out the bottom cut-off on mobile */
+/* ─── Hero Mask ─── */
 .hero-mask {
   -webkit-mask-image: linear-gradient(
     to bottom,
@@ -68,4 +286,23 @@ html {
     rgba(0, 0, 0, 1) 85%,
     rgba(0, 0, 0, 0) 100%
   );
+}
+
+/* ─── Hero Grid Pattern ─── */
+.hero-grid-pattern {
+  background-image:
+    linear-gradient(rgba(204, 255, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(204, 255, 0, 0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 20%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 20%, transparent 70%);
+}
+
+/* ─── Hero Gradient Text ─── */
+.hero-gradient-text {
+  background: linear-gradient(135deg, #CCFF00 0%, #A3E635 40%, #84cc16 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  position: relative;
 }

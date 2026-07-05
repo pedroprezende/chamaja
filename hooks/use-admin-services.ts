@@ -178,11 +178,9 @@ export function useAdminServices(onlyHome = false) {
   }, [
     serverServices,
     isAdmin,
-    syncMutationCreate,
-    syncMutationUpdate,
-    syncMutationDelete,
     onlyHome,
   ]);
+
 
   useEffect(() => {
     load();

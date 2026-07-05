@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // Mobile Menu Navigation Toggle
+  // ─── Mobile Menu Navigation Toggle ───
   const mobileMenuBtn = document.getElementById("mobile-menu-btn");
   const mobileNav = document.getElementById("mobile-nav");
   const mobileNavClose = document.getElementById("mobile-nav-close");
@@ -13,7 +13,6 @@ document.addEventListener("DOMContentLoaded", () => {
       mobileNav.classList.remove("open");
     });
 
-    // Close mobile menu when a link or button is clicked
     const mobileLinks = mobileNav.querySelectorAll(
       ".mobile-link, .btn-secondary-drawer, .btn-primary-drawer",
     );
@@ -24,7 +23,82 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Toggle other category input
+  // ─── Header Scroll Shadow ───
+  const header = document.querySelector("header");
+  if (header) {
+    let ticking = false;
+    window.addEventListener("scroll", () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          header.classList.toggle("scrolled", window.scrollY > 20);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    });
+  }
+
+  // ─── Scroll Reveal (IntersectionObserver) ───
+  const revealElements = document.querySelectorAll("[data-reveal]");
+  if (revealElements.length > 0 && "IntersectionObserver" in window) {
+    const revealObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("revealed");
+            revealObserver.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        threshold: 0.12,
+        rootMargin: "0px 0px -40px 0px",
+      },
+    );
+
+    revealElements.forEach((el) => revealObserver.observe(el));
+  } else {
+    // Fallback: show everything immediately
+    revealElements.forEach((el) => el.classList.add("revealed"));
+  }
+
+  // ─── Animated Counter for Stats ───
+  const counters = document.querySelectorAll("[data-count]");
+  if (counters.length > 0 && "IntersectionObserver" in window) {
+    const counterObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const el = entry.target;
+            const target = parseInt(el.getAttribute("data-count"), 10);
+            const suffix = el.getAttribute("data-suffix") || "";
+            const prefix = el.getAttribute("data-prefix") || "";
+            const duration = 1200;
+            const startTime = performance.now();
+
+            function animate(currentTime) {
+              const elapsed = currentTime - startTime;
+              const progress = Math.min(elapsed / duration, 1);
+              const eased = 1 - Math.pow(1 - progress, 3);
+              const current = Math.round(target * eased);
+              el.textContent = prefix + current.toLocaleString("pt-BR") + suffix;
+              if (progress < 1) {
+                requestAnimationFrame(animate);
+              }
+            }
+
+            requestAnimationFrame(animate);
+            counterObserver.unobserve(el);
+          }
+        });
+      },
+      { threshold: 0.5 },
+    );
+
+    counters.forEach((el) => counterObserver.observe(el));
+  }
+
+  // ─── Toggle other category input ───
   const categoryIdSelect = document.getElementById("categoryId");
   const otherCategoryGroup = document.getElementById("other-category-group");
   const otherCategoryInput = document.getElementById("otherCategory");
@@ -42,7 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Provider Registration Form Handling
+  // ─── Provider Registration Form Handling ───
   const providerForm = document.getElementById("provider-form");
   const formSuccess = document.getElementById("form-success");
   const formError = document.getElementById("form-error");
@@ -54,11 +128,9 @@ document.addEventListener("DOMContentLoaded", () => {
     providerForm.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      // Reset alert states
       formSuccess.style.display = "none";
       formError.style.display = "none";
 
-      // Form validation
       const name = document.getElementById("name").value.trim();
       const email = document.getElementById("email").value.trim();
       const phone = document.getElementById("phone").value.trim();
@@ -89,7 +161,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
 
-      // Show loader and disable submit button
       setLoading(true);
 
       try {
@@ -115,17 +186,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const result = await response.json();
 
         if (response.ok && result.success) {
-          // Success
           formSuccess.style.display = "flex";
           providerForm.reset();
           if (otherCategoryGroup) {
             otherCategoryGroup.style.display = "none";
           }
-
-          // Smooth scroll to success message
           formSuccess.scrollIntoView({ behavior: "smooth", block: "center" });
         } else {
-          // API error
           showError(
             result.error ||
               "Ocorreu um erro ao realizar o cadastro. Verifique os dados e tente novamente.",
@@ -159,4 +226,17 @@ document.addEventListener("DOMContentLoaded", () => {
       btnSubmit.querySelector("span").textContent = "Enviar Formulário";
     }
   }
+
+  // ─── Smooth anchor offset for fixed header ───
+  document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+    anchor.addEventListener("click", function (e) {
+      const targetId = this.getAttribute("href");
+      if (targetId === "#") return;
+      const target = document.querySelector(targetId);
+      if (target) {
+        e.preventDefault();
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+  });
 });

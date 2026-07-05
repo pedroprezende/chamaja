@@ -493,16 +493,20 @@ export const providersRouter = router({
   searchFiltered: publicProcedure
     .input(
       z.object({
-        query: z.string().optional(),
+        // Limit query length to prevent oversized payloads
+        query: z.string().max(200).optional(),
         profileType: z.enum(["all", "professional", "comercio"]).optional(),
-        categoryId: z.string().optional(),
-        subcategoryId: z.string().optional(),
-        userLatitude: z.number().optional(),
-        userLongitude: z.number().optional(),
-        maxDistanceKm: z.number().optional(),
-        minRating: z.number().optional(),
+        // Limit category/subcategory IDs to reasonable slug lengths
+        categoryId: z.string().max(60).optional(),
+        subcategoryId: z.string().max(60).optional(),
+        // Geographic bounds: latitude -90 to 90, longitude -180 to 180
+        userLatitude: z.number().min(-90).max(90).optional(),
+        userLongitude: z.number().min(-180).max(180).optional(),
+        // Limit max distance to 500km to prevent full-table geo scans
+        maxDistanceKm: z.number().min(1).max(500).optional(),
+        minRating: z.number().min(0).max(5).optional(),
         onlyOnline: z.boolean().optional(),
-        priceLevel: z.number().optional(),
+        priceLevel: z.number().min(1).max(4).optional(),
         availability: z.enum(["any", "now", "today", "scheduled"]).optional(),
         sortBy: z
           .enum([
@@ -711,7 +715,8 @@ export const providersRouter = router({
   smartSearch: publicProcedure
     .input(
       z.object({
-        query: z.string(),
+        // Limit query length to prevent oversized payloads
+        query: z.string().min(1).max(200),
       }),
     )
     .query(async ({ input }) => {

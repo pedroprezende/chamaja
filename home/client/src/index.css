@@ -43,74 +43,74 @@
 }
 
 :root {
-  --primary: #ccff00;
-  --primary-foreground: #000000;
-  --sidebar-primary: #ccff00;
-  --sidebar-primary-foreground: #000000;
-  --chart-1: #ccff00;
+  --primary: #84cc16;
+  --primary-foreground: #ffffff;
+  --sidebar-primary: #84cc16;
+  --sidebar-primary-foreground: #ffffff;
+  --chart-1: #84cc16;
   --chart-2: #27272a;
   --chart-3: #18181b;
-  --chart-4: #ccff00;
+  --chart-4: #84cc16;
   --chart-5: #27272a;
   --radius: 0.65rem;
   --background: #000000;
-  --foreground: #ffffff;
+  --foreground: #F5F5F5;
   --card: #0c0c0e;
-  --card-foreground: #ffffff;
+  --card-foreground: #F5F5F5;
   --popover: #0c0c0e;
-  --popover-foreground: #ffffff;
+  --popover-foreground: #F5F5F5;
   --secondary: #27272a;
-  --secondary-foreground: #ffffff;
+  --secondary-foreground: #F5F5F5;
   --muted: #18181b;
-  --muted-foreground: #a1a1aa;
-  --accent: #ccff00;
-  --accent-foreground: #000000;
+  --muted-foreground: #A1A1A1;
+  --accent: #84cc16;
+  --accent-foreground: #ffffff;
   --destructive: #ff4444;
   --destructive-foreground: #ffffff;
   --border: #1c1c1e;
   --input: #0e0e10;
-  --ring: #ccff00;
+  --ring: #84cc16;
   --sidebar: #000000;
-  --sidebar-foreground: #ffffff;
-  --sidebar-accent: #ccff00;
-  --sidebar-accent-foreground: #000000;
+  --sidebar-foreground: #F5F5F5;
+  --sidebar-accent: #84cc16;
+  --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #1c1c1e;
-  --sidebar-ring: #ccff00;
+  --sidebar-ring: #84cc16;
 }
 
 .dark {
-  --primary: #ccff00;
-  --primary-foreground: #000000;
-  --sidebar-primary: #ccff00;
-  --sidebar-primary-foreground: #000000;
+  --primary: #84cc16;
+  --primary-foreground: #ffffff;
+  --sidebar-primary: #84cc16;
+  --sidebar-primary-foreground: #ffffff;
   --background: #000000;
-  --foreground: #ffffff;
+  --foreground: #F5F5F5;
   --card: #0c0c0e;
-  --card-foreground: #ffffff;
+  --card-foreground: #F5F5F5;
   --popover: #0c0c0e;
-  --popover-foreground: #ffffff;
+  --popover-foreground: #F5F5F5;
   --secondary: #27272a;
-  --secondary-foreground: #ffffff;
+  --secondary-foreground: #F5F5F5;
   --muted: #18181b;
-  --muted-foreground: #a1a1aa;
-  --accent: #ccff00;
-  --accent-foreground: #000000;
+  --muted-foreground: #A1A1A1;
+  --accent: #84cc16;
+  --accent-foreground: #ffffff;
   --destructive: #ff4444;
   --destructive-foreground: #ffffff;
   --border: #1c1c1e;
   --input: #0e0e10;
-  --ring: #ccff00;
-  --chart-1: #ccff00;
+  --ring: #84cc16;
+  --chart-1: #84cc16;
   --chart-2: #27272a;
   --chart-3: #18181b;
-  --chart-4: #ccff00;
+  --chart-4: #84cc16;
   --chart-5: #27272a;
   --sidebar: #000000;
-  --sidebar-foreground: #ffffff;
-  --sidebar-accent: #ccff00;
-  --sidebar-accent-foreground: #000000;
+  --sidebar-foreground: #F5F5F5;
+  --sidebar-accent: #84cc16;
+  --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #1c1c1e;
-  --sidebar-ring: #ccff00;
+  --sidebar-ring: #84cc16;
 }
 
 @layer base {
@@ -162,23 +162,17 @@
     }
   }
 
-  h1 {
-    font-family: "Montserrat", sans-serif;
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Inter", sans-serif;
     font-weight: 700;
-  }
-
-  h2 {
-    font-family: "Montserrat", sans-serif;
-    font-weight: 700;
-  }
-
-  h3 {
-    font-family: "Montserrat", sans-serif;
-    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
   }
 
   body {
     font-family: "Inter", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   button {
@@ -188,4 +182,15 @@
   a {
     @apply transition-colors duration-200;
   }
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
 }

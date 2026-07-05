@@ -5,16 +5,24 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+import ConhecerApp from "./pages/ConhecerApp";
 import Parceiros from "./pages/Parceiros";
 import Parceiro from "./pages/Parceiro";
+import Busca from "./pages/Busca";
+import Perfil from "./pages/Perfil";
 
 function Router() {
   return (
     <Switch>
       <Route path={"/"} component={Home} />
-      <Route path={"/cadastro"} component={Home} />
+      <Route path={"/como-funciona"} component={ConhecerApp} />
+      <Route path={"/cadastro"} component={ConhecerApp} />
+      <Route path={"/busca"} component={Busca} />
+      <Route path={"/perfil/:id"} component={Perfil} />
       <Route path={"/parceiros"} component={Parceiro} />
+      <Route path={"/parceiros/dashboard"} component={Parceiro} />
       <Route path={"/parceiro"} component={Parceiro} />
+      <Route path={"/parceiro/dashboard"} component={Parceiro} />
       <Route path={"/indique"} component={Parceiro} />
       <Route path={"/indicacoes"} component={Parceiro} />
       <Route path={"/404"} component={NotFound} />

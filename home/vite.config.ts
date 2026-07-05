@@ -234,9 +234,51 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
-    port: 3000,
-    strictPort: false, // Will find next available port if 3000 is busy
+    port: 3001,
+    strictPort: true,
     host: true,
+    proxy: {
+      "/api": {
+        target: "http://127.0.0.1:3000",
+        changeOrigin: true,
+      },
+      "/app": {
+        target: "http://127.0.0.1:3000",
+        changeOrigin: true,
+      },
+      "/parceiros/auth-callback": {
+        target: "http://127.0.0.1:3000",
+        changeOrigin: true,
+      },
+      "/assets": {
+        target: "http://127.0.0.1:3000",
+        changeOrigin: true,
+      },
+      "/politica-de-privacidade": {
+        target: "http://127.0.0.1:3000",
+        changeOrigin: true,
+      },
+      "/privacy-policy": {
+        target: "http://127.0.0.1:3000",
+        changeOrigin: true,
+      },
+      "/termos-de-uso": {
+        target: "http://127.0.0.1:3000",
+        changeOrigin: true,
+      },
+      "/terms-of-use": {
+        target: "http://127.0.0.1:3000",
+        changeOrigin: true,
+      },
+      "/exclusao-conta": {
+        target: "http://127.0.0.1:3000",
+        changeOrigin: true,
+      },
+      "/delete-account": {
+        target: "http://127.0.0.1:3000",
+        changeOrigin: true,
+      },
+    },
     allowedHosts: [
       ".manuspre.computer",
       ".manus.computer",

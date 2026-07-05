@@ -28,6 +28,7 @@ import { trpc, createTRPCClient } from "@/lib/trpc";
 import {
   initManusRuntime,
   subscribeSafeAreaInsets,
+  isRunningInPreviewIframe,
 } from "@/lib/_core/manus-runtime";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LocationProvider, useLocation } from "@/lib/location-context";
@@ -295,7 +296,7 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 
-  const shouldOverrideSafeArea = Platform.OS === "web";
+  const shouldOverrideSafeArea = Platform.OS === "web" && isRunningInPreviewIframe();
 
   return (
     <ThemeProvider>

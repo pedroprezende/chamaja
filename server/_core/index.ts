@@ -10,7 +10,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
-import { getPrivacyPolicyHtml, getDeletionPolicyHtml } from "./privacy";
+import { getPrivacyPolicyHtml, getDeletionPolicyHtml, getTermsOfUseHtml } from "./privacy";
 import * as db from "../db";
 import { createClient } from "@supabase/supabase-js";
 import { rateLimit } from "./rate-limit";
@@ -85,8 +85,28 @@ async function startServer() {
     next();
   });
 
-  app.use(express.json({ limit: "100mb" }));
-  app.use(express.urlencoded({ limit: "100mb", extended: true }));
+  app.use(express.json({ limit: "5mb" }));
+  app.use(express.urlencoded({ limit: "5mb", extended: true }));
+
+  // Security headers
+  app.use((_req, res, next) => {
+    // Prevent clickjacking
+    res.setHeader("X-Frame-Options", "SAMEORIGIN");
+    // Prevent MIME sniffing
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    // Referrer policy
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    // XSS protection (legacy browsers)
+    res.setHeader("X-XSS-Protection", "1; mode=block");
+    // HSTS — only in production (HTTPS)
+    if (process.env.NODE_ENV === "production") {
+      res.setHeader(
+        "Strict-Transport-Security",
+        "max-age=63072000; includeSubDomains; preload"
+      );
+    }
+    next();
+  });
 
   // Logger middleware
   app.use((req, res, next) => {
@@ -117,25 +137,45 @@ async function startServer() {
     res.send(getDeletionPolicyHtml());
   });
 
+  app.get("/termos-de-uso", (_req, res) => {
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(getTermsOfUseHtml());
+  });
+
+  app.get("/terms-of-use", (_req, res) => {
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(getTermsOfUseHtml());
+  });
+
   app.get("/api/health", (_req, res) => {
     res.json({
       status: "ok",
       message: "Servidor ChamaJá está ONLINE!",
-      database: !!process.env.DATABASE_URL,
+      // Do not expose internal infrastructure details in production
+      ...(process.env.NODE_ENV !== "production" && { database: !!process.env.DATABASE_URL }),
     });
   });
 
   // Google OAuth initiation — proxies through server so Supabase only needs server URL
   // app_redirect: deep link for native apps (e.g. exp://192.168.x.x:8081)
-  app.get("/api/auth/google", (req, res) => {
+  app.get(
+    "/api/auth/google",
+    rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: "Muitas tentativas de autenticação. Aguarde 15 minutos." }),
+    (req, res) => {
     const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || "";
     const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "";
-    const host = req.get("host") || "";
-    let protocol = req.protocol;
-    if (host.includes("xamaja.com.br")) {
+    const backendHost = req.get("host") || "";
+    const host = req.get("x-forwarded-host") || req.get("host") || "";
+    let protocol = req.get("x-forwarded-proto") || req.protocol;
+    if (
+      host.includes("xamaja.com.br") || 
+      host.includes("railway.app") || 
+      protocol === "https" ||
+      req.headers["x-forwarded-proto"] === "https"
+    ) {
       protocol = "https";
     }
-    const baseUrl = `${protocol}://${host}`;
+    const baseUrl = `${protocol}://${backendHost}`;
     const appRedirect = req.query.app_redirect as string | undefined;
 
     const cookieOptions: any = {
@@ -150,6 +190,21 @@ async function startServer() {
       cookieOptions.domain = ".xamaja.com.br";
     }
 
+    const referer = req.headers.referer;
+    let clientOrigin = "";
+    if (referer) {
+      try {
+        const refUrl = new URL(referer);
+        clientOrigin = refUrl.origin;
+      } catch (e) {
+        console.error("[Auth] Error parsing referer URL:", e);
+      }
+    }
+
+    if (clientOrigin) {
+      res.cookie("oauth_client_origin", clientOrigin, cookieOptions);
+    }
+
     if (appRedirect) {
       res.cookie("oauth_app_redirect", appRedirect, cookieOptions);
     } else {
@@ -159,8 +214,8 @@ async function startServer() {
 
     const targetParam = appRedirect ? "" : "?target=partner";
     const callbackUrl = `${baseUrl}/app/oauth/callback${targetParam}`;
-    const stateParam = appRedirect ? "" : "&state=partner";
-    const oauthUrl = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(callbackUrl)}&apikey=${supabaseAnonKey}${stateParam}`;
+    
+    const oauthUrl = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(callbackUrl)}&apikey=${supabaseAnonKey}`;
     res.redirect(oauthUrl);
   });
 
@@ -189,8 +244,19 @@ async function startServer() {
   var params = new URLSearchParams(hash);
   var accessToken = params.get('access_token');
   var refreshToken = params.get('refresh_token');
+  
+  var searchParams = new URLSearchParams(window.location.search);
+  
+  var clientOrigin = ${JSON.stringify(cookies["oauth_client_origin"] || "")};
+  if (!clientOrigin && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    clientOrigin = 'http://localhost:3001';
+  }
+  if (!clientOrigin) {
+    clientOrigin = window.location.origin;
+  }
+
   if (!accessToken || !refreshToken) {
-    window.location.href = '/parceiros?auth_error=Tokens+nao+recebidos';
+    window.location.href = clientOrigin + '/parceiros?auth_error=Tokens+nao+recebidos';
     return;
   }
 
@@ -207,18 +273,18 @@ async function startServer() {
     body: JSON.stringify({ access_token: accessToken, refresh_token: refreshToken })
   }).then(function(r) { return r.json(); }).then(function(data) {
     if (data.success) {
-      localStorage.setItem('bp_session_token', data.sessionToken);
-      localStorage.setItem('bp_user_profile', JSON.stringify(data.user));
+      // Instead of storing tokens locally on backend origin (port 3000), redirect to frontend origin (port 3001) with session params
+      var destUrl = clientOrigin + '/parceiros?session_token=' + encodeURIComponent(data.sessionToken) + '&user=' + encodeURIComponent(JSON.stringify(data.user));
       if (data.user && (data.user.tipo === 'prestador' || data.user.tipo === 'comercio')) {
-        window.location.href = '/parceiros';
+        window.location.href = destUrl;
       } else {
-        window.location.href = '/parceiros?complete_registration=true';
+        window.location.href = destUrl + '&complete_registration=true';
       }
     } else {
-      window.location.href = '/parceiros?auth_error=' + encodeURIComponent(data.error || 'Falha na autenticacao');
+      window.location.href = clientOrigin + '/parceiros?auth_error=' + encodeURIComponent(data.error || 'Falha na autenticacao');
     }
   }).catch(function() {
-    window.location.href = '/parceiros?auth_error=Erro+de+conexao';
+    window.location.href = clientOrigin + '/parceiros?auth_error=Erro+de+conexao';
   });
 })();
 </script>
@@ -351,6 +417,7 @@ async function startServer() {
 
   app.use(
     "/api/trpc",
+    rateLimit({ windowMs: 60 * 1000, max: 120, message: "Limite de requisições excedido. Tente novamente em instantes." }),
     createExpressMiddleware({
       router: appRouter,
       createContext,
@@ -394,10 +461,15 @@ async function startServer() {
   app.get("/app/oauth/callback", (req, res, next) => {
     const cookies = parseCookieHeader(req.headers.cookie || "");
     const redirectTarget = cookies["oauth_redirect_target"];
-    const isPartnerState = req.query.state === "partner" || req.query.target === "partner";
+    const clientOriginCookie = cookies["oauth_client_origin"];
+    
+    const targetQueryVal = req.query.target as string | undefined;
+    
+    let isPartner = redirectTarget === "partner" || targetQueryVal === "partner";
+    let extractedOrigin = clientOriginCookie || "";
 
     // 1. Server-side cookie check OR state parameter check (100% reliable)
-    if (redirectTarget === "partner" || isPartnerState) {
+    if (isPartner) {
       const host = req.get("host") || "";
       const cookieOptions: any = {
         path: "/",
@@ -407,10 +479,15 @@ async function startServer() {
         cookieOptions.domain = ".xamaja.com.br";
       }
       res.clearCookie("oauth_redirect_target", cookieOptions);
+      res.clearCookie("oauth_client_origin", cookieOptions);
 
+      let redirectBase = extractedOrigin || "";
+      if (!redirectBase && (host.includes("localhost") || host.includes("127.0.0.1"))) {
+        redirectBase = "http://localhost:3001";
+      }
       return res.redirect(
         302,
-        "/parceiros/auth-callback" + req.url.slice("/app/oauth/callback".length),
+        redirectBase + "/parceiros/auth-callback" + req.url.slice("/app/oauth/callback".length),
       );
     }
 
@@ -426,9 +503,21 @@ async function startServer() {
 <head>
 <script>
 (function() {
-  if (localStorage.getItem("oauth_redirect_target") === "partner") {
+  var hashParams = new URLSearchParams(window.location.hash.substring(1));
+  var searchParams = new URLSearchParams(window.location.search);
+  var isPartner = hashParams.get("target") === "partner" || 
+                  searchParams.get("target") === "partner" || 
+                  localStorage.getItem("oauth_redirect_target") === "partner";
+
+  if (isPartner) {
     localStorage.removeItem("oauth_redirect_target");
-    window.location.href = "/parceiros/auth-callback" + window.location.search + window.location.hash;
+    var targetOrigin = "";
+    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+      targetOrigin = "http://localhost:3001";
+    } else {
+      targetOrigin = window.location.origin;
+    }
+    window.location.href = targetOrigin + "/parceiros/auth-callback" + window.location.search + window.location.hash;
   } else {
     var search = window.location.search || "";
     var separator = search ? "&" : "?";
@@ -496,6 +585,8 @@ async function startServer() {
         educacao: "Educação",
         comercios: "Comércios",
         mobilidade: "Mobilidade",
+        pets: "Pets",
+        academias: "Academias / Fitness",
         outro: "Outro",
       };
 

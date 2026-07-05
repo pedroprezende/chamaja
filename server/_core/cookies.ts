@@ -51,12 +51,15 @@ export function getSessionCookieOptions(
 ): Pick<CookieOptions, "domain" | "httpOnly" | "path" | "sameSite" | "secure"> {
   const hostname = req.hostname;
   const domain = getParentDomain(hostname);
+  const secure = isSecureRequest(req);
 
   return {
     domain,
     httpOnly: true,
     path: "/",
-    sameSite: "none",
-    secure: isSecureRequest(req),
+    // SameSite=None requires Secure=true (enforced by browsers).
+    // On plain HTTP (local dev), fall back to "lax" to avoid cookie rejection.
+    sameSite: secure ? "none" : "lax",
+    secure,
   };
 }

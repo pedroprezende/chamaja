@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -75,6 +76,7 @@ interface CategoryOption {
 }
 
 export default function Parceiro() {
+  const [location, setLocation] = useLocation();
   // Page states: 'select' | 'login' | 'register' | 'dashboard' | 'complete-profile'
   const [view, setView] = useState<
     "select" | "login" | "register" | "dashboard" | "complete-profile"
@@ -158,6 +160,16 @@ export default function Parceiro() {
       window.history.replaceState(null, "", window.location.pathname);
     }
 
+    // Check for session_token and user profile passed in query parameters from OAuth flow
+    const sessionTokenParam = urlParams.get("session_token");
+    const userParam = urlParams.get("user");
+    if (sessionTokenParam && userParam) {
+      localStorage.setItem("bp_session_token", sessionTokenParam);
+      localStorage.setItem("bp_user_profile", userParam);
+      const cleanUrl = window.location.pathname + (urlParams.get("complete_registration") ? "?complete_registration=true" : "");
+      window.history.replaceState(null, "", cleanUrl);
+    }
+
     // Check for existing session
     const token = localStorage.getItem("bp_session_token");
     const savedUser = localStorage.getItem("bp_user_profile");
@@ -168,13 +180,27 @@ export default function Parceiro() {
       
       if (parsedUser.tipo === "prestador" || parsedUser.tipo === "comercio") {
         setView("dashboard");
+        if (location === "/parceiros" || location === "/parceiro") {
+          setLocation(location + "/dashboard");
+        }
       } else if (completeRegParam || parsedUser.tipo === "cliente") {
         setView("complete-profile");
       } else {
         setView("dashboard");
+        if (location === "/parceiros" || location === "/parceiro") {
+          setLocation(location + "/dashboard");
+        }
       }
+    } else {
+      // Not logged in: if trying to access dashboard, send to select/login
+      if (location === "/parceiros/dashboard") {
+        setLocation("/parceiros");
+      } else if (location === "/parceiro/dashboard") {
+        setLocation("/parceiro");
+      }
+      setView("select");
     }
-  }, []);
+  }, [location]);
 
   const handleGoogleLogin = () => {
     localStorage.setItem("oauth_redirect_target", "partner");
@@ -296,6 +322,9 @@ export default function Parceiro() {
         setPartner(result.partner);
         toast.success(`Bem-vindo, ${result.user.name}!`);
         setView("dashboard");
+        if (location === "/parceiros" || location === "/parceiro") {
+          setLocation(location + "/dashboard");
+        }
       } else {
         toast.error(
           result.error || "Falha no login. Verifique suas credenciais."
@@ -344,6 +373,9 @@ export default function Parceiro() {
         }
         await fetchProfile();
         setView("dashboard");
+        if (location === "/parceiros" || location === "/parceiro") {
+          setLocation(location + "/dashboard");
+        }
       } else {
         toast.error(result.error || "Erro ao completar cadastro.");
       }
@@ -367,6 +399,7 @@ export default function Parceiro() {
     setCategories([]);
     setView("select");
     toast.success("Sessão encerrada.");
+    setLocation("/");
   };
 
   const saveProfile = async (e?: React.FormEvent) => {

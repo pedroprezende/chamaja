@@ -4,15 +4,34 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   ArrowRight,
   MapPin,
-  Users,
   CheckCircle,
-  TrendingUp,
   AlertTriangle,
+  Wrench,
+  Utensils,
+  Scissors,
+  Car,
+  Home as HomeIcon,
+  HeartPulse,
+  Grid,
+  ChevronLeft,
+  ChevronRight,
+  Star,
+  Search,
+  ChevronDown,
+  Heart,
+  ShieldCheck,
+  Gift,
+  Hammer,
+  GraduationCap,
+  MoreHorizontal,
+  MessageSquare,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export default function Home() {
   const [activeStep, setActiveStep] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchLocation, setSearchLocation] = useState("Bragança Paulista - SP");
 
   // Form states
   const [name, setName] = useState("");
@@ -26,6 +45,10 @@ export default function Home() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formSuccess, setFormSuccess] = useState(false);
   const [formError, setFormError] = useState("");
+
+  // Dynamic featured providers from DB
+  const [featuredProviders, setFeaturedProviders] = useState<any[]>([]);
+  const [isLoadingFeatured, setIsLoadingFeatured] = useState(true);
 
   useEffect(() => {
     // 1. Capture ref parameter from URL search params
@@ -47,7 +70,40 @@ export default function Home() {
         }
       }, 300);
     }
+
+    // 3. Fetch actual providers from the database
+    async function loadFeatured() {
+      try {
+        const input = {
+          sortBy: "relevance",
+          profileType: "all",
+        };
+        const url = `/api/trpc/providers.searchFiltered?input=${encodeURIComponent(JSON.stringify(input))}`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.result && json.result.data) {
+            setFeaturedProviders(json.result.data.slice(0, 8));
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load featured providers:", e);
+      } finally {
+        setIsLoadingFeatured(false);
+      }
+    }
+    loadFeatured();
   }, []);
+
+  const handleNextStep = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setFormError("");
+    if (!name || !email || !phone) {
+      setFormError("Por favor, preencha todos os campos obrigatórios da identificação.");
+      return;
+    }
+    setActiveStep(2);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,6 +162,7 @@ export default function Home() {
         setCity("");
         setNeighborhood("");
         setDescription("");
+        setActiveStep(1);
       } else {
         setFormError(
           result.error ||
@@ -122,150 +179,408 @@ export default function Home() {
     }
   };
 
+  const handleSearchSubmit = () => {
+    window.location.href = `/busca?q=${encodeURIComponent(searchQuery)}&location=${encodeURIComponent(searchLocation)}`;
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-6">
             <img
               src="/assets/images/logo-xamaja.png"
               alt="XamaJá"
-              className="h-10 w-auto object-contain"
+              className="h-9 w-auto object-contain"
             />
+            
+            {/* Navegar Dropdown */}
+            <div className="hidden lg:flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-white cursor-pointer transition select-none">
+              <span>Navegar</span>
+              <ChevronDown className="h-4 w-4" />
+            </div>
           </div>
 
-          <nav className="hidden md:flex items-center gap-8">
-            <a
-              href="#"
-              className="text-muted-foreground hover:text-foreground transition"
-            >
-              Início
-            </a>
-            <a
-              href="#como-funciona"
-              className="text-muted-foreground hover:text-foreground transition"
-            >
-              Como funciona
-            </a>
-            <a
-              href="#para-prestadores"
-              className="text-muted-foreground hover:text-foreground transition"
-            >
-              Para prestadores
-            </a>
-            <a
-              href="#para-comercios"
-              className="text-muted-foreground hover:text-foreground transition"
-            >
-              Para comércios
-            </a>
+          <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
             <a
               href="/parceiros"
-              className="text-primary font-semibold hover:text-primary/80 transition"
+              className="text-muted-foreground hover:text-white transition"
             >
-              Seja um Parceiro ✦
+              Seja um parceiro
             </a>
+            <a
+              href="/parceiros#indicacao"
+              className="text-muted-foreground hover:text-white transition"
+            >
+              Indique e ganhe
+            </a>
+            <a
+              href="/busca?filter=favorites"
+              className="text-muted-foreground hover:text-white transition flex items-center gap-1.5"
+            >
+              <Heart className="h-4 w-4" />
+              <span>Favoritos</span>
+            </a>
+            <Button
+              variant="ghost"
+              onClick={() => (window.location.href = "/app")}
+              className="text-white hover:text-white hover:bg-zinc-900 border border-zinc-800 rounded-xl px-5 h-10 text-xs"
+            >
+              Entrar
+            </Button>
+            <Button
+              onClick={() => {
+                document
+                  .getElementById("cadastro")
+                  ?.scrollIntoView({ behavior: "smooth", block: "center" });
+              }}
+              className="bg-primary text-primary-foreground hover:bg-primary/95 font-semibold rounded-xl px-5 h-10 text-xs transition"
+            >
+              Cadastre-se
+            </Button>
           </nav>
-
-          <Button
-            className="bg-primary text-primary-foreground hover:bg-primary/90"
-            onClick={() => (window.location.href = "/app")}
-          >
-            Entrar
-          </Button>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="py-20 md:py-32 bg-gradient-to-b from-background to-background/50">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
+      <section className="relative py-20 md:py-28 overflow-hidden border-b border-zinc-900 bg-[#070708]">
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="grid lg:grid-cols-12 gap-12 items-center">
             {/* Left Content */}
-            <div className="space-y-8">
-              <div className="inline-block px-4 py-2 bg-primary/10 border border-primary/30 rounded-full">
-                <span className="text-primary text-sm font-semibold">
-                  ✦ PLATAFORMA COMPLETA
+            <div className="lg:col-span-7 space-y-8">
+              {/* Location Pin */}
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium select-none">
+                <MapPin className="h-4 w-4 text-primary" />
+                <span>Sua localização:</span>
+                <span className="text-primary font-bold underline cursor-pointer hover:text-primary/80 transition">
+                  {searchLocation} ▾
                 </span>
               </div>
 
               <div className="space-y-4">
-                <h1 className="text-5xl md:text-6xl font-bold leading-tight">
-                  A solução mais
+                <h1 className="text-5xl md:text-6.5xl font-black leading-[1.1] tracking-tight text-white font-sans">
+                  Encontre tudo
                   <br />
-                  rápida para conectar
-                  <br />
-                  <span className="text-primary">você ao que precisa.</span>
+                  <span className="text-primary">perto de você.</span>
                 </h1>
 
-                <p className="text-lg text-muted-foreground max-w-md">
-                  Encontre prestadores de serviços e comércios perto de você com
-                  praticidade, segurança e confiança.
+                <p className="text-lg text-muted-foreground max-w-lg font-medium">
+                  Busque comércios e prestadores de serviço na sua região.
                 </p>
               </div>
 
-              <div className="flex gap-4 pt-4">
+              {/* Integrated Search Bar */}
+              <div className="bg-zinc-950/80 border border-zinc-800 p-2 rounded-2xl flex flex-col md:flex-row items-center gap-2 shadow-2xl w-full max-w-2xl backdrop-blur-md">
+                {/* Input 1: O que você procura */}
+                <div className="flex-1 flex items-center px-3 gap-2.5 w-full">
+                  <Search className="text-muted-foreground h-4.5 w-4.5 flex-shrink-0" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === "Enter") {
+                        handleSearchSubmit();
+                      }
+                    }}
+                    className="bg-transparent border-none focus:outline-none focus:ring-0 text-foreground w-full text-sm py-2"
+                    placeholder="O que você procura? Ex: pizzaria, eletricista, salão..."
+                  />
+                </div>
+                
+                {/* Divider */}
+                <div className="hidden md:block h-6 w-px bg-zinc-850"></div>
+
+                {/* Input 2: Cidade, bairro ou CEP */}
+                <div className="flex-1 flex items-center px-3 gap-2.5 w-full">
+                  <MapPin className="text-muted-foreground h-4.5 w-4.5 flex-shrink-0" />
+                  <input
+                    type="text"
+                    value={searchLocation}
+                    onChange={e => setSearchLocation(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === "Enter") {
+                        handleSearchSubmit();
+                      }
+                    }}
+                    className="bg-transparent border-none focus:outline-none focus:ring-0 text-foreground w-full text-sm py-2"
+                    placeholder="Cidade, bairro ou CEP"
+                  />
+                </div>
+
+                {/* Search Button */}
                 <Button
-                  onClick={() =>
-                    document
-                      .getElementById("cadastro")
-                      ?.scrollIntoView({ behavior: "smooth", block: "center" })
-                  }
-                  className="bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-6 text-base"
+                  onClick={handleSearchSubmit}
+                  className="bg-primary text-primary-foreground hover:bg-primary/95 px-6 py-3.5 h-11 rounded-xl font-bold transition-all w-full md:w-auto text-xs"
                 >
-                  Cadastrar agora <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-                <Button
-                  variant="outline"
-                  className="border-border text-foreground hover:bg-card px-8 py-6 text-base"
-                >
-                  Quero ver prestador
+                  Buscar
                 </Button>
               </div>
 
-              {/* Stats */}
-              <div className="grid grid-cols-2 gap-6 pt-8 border-t border-border">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Users className="h-5 w-5 text-primary" />
-                    <span className="text-2xl font-bold">Mais clientes</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">da sua região</p>
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <CheckCircle className="h-5 w-5 text-primary" />
-                    <span className="text-2xl font-bold">Serviços</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    diversificados
-                  </p>
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <MapPin className="h-5 w-5 text-primary" />
-                    <span className="text-2xl font-bold">Pagamentos</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">seguros</p>
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <TrendingUp className="h-5 w-5 text-primary" />
-                    <span className="text-2xl font-bold">Cresça seu</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">negócio</p>
-                </div>
+              {/* Quick Tags */}
+              <div className="flex flex-wrap gap-2 text-xs items-center pt-2">
+                <span className="text-muted-foreground">Mais buscados:</span>
+                {["Restaurante", "Eletricista", "Salão de Beleza", "Mecânico", "Marceneiro", "Academia"].map(tag => (
+                  <button
+                    key={tag}
+                    onClick={() => {
+                      setSearchQuery(tag);
+                      window.location.href = `/busca?q=${encodeURIComponent(tag)}`;
+                    }}
+                    className="px-3.5 py-1 bg-zinc-900 border border-zinc-800 hover:border-primary/50 text-muted-foreground hover:text-white rounded-full transition duration-200"
+                  >
+                    {tag}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Right - Phone Mockup */}
-            <div className="flex justify-center relative">
-              <div className="absolute inset-0 bg-primary/10 rounded-full blur-3xl filter opacity-40 pointer-events-none"></div>
+            {/* Right Content */}
+            <div className="lg:col-span-5 flex justify-center relative w-full h-[350px] md:h-[450px]">
+              {/* Radial green glow backdrop */}
+              <div className="absolute inset-0 bg-primary/10 rounded-full blur-3xl filter opacity-40 pointer-events-none z-0"></div>
+              {/* Big 3D Glowing Green X */}
               <img
-                src="/assets/images/hero_mockup_right.png"
-                alt="App XamaJá"
-                className="max-w-[650px] w-full h-auto relative z-10 drop-shadow-2xl"
+                src="https://lh3.googleusercontent.com/aida/AP1WRLth_3_Siyte1uWF2CyBkUYA0Dm7FZfbiCFNSxxA9So6JXyAolQgjg-PQHH8hcj7UNGt4NPg0saT9grrHp-9i3IeL19EGI6XlO0w4hQcGkwn-zcTKjTNyCtk_U2OTn54GwWwg2C-q6CpwVHWquIz1qlAeLGw03XFcaG9wFSLVk8iwqdXb1RJcnEjbtE7oYerPcmapAnubctAzeiny-SYPk3Z1_5qFZ8KnPNl_76sy-6EHndkLf5BYKI2CvXD"
+                alt="XamaJá App Ecosystem"
+                className="max-w-[420px] w-full h-auto relative z-10 object-contain drop-shadow-[0_0_50px_rgba(132,204,22,0.25)] animate-pulse"
+                style={{ animationDuration: "4s" }}
               />
+              {/* Floating widget card */}
+              <div className="absolute top-10 right-0 md:right-4 z-20 bg-zinc-950/85 border border-zinc-800 p-5 rounded-2xl max-w-[200px] shadow-2xl backdrop-blur-md select-none">
+                <span className="text-primary font-bold text-sm block mb-1">X marca o local</span>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Conectando você aos melhores negócios da sua região.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Categories Horizontal bar (from user screenshot) */}
+      <section className="bg-black py-6 border-b border-zinc-900 select-none">
+        <div className="container mx-auto px-4">
+          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-none no-scrollbar justify-between items-center">
+            {[
+              { id: "all", name: "Todas", icon: Grid },
+              { id: "comercios", name: "Alimentação", icon: Utensils },
+              { id: "beleza-estetica", name: "Beleza", icon: Scissors },
+              { id: "saude", name: "Saúde", icon: HeartPulse },
+              { id: "reformas-reparos", name: "Serviços", icon: Wrench },
+              { id: "servicos-domesticos", name: "Casa", icon: HomeIcon },
+              { id: "construcao", name: "Construção", icon: Hammer },
+              { id: "automotivo", name: "Automotivo", icon: Car },
+              { id: "educacao", name: "Educação", icon: GraduationCap },
+              { id: "mais", name: "Mais", icon: MoreHorizontal },
+            ].map(cat => {
+              const Icon = cat.icon;
+              const isActive = cat.id === "all"; // Make "Todas" active by default
+              return (
+                <div
+                  key={cat.id}
+                  onClick={() => {
+                    if (cat.id === "all" || cat.id === "mais") {
+                      window.location.href = "/busca";
+                    } else {
+                      window.location.href = `/busca?category=${cat.id}`;
+                    }
+                  }}
+                  className={`flex flex-col items-center justify-center gap-2 w-[115px] h-[100px] shrink-0 rounded-2xl cursor-pointer transition duration-300 ${
+                    isActive 
+                      ? "bg-zinc-950 border border-primary/50 text-primary shadow-[0_0_15px_rgba(132,204,22,0.1)]" 
+                      : "bg-zinc-950/40 border border-zinc-900 text-muted-foreground hover:text-white hover:border-zinc-800"
+                  }`}
+                >
+                  <Icon className={`h-5 w-5 ${isActive ? "text-primary" : "text-zinc-400 group-hover:text-white"}`} />
+                  <span className="text-xs font-semibold tracking-wide">{cat.name}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Destaques para você (from user screenshot) */}
+      <section className="py-16 bg-black border-b border-zinc-900">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-center mb-10">
+            <div className="flex items-center gap-2">
+              <Star className="text-primary h-6 w-6 fill-primary" />
+              <h2 className="text-2xl md:text-3xl font-extrabold text-white font-sans">
+                Destaques para você
+              </h2>
+            </div>
+            <a 
+              href="/busca" 
+              className="text-primary font-bold text-sm flex items-center gap-1 hover:underline transition"
+            >
+              <span>Ver todos</span>
+              <ArrowRight className="h-4 w-4" />
+            </a>
+          </div>
+
+          <div 
+            className="flex gap-6 overflow-x-auto pb-6 scrollbar-none no-scrollbar snap-x snap-mandatory"
+            id="featured-partners-row"
+          >
+            {isLoadingFeatured ? (
+              // Loading skeletons
+              Array.from({ length: 4 }).map((_, idx) => (
+                <div 
+                  key={idx}
+                  className="min-w-[280px] md:min-w-[320px] h-[340px] bg-zinc-950 border border-zinc-900 rounded-[2rem] animate-pulse"
+                />
+              ))
+            ) : featuredProviders.length === 0 ? (
+              <div className="w-full text-center py-12 text-muted-foreground text-sm">
+                Nenhum prestador encontrado no momento.
+              </div>
+            ) : (
+              featuredProviders.map((p, idx) => {
+                const categoryImages: Record<string, string> = {
+                  "comercios": "https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&q=80",
+                  "beleza-estetica": "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=600&q=80",
+                  "saude": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=600&q=80",
+                  "reformas-reparos": "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=600&q=80",
+                  "servicos-domesticos": "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&q=80",
+                  "construcao": "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&q=80",
+                  "automotivo": "https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=600&q=80",
+                  "educacao": "https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?w=600&q=80"
+                };
+
+                const categoryLogos: Record<string, string> = {
+                  "comercios": "https://images.unsplash.com/photo-1590947132387-155cc02f3212?w=100&q=80",
+                  "beleza-estetica": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=100&q=80",
+                  "saude": "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100&q=80",
+                  "reformas-reparos": "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=100&q=80",
+                  "servicos-domesticos": "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=100&q=80",
+                  "construcao": "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=100&q=80",
+                  "automotivo": "https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=100&q=80",
+                  "educacao": "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=100&q=80"
+                };
+
+                const coverImage = p.coverUri || categoryImages[p.categoryId || ""] || "https://images.unsplash.com/photo-1521791136368-1a868270f63b?w=600&q=80";
+                const logoImage = p.avatarUri || categoryLogos[p.categoryId || ""] || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80";
+                const isVerified = p.isVerified === true;
+                const tagLabel = isVerified ? "Verificado" : "Parceiro";
+                const statusLabel = p.onlineStatus === true ? "Aberto agora" : "Fechado";
+
+                return (
+                  <div 
+                    key={p.id}
+                    className="min-w-[280px] md:min-w-[320px] bg-zinc-950 border border-zinc-900 rounded-[2rem] overflow-hidden hover:border-zinc-800 transition duration-300 snap-start shadow-xl relative group"
+                  >
+                    {/* Image & Badge overlay */}
+                    <div className="relative h-40 w-full overflow-hidden">
+                      <img 
+                        src={coverImage} 
+                        alt={p.name} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      {/* Overlay Tag */}
+                      <span className={`absolute top-4 left-4 text-[10px] font-extrabold px-3 py-1 rounded-full shadow-md ${
+                        isVerified 
+                          ? "bg-primary text-primary-foreground" 
+                          : "bg-black/60 border border-zinc-800 text-primary"
+                      }`}>
+                        {tagLabel}
+                      </span>
+                      {/* Favorite toggle */}
+                      <button className="absolute top-4 right-4 p-2 bg-black/60 border border-zinc-800/80 rounded-full hover:bg-zinc-900 transition shadow-md">
+                        <Heart className="h-4 w-4 text-white hover:text-red-500 transition-colors" />
+                      </button>
+                    </div>
+
+                    {/* Avatar Badge overlapping */}
+                    <div className="w-14 h-14 rounded-full border-4 border-zinc-950 bg-black -mt-7 ml-6 relative z-10 flex items-center justify-center overflow-hidden shadow-lg">
+                      <img src={logoImage} alt={p.name} className="w-full h-full object-cover" />
+                    </div>
+
+                    {/* Content details */}
+                    <div className="p-6 pt-4 space-y-4">
+                      <div>
+                        <div className="flex justify-between items-center">
+                          <h3 className="font-bold text-lg text-white group-hover:text-primary transition-colors truncate max-w-[180px]">{p.name}</h3>
+                          <div className="flex items-center gap-1 text-xs text-yellow-500 font-bold">
+                            <span>★</span>
+                            <span>{p.rating || "5.0"}</span>
+                            <span className="text-muted-foreground text-[10px]">({p.ratingCount || "0"})</span>
+                          </div>
+                        </div>
+                        <p className="text-muted-foreground text-xs font-semibold mt-1">
+                          {p.category}
+                        </p>
+                        <p className="text-muted-foreground text-[11px] font-medium mt-0.5">
+                          {p.neighborhood && p.city ? `${p.neighborhood} - ${p.city}` : p.city || "Região"}
+                        </p>
+                      </div>
+
+                      {/* Footer status line */}
+                      <div className="flex justify-between items-center pt-2 border-t border-zinc-900">
+                        <div className={`flex items-center gap-1.5 text-xs font-bold ${p.onlineStatus === true ? "text-emerald-500" : "text-zinc-500"}`}>
+                          <span className={`w-2 h-2 rounded-full ${p.onlineStatus === true ? "bg-emerald-500 animate-pulse" : "bg-zinc-600"}`}></span>
+                          <span>{statusLabel}</span>
+                        </div>
+                        <Button 
+                          onClick={() => window.location.href = `/perfil/${p.id}`}
+                          className="bg-transparent hover:bg-zinc-900 border border-zinc-800 text-white font-bold text-[11px] rounded-xl px-4 py-2 h-8"
+                        >
+                          Detalhes
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* Features Footer row (from user screenshot) */}
+      <section className="py-12 bg-black border-b border-zinc-900">
+        <div className="container mx-auto px-4">
+          <div className="bg-zinc-950/40 border border-zinc-900 rounded-[2rem] p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-zinc-900 flex items-center justify-center text-primary">
+                <MapPin className="h-6 w-6" />
+              </div>
+              <div>
+                <h4 className="font-bold text-white text-sm">Tudo perto de você</h4>
+                <p className="text-xs text-muted-foreground mt-1">Encontre o que precisa na sua região</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-zinc-900 flex items-center justify-center text-primary">
+                <ShieldCheck className="h-6 w-6" />
+              </div>
+              <div>
+                <h4 className="font-bold text-white text-sm">Parceiros verificados</h4>
+                <p className="text-xs text-muted-foreground mt-1">Mais segurança para você e sua família</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-zinc-900 flex items-center justify-center text-primary">
+                <MessageSquare className="h-6 w-6" />
+              </div>
+              <div>
+                <h4 className="font-bold text-white text-sm">Contato rápido</h4>
+                <p className="text-xs text-muted-foreground mt-1">Fale direto pelo WhatsApp com o parceiro</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-zinc-900 flex items-center justify-center text-primary">
+                <Gift className="h-6 w-6" />
+              </div>
+              <div>
+                <h4 className="font-bold text-white text-sm">Indique e ganhe</h4>
+                <p className="text-xs text-muted-foreground mt-1">Indique parceiros e ganhe benefícios exclusivos</p>
+              </div>
             </div>
           </div>
         </div>
@@ -516,233 +831,264 @@ export default function Home() {
           </div>
 
           <div className="bg-card border border-border rounded-3xl p-8 md:p-12 shadow-2xl relative">
+            {/* Step Progress Bar */}
+            <div className="flex items-center justify-center gap-4 mb-8 border-b border-border/40 pb-6">
+              <div className="flex items-center gap-2">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border transition-all duration-300 ${activeStep === 1 ? 'bg-primary text-primary-foreground border-primary shadow-[0_0_15px_rgba(37,211,102,0.2)]' : 'bg-primary/20 text-primary border-primary'}`}>
+                  {activeStep > 1 ? "✓" : "1"}
+                </div>
+                <span className={`text-xs font-semibold ${activeStep === 1 ? 'text-white' : 'text-zinc-500'}`}>Identificação</span>
+              </div>
+              <div className="w-8 h-px bg-zinc-800"></div>
+              <div className="flex items-center gap-2">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border transition-all duration-300 ${activeStep === 2 ? 'bg-primary text-primary-foreground border-primary shadow-[0_0_15px_rgba(37,211,102,0.2)]' : 'bg-background border-zinc-800 text-zinc-500'}`}>2</div>
+                <span className={`text-xs font-semibold ${activeStep === 2 ? 'text-white' : 'text-zinc-500'}`}>Profissional</span>
+              </div>
+            </div>
+
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="flex flex-col gap-2">
-                  <label
-                    htmlFor="name"
-                    className="text-sm font-semibold text-white"
-                  >
-                    Nome do Profissional ou Negócio *
-                  </label>
-                  <Input
-                    type="text"
-                    id="name"
-                    placeholder="Ex: João Silva ou Pinturas Silva"
-                    required
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                    className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label
-                    htmlFor="email"
-                    className="text-sm font-semibold text-white"
-                  >
-                    E-mail *
-                  </label>
-                  <Input
-                    type="email"
-                    id="email"
-                    placeholder="Ex: joao@gmail.com"
-                    required
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
-                  />
-                </div>
-              </div>
+              {activeStep === 1 && (
+                <div className="space-y-6 animate-in fade-in duration-300">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="flex flex-col gap-2">
+                      <label
+                        htmlFor="name"
+                        className="text-sm font-semibold text-white"
+                      >
+                        Nome do Profissional ou Negócio *
+                      </label>
+                      <Input
+                        type="text"
+                        id="name"
+                        placeholder="Ex: João Silva ou Pinturas Silva"
+                        required
+                        value={name}
+                        onChange={e => setName(e.target.value)}
+                        className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label
+                        htmlFor="email"
+                        className="text-sm font-semibold text-white"
+                      >
+                        E-mail *
+                      </label>
+                      <Input
+                        type="email"
+                        id="email"
+                        placeholder="Ex: joao@gmail.com"
+                        required
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
+                      />
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="flex flex-col gap-2">
-                  <label
-                    htmlFor="phone"
-                    className="text-sm font-semibold text-white"
-                  >
-                    Telefone / WhatsApp *
-                  </label>
-                  <Input
-                    type="tel"
-                    id="phone"
-                    placeholder="Ex: (11) 99999-9999"
-                    required
-                    value={phone}
-                    onChange={e => setPhone(e.target.value)}
-                    className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label
-                    htmlFor="categoryId"
-                    className="text-sm font-semibold text-white font-body"
-                  >
-                    Categoria Principal *
-                  </label>
-                  <select
-                    id="categoryId"
-                    required
-                    value={categoryId}
-                    onChange={e => setCategoryId(e.target.value)}
-                    className="bg-background border border-border text-foreground rounded-xl px-4 py-3 h-12 focus:border-primary focus:outline-none transition text-sm"
-                  >
-                    <option value="" className="bg-card">
-                      Selecione uma categoria...
-                    </option>
-                    <option value="reformas-reparos" className="bg-card">
-                      Reformas e Reparos
-                    </option>
-                    <option value="assistencia-tecnica" className="bg-card">
-                      Assistência Técnica
-                    </option>
-                    <option value="servicos-domesticos" className="bg-card">
-                      Serviços Domésticos
-                    </option>
-                    <option value="servicos-externos" className="bg-card">
-                      Serviços Externos
-                    </option>
-                    <option value="automotivo" className="bg-card">
-                      Automotivo
-                    </option>
-                    <option value="beleza-estetica" className="bg-card">
-                      Beleza e Estética
-                    </option>
-                    <option value="servicos-profissionais" className="bg-card">
-                      Serviços Profissionais
-                    </option>
-                    <option value="saude" className="bg-card">
-                      Saúde
-                    </option>
-                    <option value="eventos" className="bg-card">
-                      Eventos
-                    </option>
-                    <option value="logistica" className="bg-card">
-                      Logística
-                    </option>
-                    <option value="educacao" className="bg-card">
-                      Educação
-                    </option>
-                    <option value="comercios" className="bg-card">
-                      Comércios / Lojas
-                    </option>
-                    <option value="mobilidade" className="bg-card">
-                      Mobilidade
-                    </option>
-                    <option value="outro" className="bg-card">
-                      Outro (Especificar)...
-                    </option>
-                  </select>
-                </div>
-              </div>
+                  <div className="flex flex-col gap-2">
+                    <label
+                      htmlFor="phone"
+                      className="text-sm font-semibold text-white"
+                    >
+                      Telefone / WhatsApp *
+                    </label>
+                    <Input
+                      type="tel"
+                      id="phone"
+                      placeholder="Ex: (11) 99999-9999"
+                      required
+                      value={phone}
+                      onChange={e => setPhone(e.target.value)}
+                      className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
+                    />
+                  </div>
 
-              {categoryId === "outro" && (
-                <div className="flex flex-col gap-2">
-                  <label
-                    htmlFor="otherCategory"
-                    className="text-sm font-semibold text-white"
-                  >
-                    Especifique a Categoria *
-                  </label>
-                  <Input
-                    type="text"
-                    id="otherCategory"
-                    placeholder="Ex: Pet Shop, Consultoria, etc."
-                    required
-                    value={otherCategory}
-                    onChange={e => setOtherCategory(e.target.value)}
-                    className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
-                  />
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="flex flex-col gap-2">
-                  <label
-                    htmlFor="city"
-                    className="text-sm font-semibold text-white"
-                  >
-                    Cidade *
-                  </label>
-                  <Input
-                    type="text"
-                    id="city"
-                    placeholder="Ex: Bragança Paulista"
-                    required
-                    value={city}
-                    onChange={e => setCity(e.target.value)}
-                    className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label
-                    htmlFor="neighborhood"
-                    className="text-sm font-semibold text-white"
-                  >
-                    Bairro *
-                  </label>
-                  <Input
-                    type="text"
-                    id="neighborhood"
-                    placeholder="Ex: Centro"
-                    required
-                    value={neighborhood}
-                    onChange={e => setNeighborhood(e.target.value)}
-                    className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <label
-                  htmlFor="description"
-                  className="text-sm font-semibold text-white"
-                >
-                  Descrição do seu negócio, produtos ou serviços *
-                </label>
-                <Textarea
-                  id="description"
-                  rows={4}
-                  placeholder="Descreva brevemente o seu comércio, loja, os produtos que vende ou serviços que oferece..."
-                  required
-                  value={description}
-                  onChange={e => setDescription(e.target.value)}
-                  className="bg-background border-border text-foreground rounded-xl px-4 py-3 focus-visible:ring-primary focus-visible:border-primary text-sm resize-none"
-                />
-              </div>
-
-              {/* Status Messages */}
-              {formSuccess && (
-                <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl p-4 gap-3 text-sm flex items-start">
-                  <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <strong>Cadastro enviado com sucesso!</strong> Recebemos
-                    suas informações. Analisaremos os dados e entraremos em
-                    contato para ativar o seu perfil no app XamaJá.
+                  <div className="pt-4">
+                    <Button
+                      type="button"
+                      onClick={handleNextStep}
+                      className="w-full flex items-center justify-center gap-3 bg-primary text-primary-foreground font-black py-4 h-14 rounded-xl hover:bg-primary/90 transition shadow-lg shadow-primary/20 hover:-translate-y-0.5"
+                    >
+                      <span>Avançar</span>
+                      <ArrowRight className="h-5 w-5" />
+                    </Button>
                   </div>
                 </div>
               )}
 
-              {formError && (
-                <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-4 gap-3 text-sm flex items-start">
-                  <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                  <span>{formError}</span>
+              {activeStep === 2 && (
+                <div className="space-y-6 animate-in fade-in duration-300">
+                  <div className="flex flex-col gap-2">
+                    <label
+                      htmlFor="categoryId"
+                      className="text-sm font-semibold text-white font-body"
+                    >
+                      Categoria Principal *
+                    </label>
+                    <select
+                      id="categoryId"
+                      required
+                      value={categoryId}
+                      onChange={e => setCategoryId(e.target.value)}
+                      className="bg-background border border-border text-foreground rounded-xl px-4 py-3 h-12 focus:border-primary focus:outline-none transition text-sm"
+                    >
+                      <option value="" className="bg-card">
+                        Selecione uma categoria...
+                      </option>
+                      <option value="reformas-reparos" className="bg-card">
+                        Reformas
+                      </option>
+                      <option value="comercios" className="bg-card">
+                        Alimentação
+                      </option>
+                      <option value="beleza-estetica" className="bg-card">
+                        Beleza
+                      </option>
+                      <option value="automotivo" className="bg-card">
+                        Automotivo
+                      </option>
+                      <option value="servicos-domesticos" className="bg-card">
+                        Casa
+                      </option>
+                      <option value="assistencia-tecnica" className="bg-card">
+                        Tecnologia / Assistência Técnica
+                      </option>
+                      <option value="pets" className="bg-card">
+                        Pets
+                      </option>
+                      <option value="saude" className="bg-card">
+                        Saúde
+                      </option>
+                      <option value="academias" className="bg-card">
+                        Academias / Fitness
+                      </option>
+                      <option value="outro" className="bg-card">
+                        Outro (Especificar)...
+                      </option>
+                    </select>
+                  </div>
+
+                  {categoryId === "outro" && (
+                    <div className="flex flex-col gap-2">
+                      <label
+                        htmlFor="otherCategory"
+                        className="text-sm font-semibold text-white"
+                      >
+                        Especifique a Categoria *
+                      </label>
+                      <Input
+                        type="text"
+                        id="otherCategory"
+                        placeholder="Ex: Pet Shop, Consultoria, etc."
+                        required
+                        value={otherCategory}
+                        onChange={e => setOtherCategory(e.target.value)}
+                        className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
+                      />
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="flex flex-col gap-2">
+                      <label
+                        htmlFor="city"
+                        className="text-sm font-semibold text-white"
+                      >
+                        Cidade *
+                      </label>
+                      <Input
+                        type="text"
+                        id="city"
+                        placeholder="Ex: Bragança Paulista"
+                        required
+                        value={city}
+                        onChange={e => setCity(e.target.value)}
+                        className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label
+                        htmlFor="neighborhood"
+                        className="text-sm font-semibold text-white"
+                      >
+                        Bairro *
+                      </label>
+                      <Input
+                        type="text"
+                        id="neighborhood"
+                        placeholder="Ex: Centro"
+                        required
+                        value={neighborhood}
+                        onChange={e => setNeighborhood(e.target.value)}
+                        className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label
+                      htmlFor="description"
+                      className="text-sm font-semibold text-white"
+                    >
+                      Descrição do seu negócio, produtos ou serviços *
+                    </label>
+                    <Textarea
+                      id="description"
+                      rows={4}
+                      placeholder="Descreva brevemente o seu comércio, loja, os produtos que vende ou serviços que oferece..."
+                      required
+                      value={description}
+                      onChange={e => setDescription(e.target.value)}
+                      className="bg-background border-border text-foreground rounded-xl px-4 py-3 focus-visible:ring-primary focus-visible:border-primary text-sm resize-none"
+                    />
+                  </div>
+
+                  {/* Status Messages */}
+                  {formSuccess && (
+                    <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl p-4 gap-3 text-sm flex items-start">
+                      <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <strong>Cadastro enviado com sucesso!</strong> Recebemos
+                        suas informações. Analisaremos os dados e entraremos em
+                        contato para ativar o seu perfil no app XamaJá.
+                      </div>
+                    </div>
+                  )}
+
+                  {formError && (
+                    <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-4 gap-3 text-sm flex items-start">
+                      <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                      <span>{formError}</span>
+                    </div>
+                  )}
+
+                  <div className="flex gap-4 pt-4">
+                    <Button
+                      type="button"
+                      onClick={() => setActiveStep(1)}
+                      variant="outline"
+                      className="flex-[0.4] border-border text-foreground hover:bg-card h-14 rounded-xl font-bold"
+                    >
+                      Voltar
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="flex-1 flex items-center justify-center gap-3 bg-primary text-primary-foreground font-black py-4 h-14 rounded-xl hover:bg-primary/90 transition shadow-lg shadow-primary/20 hover:-translate-y-0.5 disabled:opacity-75 disabled:cursor-not-allowed"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <span>Enviando...</span>
+                          <span className="loader-btn w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></span>
+                        </>
+                      ) : (
+                        <span>Enviar Formulário</span>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               )}
-
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full flex items-center justify-center gap-3 bg-primary text-primary-foreground font-black py-4 h-14 rounded-xl hover:bg-primary/90 transition shadow-lg shadow-primary/20 hover:-translate-y-0.5 disabled:opacity-75 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? (
-                  <>
-                    <span>Enviando...</span>
-                    <span className="loader-btn w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></span>
-                  </>
-                ) : (
-                  <span>Enviar Formulário</span>
-                )}
-              </Button>
             </form>
           </div>
         </div>
@@ -898,12 +1244,12 @@ export default function Home() {
               <h3 className="font-semibold mb-4">Legal</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>
-                  <a href="#" className="hover:text-foreground transition">
+                  <a href="/termos-de-uso" className="hover:text-foreground transition">
                     Termos de uso
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-foreground transition">
+                  <a href="/politica-de-privacidade" className="hover:text-foreground transition">
                     Política de privacidade
                   </a>
                 </li>
