@@ -53,6 +53,30 @@ export default function Home() {
   const [featuredProviders, setFeaturedProviders] = useState<any[]>([]);
   const [isLoadingFeatured, setIsLoadingFeatured] = useState(true);
 
+  // Dynamic featured ads from app's database
+  const [featuredAdsList, setFeaturedAdsList] = useState<any[]>([]);
+  const [isLoadingFeaturedAds, setIsLoadingFeaturedAds] = useState(true);
+
+  useEffect(() => {
+    async function loadFeaturedAds() {
+      try {
+        const res = await fetch("/api/trpc/featuredAds.list");
+        if (res.ok) {
+          const json = await res.json();
+          if (json.result && json.result.data) {
+            const activeAds = json.result.data.filter((ad: any) => ad.isFeatured !== false);
+            setFeaturedAdsList(activeAds);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load featured ads:", e);
+      } finally {
+        setIsLoadingFeaturedAds(false);
+      }
+    }
+    loadFeaturedAds();
+  }, []);
+
   // Nearby Providers and Leaflet Map States
   const [nearbyProviders, setNearbyProviders] = useState<any[]>([]);
   const [isLoadingNearby, setIsLoadingNearby] = useState(true);
@@ -674,25 +698,22 @@ export default function Home() {
 
           {/* Banner Slider Container */}
           <div className="flex gap-6 overflow-x-auto pb-4 pt-1 scrollbar-none no-scrollbar snap-x snap-mandatory w-full">
-            {isLoadingFeatured ? (
+            {isLoadingFeaturedAds ? (
               // Loading skeletons
-              <div className="w-full h-[220px] md:h-[380px] bg-zinc-950/60 border border-zinc-900 rounded-3xl animate-pulse"></div>
-            ) : featuredProviders.length > 0 ? (
-              featuredProviders.map((p) => {
-                const isComercio = p.businessType === "comercio" || p.categoryId === "comercios";
-                const linkUrl = `/perfil/${p.id}`;
-                const cleanPhone = (p.whatsapp || p.phone || "").replace(/\D/g, "");
-                const waMessage = encodeURIComponent(`Olá ${p.name}, vi seu destaque no XamaJá e gostaria de falar com você.`);
+              <div className="w-full max-w-4xl mx-auto h-[160px] md:h-[250px] bg-zinc-950/60 border border-zinc-900 rounded-2xl animate-pulse"></div>
+            ) : featuredAdsList.length > 0 ? (
+              featuredAdsList.map((p) => {
+                const linkUrl = `/perfil/${p.providerId || ""}`;
 
                 return (
                   <div
                     key={p.id}
-                    className="w-full min-w-[100%] md:min-w-[100%] aspect-[21/9] min-h-[240px] md:min-h-[380px] rounded-3xl overflow-hidden border border-zinc-900 bg-zinc-950 relative snap-start group shadow-2xl transition duration-500"
+                    className="w-full max-w-4xl mx-auto min-w-[100%] aspect-[16/6] md:aspect-[21/7] min-h-[160px] md:min-h-[250px] rounded-2xl overflow-hidden border border-zinc-900 bg-zinc-950 relative snap-start group shadow-2xl transition duration-500"
                   >
                     {/* Background visual cover image */}
                     <img
-                      src={p.coverUri || p.avatarUri || "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=1200&q=80"}
-                      alt={p.name}
+                      src={p.imageUrl || "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=1200&q=80"}
+                      alt={p.providerName}
                       className="absolute inset-0 w-full h-full object-cover group-hover:scale-102 transition duration-700 pointer-events-none"
                     />
 
@@ -701,65 +722,56 @@ export default function Home() {
                     <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-transparent z-10 pointer-events-none"></div>
 
                     {/* Top right sponsored label */}
-                    <div className="absolute top-6 right-6 z-20">
-                      <span className="text-[10px] font-black tracking-widest bg-yellow-500 text-black border border-yellow-500 px-3.5 py-1 rounded-lg uppercase shadow-lg">
+                    <div className="absolute top-4 right-4 z-20">
+                      <span className="text-[9px] font-black tracking-widest bg-yellow-500 text-black border border-yellow-500 px-2.5 py-0.5 rounded-md uppercase shadow-lg">
                         Patrocinado
                       </span>
                     </div>
 
                     {/* Banner Overlay Content */}
-                    <div className="absolute inset-x-0 bottom-0 p-6 md:p-10 z-20 flex flex-col md:flex-row md:items-end justify-between gap-6">
-                      <div className="flex items-center gap-4 md:gap-6 min-w-0">
+                    <div className="absolute inset-x-0 bottom-0 p-4 md:p-6 z-20 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                      <div className="flex items-center gap-3 md:gap-4 min-w-0">
                         {/* Circle logo */}
-                        <div className="w-16 h-16 md:w-24 md:h-24 rounded-full border-4 border-zinc-950 bg-black overflow-hidden flex-shrink-0 shadow-2xl">
+                        <div className="w-12 h-12 md:w-16 md:h-16 rounded-full border-3 border-zinc-950 bg-black overflow-hidden flex-shrink-0 shadow-2xl">
                           <img
-                            src={p.avatarUri || "https://images.unsplash.com/photo-1590947132387-155cc02f3212?w=100&q=80"}
-                            alt={p.name}
+                            src={p.imageUrl || "https://images.unsplash.com/photo-1590947132387-155cc02f3212?w=100&q=80"}
+                            alt={p.providerName}
                             className="w-full h-full object-cover"
                           />
                         </div>
 
                         {/* Title block */}
-                        <div className="space-y-1.5 min-w-0">
-                          <span className="inline-block text-[10px] font-black text-primary uppercase tracking-widest bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-md">
-                            {p.category || (isComercio ? "Comércio" : "Serviço")}
+                        <div className="space-y-1 min-w-0">
+                          <span className="inline-block text-[8px] font-black text-primary uppercase tracking-widest bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded">
+                            {p.title || "Destaque"}
                           </span>
                           
-                          <h3 className="text-xl md:text-4xl font-black text-white leading-none truncate drop-shadow-md">
-                            {p.name}
+                          <h3 className="text-base md:text-2xl font-black text-white leading-none truncate drop-shadow-md">
+                            {p.providerName}
                           </h3>
 
-                          <p className="text-zinc-300 text-xs md:text-sm line-clamp-2 max-w-xl font-medium leading-relaxed drop-shadow-md">
+                          <p className="text-zinc-300 text-[10px] md:text-xs line-clamp-1 max-w-lg font-medium leading-relaxed drop-shadow-md">
                             {p.description || "Comércio ou prestador de serviço de alto destaque da região."}
                           </p>
 
-                          <div className="flex items-center gap-3 text-zinc-400 text-xs md:text-sm">
-                            <span className="flex items-center gap-1 text-yellow-500 font-bold">
-                              ★ <span className="text-white">{Number(p.rating || 5.0).toFixed(1)}</span>
+                          <div className="flex items-center gap-2 text-zinc-400 text-[10px] md:text-xs">
+                            <span className="flex items-center gap-0.5 text-yellow-500 font-bold">
+                              ★ <span className="text-white">5.0</span>
                             </span>
                             <span>•</span>
-                            <span className="truncate">{p.neighborhood ? `${p.neighborhood}, ` : ""}{p.city || "Região local"}</span>
+                            <span className="truncate">Região local</span>
                           </div>
                         </div>
                       </div>
 
                       {/* Call-to-action buttons */}
-                      <div className="flex gap-3 flex-shrink-0 w-full md:w-auto">
+                      <div className="flex gap-2 flex-shrink-0 w-full md:w-auto">
                         <Button
                           onClick={() => window.location.href = linkUrl}
-                          className="flex-1 md:flex-initial bg-white hover:bg-zinc-200 text-black font-black text-xs md:text-sm px-6 h-12 rounded-xl transition-all shadow-xl"
+                          className="flex-1 md:flex-initial bg-white hover:bg-zinc-200 text-black font-black text-[10px] md:text-xs px-4 h-9 rounded-lg transition-all shadow-xl"
                         >
                           Ver Detalhes
                         </Button>
-                        {cleanPhone && (
-                          <Button
-                            onClick={() => window.open(`https://wa.me/55${cleanPhone}?text=${waMessage}`, "_blank")}
-                            className="flex-1 md:flex-initial bg-[#25D366] hover:bg-[#20ba5a] text-white font-black text-xs md:text-sm px-6 h-12 rounded-xl transition-all shadow-xl flex items-center justify-center gap-2"
-                          >
-                            <MessageSquare className="w-4.5 h-4.5" />
-                            <span>WhatsApp</span>
-                          </Button>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -770,96 +782,92 @@ export default function Home() {
               [
                 {
                   id: "mock-ad-japa",
-                  name: "Pizzaria Japá",
-                  category: "Alimentação",
-                  rating: 5.0,
+                  providerId: "mock-ad-japa",
+                  providerName: "Pizzaria Japá",
+                  title: "Alimentação",
                   description: "A pizzaria mais querida da região. Venha experimentar o melhor rodízio e pizzas gourmet com borda recheada de Bragança Paulista.",
-                  city: "Bragança Paulista",
-                  coverUri: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=1200&q=80",
-                  avatarUri: "https://images.unsplash.com/photo-1590947132387-155cc02f3212?w=100&q=80",
+                  imageUrl: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=1200&q=80",
                   whatsapp: "11988888888"
                 },
                 {
                   id: "mock-ad-clinica",
-                  name: "Dr. Heron Rocha - Saúde",
-                  category: "Saúde",
-                  rating: 5.0,
+                  providerId: "mock-ad-clinica",
+                  providerName: "Dr. Heron Rocha - Saúde",
+                  title: "Saúde",
                   description: "Atendimento médico domiciliar de excelência. Check-ups preventivos, exames e consultas completas com cuidado e dedicação.",
-                  city: "Bragança Paulista",
-                  coverUri: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=1200&q=80",
-                  avatarUri: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100&q=80",
+                  imageUrl: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=1200&q=80",
                   whatsapp: "11977777777"
                 }
               ].map((p) => {
                 const linkUrl = "/busca";
                 const cleanPhone = p.whatsapp;
-                const waMessage = encodeURIComponent(`Olá ${p.name}, vi seu destaque no XamaJá e gostaria de realizar um pedido/combinar serviço.`);
+                const waMessage = encodeURIComponent(`Olá ${p.providerName}, vi seu destaque no XamaJá e gostaria de realizar um pedido/combinar serviço.`);
 
                 return (
                   <div
                     key={p.id}
-                    className="w-full min-w-[100%] md:min-w-[100%] aspect-[21/9] min-h-[240px] md:min-h-[380px] rounded-3xl overflow-hidden border border-zinc-900 bg-zinc-950 relative snap-start group shadow-2xl transition duration-500"
+                    className="w-full max-w-4xl mx-auto min-w-[100%] aspect-[16/6] md:aspect-[21/7] min-h-[160px] md:min-h-[250px] rounded-2xl overflow-hidden border border-zinc-900 bg-zinc-950 relative snap-start group shadow-2xl transition duration-500"
                   >
                     <img
-                      src={p.coverUri}
-                      alt={p.name}
+                      src={p.imageUrl}
+                      alt={p.providerName}
                       className="absolute inset-0 w-full h-full object-cover group-hover:scale-102 transition duration-700 pointer-events-none"
                     />
 
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent z-10 pointer-events-none"></div>
                     <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-transparent z-10 pointer-events-none"></div>
 
-                    <div className="absolute top-6 right-6 z-20">
-                      <span className="text-[10px] font-black tracking-widest bg-yellow-500 text-black border border-yellow-500 px-3.5 py-1 rounded-lg uppercase shadow-lg animate-pulse">
+                    <div className="absolute top-4 right-4 z-20">
+                      <span className="text-[9px] font-black tracking-widest bg-yellow-500 text-black border border-yellow-500 px-2.5 py-0.5 rounded-md uppercase shadow-lg">
                         Patrocinado
                       </span>
                     </div>
 
-                    <div className="absolute inset-x-0 bottom-0 p-6 md:p-10 z-20 flex flex-col md:flex-row md:items-end justify-between gap-6">
-                      <div className="flex items-center gap-4 md:gap-6 min-w-0">
-                        <div className="w-16 h-16 md:w-24 md:h-24 rounded-full border-4 border-zinc-950 bg-black overflow-hidden flex-shrink-0 shadow-2xl">
+                    <div className="absolute inset-x-0 bottom-0 p-4 md:p-6 z-20 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                      <div className="flex items-center gap-3 md:gap-4 min-w-0">
+                        <div className="w-12 h-12 md:w-16 md:h-16 rounded-full border-3 border-zinc-950 bg-black overflow-hidden flex-shrink-0 shadow-2xl">
                           <img
-                            src={p.avatarUri}
-                            alt={p.name}
+                            src="https://images.unsplash.com/photo-1590947132387-155cc02f3212?w=100&q=80"
+                            alt={p.providerName}
                             className="w-full h-full object-cover"
                           />
                         </div>
 
-                        <div className="space-y-1.5 min-w-0">
-                          <span className="inline-block text-[10px] font-black text-primary uppercase tracking-widest bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-md">
-                            {p.category}
+                        <div className="space-y-1 min-w-0">
+                          <span className="inline-block text-[8px] font-black text-primary uppercase tracking-widest bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded">
+                            {p.title}
                           </span>
                           
-                          <h3 className="text-xl md:text-4xl font-black text-white leading-none truncate drop-shadow-md">
-                            {p.name}
+                          <h3 className="text-base md:text-2xl font-black text-white leading-none truncate drop-shadow-md">
+                            {p.providerName}
                           </h3>
 
-                          <p className="text-zinc-300 text-xs md:text-sm line-clamp-2 max-w-xl font-medium leading-relaxed drop-shadow-md">
+                          <p className="text-zinc-300 text-[10px] md:text-xs line-clamp-1 max-w-lg font-medium leading-relaxed drop-shadow-md">
                             {p.description}
                           </p>
 
-                          <div className="flex items-center gap-3 text-zinc-400 text-xs md:text-sm">
-                            <span className="flex items-center gap-1 text-yellow-500 font-bold">
-                              ★ <span className="text-white">{Number(p.rating).toFixed(1)}</span>
+                          <div className="flex items-center gap-2 text-zinc-400 text-[10px] md:text-xs">
+                            <span className="flex items-center gap-0.5 text-yellow-500 font-bold">
+                              ★ <span className="text-white">5.0</span>
                             </span>
                             <span>•</span>
-                            <span className="truncate">{p.city}</span>
+                            <span className="truncate">Região local</span>
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex gap-3 flex-shrink-0 w-full md:w-auto">
+                      <div className="flex gap-2 flex-shrink-0 w-full md:w-auto">
                         <Button
                           onClick={() => window.location.href = linkUrl}
-                          className="flex-1 md:flex-initial bg-white hover:bg-zinc-200 text-black font-black text-xs md:text-sm px-6 h-12 rounded-xl transition-all shadow-xl"
+                          className="flex-1 md:flex-initial bg-white hover:bg-zinc-200 text-black font-black text-[10px] md:text-xs px-4 h-9 rounded-lg transition-all shadow-xl"
                         >
                           Ver Detalhes
                         </Button>
                         <Button
                           onClick={() => window.open(`https://wa.me/55${cleanPhone}?text=${waMessage}`, "_blank")}
-                          className="flex-1 md:flex-initial bg-[#25D366] hover:bg-[#20ba5a] text-white font-black text-xs md:text-sm px-6 h-12 rounded-xl transition-all shadow-xl flex items-center justify-center gap-2"
+                          className="flex-1 md:flex-initial bg-[#25D366] hover:bg-[#20ba5a] text-white font-black text-[10px] md:text-xs px-4 h-9 rounded-lg transition-all shadow-xl flex items-center justify-center gap-1.5"
                         >
-                          <MessageSquare className="w-4.5 h-4.5" />
+                          <MessageSquare className="w-4 h-4" />
                           <span>WhatsApp</span>
                         </Button>
                       </div>
