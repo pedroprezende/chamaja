@@ -24,22 +24,22 @@ colors:
   error-dark: "#EF4444"
 typography:
   display:
-    fontFamily: "Inter, sans-serif"
+    fontFamily: "Outfit, sans-serif"
     fontSize: "24px"
-    fontWeight: 700
+    fontWeight: 800
     lineHeight: 1.15
   headline:
-    fontFamily: "Inter, sans-serif"
+    fontFamily: "Outfit, sans-serif"
     fontSize: "18px"
-    fontWeight: 600
+    fontWeight: 700
     lineHeight: 1.2
   body:
-    fontFamily: "Inter, sans-serif"
+    fontFamily: "Plus Jakarta Sans, sans-serif"
     fontSize: "14px"
     fontWeight: 400
     lineHeight: 1.5
   label:
-    fontFamily: "Inter, sans-serif"
+    fontFamily: "Plus Jakarta Sans, sans-serif"
     fontSize: "12px"
     fontWeight: 400
     lineHeight: 1.4
@@ -113,10 +113,10 @@ A paleta de cores é liderada pelo verde vibrante que evoca a conexão direta e 
 
 ## 3. Typography
 
-**Display Font:** Inter, sans-serif
-**Body Font:** Inter, sans-serif
+**Display Font:** Outfit, sans-serif (Google Fonts)
+**Body Font:** Plus Jakarta Sans, sans-serif (Google Fonts)
 
-A tipografia utiliza a fonte do sistema Inter para máxima consistência e tempo de carregamento zero no ambiente Expo/React Native.
+A tipografia utiliza as fontes modernas Google Fonts para máxima expressividade visual no ambiente web e consistência no aplicativo móvel.
 
 ### Hierarchy
 - **Display** (Bold, 24px, 1.15): Título principal de telas e saudação do usuário.

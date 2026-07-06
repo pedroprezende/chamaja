@@ -163,14 +163,14 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: "Inter", sans-serif;
-    font-weight: 700;
-    letter-spacing: -0.02em;
+    font-family: "Outfit", sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.03em;
     line-height: 1.15;
   }
 
   body {
-    font-family: "Inter", sans-serif;
+    font-family: "Plus Jakarta Sans", sans-serif; /* impeccable-disable-line overused-font */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

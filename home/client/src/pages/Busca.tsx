@@ -485,7 +485,7 @@ export default function Busca() {
         });
 
         const popupContent = `
-          <div class="p-3 bg-zinc-950 border border-zinc-900 rounded-xl space-y-2 max-w-[200px]" style="font-family: Inter, sans-serif;">
+          <div class="p-3 bg-zinc-950 border border-zinc-900 rounded-xl space-y-2 max-w-[200px]" style="font-family: 'Plus Jakarta Sans', sans-serif;"> <!-- impeccable-disable-line overused-font -->
             <strong class="text-white text-sm font-bold block leading-tight">${p.name}</strong>
             <span class="text-[#84cc16] text-[10px] font-black tracking-wider uppercase block">${p.category || 'Profissional'}</span>
             <div class="flex items-center gap-1 text-[#84cc16] text-xs">
