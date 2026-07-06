@@ -53,6 +53,17 @@ export default function Home() {
   const [featuredProviders, setFeaturedProviders] = useState<any[]>([]);
   const [isLoadingFeatured, setIsLoadingFeatured] = useState(true);
 
+  // Rotating words for the hero title
+  const rotatingWords = ["comércios", "eletricistas", "pizzarias", "encanadores", "salões", "mecânicos", "reformas"];
+  const [currentWordIdx, setCurrentWordIdx] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentWordIdx(prev => (prev + 1) % rotatingWords.length);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     // 1. Capture ref parameter from URL search params
     const params = new URLSearchParams(window.location.search);
@@ -325,9 +336,13 @@ export default function Home() {
 
               <div className="space-y-4">
                 <h1 className="text-5xl md:text-7xl font-black leading-[1.1] tracking-tight text-white font-sans">
-                  Encontre tudo
+                  Encontre os melhores
                   <br />
-                  <span className="text-primary">perto de você.</span>
+                  <span className="inline-block text-primary transition-all duration-500 ease-out transform translate-y-0 opacity-100 min-w-[280px]">
+                    {rotatingWords[currentWordIdx]}
+                  </span>
+                  <br />
+                  <span className="text-zinc-400">perto de você.</span>
                 </h1>
 
                 <p className="text-lg md:text-xl text-muted-foreground max-w-lg font-medium">
@@ -402,22 +417,49 @@ export default function Home() {
             </div>
 
             {/* Right Content */}
-            <div className="flex justify-center relative w-full h-[400px] md:h-[550px] lg:h-[650px]">
-              {/* Radial green glow backdrop */}
-              <div className="absolute inset-0 bg-primary/10 rounded-full blur-3xl filter opacity-40 pointer-events-none z-0"></div>
-              {/* Big 3D Glowing Green X */}
-              <img
-                src="/assets/images/hero_mockup_right.png"
-                alt="XamaJá App Ecosystem"
-                className="max-w-[480px] md:max-w-[540px] lg:max-w-[580px] w-full h-full relative z-10 object-contain drop-shadow-[0_0_50px_rgba(132,204,22,0.25)] animate-pulse"
-                style={{ animationDuration: "4s" }}
-              />
-              {/* Floating widget card */}
-              <div className="absolute top-10 right-0 md:right-4 z-20 bg-zinc-950/85 border border-zinc-800 p-5 rounded-2xl max-w-[200px] shadow-2xl backdrop-blur-md select-none">
-                <span className="text-primary font-bold text-sm block mb-1">X marca o local</span>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Conectando você aos melhores negócios da sua região.
-                </p>
+            <div className="flex justify-center relative w-full h-[400px] md:h-[550px] lg:h-[650px] items-center">
+              {/* Animated glowing background blobs */}
+              <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-primary/20 rounded-full blur-[100px] animate-glow-pulse pointer-events-none z-0"></div>
+              <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-emerald-500/10 rounded-full blur-[120px] animate-glow-pulse pointer-events-none z-0" style={{ animationDelay: "2s" }}></div>
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-[#84cc16]/15 rounded-full blur-[90px] animate-glow-pulse pointer-events-none z-0" style={{ animationDelay: "4s" }}></div>
+
+              {/* Big 3D Glowing Green X (Mockup image) */}
+              <div className="relative z-10 w-full h-full max-w-[480px] md:max-w-[540px] lg:max-w-[580px] flex items-center justify-center animate-float-slow">
+                <img
+                  src="/assets/images/hero_mockup_right.png"
+                  alt="XamaJá App Ecosystem"
+                  className="w-full h-full object-contain drop-shadow-[0_0_60px_rgba(132,204,22,0.3)]"
+                />
+
+                {/* Floating Widget 1: X marca o local */}
+                <div className="absolute -top-4 right-4 z-20 bg-zinc-950/90 border border-zinc-800/80 p-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-md select-none animate-float-reverse max-w-[170px]">
+                  <span className="text-primary font-black text-xs block mb-1">X marca o local</span>
+                  <p className="text-[10px] text-zinc-400 leading-normal">
+                    Conectando você aos melhores negócios da sua região.
+                  </p>
+                </div>
+
+                {/* Floating Widget 2: 100% Seguro */}
+                <div className="absolute bottom-10 -left-6 z-20 bg-zinc-950/95 border border-zinc-800/85 p-3 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-md select-none animate-float-slow flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                    <ShieldCheck className="w-4.5 h-4.5 text-primary" />
+                  </div>
+                  <div>
+                    <span className="text-white font-extrabold text-[11px] block">100% Seguro</span>
+                    <span className="text-zinc-500 text-[9px] block">Sem intermediários</span>
+                  </div>
+                </div>
+
+                {/* Floating Widget 3: Avaliações */}
+                <div className="absolute top-1/3 -right-6 z-20 bg-zinc-950/95 border border-zinc-800/85 p-3.5 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-md select-none animate-float-reverse flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center">
+                    <Star className="w-4.5 h-4.5 text-yellow-500 fill-current" />
+                  </div>
+                  <div>
+                    <span className="text-white font-extrabold text-[11px] block">Avaliado em 5.0⭐</span>
+                    <span className="text-zinc-500 text-[9px] block">Por clientes reais</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
