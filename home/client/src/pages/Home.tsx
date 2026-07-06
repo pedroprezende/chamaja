@@ -466,6 +466,180 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── HIGH-CONVERSION SPONSORED ADS CAROUSEL (DESTAQUES PRIME) ── */}
+      <section className="bg-[#050505] border-b border-zinc-900/60 py-10 relative overflow-hidden select-none">
+        {/* Ambient glow backgrounds */}
+        <div className="absolute top-0 left-0 w-64 h-64 bg-primary/5 rounded-full blur-[90px] pointer-events-none"></div>
+        <div className="absolute bottom-0 right-0 w-72 h-72 bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none"></div>
+
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-widest rounded-full">
+                  Destaques Prime
+                </span>
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>
+              </div>
+              <h2 className="text-2xl md:text-3xl font-black text-white font-sans tracking-tight">Parceiros em Destaque</h2>
+              <p className="text-zinc-500 text-xs font-semibold">Os serviços mais recomendados e avaliados da semana</p>
+            </div>
+            
+            {/* Scroll navigation helper indicators */}
+            <div className="flex items-center gap-1.5 text-zinc-500 text-xs">
+              <span>Arraste para o lado</span>
+              <ArrowRight className="w-3.5 h-3.5 animate-slide-hint" />
+            </div>
+          </div>
+
+          {/* Cards Carousel Container */}
+          <div className="flex gap-6 overflow-x-auto pb-4 pt-1 scrollbar-none no-scrollbar snap-x snap-mandatory">
+            {isLoadingFeatured ? (
+              // Loading skeletons
+              Array.from({ length: 4 }).map((_, idx) => (
+                <div key={idx} className="w-[280px] sm:w-[320px] h-[360px] bg-zinc-950/60 border border-zinc-900 rounded-2xl p-5 flex-shrink-0 animate-pulse flex flex-col justify-between">
+                  <div className="w-full h-40 bg-zinc-900 rounded-xl mb-4"></div>
+                  <div className="space-y-3">
+                    <div className="h-4 bg-zinc-900 rounded w-2/3"></div>
+                    <div className="h-3 bg-zinc-900 rounded w-1/2"></div>
+                  </div>
+                  <div className="h-10 bg-zinc-900 rounded-xl mt-4"></div>
+                </div>
+              ))
+            ) : featuredProviders.length > 0 ? (
+              featuredProviders.map((p) => {
+                const isComercio = p.businessType === "comercio" || p.categoryId === "comercios";
+                const linkUrl = `/perfil/${p.id}`;
+                const cleanPhone = (p.whatsapp || p.phone || "").replace(/\D/g, "");
+                const waMessage = encodeURIComponent(`Olá ${p.name}, vi seu destaque no XamaJá e gostaria de combinar um serviço.`);
+
+                return (
+                  <div
+                    key={p.id}
+                    className="w-[290px] sm:w-[330px] bg-zinc-950/80 border border-zinc-900 hover:border-primary/30 p-5 rounded-3xl flex-shrink-0 snap-start flex flex-col justify-between shadow-lg hover:shadow-primary/5 transition duration-300 relative group"
+                  >
+                    {/* Visual Card body */}
+                    <div className="cursor-pointer" onClick={() => window.location.href = linkUrl}>
+                      {/* Cover Photo with Category badge */}
+                      <div className="relative w-full h-40 bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-900">
+                        <img
+                          src={p.coverUri || p.avatarUri || "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400&q=80"}
+                          alt={p.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                        />
+                        <div className="absolute top-3 left-3 px-3 py-1 bg-black/85 backdrop-blur-md border border-zinc-850 text-zinc-300 text-[10px] font-black uppercase tracking-wider rounded-xl">
+                          {p.category || (isComercio ? "Comércio" : "Serviço")}
+                        </div>
+                      </div>
+
+                      {/* Provider Info */}
+                      <div className="mt-4 space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <h3 className="font-extrabold text-white text-base truncate">{p.name}</h3>
+                          <div className="flex items-center gap-1 flex-shrink-0 text-yellow-500 text-xs font-black">
+                            <span>⭐</span>
+                            <span className="text-white">{Number(p.rating || 5.0).toFixed(1)}</span>
+                          </div>
+                        </div>
+                        
+                        <p className="text-zinc-500 text-xs line-clamp-2 h-8 leading-relaxed">
+                          {p.description || "Profissional qualificado em destaque no XamaJá."}
+                        </p>
+
+                        <div className="flex items-center gap-1.5 text-zinc-400 text-xs">
+                          <MapPin className="w-3.5 h-3.5 text-primary" />
+                          <span className="truncate">{p.neighborhood ? `${p.neighborhood}, ` : ""}{p.city || "Região local"}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Button */}
+                    <div className="mt-4 flex gap-2">
+                      <Button
+                        onClick={() => window.location.href = linkUrl}
+                        className="flex-1 bg-zinc-900 hover:bg-zinc-850 text-white border border-zinc-800 hover:border-zinc-700 font-extrabold text-xs h-10 rounded-xl transition"
+                      >
+                        Ver Detalhes
+                      </Button>
+                      {cleanPhone && (
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(`https://wa.me/55${cleanPhone}?text=${waMessage}`, "_blank");
+                          }}
+                          className="px-3 bg-primary hover:bg-primary/95 text-primary-foreground font-black rounded-xl h-10 shadow-lg shadow-primary/10 transition"
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              // Fallback Mock ads if database query returns empty
+              [
+                { id: "mock-ad1", name: "Dr. Heron Rocha - Saúde", category: "Saúde", rating: 5.0, description: "Consultas domiciliares e check-up de saúde completo em Bragança.", city: "Bragança Paulista", coverUri: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=400&q=80" },
+                { id: "mock-ad2", name: "Xama Burger & Grill", category: "Alimentação", rating: 4.9, description: "Os melhores hambúrgueres artesanais e porções da região entregues quentes.", city: "Bragança Paulista", coverUri: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&q=80" },
+                { id: "mock-ad3", name: "Elétrica Bragança", category: "Serviços", rating: 4.8, description: "Instalação de tomadas, chuveiros, fiação elétrica comercial e residencial.", city: "Bragança Paulista", coverUri: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&q=80" }
+              ].map((p) => (
+                <div
+                  key={p.id}
+                  className="w-[290px] sm:w-[330px] bg-zinc-950/80 border border-zinc-900 hover:border-primary/30 p-5 rounded-3xl flex-shrink-0 snap-start flex flex-col justify-between shadow-lg hover:shadow-primary/5 transition duration-300 relative group"
+                >
+                  <div className="cursor-pointer" onClick={() => alert("Exemplo demonstrativo de anúncio.")}>
+                    <div className="relative w-full h-40 bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-900">
+                      <img
+                        src={p.coverUri}
+                        alt={p.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                      />
+                      <div className="absolute top-3 left-3 px-3 py-1 bg-black/85 backdrop-blur-md border border-zinc-850 text-zinc-300 text-[10px] font-black uppercase tracking-wider rounded-xl">
+                        {p.category}
+                      </div>
+                    </div>
+
+                    <div className="mt-4 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <h3 className="font-extrabold text-white text-base truncate">{p.name}</h3>
+                        <div className="flex items-center gap-1 flex-shrink-0 text-yellow-500 text-xs font-black">
+                          <span>⭐</span>
+                          <span className="text-white">{Number(p.rating).toFixed(1)}</span>
+                        </div>
+                      </div>
+                      
+                      <p className="text-zinc-500 text-xs line-clamp-2 h-8 leading-relaxed">
+                        {p.description}
+                      </p>
+
+                      <div className="flex items-center gap-1.5 text-zinc-400 text-xs">
+                        <MapPin className="w-3.5 h-3.5 text-primary" />
+                        <span className="truncate">{p.city}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex gap-2">
+                    <Button
+                      onClick={() => alert("Exemplo demonstrativo de anúncio.")}
+                      className="flex-1 bg-zinc-900 hover:bg-zinc-850 text-white border border-zinc-800 hover:border-zinc-700 font-extrabold text-xs h-10 rounded-xl transition"
+                    >
+                      Ver Detalhes
+                    </Button>
+                    <Button
+                      onClick={() => alert("Exemplo demonstrativo de anúncio.")}
+                      className="px-3 bg-primary hover:bg-primary/95 text-primary-foreground font-black rounded-xl h-10 shadow-lg shadow-primary/10 transition"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </section>
+
       {/* Categories Horizontal bar (from user screenshot) */}
       <section className="bg-black py-6 border-b border-zinc-900 select-none">
         <div className="container mx-auto px-4">

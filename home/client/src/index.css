@@ -231,3 +231,12 @@
 .animate-orbit-slow {
   animation: orbit 20s linear infinite;
 }
+
+@keyframes slide-hint {
+  0%, 100% { transform: translateX(0); opacity: 0.7; }
+  50% { transform: translateX(6px); opacity: 1; }
+}
+
+.animate-slide-hint {
+  animation: slide-hint 1.5s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+}
