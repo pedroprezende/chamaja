@@ -379,7 +379,7 @@ export default function Perfil({ params }: { params: { id: string } }) {
       itemsText = `\n\n*Gostaria de solicitar os seguintes ${label}:*\n${selectedList.join("\n")}`;
     }
 
-    const message = encodeURIComponent(`Olá ${provider.name}, vi seu perfil no ChamaJá e gostaria de combinar um serviço.${itemsText}`);
+    const message = encodeURIComponent(`Olá ${provider.name}, vi seu perfil no XamaJá e gostaria de combinar um serviço.${itemsText}`);
     window.open(`https://wa.me/55${cleanPhone}?text=${message}`, "_blank");
   };
 

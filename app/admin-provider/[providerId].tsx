@@ -34,7 +34,7 @@ function openWhatsApp(phone: string, name: string) {
   let number = phone.replace(/\D/g, "");
   if (!number.startsWith("55")) number = "55" + number;
   const msg = encodeURIComponent(
-    `Olá ${name}! Vi o seu perfil no ChamaJá e gostaria de solicitar um serviço. 😊`,
+    `Olá ${name}! Vi o seu perfil no XamaJá e gostaria de solicitar um serviço. 😊`,
   );
   Linking.openURL(`https://wa.me/${number}?text=${msg}`).catch(() =>
     Alert.alert(

@@ -626,7 +626,7 @@ export default function Busca() {
       alert("Telefone do parceiro não configurado.");
       return;
     }
-    const message = encodeURIComponent(`Olá ${provider.name}, vi seu perfil no ChamaJá e gostaria de mais informações.`);
+    const message = encodeURIComponent(`Olá ${provider.name}, vi seu perfil no XamaJá e gostaria de mais informações.`);
     window.open(`https://wa.me/55${cleanPhone}?text=${message}`, "_blank");
   };
 

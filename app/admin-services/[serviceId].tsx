@@ -49,7 +49,7 @@ function getWhatsAppUrl(phone: string, serviceName: string) {
     number = "55" + number;
   }
   const message = encodeURIComponent(
-    `Olá! Vi o serviço "${serviceName}" no ChamaJá e gostaria de mais informações. 😊`,
+    `Olá! Vi o serviço "${serviceName}" no XamaJá e gostaria de mais informações. 😊`,
   );
   return `https://wa.me/${number}?text=${message}`;
 }
