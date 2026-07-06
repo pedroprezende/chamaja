@@ -407,7 +407,7 @@ export default function Home() {
               <div className="absolute inset-0 bg-primary/10 rounded-full blur-3xl filter opacity-40 pointer-events-none z-0"></div>
               {/* Big 3D Glowing Green X */}
               <img
-                src="https://lh3.googleusercontent.com/aida/AP1WRLth_3_Siyte1uWF2CyBkUYA0Dm7FZfbiCFNSxxA9So6JXyAolQgjg-PQHH8hcj7UNGt4NPg0saT9grrHp-9i3IeL19EGI6XlO0w4hQcGkwn-zcTKjTNyCtk_U2OTn54GwWwg2C-q6CpwVHWquIz1qlAeLGw03XFcaG9wFSLVk8iwqdXb1RJcnEjbtE7oYerPcmapAnubctAzeiny-SYPk3Z1_5qFZ8KnPNl_76sy-6EHndkLf5BYKI2CvXD"
+                src="/assets/images/hero_mockup_right.png"
                 alt="XamaJá App Ecosystem"
                 className="max-w-[480px] md:max-w-[540px] lg:max-w-[580px] w-full h-full relative z-10 object-contain drop-shadow-[0_0_50px_rgba(132,204,22,0.25)] animate-pulse"
                 style={{ animationDuration: "4s" }}
