@@ -39,6 +39,9 @@ export default function Perfil({ params }: { params: { id: string } }) {
   // Favorites state
   const [isFavorite, setIsFavorite] = useState(false);
 
+  // Selected items/services for order/quote
+  const [selectedItems, setSelectedItems] = useState<Record<string, number>>({});
+
   useEffect(() => {
     fetchProviderDetails();
     fetchReviews();
@@ -360,7 +363,23 @@ export default function Perfil({ params }: { params: { id: string } }) {
       toast.error("WhatsApp não configurado.");
       return;
     }
-    const message = encodeURIComponent(`Olá ${provider.name}, vi seu perfil no ChamaJá e gostaria de combinar um serviço.`);
+
+    const selectedList = Object.entries(selectedItems)
+      .filter(([_, qty]) => qty > 0)
+      .map(([itemId, qty]) => {
+        const item = catalogItems.find(i => i.id === itemId);
+        if (!item) return "";
+        return `- ${qty}x ${item.name} (R$ ${Number(item.price).toFixed(2)})`;
+      })
+      .filter(Boolean);
+
+    let itemsText = "";
+    if (selectedList.length > 0) {
+      const label = isComercio ? "itens do cardápio" : "serviços";
+      itemsText = `\n\n*Gostaria de solicitar os seguintes ${label}:*\n${selectedList.join("\n")}`;
+    }
+
+    const message = encodeURIComponent(`Olá ${provider.name}, vi seu perfil no ChamaJá e gostaria de combinar um serviço.${itemsText}`);
     window.open(`https://wa.me/55${cleanPhone}?text=${message}`, "_blank");
   };
 
@@ -391,6 +410,48 @@ export default function Perfil({ params }: { params: { id: string } }) {
   }
 
   const isComercio = provider.businessType === "comercio" || provider.categoryId === "comercios";
+
+  // Parse services or catalog items
+  const catalogItems = (() => {
+    if (!provider) return [];
+    try {
+      const parsed = typeof provider.services === "string" ? JSON.parse(provider.services) : provider.services;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((item: any, idx: number) => ({
+          id: item.id || `item-${idx}`,
+          name: item.name || item.title || "Serviço",
+          price: Number(item.price || item.valor || item.value || 0),
+          description: item.description || item.desc || "Serviço oferecido pelo parceiro.",
+        }));
+      }
+    } catch (e) {
+      console.warn("Failed to parse provider services:", e);
+    }
+
+    // Fallbacks if no services are parsed or array is empty
+    if (isComercio) {
+      return [
+        { id: "fallback-c1", name: "Super Combo Xama", price: 42.90, description: "Hambúrguer com queijo duplo, fritas e refrigerante 350ml." },
+        { id: "fallback-c2", name: "Batata Frita Especial", price: 24.90, description: "Porção de fritas sequinhas com cheddar cremoso e bacon crocante." },
+        { id: "fallback-c3", name: "Hambúrguer Gourmet", price: 29.95, description: "Carne grelhada de 180g, queijo cheddar, alface, tomate e molho especial." },
+        { id: "fallback-c4", name: "Milkshake Crocante", price: 16.00, description: "Milkshake artesanal de creme batido com pedaços de biscoito." },
+      ];
+    } else {
+      // Return a set of default service prices based on category
+      const cat = String(provider.category || "").toLowerCase();
+      if (cat.includes("saúde") || cat.includes("saude") || cat.includes("beleza") || cat.includes("estética")) {
+        return [
+          { id: "fallback-s1", name: "Massagem Terapêutica Completa", price: 120.00, description: "Atendimento de 1 hora focado no alívio de tensões musculares." },
+          { id: "fallback-s2", name: "Drenagem Linfática", price: 130.00, description: "Sessão de drenagem corporal completa com foco em bem-estar." },
+          { id: "fallback-s3", name: "Ventosaterapia + Liberação", price: 150.00, description: "Tratamento completo para recuperação muscular de atletas e dores." },
+        ];
+      }
+      return [
+        { id: "fallback-g1", name: "Visita Técnica e Orçamento", price: 50.00, description: "Avaliação do local para diagnóstico e orçamento detalhado." },
+        { id: "fallback-g2", name: "Serviço Geral (Hora)", price: 80.00, description: "Mão de obra por hora de serviço executado." },
+      ];
+    }
+  })();
 
   // Parse working hours json
   let hours: any = { weekdays: "08:00 - 18:00", weekends: "08:00 - 12:00" };
@@ -530,7 +591,7 @@ export default function Perfil({ params }: { params: { id: string } }) {
               activeTab === "catalog" ? "bg-primary text-primary-foreground font-black" : "text-zinc-400 hover:text-white"
             }`}
           >
-            {isComercio ? "CARDÁPIO / PRODUTOS" : "PORTFÓLIO"}
+            {isComercio ? "CARDÁPIO" : "SERVIÇOS E PREÇOS"}
           </button>
           <button
             onClick={() => setActiveTab("reviews")}
@@ -563,7 +624,7 @@ export default function Perfil({ params }: { params: { id: string } }) {
 
                 {/* Popular Services list */}
                 <div className="border-t border-zinc-900/60 pt-6 space-y-4">
-                  <h3 className="font-bold text-white text-base">Serviços e Especialidades</h3>
+                  <h3 className="font-bold text-white text-base">Especialidades</h3>
                   <div className="flex flex-wrap gap-2">
                     {provider.services ? (
                       (() => {
@@ -580,81 +641,114 @@ export default function Perfil({ params }: { params: { id: string } }) {
                             });
                           }
                         } catch (e) {}
-                        return <span className="text-zinc-500 text-sm">Nenhum serviço específico cadastrado.</span>;
+                        return <span className="text-zinc-500 text-sm">Nenhuma especialidade específica cadastrada.</span>;
                       })()
                     ) : (
-                      <span className="text-zinc-500 text-sm">Nenhum serviço cadastrado.</span>
+                      <span className="text-zinc-500 text-sm">Nenhuma especialidade cadastrada.</span>
                     )}
                   </div>
+                </div>
+
+                {/* Portfólio / Galeria de Fotos de Trabalhos Anteriores */}
+                <div className="border-t border-zinc-900/60 pt-6 space-y-4">
+                  <h3 className="font-bold text-white text-base">Fotos do Portfólio / Trabalhos</h3>
+                  {provider.gallery && provider.gallery.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      {provider.gallery.map((imgUrl: string, idx: number) => (
+                        <div key={idx} className="aspect-square bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-900">
+                          <img src={imgUrl} className="w-full h-full object-cover hover:scale-105 transition duration-300" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      {[
+                        "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400&q=80",
+                        "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=400&q=80",
+                        "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&q=80",
+                      ].map((imgUrl, idx) => (
+                        <div key={idx} className="aspect-square bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-900">
+                          <img src={imgUrl} className="w-full h-full object-cover hover:scale-105 transition duration-300" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* CATALOG / PORTFOLIO TAB */}
+            {/* CATALOG / PRODUCTS / SERVICES TAB */}
             {activeTab === "catalog" && (
               <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 md:p-8 space-y-8">
-                {isComercio ? (
-                  // COMÉRCIO VIEW: Mock menu/catalog items
-                  <div className="space-y-6">
-                    <div className="space-y-1">
-                      <h2 className="text-xl font-black text-white flex items-center gap-2">
-                        <ShoppingBag className="w-5 h-5 text-primary" />
-                        <span>Cardápio & Produtos</span>
-                      </h2>
-                      <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider">Produtos disponíveis para pedido</p>
-                    </div>
+                <div className="space-y-6">
+                  <div className="space-y-1">
+                    <h2 className="text-xl font-black text-white flex items-center gap-2">
+                      {isComercio ? (
+                        <>
+                          <ShoppingBag className="w-5 h-5 text-primary" />
+                          <span>Cardápio & Produtos</span>
+                        </>
+                      ) : (
+                        <>
+                          <Briefcase className="w-5 h-5 text-primary" />
+                          <span>Serviços & Valores</span>
+                        </>
+                      )}
+                    </h2>
+                    <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider">
+                      {isComercio ? "Escolha os produtos para o seu pedido" : "Selecione os serviços que deseja solicitar"}
+                    </p>
+                  </div>
 
+                  {catalogItems.length === 0 ? (
+                    <p className="text-zinc-500 text-sm">Nenhum item disponível neste momento.</p>
+                  ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {[
-                        { name: "Super Combo Xama", price: "R$ 42,90", desc: "Hambúrguer com queijo duplo, fritas e refrigerante 350ml." },
-                        { name: "Batata Frita Especial", price: "R$ 24,90", desc: "Porção de fritas sequinhas com cheddar cremoso e bacon crocante." },
-                        { name: "Hambúrguer Gourmet", price: "R$ 29,95", desc: "Carne grelhada de 180g, queijo cheddar, alface, tomate e molho especial." },
-                        { name: "Milkshake Crocante", price: "R$ 16,00", desc: "Milkshake artesanal de creme batido com pedaços de biscoito." },
-                      ].map((item, idx) => (
-                        <div key={idx} className="bg-[#050505] border border-zinc-900 p-4 rounded-2xl flex justify-between gap-4">
-                          <div className="space-y-1">
-                            <h4 className="font-extrabold text-white text-sm">{item.name}</h4>
-                            <p className="text-zinc-500 text-xs leading-normal line-clamp-2">{item.desc}</p>
-                            <span className="text-primary text-xs font-extrabold block pt-1">{item.price}</span>
+                      {catalogItems.map((item) => {
+                        const qty = selectedItems[item.id] || 0;
+                        return (
+                          <div key={item.id} className="bg-[#050505] border border-zinc-900 p-5 rounded-2xl flex flex-col justify-between gap-4">
+                            <div className="space-y-1">
+                              <h4 className="font-extrabold text-white text-sm">{item.name}</h4>
+                              <p className="text-zinc-500 text-xs leading-normal line-clamp-2">{item.description}</p>
+                              <span className="text-primary text-xs font-extrabold block pt-1">
+                                R$ {Number(item.price).toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between pt-2 border-t border-zinc-900/60 mt-auto">
+                              {qty > 0 ? (
+                                <div className="flex items-center bg-zinc-900 rounded-xl border border-zinc-800 p-0.5 w-full justify-between">
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedItems(prev => ({ ...prev, [item.id]: Math.max(0, qty - 1) }))}
+                                    className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white font-bold text-sm bg-zinc-950 rounded-lg"
+                                  >
+                                    -
+                                  </button>
+                                  <span className="px-3 text-white text-xs font-black">{qty} selecionado(s)</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedItems(prev => ({ ...prev, [item.id]: qty + 1 }))}
+                                    className="w-8 h-8 flex items-center justify-center text-primary font-bold text-sm bg-zinc-950 rounded-lg"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              ) : (
+                                <Button
+                                  onClick={() => setSelectedItems(prev => ({ ...prev, [item.id]: 1 }))}
+                                  className="w-full bg-zinc-900 hover:bg-primary border border-zinc-850 hover:border-primary text-zinc-300 hover:text-primary-foreground font-extrabold text-[11px] rounded-xl h-8 py-1 px-3 transition-all"
+                                >
+                                  Selecionar
+                                </Button>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
-                  </div>
-                ) : (
-                  // PRESTADOR VIEW: Work Gallery
-                  <div className="space-y-6">
-                    <div className="space-y-1">
-                      <h2 className="text-xl font-black text-white flex items-center gap-2">
-                        <Briefcase className="w-5 h-5 text-primary" />
-                        <span>Fotos de Trabalhos Anteriores</span>
-                      </h2>
-                      <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider">Fotos do portfólio de serviços realizados</p>
-                    </div>
-
-                    {provider.gallery && provider.gallery.length > 0 ? (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                        {provider.gallery.map((imgUrl: string, idx: number) => (
-                          <div key={idx} className="aspect-square bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-900">
-                            <img src={imgUrl} className="w-full h-full object-cover hover:scale-105 transition duration-300" />
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                        {[
-                          "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400&q=80",
-                          "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=400&q=80",
-                          "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&q=80",
-                        ].map((imgUrl, idx) => (
-                          <div key={idx} className="aspect-square bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-900">
-                            <img src={imgUrl} className="w-full h-full object-cover hover:scale-105 transition duration-300" />
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )}
 
