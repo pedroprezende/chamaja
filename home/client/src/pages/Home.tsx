@@ -53,6 +53,168 @@ export default function Home() {
   const [featuredProviders, setFeaturedProviders] = useState<any[]>([]);
   const [isLoadingFeatured, setIsLoadingFeatured] = useState(true);
 
+  // Nearby Providers and Leaflet Map States
+  const [nearbyProviders, setNearbyProviders] = useState<any[]>([]);
+  const [isLoadingNearby, setIsLoadingNearby] = useState(true);
+  const [mapInstance, setMapInstance] = useState<any>(null);
+  const [markersList, setMarkersList] = useState<any[]>([]);
+  const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
+  const [favorites, setFavorites] = useState<Record<string, boolean>>({});
+
+  const toggleFavorite = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFavorites(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  // Load nearby providers for map section
+  useEffect(() => {
+    async function loadNearby() {
+      try {
+        const input = {
+          sortBy: "distance",
+          profileType: "all",
+        };
+        const url = `/api/trpc/providers.searchFiltered?input=${encodeURIComponent(JSON.stringify(input))}`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.result && json.result.data) {
+            setNearbyProviders(json.result.data);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load nearby providers:", e);
+      } finally {
+        setIsLoadingNearby(false);
+      }
+    }
+    loadNearby();
+  }, []);
+
+  // Initialize Leaflet map
+  useEffect(() => {
+    const L = (window as any).L;
+    if (!L || nearbyProviders.length === 0) return;
+
+    const mapContainer = document.getElementById("nearby-map");
+    if (!mapContainer) return;
+
+    if ((mapContainer as any)._leaflet_id) {
+      (mapContainer as any)._leaflet_id = null;
+    }
+
+    try {
+      const defaultCenter = { latitude: -22.9527, longitude: -46.5419 }; // Bragança Paulista
+      const firstWithCoords = nearbyProviders.find(p => p.latitude && p.longitude);
+      const center = firstWithCoords 
+        ? { latitude: Number(firstWithCoords.latitude), longitude: Number(firstWithCoords.longitude) }
+        : defaultCenter;
+
+      const map = L.map("nearby-map", { zoomControl: false }).setView([center.latitude, center.longitude], 13);
+      L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+        attribution: '&copy; CartoDB',
+        subdomains: 'abcd',
+        maxZoom: 20
+      }).addTo(map);
+
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
+      setMapInstance(map);
+
+      // Create markers
+      const newMarkers: any[] = [];
+      const bounds: any[] = [];
+
+      nearbyProviders.forEach((p) => {
+        if (!p.latitude || !p.longitude) return;
+        const lat = Number(p.latitude);
+        const lng = Number(p.longitude);
+
+        const iconHtml = `
+          <div class="relative w-8 h-8 rounded-full border-2 border-[#84cc16] overflow-hidden bg-black transition-all duration-300 shadow-[0_0_10px_rgba(132,204,22,0.4)]">
+            <img src="${p.avatarUri || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=50'}" class="w-full h-full object-cover" />
+          </div>
+        `;
+        const customIcon = L.divIcon({
+          html: iconHtml,
+          className: "custom-leaflet-marker",
+          iconSize: [32, 32],
+          iconAnchor: [16, 16],
+        });
+
+        const popupContent = `
+          <div class="p-2.5 bg-zinc-950 border border-zinc-900 rounded-xl space-y-1.5 max-w-[180px]">
+            <strong class="text-white text-xs font-bold block leading-tight">${p.name}</strong>
+            <span class="text-[#84cc16] text-[9px] font-black uppercase tracking-wider block">${p.category || 'Parceiro'}</span>
+            <span class="text-zinc-400 text-[10px] block">⭐ ${Number(p.rating || 5.0).toFixed(1)}</span>
+            <a href="/perfil/${p.id}" class="text-center font-bold text-[10px] text-white bg-[#84cc16] px-2 py-1 rounded-lg block mt-1.5 w-full hover:bg-[#84cc16]/90 transition" style="text-decoration: none; color: white;">Ver Perfil</a>
+          </div>
+        `;
+
+        const marker = L.marker([lat, lng], { icon: customIcon })
+          .bindPopup(popupContent)
+          .addTo(map);
+
+        marker.on('click', () => {
+          setSelectedProviderId(p.id);
+          const cardElement = document.getElementById(`provider-card-${p.id}`);
+          if (cardElement) {
+            cardElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        });
+
+        (marker as any).providerId = p.id;
+        newMarkers.push(marker);
+        bounds.push([lat, lng]);
+      });
+
+      setMarkersList(newMarkers);
+      if (bounds.length > 0) {
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+      }
+    } catch (e) {
+      console.error("Failed to initialize Leaflet map on Home:", e);
+    }
+
+    return () => {
+      const container = document.getElementById("nearby-map");
+      if (container && (container as any)._leaflet_id) {
+        (container as any)._leaflet_id = null;
+      }
+    };
+  }, [nearbyProviders]);
+
+  // Sync selected marker styling and popup
+  useEffect(() => {
+    if (!mapInstance || markersList.length === 0) return;
+    const L = (window as any).L;
+    if (!L) return;
+
+    markersList.forEach((marker) => {
+      const pId = (marker as any).providerId;
+      const isSelected = pId === selectedProviderId;
+      const p = nearbyProviders.find(prov => prov.id === pId);
+      if (!p) return;
+
+      const iconHtml = `
+        <div class="relative w-8 h-8 rounded-full border-2 ${isSelected ? 'border-[#25D366] scale-110 shadow-[0_0_15px_rgba(37,211,102,0.6)]' : 'border-[#84cc16]'} overflow-hidden bg-black transition-all duration-300">
+          <img src="${p.avatarUri || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=50'}" class="w-full h-full object-cover" />
+        </div>
+      `;
+      const customIcon = L.divIcon({
+        html: iconHtml,
+        className: "custom-leaflet-marker",
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+      });
+      marker.setIcon(customIcon);
+
+      if (isSelected) {
+        marker.openPopup();
+        mapInstance.setView(marker.getLatLng(), 14, { animate: true });
+      }
+    });
+  }, [selectedProviderId, mapInstance, markersList, nearbyProviders]);
+
   // Rotating words for the hero title
   const rotatingWords = ["comércios", "eletricistas", "pizzarias", "encanadores", "salões", "mecânicos", "reformas"];
   const [currentWordIdx, setCurrentWordIdx] = useState(0);
@@ -320,11 +482,11 @@ export default function Home() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative py-24 md:py-36 overflow-hidden border-b border-zinc-900 bg-[#070708]">
+      <section className="relative py-12 md:py-16 overflow-hidden border-b border-zinc-900 bg-[#070708]">
         <div className="container mx-auto px-4 relative z-10">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <div className="grid lg:grid-cols-2 gap-10 items-center">
             {/* Left Content */}
-            <div className="space-y-8">
+            <div className="space-y-6">
               {/* Location Pin */}
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium select-none">
                 <MapPin className="h-4 w-4 text-primary" />
@@ -334,8 +496,8 @@ export default function Home() {
                 </span>
               </div>
 
-              <div className="space-y-4">
-                <h1 className="text-5xl md:text-7xl font-black leading-[1.1] tracking-tight text-white font-sans">
+              <div className="space-y-3">
+                <h1 className="text-4xl md:text-6xl font-black leading-[1.1] tracking-tight text-white font-sans">
                   Encontre os melhores
                   <br />
                   <span className="inline-block text-primary transition-all duration-500 ease-out transform translate-y-0 opacity-100 min-w-[280px]">
@@ -345,16 +507,16 @@ export default function Home() {
                   <span className="text-zinc-400">perto de você.</span>
                 </h1>
 
-                <p className="text-lg md:text-xl text-muted-foreground max-w-lg font-medium">
-                  Busque comércios e prestadores de serviço na sua região.
+                <p className="text-sm md:text-base text-zinc-400 max-w-lg leading-relaxed">
+                  Busque comércios e prestadores de serviço na sua região de forma simples e rápida.
                 </p>
               </div>
 
-              {/* Integrated Search Bar */}
-              <div className="bg-zinc-950/80 border border-zinc-800 p-2 rounded-2xl flex flex-col md:flex-row items-center gap-2 shadow-2xl w-full max-w-2xl backdrop-blur-md">
+              {/* Integrated Search Bar (Airbnb / Google Maps Inspired) */}
+              <div className="bg-[#0c0c0e] border border-zinc-800 p-2 rounded-2xl flex flex-col md:flex-row items-center gap-2 shadow-2xl w-full max-w-2xl transition-all duration-300 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20">
                 {/* Input 1: O que você procura */}
-                <div className="flex-1 flex items-center px-3 gap-2.5 w-full">
-                  <Search className="text-muted-foreground h-4.5 w-4.5 flex-shrink-0" />
+                <div className="flex-1 flex items-center px-4 gap-3 w-full group">
+                  <Search className="text-zinc-500 group-focus-within:text-primary h-5 w-5 flex-shrink-0 transition-colors" />
                   <input
                     type="text"
                     value={searchQuery}
@@ -364,17 +526,26 @@ export default function Home() {
                         handleSearchSubmit();
                       }
                     }}
-                    className="bg-transparent border-none focus:outline-none focus:ring-0 text-foreground w-full text-sm py-2"
-                    placeholder="O que você procura? Ex: pizzaria, eletricista, salão..."
+                    className="bg-transparent border-none focus:outline-none focus:ring-0 text-white w-full text-sm py-3 placeholder:text-zinc-650"
+                    placeholder="O que você procura? Ex: pizzaria, eletricista..."
                   />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery("")}
+                      className="text-zinc-500 hover:text-white transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
                 
                 {/* Divider */}
-                <div className="hidden md:block h-6 w-px bg-zinc-850"></div>
+                <div className="hidden md:block h-8 w-px bg-zinc-800"></div>
 
                 {/* Input 2: Cidade, bairro ou CEP */}
-                <div className="flex-1 flex items-center px-3 gap-2.5 w-full">
-                  <MapPin className="text-muted-foreground h-4.5 w-4.5 flex-shrink-0" />
+                <div className="flex-1 flex items-center px-4 gap-3 w-full group">
+                  <MapPin className="text-zinc-500 group-focus-within:text-primary h-5 w-5 flex-shrink-0 transition-colors" />
                   <input
                     type="text"
                     value={searchLocation}
@@ -384,15 +555,24 @@ export default function Home() {
                         handleSearchSubmit();
                       }
                     }}
-                    className="bg-transparent border-none focus:outline-none focus:ring-0 text-foreground w-full text-sm py-2"
+                    className="bg-transparent border-none focus:outline-none focus:ring-0 text-white w-full text-sm py-3 placeholder:text-zinc-650"
                     placeholder="Cidade, bairro ou CEP"
                   />
+                  {searchLocation && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchLocation("")}
+                      className="text-zinc-500 hover:text-white transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
 
                 {/* Search Button */}
                 <Button
                   onClick={handleSearchSubmit}
-                  className="bg-primary text-primary-foreground hover:bg-primary/95 px-6 py-3.5 h-11 rounded-xl font-bold transition-all w-full md:w-auto text-xs"
+                  className="bg-primary hover:bg-primary/95 text-primary-foreground font-black px-8 py-3.5 h-12 rounded-xl transition shadow-lg shadow-primary/10 w-full md:w-auto text-sm"
                 >
                   Buscar
                 </Button>
@@ -640,10 +820,15 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Categories Horizontal bar (from user screenshot) */}
-      <section className="bg-black py-6 border-b border-zinc-900 select-none">
+      {/* Categories Modern Cards Grid */}
+      <section className="bg-black py-10 border-b border-zinc-900 select-none">
         <div className="container mx-auto px-4">
-          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-none no-scrollbar justify-between items-center">
+          <div className="text-center mb-8 space-y-1">
+            <h3 className="text-lg font-extrabold text-white">Navegue por Categoria</h3>
+            <p className="text-zinc-500 text-xs">Encontre comércios ou prestadores de serviço por especialidade</p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-4">
             {[
               { id: "all", name: "Todas", icon: Grid },
               { id: "comercios", name: "Alimentação", icon: Utensils },
@@ -668,14 +853,18 @@ export default function Home() {
                       window.location.href = `/busca?category=${cat.id}`;
                     }
                   }}
-                  className={`flex flex-col items-center justify-center gap-2 w-[115px] h-[100px] shrink-0 rounded-2xl cursor-pointer transition duration-300 ${
+                  className={`group flex flex-col items-center justify-center gap-3 h-28 rounded-2xl cursor-pointer transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 ${
                     isActive 
-                      ? "bg-zinc-950 border border-primary/50 text-primary shadow-[0_0_15px_rgba(132,204,22,0.1)]" 
-                      : "bg-zinc-950/40 border border-zinc-900 text-muted-foreground hover:text-white hover:border-zinc-800"
+                      ? "bg-zinc-950 border-2 border-primary text-primary shadow-[0_10px_20px_rgba(132,204,22,0.15)]" 
+                      : "bg-[#0c0c0e] border border-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-800 hover:shadow-2xl hover:shadow-primary/5"
                   }`}
                 >
-                  <Icon className={`h-5 w-5 ${isActive ? "text-primary" : "text-zinc-400 group-hover:text-white"}`} />
-                  <span className="text-xs font-semibold tracking-wide">{cat.name}</span>
+                  <div className={`p-2.5 rounded-xl transition duration-300 ${
+                    isActive ? "bg-primary/10" : "bg-zinc-900/60 group-hover:bg-primary/10 group-hover:text-primary"
+                  }`}>
+                    <Icon className="h-5.5 w-5.5" />
+                  </div>
+                  <span className="text-[11px] font-bold tracking-wide">{cat.name}</span>
                 </div>
               );
             })}
@@ -745,77 +934,80 @@ export default function Home() {
                 const coverImage = p.coverUri || categoryImages[p.categoryId || ""] || "https://images.unsplash.com/photo-1521791136368-1a868270f63b?w=600&q=80";
                 const logoImage = p.avatarUri || categoryLogos[p.categoryId || ""] || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80";
                 const isVerified = p.isVerified === true;
-                const tagLabel = isVerified ? "Verificado" : "Parceiro";
+                const isPremium = p.plan === "premium" || p.plan === "annual";
                 const statusLabel = p.onlineStatus === true ? "Aberto agora" : "Fechado";
+                const linkUrl = `/perfil/${p.id}`;
+                const isFav = !!favorites[p.id];
 
                 return (
                   <div 
                     key={p.id}
-                    className="min-w-[280px] md:min-w-[320px] bg-zinc-950 border border-zinc-900 rounded-[2rem] overflow-hidden hover:border-zinc-800 transition duration-300 snap-start shadow-xl relative group"
+                    onClick={() => window.location.href = linkUrl}
+                    className="min-w-[290px] md:min-w-[330px] bg-zinc-950/60 border border-zinc-900 rounded-3xl overflow-hidden hover:border-primary/40 hover:-translate-y-1.5 transition-all duration-300 snap-start shadow-xl hover:shadow-primary/5 flex flex-col justify-between group cursor-pointer"
                   >
                     {/* Image & Badge overlay */}
-                    <div className="relative h-40 w-full overflow-hidden">
+                    <div className="relative h-44 w-full overflow-hidden border-b border-zinc-900/60">
                       <img 
                         src={coverImage} 
                         alt={p.name} 
-                        onClick={() => window.location.href = `/perfil/${p.id}`}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 cursor-pointer"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
-                      {/* Overlay Tag */}
-                      <span className={`absolute top-4 left-4 text-[10px] font-extrabold px-3 py-1 rounded-full shadow-md ${
-                        isVerified 
-                          ? "bg-primary text-primary-foreground" 
-                          : "bg-black/60 border border-zinc-800 text-primary"
-                      }`}>
-                        {tagLabel}
-                      </span>
+                      
+                      {/* Left Badges Overlay */}
+                      <div className="absolute top-4 left-4 flex flex-col gap-1.5">
+                        {isPremium && (
+                          <span className="text-[9px] font-black tracking-widest bg-yellow-500 text-black px-2.5 py-0.5 rounded-md shadow-md uppercase">
+                            Patrocinado
+                          </span>
+                        )}
+                        <span className={`text-[9px] font-black tracking-widest px-2.5 py-0.5 rounded-md shadow-md uppercase border ${
+                          isVerified 
+                            ? "bg-primary border-primary text-primary-foreground" 
+                            : "bg-black/80 border-zinc-800 text-primary"
+                        }`}>
+                          {isVerified ? "Verificado" : "Parceiro"}
+                        </span>
+                      </div>
+
                       {/* Favorite toggle */}
-                      <button className="absolute top-4 right-4 p-2 bg-black/60 border border-zinc-800/80 rounded-full hover:bg-zinc-900 transition shadow-md">
-                        <Heart className="h-4 w-4 text-white hover:text-red-500 transition-colors" />
+                      <button 
+                        onClick={(e) => toggleFavorite(p.id, e)}
+                        className="absolute top-4 right-4 p-2 bg-black/75 border border-zinc-800/80 rounded-full hover:bg-zinc-900 transition-all shadow-md active:scale-90"
+                      >
+                        <Heart className={`h-4 w-4 transition-colors duration-200 ${isFav ? 'text-red-500 fill-current' : 'text-white hover:text-red-500'}`} />
                       </button>
                     </div>
 
-                    {/* Avatar Badge overlapping */}
-                    <div 
-                      onClick={() => window.location.href = `/perfil/${p.id}`}
-                      className="w-14 h-14 rounded-full border-4 border-zinc-950 bg-black -mt-7 ml-6 relative z-10 flex items-center justify-center overflow-hidden shadow-lg cursor-pointer"
-                    >
-                      <img src={logoImage} alt={p.name} className="w-full h-full object-cover" />
-                    </div>
-
                     {/* Content details */}
-                    <div className="p-6 pt-4 space-y-4">
-                      <div>
-                        <div className="flex justify-between items-center">
-                          <h3 
-                            onClick={() => window.location.href = `/perfil/${p.id}`}
-                            className="font-bold text-lg text-white group-hover:text-primary transition-colors truncate max-w-[180px] cursor-pointer"
-                          >
+                    <div className="p-5 space-y-3.5 flex-1 flex flex-col justify-between">
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between items-start gap-2">
+                          <h3 className="font-extrabold text-base text-white group-hover:text-primary transition-colors truncate max-w-[190px]">
                             {p.name}
                           </h3>
-                          <div className="flex items-center gap-1 text-xs text-yellow-500 font-bold">
+                          <div className="flex items-center gap-1 text-xs text-yellow-500 font-bold flex-shrink-0">
                             <span>★</span>
-                            <span>{p.rating || "5.0"}</span>
-                            <span className="text-muted-foreground text-[10px]">({p.ratingCount || "0"})</span>
+                            <span className="text-white">{Number(p.rating || 5.0).toFixed(1)}</span>
                           </div>
                         </div>
-                        <p className="text-muted-foreground text-xs font-semibold mt-1">
-                          {p.category}
-                        </p>
-                        <p className="text-muted-foreground text-[11px] font-medium mt-0.5">
-                          {p.neighborhood && p.city ? `${p.neighborhood} - ${p.city}` : p.city || "Região"}
-                        </p>
+                        
+                        <div className="flex items-center gap-2 text-zinc-400 text-xs">
+                          <span className="font-bold text-zinc-500">{p.category || "Serviço"}</span>
+                          <span>•</span>
+                          <span className="truncate">{p.distanceStr || p.neighborhood || "Região local"}</span>
+                        </div>
                       </div>
 
                       {/* Footer status line */}
-                      <div className="flex justify-between items-center pt-2 border-t border-zinc-900">
+                      <div className="flex justify-between items-center pt-3 border-t border-zinc-900/60 mt-auto">
                         <div className={`flex items-center gap-1.5 text-xs font-bold ${p.onlineStatus === true ? "text-emerald-500" : "text-zinc-500"}`}>
-                          <span className={`w-2 h-2 rounded-full ${p.onlineStatus === true ? "bg-emerald-500 animate-pulse" : "bg-zinc-600"}`}></span>
+                          <span className={`w-2 h-2 rounded-full ${p.onlineStatus === true ? "bg-emerald-500 animate-pulse" : "bg-zinc-650"}`}></span>
                           <span>{statusLabel}</span>
                         </div>
+                        
                         <Button 
-                          onClick={() => window.location.href = `/perfil/${p.id}`}
-                          className="bg-transparent hover:bg-zinc-900 border border-zinc-800 text-white font-bold text-[11px] rounded-xl px-4 py-2 h-8"
+                          onClick={() => window.location.href = linkUrl}
+                          className="bg-zinc-900 hover:bg-primary border border-zinc-850 hover:border-primary text-zinc-300 hover:text-primary-foreground font-extrabold text-[10px] rounded-xl px-4 py-1.5 h-8 transition-all"
                         >
                           Detalhes
                         </Button>
@@ -825,6 +1017,112 @@ export default function Home() {
                 );
               })
             )}
+          </div>
+        </div>
+      </section>
+
+      {/* ── MAP INTEGRATED SECTION (PROFISSIONAIS PRÓXIMOS) ── */}
+      <section className="py-16 bg-[#030303] border-b border-zinc-900">
+        <div className="container mx-auto px-4">
+          <div className="mb-10">
+            <div className="flex items-center gap-2">
+              <MapPin className="text-primary h-6 w-6" />
+              <h2 className="text-2xl md:text-3xl font-black text-white font-sans tracking-tight">
+                Profissionais próximos de você
+              </h2>
+            </div>
+            <p className="text-zinc-500 text-xs mt-1 font-semibold">
+              Explore prestadores e comércios no mapa com visualização em tempo real
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-5 gap-8 items-start">
+            {/* Left Side: Partners List (60% width) */}
+            <div className="lg:col-span-3 space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar no-scrollbar">
+              {isLoadingNearby ? (
+                // Skeletons
+                Array.from({ length: 3 }).map((_, idx) => (
+                  <div key={idx} className="h-28 bg-zinc-950 border border-zinc-900 rounded-2xl animate-pulse" />
+                ))
+              ) : nearbyProviders.length === 0 ? (
+                <div className="text-zinc-500 text-sm text-center py-12 bg-zinc-950/40 border border-zinc-900 rounded-2xl">
+                  Nenhum profissional com localização registrada.
+                </div>
+              ) : (
+                nearbyProviders.map((p) => {
+                  const isSelected = p.id === selectedProviderId;
+                  const isFav = !!favorites[p.id];
+                  const isPremium = p.plan === "premium" || p.plan === "annual";
+                  const statusLabel = p.onlineStatus === true ? "Aberto agora" : "Fechado";
+
+                  return (
+                    <div
+                      key={p.id}
+                      id={`provider-card-${p.id}`}
+                      onClick={() => setSelectedProviderId(p.id)}
+                      className={`flex gap-4 bg-zinc-950/70 border p-4 rounded-2xl transition-all duration-300 cursor-pointer ${
+                        isSelected 
+                          ? "border-primary bg-zinc-900/40 shadow-[0_0_20px_rgba(132,204,22,0.1)]" 
+                          : "border-zinc-900 hover:border-zinc-800"
+                      }`}
+                    >
+                      {/* Left side cover img */}
+                      <div className="relative w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-zinc-900">
+                        <img src={p.coverUri || p.avatarUri || "https://images.unsplash.com/photo-1521791136368-1a868270f63b?w=200&q=80"} alt={p.name} className="w-full h-full object-cover" />
+                        
+                        <button 
+                          onClick={(e) => toggleFavorite(p.id, e)}
+                          className="absolute top-1.5 right-1.5 p-1 bg-black/60 rounded-full hover:bg-zinc-900 transition shadow"
+                        >
+                          <Heart className={`h-3 w-3 ${isFav ? 'text-red-500 fill-current' : 'text-white'}`} />
+                        </button>
+                      </div>
+
+                      {/* Info details */}
+                      <div className="flex-1 flex flex-col justify-between min-w-0">
+                        <div>
+                          <div className="flex justify-between items-start gap-1">
+                            <h4 className="font-extrabold text-sm text-white truncate">{p.name}</h4>
+                            <span className="text-yellow-500 text-[11px] font-bold flex-shrink-0 flex items-center gap-0.5">
+                              ★ {Number(p.rating || 5.0).toFixed(1)}
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-black text-primary uppercase block mt-0.5">{p.category || 'Parceiro'}</span>
+                          
+                          <p className="text-zinc-500 text-[11px] line-clamp-1 mt-1 leading-relaxed">
+                            {p.description || "Prestador qualificado disponível."}
+                          </p>
+                        </div>
+
+                        <div className="flex justify-between items-center mt-2 pt-2 border-t border-zinc-900/60">
+                          <div className="flex items-center gap-1 text-[10px] text-zinc-400">
+                            <MapPin className="w-3 h-3 text-primary" />
+                            <span className="truncate">{p.distanceStr || p.neighborhood || p.city}</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[10px] font-bold ${p.onlineStatus === true ? 'text-emerald-500' : 'text-zinc-500'}`}>
+                              ● {statusLabel}
+                            </span>
+                            <a
+                              href={`/perfil/${p.id}`}
+                              className="text-[10px] font-extrabold text-[#84cc16] hover:underline"
+                            >
+                              Ver Perfil
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Right Side: OpenStreetMap Container (40% width) */}
+            <div className="lg:col-span-2 h-[450px] lg:h-[600px] w-full rounded-3xl overflow-hidden border border-zinc-900 bg-zinc-950 relative z-10 sticky top-24">
+              <div id="nearby-map" className="w-full h-full animate-fade-in"></div>
+            </div>
           </div>
         </div>
       </section>
