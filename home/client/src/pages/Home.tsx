@@ -477,7 +477,8 @@ export default function Home() {
                       <img 
                         src={coverImage} 
                         alt={p.name} 
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        onClick={() => window.location.href = `/perfil/${p.id}`}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 cursor-pointer"
                       />
                       {/* Overlay Tag */}
                       <span className={`absolute top-4 left-4 text-[10px] font-extrabold px-3 py-1 rounded-full shadow-md ${
@@ -494,7 +495,10 @@ export default function Home() {
                     </div>
 
                     {/* Avatar Badge overlapping */}
-                    <div className="w-14 h-14 rounded-full border-4 border-zinc-950 bg-black -mt-7 ml-6 relative z-10 flex items-center justify-center overflow-hidden shadow-lg">
+                    <div 
+                      onClick={() => window.location.href = `/perfil/${p.id}`}
+                      className="w-14 h-14 rounded-full border-4 border-zinc-950 bg-black -mt-7 ml-6 relative z-10 flex items-center justify-center overflow-hidden shadow-lg cursor-pointer"
+                    >
                       <img src={logoImage} alt={p.name} className="w-full h-full object-cover" />
                     </div>
 
@@ -502,7 +506,12 @@ export default function Home() {
                     <div className="p-6 pt-4 space-y-4">
                       <div>
                         <div className="flex justify-between items-center">
-                          <h3 className="font-bold text-lg text-white group-hover:text-primary transition-colors truncate max-w-[180px]">{p.name}</h3>
+                          <h3 
+                            onClick={() => window.location.href = `/perfil/${p.id}`}
+                            className="font-bold text-lg text-white group-hover:text-primary transition-colors truncate max-w-[180px] cursor-pointer"
+                          >
+                            {p.name}
+                          </h3>
                           <div className="flex items-center gap-1 text-xs text-yellow-500 font-bold">
                             <span>★</span>
                             <span>{p.rating || "5.0"}</span>
