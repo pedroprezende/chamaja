@@ -25,10 +25,13 @@ import {
   GraduationCap,
   MoreHorizontal,
   MessageSquare,
+  Menu,
+  X,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export default function Home() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeStep, setActiveStep] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLocation, setSearchLocation] = useState("Bragança Paulista - SP");
@@ -202,6 +205,7 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
             <a
               href="/parceiros"
@@ -240,15 +244,76 @@ export default function Home() {
               Cadastre-se
             </Button>
           </nav>
+
+          {/* Mobile Menu Icon */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 text-zinc-400 hover:text-white transition-colors"
+          >
+            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
         </div>
+
+        {/* Mobile Nav Dropdown */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-zinc-900 bg-background/95 backdrop-blur-sm py-4 px-6 space-y-4 animate-in slide-in-from-top duration-200">
+            <nav className="flex flex-col gap-3">
+              <a 
+                href="/parceiros" 
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-muted-foreground hover:text-white py-2 text-base font-semibold border-b border-zinc-900"
+              >
+                Seja um parceiro
+              </a>
+              <a 
+                href="/parceiros#indicacao" 
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-muted-foreground hover:text-white py-2 text-base font-semibold border-b border-zinc-900"
+              >
+                Indique e ganhe
+              </a>
+              <a 
+                href="/busca?filter=favorites" 
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-primary py-2 text-base font-semibold flex items-center gap-2"
+              >
+                <Heart className="h-4.5 w-4.5 fill-current" />
+                <span>Favoritos</span>
+              </a>
+            </nav>
+            <div className="flex flex-col gap-3 pt-2">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  window.location.href = "/app";
+                }}
+                className="w-full text-center text-white hover:bg-zinc-900 border border-zinc-800 rounded-xl py-3 text-sm font-semibold"
+              >
+                Entrar
+              </Button>
+              <Button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  document
+                    .getElementById("cadastro")
+                    ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                }}
+                className="w-full text-center bg-primary text-primary-foreground hover:bg-primary/95 font-bold rounded-xl py-3 text-sm transition"
+              >
+                Cadastre-se
+              </Button>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Hero Section */}
-      <section className="relative py-20 md:py-28 overflow-hidden border-b border-zinc-900 bg-[#070708]">
+      <section className="relative py-24 md:py-36 overflow-hidden border-b border-zinc-900 bg-[#070708]">
         <div className="container mx-auto px-4 relative z-10">
-          <div className="grid lg:grid-cols-12 gap-12 items-center">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
             {/* Left Content */}
-            <div className="lg:col-span-7 space-y-8">
+            <div className="space-y-8">
               {/* Location Pin */}
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium select-none">
                 <MapPin className="h-4 w-4 text-primary" />
@@ -259,13 +324,13 @@ export default function Home() {
               </div>
 
               <div className="space-y-4">
-                <h1 className="text-5xl md:text-6.5xl font-black leading-[1.1] tracking-tight text-white font-sans">
+                <h1 className="text-5xl md:text-7xl font-black leading-[1.1] tracking-tight text-white font-sans">
                   Encontre tudo
                   <br />
                   <span className="text-primary">perto de você.</span>
                 </h1>
 
-                <p className="text-lg text-muted-foreground max-w-lg font-medium">
+                <p className="text-lg md:text-xl text-muted-foreground max-w-lg font-medium">
                   Busque comércios e prestadores de serviço na sua região.
                 </p>
               </div>
@@ -337,14 +402,14 @@ export default function Home() {
             </div>
 
             {/* Right Content */}
-            <div className="lg:col-span-5 flex justify-center relative w-full h-[350px] md:h-[450px]">
+            <div className="flex justify-center relative w-full h-[400px] md:h-[550px] lg:h-[650px]">
               {/* Radial green glow backdrop */}
               <div className="absolute inset-0 bg-primary/10 rounded-full blur-3xl filter opacity-40 pointer-events-none z-0"></div>
               {/* Big 3D Glowing Green X */}
               <img
                 src="https://lh3.googleusercontent.com/aida/AP1WRLth_3_Siyte1uWF2CyBkUYA0Dm7FZfbiCFNSxxA9So6JXyAolQgjg-PQHH8hcj7UNGt4NPg0saT9grrHp-9i3IeL19EGI6XlO0w4hQcGkwn-zcTKjTNyCtk_U2OTn54GwWwg2C-q6CpwVHWquIz1qlAeLGw03XFcaG9wFSLVk8iwqdXb1RJcnEjbtE7oYerPcmapAnubctAzeiny-SYPk3Z1_5qFZ8KnPNl_76sy-6EHndkLf5BYKI2CvXD"
                 alt="XamaJá App Ecosystem"
-                className="max-w-[420px] w-full h-auto relative z-10 object-contain drop-shadow-[0_0_50px_rgba(132,204,22,0.25)] animate-pulse"
+                className="max-w-[480px] md:max-w-[540px] lg:max-w-[580px] w-full h-full relative z-10 object-contain drop-shadow-[0_0_50px_rgba(132,204,22,0.25)] animate-pulse"
                 style={{ animationDuration: "4s" }}
               />
               {/* Floating widget card */}
