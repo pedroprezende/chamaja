@@ -643,11 +643,8 @@ export default function Home() {
               </div>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* ── HIGH-CONVERSION SPONSORED ADS CAROUSEL (DESTAQUES PRIME) ── */}
-      <section className="bg-[#050505] border-b border-zinc-900/60 py-10 relative overflow-hidden select-none">
+      {/* ── HIGH-CONVERSION SPONSORED BANNER SHOWCASE (DESTAQUES PRIME) ── */}
+      <section className="bg-[#050505] border-b border-zinc-900/60 py-12 relative overflow-hidden select-none">
         {/* Ambient glow backgrounds */}
         <div className="absolute top-0 left-0 w-64 h-64 bg-primary/5 rounded-full blur-[90px] pointer-events-none"></div>
         <div className="absolute bottom-0 right-0 w-72 h-72 bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none"></div>
@@ -656,166 +653,217 @@ export default function Home() {
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-widest rounded-full">
-                  Destaques Prime
+                <span className="px-2.5 py-0.5 bg-yellow-500 text-black text-[10px] font-black uppercase tracking-widest rounded-full">
+                  Patrocinado
                 </span>
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>
               </div>
-              <h2 className="text-2xl md:text-3xl font-black text-white font-sans tracking-tight">Parceiros em Destaque</h2>
-              <p className="text-zinc-500 text-xs font-semibold">Os serviços mais recomendados e avaliados da semana</p>
+              <h2 className="text-2xl md:text-3xl font-black text-white font-sans tracking-tight">Destaques em Evidência</h2>
+              <p className="text-zinc-500 text-xs font-semibold">Os comércios e prestadores mais requisitados do XamaJá</p>
             </div>
             
             {/* Scroll navigation helper indicators */}
             <div className="flex items-center gap-1.5 text-zinc-500 text-xs">
-              <span>Arraste para o lado</span>
+              <span>Arraste para o lado para ver mais</span>
               <ArrowRight className="w-3.5 h-3.5 animate-slide-hint" />
             </div>
           </div>
 
-          {/* Cards Carousel Container */}
-          <div className="flex gap-6 overflow-x-auto pb-4 pt-1 scrollbar-none no-scrollbar snap-x snap-mandatory">
+          {/* Banner Slider Container */}
+          <div className="flex gap-6 overflow-x-auto pb-4 pt-1 scrollbar-none no-scrollbar snap-x snap-mandatory w-full">
             {isLoadingFeatured ? (
               // Loading skeletons
-              Array.from({ length: 4 }).map((_, idx) => (
-                <div key={idx} className="w-[280px] sm:w-[320px] h-[360px] bg-zinc-950/60 border border-zinc-900 rounded-2xl p-5 flex-shrink-0 animate-pulse flex flex-col justify-between">
-                  <div className="w-full h-40 bg-zinc-900 rounded-xl mb-4"></div>
-                  <div className="space-y-3">
-                    <div className="h-4 bg-zinc-900 rounded w-2/3"></div>
-                    <div className="h-3 bg-zinc-900 rounded w-1/2"></div>
-                  </div>
-                  <div className="h-10 bg-zinc-900 rounded-xl mt-4"></div>
-                </div>
-              ))
+              <div className="w-full h-[220px] md:h-[380px] bg-zinc-950/60 border border-zinc-900 rounded-3xl animate-pulse"></div>
             ) : featuredProviders.length > 0 ? (
               featuredProviders.map((p) => {
                 const isComercio = p.businessType === "comercio" || p.categoryId === "comercios";
                 const linkUrl = `/perfil/${p.id}`;
                 const cleanPhone = (p.whatsapp || p.phone || "").replace(/\D/g, "");
-                const waMessage = encodeURIComponent(`Olá ${p.name}, vi seu destaque no XamaJá e gostaria de combinar um serviço.`);
+                const waMessage = encodeURIComponent(`Olá ${p.name}, vi seu destaque no XamaJá e gostaria de falar com você.`);
 
                 return (
                   <div
                     key={p.id}
-                    className="w-[290px] sm:w-[330px] bg-zinc-950/80 border border-zinc-900 hover:border-primary/30 p-5 rounded-3xl flex-shrink-0 snap-start flex flex-col justify-between shadow-lg hover:shadow-primary/5 transition duration-300 relative group"
+                    className="w-full min-w-[100%] md:min-w-[100%] aspect-[21/9] min-h-[240px] md:min-h-[380px] rounded-3xl overflow-hidden border border-zinc-900 bg-zinc-950 relative snap-start group shadow-2xl transition duration-500"
                   >
-                    {/* Visual Card body */}
-                    <div className="cursor-pointer" onClick={() => window.location.href = linkUrl}>
-                      {/* Cover Photo with Category badge */}
-                      <div className="relative w-full h-40 bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-900">
-                        <img
-                          src={p.coverUri || p.avatarUri || "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400&q=80"}
-                          alt={p.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                        />
-                        <div className="absolute top-3 left-3 px-3 py-1 bg-black/85 backdrop-blur-md border border-zinc-850 text-zinc-300 text-[10px] font-black uppercase tracking-wider rounded-xl">
-                          {p.category || (isComercio ? "Comércio" : "Serviço")}
-                        </div>
-                      </div>
+                    {/* Background visual cover image */}
+                    <img
+                      src={p.coverUri || p.avatarUri || "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=1200&q=80"}
+                      alt={p.name}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-102 transition duration-700 pointer-events-none"
+                    />
 
-                      {/* Provider Info */}
-                      <div className="mt-4 space-y-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <h3 className="font-extrabold text-white text-base truncate">{p.name}</h3>
-                          <div className="flex items-center gap-1 flex-shrink-0 text-yellow-500 text-xs font-black">
-                            <span>⭐</span>
-                            <span className="text-white">{Number(p.rating || 5.0).toFixed(1)}</span>
-                          </div>
-                        </div>
-                        
-                        <p className="text-zinc-500 text-xs line-clamp-2 h-8 leading-relaxed">
-                          {p.description || "Profissional qualificado em destaque no XamaJá."}
-                        </p>
+                    {/* Dark gradient overlay layers for text readability */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent z-10 pointer-events-none"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-transparent z-10 pointer-events-none"></div>
 
-                        <div className="flex items-center gap-1.5 text-zinc-400 text-xs">
-                          <MapPin className="w-3.5 h-3.5 text-primary" />
-                          <span className="truncate">{p.neighborhood ? `${p.neighborhood}, ` : ""}{p.city || "Região local"}</span>
-                        </div>
-                      </div>
+                    {/* Top right sponsored label */}
+                    <div className="absolute top-6 right-6 z-20">
+                      <span className="text-[10px] font-black tracking-widest bg-yellow-500 text-black border border-yellow-500 px-3.5 py-1 rounded-lg uppercase shadow-lg">
+                        Patrocinado
+                      </span>
                     </div>
 
-                    {/* Action Button */}
-                    <div className="mt-4 flex gap-2">
-                      <Button
-                        onClick={() => window.location.href = linkUrl}
-                        className="flex-1 bg-zinc-900 hover:bg-zinc-850 text-white border border-zinc-800 hover:border-zinc-700 font-extrabold text-xs h-10 rounded-xl transition"
-                      >
-                        Ver Detalhes
-                      </Button>
-                      {cleanPhone && (
+                    {/* Banner Overlay Content */}
+                    <div className="absolute inset-x-0 bottom-0 p-6 md:p-10 z-20 flex flex-col md:flex-row md:items-end justify-between gap-6">
+                      <div className="flex items-center gap-4 md:gap-6 min-w-0">
+                        {/* Circle logo */}
+                        <div className="w-16 h-16 md:w-24 md:h-24 rounded-full border-4 border-zinc-950 bg-black overflow-hidden flex-shrink-0 shadow-2xl">
+                          <img
+                            src={p.avatarUri || "https://images.unsplash.com/photo-1590947132387-155cc02f3212?w=100&q=80"}
+                            alt={p.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+
+                        {/* Title block */}
+                        <div className="space-y-1.5 min-w-0">
+                          <span className="inline-block text-[10px] font-black text-primary uppercase tracking-widest bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-md">
+                            {p.category || (isComercio ? "Comércio" : "Serviço")}
+                          </span>
+                          
+                          <h3 className="text-xl md:text-4xl font-black text-white leading-none truncate drop-shadow-md">
+                            {p.name}
+                          </h3>
+
+                          <p className="text-zinc-300 text-xs md:text-sm line-clamp-2 max-w-xl font-medium leading-relaxed drop-shadow-md">
+                            {p.description || "Comércio ou prestador de serviço de alto destaque da região."}
+                          </p>
+
+                          <div className="flex items-center gap-3 text-zinc-400 text-xs md:text-sm">
+                            <span className="flex items-center gap-1 text-yellow-500 font-bold">
+                              ★ <span className="text-white">{Number(p.rating || 5.0).toFixed(1)}</span>
+                            </span>
+                            <span>•</span>
+                            <span className="truncate">{p.neighborhood ? `${p.neighborhood}, ` : ""}{p.city || "Região local"}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Call-to-action buttons */}
+                      <div className="flex gap-3 flex-shrink-0 w-full md:w-auto">
                         <Button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.open(`https://wa.me/55${cleanPhone}?text=${waMessage}`, "_blank");
-                          }}
-                          className="px-3 bg-primary hover:bg-primary/95 text-primary-foreground font-black rounded-xl h-10 shadow-lg shadow-primary/10 transition"
+                          onClick={() => window.location.href = linkUrl}
+                          className="flex-1 md:flex-initial bg-white hover:bg-zinc-200 text-black font-black text-xs md:text-sm px-6 h-12 rounded-xl transition-all shadow-xl"
                         >
-                          <MessageSquare className="w-4 h-4" />
+                          Ver Detalhes
                         </Button>
-                      )}
+                        {cleanPhone && (
+                          <Button
+                            onClick={() => window.open(`https://wa.me/55${cleanPhone}?text=${waMessage}`, "_blank")}
+                            className="flex-1 md:flex-initial bg-[#25D366] hover:bg-[#20ba5a] text-white font-black text-xs md:text-sm px-6 h-12 rounded-xl transition-all shadow-xl flex items-center justify-center gap-2"
+                          >
+                            <MessageSquare className="w-4.5 h-4.5" />
+                            <span>WhatsApp</span>
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
               })
             ) : (
-              // Fallback Mock ads if database query returns empty
+              // Fallback Mock ads matching app screenshot layout (e.g. Pizzaria Japá storefront advertisement)
               [
-                { id: "mock-ad1", name: "Dr. Heron Rocha - Saúde", category: "Saúde", rating: 5.0, description: "Consultas domiciliares e check-up de saúde completo em Bragança.", city: "Bragança Paulista", coverUri: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=400&q=80" },
-                { id: "mock-ad2", name: "Xama Burger & Grill", category: "Alimentação", rating: 4.9, description: "Os melhores hambúrgueres artesanais e porções da região entregues quentes.", city: "Bragança Paulista", coverUri: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&q=80" },
-                { id: "mock-ad3", name: "Elétrica Bragança", category: "Serviços", rating: 4.8, description: "Instalação de tomadas, chuveiros, fiação elétrica comercial e residencial.", city: "Bragança Paulista", coverUri: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&q=80" }
-              ].map((p) => (
-                <div
-                  key={p.id}
-                  className="w-[290px] sm:w-[330px] bg-zinc-950/80 border border-zinc-900 hover:border-primary/30 p-5 rounded-3xl flex-shrink-0 snap-start flex flex-col justify-between shadow-lg hover:shadow-primary/5 transition duration-300 relative group"
-                >
-                  <div className="cursor-pointer" onClick={() => alert("Exemplo demonstrativo de anúncio.")}>
-                    <div className="relative w-full h-40 bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-900">
-                      <img
-                        src={p.coverUri}
-                        alt={p.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                      />
-                      <div className="absolute top-3 left-3 px-3 py-1 bg-black/85 backdrop-blur-md border border-zinc-850 text-zinc-300 text-[10px] font-black uppercase tracking-wider rounded-xl">
-                        {p.category}
-                      </div>
+                {
+                  id: "mock-ad-japa",
+                  name: "Pizzaria Japá",
+                  category: "Alimentação",
+                  rating: 5.0,
+                  description: "A pizzaria mais querida da região. Venha experimentar o melhor rodízio e pizzas gourmet com borda recheada de Bragança Paulista.",
+                  city: "Bragança Paulista",
+                  coverUri: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=1200&q=80",
+                  avatarUri: "https://images.unsplash.com/photo-1590947132387-155cc02f3212?w=100&q=80",
+                  whatsapp: "11988888888"
+                },
+                {
+                  id: "mock-ad-clinica",
+                  name: "Dr. Heron Rocha - Saúde",
+                  category: "Saúde",
+                  rating: 5.0,
+                  description: "Atendimento médico domiciliar de excelência. Check-ups preventivos, exames e consultas completas com cuidado e dedicação.",
+                  city: "Bragança Paulista",
+                  coverUri: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=1200&q=80",
+                  avatarUri: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100&q=80",
+                  whatsapp: "11977777777"
+                }
+              ].map((p) => {
+                const linkUrl = "/busca";
+                const cleanPhone = p.whatsapp;
+                const waMessage = encodeURIComponent(`Olá ${p.name}, vi seu destaque no XamaJá e gostaria de realizar um pedido/combinar serviço.`);
+
+                return (
+                  <div
+                    key={p.id}
+                    className="w-full min-w-[100%] md:min-w-[100%] aspect-[21/9] min-h-[240px] md:min-h-[380px] rounded-3xl overflow-hidden border border-zinc-900 bg-zinc-950 relative snap-start group shadow-2xl transition duration-500"
+                  >
+                    <img
+                      src={p.coverUri}
+                      alt={p.name}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-102 transition duration-700 pointer-events-none"
+                    />
+
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent z-10 pointer-events-none"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-transparent z-10 pointer-events-none"></div>
+
+                    <div className="absolute top-6 right-6 z-20">
+                      <span className="text-[10px] font-black tracking-widest bg-yellow-500 text-black border border-yellow-500 px-3.5 py-1 rounded-lg uppercase shadow-lg animate-pulse">
+                        Patrocinado
+                      </span>
                     </div>
 
-                    <div className="mt-4 space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <h3 className="font-extrabold text-white text-base truncate">{p.name}</h3>
-                        <div className="flex items-center gap-1 flex-shrink-0 text-yellow-500 text-xs font-black">
-                          <span>⭐</span>
-                          <span className="text-white">{Number(p.rating).toFixed(1)}</span>
+                    <div className="absolute inset-x-0 bottom-0 p-6 md:p-10 z-20 flex flex-col md:flex-row md:items-end justify-between gap-6">
+                      <div className="flex items-center gap-4 md:gap-6 min-w-0">
+                        <div className="w-16 h-16 md:w-24 md:h-24 rounded-full border-4 border-zinc-950 bg-black overflow-hidden flex-shrink-0 shadow-2xl">
+                          <img
+                            src={p.avatarUri}
+                            alt={p.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5 min-w-0">
+                          <span className="inline-block text-[10px] font-black text-primary uppercase tracking-widest bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-md">
+                            {p.category}
+                          </span>
+                          
+                          <h3 className="text-xl md:text-4xl font-black text-white leading-none truncate drop-shadow-md">
+                            {p.name}
+                          </h3>
+
+                          <p className="text-zinc-300 text-xs md:text-sm line-clamp-2 max-w-xl font-medium leading-relaxed drop-shadow-md">
+                            {p.description}
+                          </p>
+
+                          <div className="flex items-center gap-3 text-zinc-400 text-xs md:text-sm">
+                            <span className="flex items-center gap-1 text-yellow-500 font-bold">
+                              ★ <span className="text-white">{Number(p.rating).toFixed(1)}</span>
+                            </span>
+                            <span>•</span>
+                            <span className="truncate">{p.city}</span>
+                          </div>
                         </div>
                       </div>
-                      
-                      <p className="text-zinc-500 text-xs line-clamp-2 h-8 leading-relaxed">
-                        {p.description}
-                      </p>
 
-                      <div className="flex items-center gap-1.5 text-zinc-400 text-xs">
-                        <MapPin className="w-3.5 h-3.5 text-primary" />
-                        <span className="truncate">{p.city}</span>
+                      <div className="flex gap-3 flex-shrink-0 w-full md:w-auto">
+                        <Button
+                          onClick={() => window.location.href = linkUrl}
+                          className="flex-1 md:flex-initial bg-white hover:bg-zinc-200 text-black font-black text-xs md:text-sm px-6 h-12 rounded-xl transition-all shadow-xl"
+                        >
+                          Ver Detalhes
+                        </Button>
+                        <Button
+                          onClick={() => window.open(`https://wa.me/55${cleanPhone}?text=${waMessage}`, "_blank")}
+                          className="flex-1 md:flex-initial bg-[#25D366] hover:bg-[#20ba5a] text-white font-black text-xs md:text-sm px-6 h-12 rounded-xl transition-all shadow-xl flex items-center justify-center gap-2"
+                        >
+                          <MessageSquare className="w-4.5 h-4.5" />
+                          <span>WhatsApp</span>
+                        </Button>
                       </div>
                     </div>
                   </div>
-
-                  <div className="mt-4 flex gap-2">
-                    <Button
-                      onClick={() => alert("Exemplo demonstrativo de anúncio.")}
-                      className="flex-1 bg-zinc-900 hover:bg-zinc-850 text-white border border-zinc-800 hover:border-zinc-700 font-extrabold text-xs h-10 rounded-xl transition"
-                    >
-                      Ver Detalhes
-                    </Button>
-                    <Button
-                      onClick={() => alert("Exemplo demonstrativo de anúncio.")}
-                      className="px-3 bg-primary hover:bg-primary/95 text-primary-foreground font-black rounded-xl h-10 shadow-lg shadow-primary/10 transition"
-                    >
-                      <MessageSquare className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))
-            )}
+                ))
+              )}
           </div>
         </div>
       </section>
