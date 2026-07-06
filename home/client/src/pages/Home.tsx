@@ -643,6 +643,9 @@ export default function Home() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
       {/* ── HIGH-CONVERSION SPONSORED BANNER SHOWCASE (DESTAQUES PRIME) ── */}
       <section className="bg-[#050505] border-b border-zinc-900/60 py-12 relative overflow-hidden select-none">
         {/* Ambient glow backgrounds */}
@@ -862,8 +865,9 @@ export default function Home() {
                       </div>
                     </div>
                   </div>
-                ))
-              )}
+                );
+              })
+            )}
           </div>
         </div>
       </section>
