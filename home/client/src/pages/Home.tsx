@@ -168,7 +168,7 @@ export default function Home() {
     }
   }, [nearbyProviders, mapInstance]);
 
-  // Sync markers whenever filtered list or map instance changes
+  // Sync markers whenever filtered list or map instance changes (markers are NOT recreated on selection change)
   useEffect(() => {
     const L = (window as any).L;
     if (!L || !mapInstance) return;
@@ -185,9 +185,8 @@ export default function Home() {
       const lat = Number(p.latitude);
       const lng = Number(p.longitude);
 
-      const isSelected = p.id === selectedProviderId;
       const iconHtml = `
-        <div class="relative w-8 h-8 rounded-full border-2 ${isSelected ? 'border-[#25D366] scale-110 shadow-[0_0_15px_rgba(37,211,102,0.6)]' : 'border-[#84cc16]'} overflow-hidden bg-black transition-all duration-300 shadow-[0_0_10px_rgba(132,204,22,0.4)]">
+        <div class="relative w-8 h-8 rounded-full border-2 border-[#84cc16] overflow-hidden bg-black transition-all duration-300 shadow-[0_0_10px_rgba(132,204,22,0.4)]">
           <img src="${p.avatarUri || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=50'}" class="w-full h-full object-cover" />
         </div>
       `;
@@ -222,19 +221,47 @@ export default function Home() {
       (marker as any).providerId = p.id;
       newMarkers.push(marker);
       bounds.push([lat, lng]);
-
-      if (isSelected) {
-        setTimeout(() => {
-          marker.openPopup();
-        }, 100);
-      }
     });
 
     setMarkersList(newMarkers);
     if (bounds.length > 0) {
       mapInstance.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
     }
-  }, [mapInstance, filteredNearbyProviders, selectedProviderId]);
+  }, [mapInstance, filteredNearbyProviders]);
+
+  // Sync selected marker styling and popup centring
+  useEffect(() => {
+    if (!mapInstance || markersList.length === 0) return;
+    const L = (window as any).L;
+    if (!L) return;
+
+    markersList.forEach((marker) => {
+      const pId = (marker as any).providerId;
+      const isSelected = pId === selectedProviderId;
+      const p = nearbyProviders.find(prov => prov.id === pId);
+      if (!p) return;
+
+      const iconHtml = `
+        <div class="relative w-8 h-8 rounded-full border-2 ${isSelected ? 'border-[#25D366] scale-110 shadow-[0_0_15px_rgba(37,211,102,0.6)]' : 'border-[#84cc16]'} overflow-hidden bg-black transition-all duration-300">
+          <img src="${p.avatarUri || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=50'}" class="w-full h-full object-cover" />
+        </div>
+      `;
+      const customIcon = L.divIcon({
+        html: iconHtml,
+        className: "custom-leaflet-marker",
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+      });
+      marker.setIcon(customIcon);
+
+      if (isSelected) {
+        setTimeout(() => {
+          marker.openPopup();
+        }, 80);
+        mapInstance.setView(marker.getLatLng(), 14, { animate: true });
+      }
+    });
+  }, [selectedProviderId, mapInstance, markersList, nearbyProviders]);
 
   // Rotating words for the hero title
   const rotatingWords = ["comércios", "eletricistas", "pizzarias", "encanadores", "salões", "mecânicos", "reformas"];
