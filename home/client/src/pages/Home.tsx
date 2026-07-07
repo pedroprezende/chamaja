@@ -163,10 +163,46 @@ export default function Home() {
 
       L.control.zoom({ position: 'bottomright' }).addTo(map);
       setMapInstance(map);
+
+      // Force recalculation after map init
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 150);
     } catch (e) {
       console.error("Failed to initialize Leaflet map on Home:", e);
     }
   }, [nearbyProviders, mapInstance]);
+
+  // Invalidate map size on window resize and map initialization to fix Leaflet size rendering bugs
+  useEffect(() => {
+    if (!mapInstance) return;
+    
+    mapInstance.invalidateSize();
+    
+    const t1 = setTimeout(() => {
+      mapInstance.invalidateSize();
+    }, 100);
+
+    const t2 = setTimeout(() => {
+      mapInstance.invalidateSize();
+    }, 500);
+
+    const t3 = setTimeout(() => {
+      mapInstance.invalidateSize();
+    }, 1200);
+
+    const handleResize = () => {
+      mapInstance.invalidateSize();
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [mapInstance]);
 
   // Sync markers whenever filtered list or map instance changes (markers are NOT recreated on selection change)
   useEffect(() => {
