@@ -84,6 +84,7 @@ export default function Home() {
   const [markersList, setMarkersList] = useState<any[]>([]);
   const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
+  const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number }>({ latitude: -22.9527, longitude: -46.5419 });
 
   // Map Search and filtering states
   const [mapSearchQuery, setMapSearchQuery] = useState("");
@@ -110,13 +111,96 @@ export default function Home() {
     setFavorites(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // Load nearby providers for map section
+  // Load nearby providers for map section with geolocation fallback flow
   useEffect(() => {
     async function loadNearby() {
+      setIsLoadingNearby(true);
       try {
+        let coords = { latitude: -22.9527, longitude: -46.5419 }; // Default Bragança Paulista
+        let locationFound = false;
+
+        // 1. Try Browser Geolocation
+        if (navigator.geolocation) {
+          try {
+            const pos = await new Promise<any>((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject, {
+                enableHighAccuracy: true,
+                timeout: 4000,
+              });
+            });
+            coords = {
+              latitude: pos.coords.latitude,
+              longitude: pos.coords.longitude,
+            };
+            locationFound = true;
+            console.log("[XamaJa Geolocation] Found browser GPS position:", coords);
+          } catch (geoError) {
+            console.log("[XamaJa Geolocation] Browser GPS denied or failed. Trying fallbacks...");
+          }
+        }
+
+        // 2. Fallback to CEP or City Geocode from searchLocation
+        if (!locationFound && searchLocation) {
+          const cepRegex = /^\d{5}-?\d{3}$/;
+          if (cepRegex.test(searchLocation)) {
+            const cleanCep = searchLocation.replace("-", "");
+            try {
+              const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+              if (res.ok) {
+                const data = await res.json();
+                if (!data.erro) {
+                  const geoRes = await fetch(
+                    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(`${data.localidade}, ${data.uf}, Brasil`)}&format=json&limit=1`,
+                    { headers: { "User-Agent": "XamaJa-LocalSearch" } }
+                  );
+                  if (geoRes.ok) {
+                    const geoData = await geoRes.json();
+                    if (geoData.length > 0) {
+                      coords = {
+                        latitude: parseFloat(geoData[0].lat),
+                        longitude: parseFloat(geoData[0].lon),
+                      };
+                      locationFound = true;
+                      console.log("[XamaJa Geolocation] Resolved CEP to coordinates:", coords);
+                    }
+                  }
+                }
+              }
+            } catch (cepError) {
+              console.error("[XamaJa Geolocation] CEP lookup error:", cepError);
+            }
+          } else {
+            // Geocode text searchLocation directly via Nominatim
+            try {
+              const geoRes = await fetch(
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(`${searchLocation}, Brasil`)}&format=json&limit=1`,
+                { headers: { "User-Agent": "XamaJa-LocalSearch" } }
+              );
+              if (geoRes.ok) {
+                const geoData = await geoRes.json();
+                if (geoData.length > 0) {
+                  coords = {
+                    latitude: parseFloat(geoData[0].lat),
+                    longitude: parseFloat(geoData[0].lon),
+                  };
+                  locationFound = true;
+                  console.log("[XamaJa Geolocation] Resolved search location text to coordinates:", coords);
+                }
+              }
+            } catch (geocodeError) {
+              console.error("[XamaJa Geolocation] Nominatim searchLocation geocoding error:", geocodeError);
+            }
+          }
+        }
+
+        // Save resolved coordinates
+        setUserCoords(coords);
+
         const input = {
           sortBy: "distance",
           profileType: "all",
+          userLatitude: coords.latitude,
+          userLongitude: coords.longitude,
         };
         const url = `/api/trpc/providers.searchFiltered?input=${encodeURIComponent(JSON.stringify(input))}`;
         const res = await fetch(url);
@@ -133,7 +217,7 @@ export default function Home() {
       }
     }
     loadNearby();
-  }, []);
+  }, [searchLocation]);
 
   // Initialize Leaflet map ONCE when nearbyProviders is loaded
   useEffect(() => {
@@ -148,13 +232,7 @@ export default function Home() {
     }
 
     try {
-      const defaultCenter = { latitude: -22.9527, longitude: -46.5419 }; // Bragança Paulista
-      const firstWithCoords = nearbyProviders.find(p => p.latitude && p.longitude);
-      const center = firstWithCoords 
-        ? { latitude: Number(firstWithCoords.latitude), longitude: Number(firstWithCoords.longitude) }
-        : defaultCenter;
-
-      const map = L.map("nearby-map", { zoomControl: false }).setView([center.latitude, center.longitude], 13);
+      const map = L.map("nearby-map", { zoomControl: false }).setView([userCoords.latitude, userCoords.longitude], 13);
       L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
         attribution: '&copy; CartoDB',
         subdomains: 'abcd',
@@ -171,7 +249,7 @@ export default function Home() {
     } catch (e) {
       console.error("Failed to initialize Leaflet map on Home:", e);
     }
-  }, [nearbyProviders, mapInstance]);
+  }, [nearbyProviders, mapInstance, userCoords]);
 
   // Invalidate map size on window resize and map initialization to fix Leaflet size rendering bugs
   useEffect(() => {
@@ -215,15 +293,17 @@ export default function Home() {
     // 2. Create new markers for filtered list
     const newMarkers: any[] = [];
     const bounds: any[] = [];
+    const defaultMascot = "https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/mascote-parrot-WdeTpQk76sVEPj2emyYAPr.webp";
 
     filteredNearbyProviders.forEach((p) => {
       if (!p.latitude || !p.longitude) return;
       const lat = Number(p.latitude);
       const lng = Number(p.longitude);
 
+      const markerPhoto = p.avatarUri || p.coverUri || defaultMascot;
       const iconHtml = `
         <div class="relative w-8 h-8 rounded-full border-2 border-[#84cc16] overflow-hidden bg-black transition-all duration-300 shadow-[0_0_10px_rgba(132,204,22,0.4)]">
-          <img src="${p.avatarUri || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=50'}" class="w-full h-full object-cover" />
+          <img src="${markerPhoto}" class="w-full h-full object-cover" />
         </div>
       `;
       const customIcon = L.divIcon({
@@ -233,12 +313,22 @@ export default function Home() {
         iconAnchor: [16, 16],
       });
 
+      const cardPhoto = p.coverUri || p.avatarUri || defaultMascot;
+      const distanceStr = p.distanceStr || p.neighborhood || p.city || "Região local";
       const popupContent = `
-        <div class="p-2.5 bg-zinc-950 border border-zinc-900 rounded-xl space-y-1.5 max-w-[180px]">
-          <strong class="text-white text-xs font-bold block leading-tight">${p.name}</strong>
-          <span class="text-[#84cc16] text-[9px] font-black uppercase tracking-wider block">${p.category || 'Parceiro'}</span>
-          <span class="text-zinc-400 text-[10px] block">⭐ ${Number(p.rating || 5.0).toFixed(1)}</span>
-          <a href="/perfil/${p.id}" class="text-center font-bold text-[10px] text-white bg-[#84cc16] px-2 py-1 rounded-lg block mt-1.5 w-full hover:bg-[#84cc16]/90 transition" style="text-decoration: none; color: white;">Ver Perfil</a>
+        <div class="p-3 bg-zinc-950 border border-zinc-900 rounded-2xl space-y-2 max-w-[200px] shadow-2xl">
+          <div class="w-full h-20 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800">
+            <img src="${cardPhoto}" class="w-full h-full object-cover animate-fade-in" />
+          </div>
+          <div>
+            <strong class="text-white text-xs font-black block leading-tight truncate">${p.name}</strong>
+            <span class="text-primary text-[9px] font-black uppercase tracking-wider block mt-0.5">${p.category || 'Parceiro'}</span>
+            <div class="flex items-center justify-between text-[10px] text-zinc-400 mt-1.5 pt-1.5 border-t border-zinc-900/60">
+              <span class="flex items-center gap-0.5 text-yellow-500 font-bold">★ ${Number(p.rating || 5.0).toFixed(1)}</span>
+              <span class="flex items-center gap-0.5 truncate max-w-[100px]">📍 ${distanceStr}</span>
+            </div>
+          </div>
+          <a href="/perfil/${p.id}" class="text-center font-extrabold text-[10px] text-white bg-primary hover:bg-primary/95 py-2 rounded-xl block mt-1 transition" style="text-decoration: none; color: white;">Ver Perfil</a>
         </div>
       `;
 
@@ -271,15 +361,18 @@ export default function Home() {
     const L = (window as any).L;
     if (!L) return;
 
+    const defaultMascot = "https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/mascote-parrot-WdeTpQk76sVEPj2emyYAPr.webp";
+
     markersList.forEach((marker) => {
       const pId = (marker as any).providerId;
       const isSelected = pId === selectedProviderId;
       const p = nearbyProviders.find(prov => prov.id === pId);
       if (!p) return;
 
+      const markerPhoto = p.avatarUri || p.coverUri || defaultMascot;
       const iconHtml = `
         <div class="relative w-8 h-8 rounded-full border-2 ${isSelected ? 'border-[#25D366] scale-110 shadow-[0_0_15px_rgba(37,211,102,0.6)]' : 'border-[#84cc16]'} overflow-hidden bg-black transition-all duration-300">
-          <img src="${p.avatarUri || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=50'}" class="w-full h-full object-cover" />
+          <img src="${markerPhoto}" class="w-full h-full object-cover" />
         </div>
       `;
       const customIcon = L.divIcon({
