@@ -975,7 +975,8 @@ export default function Home() {
             <p className="text-zinc-500 text-xs">Encontre comércios ou prestadores de serviço por especialidade</p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-4">
+          {/* Horizontal scroll on mobile, grid on desktop */}
+          <div className="flex overflow-x-auto gap-4 pb-4 md:grid md:grid-cols-5 lg:grid-cols-10 md:pb-0 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none]">
             {[
               { id: "all", name: "Todas", icon: Grid },
               { id: "comercios", name: "Alimentação", icon: Utensils },
@@ -1000,7 +1001,7 @@ export default function Home() {
                       window.location.href = `/busca?category=${cat.id}`;
                     }
                   }}
-                  className={`group flex flex-col items-center justify-center gap-3 h-28 rounded-2xl cursor-pointer transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 ${
+                  className={`group flex flex-col items-center justify-center gap-3 h-28 w-24 md:w-auto flex-shrink-0 md:flex-shrink rounded-2xl cursor-pointer transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 ${
                     isActive 
                       ? "bg-zinc-950 border-2 border-primary text-primary shadow-[0_10px_20px_rgba(132,204,22,0.15)]" 
                       : "bg-[#0c0c0e] border border-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-800 hover:shadow-2xl hover:shadow-primary/5"
