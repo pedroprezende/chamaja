@@ -217,7 +217,8 @@ export default function Home() {
       }
     }
     loadNearby();
-  }, [searchLocation]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Initialize Leaflet map ONCE when nearbyProviders is loaded
   useEffect(() => {
@@ -350,7 +351,8 @@ export default function Home() {
     });
 
     setMarkersList(newMarkers);
-    if (bounds.length > 0) {
+    // Only auto-fit to bounds when this is the initial load (no provider selected yet)
+    if (bounds.length > 0 && !selectedProviderId) {
       mapInstance.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
     }
   }, [mapInstance, filteredNearbyProviders]);
@@ -384,13 +386,17 @@ export default function Home() {
       marker.setIcon(customIcon);
 
       if (isSelected) {
-        setTimeout(() => {
-          marker.openPopup();
-        }, 80);
         mapInstance.setView(marker.getLatLng(), 14, { animate: true });
+        // Small delay so setView completes before popup tries to render
+        setTimeout(() => {
+          try { marker.openPopup(); } catch (_) {}
+        }, 250);
       }
     });
-  }, [selectedProviderId, mapInstance, markersList, nearbyProviders]);
+  // NOTE: markersList intentionally excluded - we don't want to re-run just because
+  // a new set of markers was created; we only want to react to selection changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProviderId, mapInstance]);
 
   // Rotating words for the hero title
   const rotatingWords = ["comércios", "eletricistas", "pizzarias", "encanadores", "salões", "mecânicos", "reformas"];
