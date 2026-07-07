@@ -741,16 +741,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Floating Widget 3: Avaliações */}
-                <div className="absolute top-1/3 -right-6 z-20 bg-zinc-950/95 border border-zinc-800/85 p-3.5 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-md select-none animate-float-reverse flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center">
-                    <Star className="w-4.5 h-4.5 text-yellow-500 fill-current" />
-                  </div>
-                  <div>
-                    <span className="text-white font-extrabold text-[11px] block">Avaliado em 5.0⭐</span>
-                    <span className="text-zinc-500 text-[9px] block">Por clientes reais</span>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
