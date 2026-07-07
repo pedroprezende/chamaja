@@ -85,6 +85,26 @@ export default function Home() {
   const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
 
+  // Map Search and filtering states
+  const [mapSearchQuery, setMapSearchQuery] = useState("");
+  const [mapCategoryFilter, setMapCategoryFilter] = useState("all");
+
+  const filteredNearbyProviders = nearbyProviders.filter((p) => {
+    if (mapCategoryFilter !== "all") {
+      const isComercio = p.businessType === "comercio" || p.categoryId === "comercios" || p.category?.toLowerCase() === "comércios" || p.category?.toLowerCase() === "comércio";
+      if (mapCategoryFilter === "comercio" && !isComercio) return false;
+      if (mapCategoryFilter === "servico" && isComercio) return false;
+    }
+    if (mapSearchQuery.trim()) {
+      const q = mapSearchQuery.toLowerCase();
+      const nameMatch = p.name?.toLowerCase().includes(q);
+      const descMatch = p.description?.toLowerCase().includes(q);
+      const categoryMatch = p.category?.toLowerCase().includes(q);
+      if (!nameMatch && !descMatch && !categoryMatch) return false;
+    }
+    return true;
+  });
+
   const toggleFavorite = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setFavorites(prev => ({ ...prev, [id]: !prev[id] }));
@@ -115,10 +135,10 @@ export default function Home() {
     loadNearby();
   }, []);
 
-  // Initialize Leaflet map
+  // Initialize Leaflet map ONCE when nearbyProviders is loaded
   useEffect(() => {
     const L = (window as any).L;
-    if (!L || nearbyProviders.length === 0) return;
+    if (!L || nearbyProviders.length === 0 || mapInstance) return;
 
     const mapContainer = document.getElementById("nearby-map");
     if (!mapContainer) return;
@@ -143,84 +163,31 @@ export default function Home() {
 
       L.control.zoom({ position: 'bottomright' }).addTo(map);
       setMapInstance(map);
-
-      // Create markers
-      const newMarkers: any[] = [];
-      const bounds: any[] = [];
-
-      nearbyProviders.forEach((p) => {
-        if (!p.latitude || !p.longitude) return;
-        const lat = Number(p.latitude);
-        const lng = Number(p.longitude);
-
-        const iconHtml = `
-          <div class="relative w-8 h-8 rounded-full border-2 border-[#84cc16] overflow-hidden bg-black transition-all duration-300 shadow-[0_0_10px_rgba(132,204,22,0.4)]">
-            <img src="${p.avatarUri || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=50'}" class="w-full h-full object-cover" />
-          </div>
-        `;
-        const customIcon = L.divIcon({
-          html: iconHtml,
-          className: "custom-leaflet-marker",
-          iconSize: [32, 32],
-          iconAnchor: [16, 16],
-        });
-
-        const popupContent = `
-          <div class="p-2.5 bg-zinc-950 border border-zinc-900 rounded-xl space-y-1.5 max-w-[180px]">
-            <strong class="text-white text-xs font-bold block leading-tight">${p.name}</strong>
-            <span class="text-[#84cc16] text-[9px] font-black uppercase tracking-wider block">${p.category || 'Parceiro'}</span>
-            <span class="text-zinc-400 text-[10px] block">⭐ ${Number(p.rating || 5.0).toFixed(1)}</span>
-            <a href="/perfil/${p.id}" class="text-center font-bold text-[10px] text-white bg-[#84cc16] px-2 py-1 rounded-lg block mt-1.5 w-full hover:bg-[#84cc16]/90 transition" style="text-decoration: none; color: white;">Ver Perfil</a>
-          </div>
-        `;
-
-        const marker = L.marker([lat, lng], { icon: customIcon })
-          .bindPopup(popupContent)
-          .addTo(map);
-
-        marker.on('click', () => {
-          setSelectedProviderId(p.id);
-          const cardElement = document.getElementById(`provider-card-${p.id}`);
-          if (cardElement) {
-            cardElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-          }
-        });
-
-        (marker as any).providerId = p.id;
-        newMarkers.push(marker);
-        bounds.push([lat, lng]);
-      });
-
-      setMarkersList(newMarkers);
-      if (bounds.length > 0) {
-        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
-      }
     } catch (e) {
       console.error("Failed to initialize Leaflet map on Home:", e);
     }
+  }, [nearbyProviders, mapInstance]);
 
-    return () => {
-      const container = document.getElementById("nearby-map");
-      if (container && (container as any)._leaflet_id) {
-        (container as any)._leaflet_id = null;
-      }
-    };
-  }, [nearbyProviders]);
-
-  // Sync selected marker styling and popup
+  // Sync markers whenever filtered list or map instance changes
   useEffect(() => {
-    if (!mapInstance || markersList.length === 0) return;
     const L = (window as any).L;
-    if (!L) return;
+    if (!L || !mapInstance) return;
 
-    markersList.forEach((marker) => {
-      const pId = (marker as any).providerId;
-      const isSelected = pId === selectedProviderId;
-      const p = nearbyProviders.find(prov => prov.id === pId);
-      if (!p) return;
+    // 1. Clear old markers from the map
+    markersList.forEach(m => mapInstance.removeLayer(m));
 
+    // 2. Create new markers for filtered list
+    const newMarkers: any[] = [];
+    const bounds: any[] = [];
+
+    filteredNearbyProviders.forEach((p) => {
+      if (!p.latitude || !p.longitude) return;
+      const lat = Number(p.latitude);
+      const lng = Number(p.longitude);
+
+      const isSelected = p.id === selectedProviderId;
       const iconHtml = `
-        <div class="relative w-8 h-8 rounded-full border-2 ${isSelected ? 'border-[#25D366] scale-110 shadow-[0_0_15px_rgba(37,211,102,0.6)]' : 'border-[#84cc16]'} overflow-hidden bg-black transition-all duration-300">
+        <div class="relative w-8 h-8 rounded-full border-2 ${isSelected ? 'border-[#25D366] scale-110 shadow-[0_0_15px_rgba(37,211,102,0.6)]' : 'border-[#84cc16]'} overflow-hidden bg-black transition-all duration-300 shadow-[0_0_10px_rgba(132,204,22,0.4)]">
           <img src="${p.avatarUri || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=50'}" class="w-full h-full object-cover" />
         </div>
       `;
@@ -230,14 +197,44 @@ export default function Home() {
         iconSize: [32, 32],
         iconAnchor: [16, 16],
       });
-      marker.setIcon(customIcon);
+
+      const popupContent = `
+        <div class="p-2.5 bg-zinc-950 border border-zinc-900 rounded-xl space-y-1.5 max-w-[180px]">
+          <strong class="text-white text-xs font-bold block leading-tight">${p.name}</strong>
+          <span class="text-[#84cc16] text-[9px] font-black uppercase tracking-wider block">${p.category || 'Parceiro'}</span>
+          <span class="text-zinc-400 text-[10px] block">⭐ ${Number(p.rating || 5.0).toFixed(1)}</span>
+          <a href="/perfil/${p.id}" class="text-center font-bold text-[10px] text-white bg-[#84cc16] px-2 py-1 rounded-lg block mt-1.5 w-full hover:bg-[#84cc16]/90 transition" style="text-decoration: none; color: white;">Ver Perfil</a>
+        </div>
+      `;
+
+      const marker = L.marker([lat, lng], { icon: customIcon })
+        .bindPopup(popupContent)
+        .addTo(mapInstance);
+
+      marker.on('click', () => {
+        setSelectedProviderId(p.id);
+        const cardElement = document.getElementById(`provider-card-${p.id}`);
+        if (cardElement) {
+          cardElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      });
+
+      (marker as any).providerId = p.id;
+      newMarkers.push(marker);
+      bounds.push([lat, lng]);
 
       if (isSelected) {
-        marker.openPopup();
-        mapInstance.setView(marker.getLatLng(), 14, { animate: true });
+        setTimeout(() => {
+          marker.openPopup();
+        }, 100);
       }
     });
-  }, [selectedProviderId, mapInstance, markersList, nearbyProviders]);
+
+    setMarkersList(newMarkers);
+    if (bounds.length > 0) {
+      mapInstance.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+    }
+  }, [mapInstance, filteredNearbyProviders, selectedProviderId]);
 
   // Rotating words for the hero title
   const rotatingWords = ["comércios", "eletricistas", "pizzarias", "encanadores", "salões", "mecânicos", "reformas"];
@@ -1098,32 +1095,90 @@ export default function Home() {
       {/* ── MAP INTEGRATED SECTION (PROFISSIONAIS PRÓXIMOS) ── */}
       <section className="py-16 bg-[#030303] border-b border-zinc-900">
         <div className="container mx-auto px-4">
-          <div className="mb-10">
-            <div className="flex items-center gap-2">
-              <MapPin className="text-primary h-6 w-6" />
-              <h2 className="text-2xl md:text-3xl font-black text-white font-sans tracking-tight">
-                Profissionais próximos de você
-              </h2>
+          <style>{`
+            .leaflet-popup-content-wrapper {
+              background: #09090b !important;
+              color: #ffffff !important;
+              border: 1px solid #27272a !important;
+              border-radius: 12px !important;
+              box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6) !important;
+              padding: 0 !important;
+            }
+            .leaflet-popup-content {
+              margin: 0 !important;
+              padding: 0 !important;
+            }
+            .leaflet-popup-tip {
+              background: #09090b !important;
+              border: 1px solid #27272a !important;
+              box-shadow: none !important;
+            }
+            .leaflet-container a.leaflet-popup-close-button {
+              color: #a1a1aa !important;
+              font-weight: bold !important;
+              padding: 6px 6px 0 0 !important;
+            }
+            .leaflet-container a.leaflet-popup-close-button:hover {
+              color: #ffffff !important;
+              background: transparent !important;
+            }
+          `}</style>
+
+          <div className="mb-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <MapPin className="text-primary h-6 w-6" />
+                  <h2 className="text-2xl md:text-3xl font-black text-white font-sans tracking-tight">
+                    Profissionais próximos de você
+                  </h2>
+                </div>
+                <p className="text-zinc-500 text-xs mt-1 font-semibold">
+                  Explore prestadores e comércios no mapa com visualização em tempo real
+                </p>
+              </div>
             </div>
-            <p className="text-zinc-500 text-xs mt-1 font-semibold">
-              Explore prestadores e comércios no mapa com visualização em tempo real
-            </p>
+          </div>
+
+          {/* Local Search & Category Filters above split layout */}
+          <div className="mb-8 grid md:grid-cols-3 gap-4 bg-zinc-950/60 p-4 border border-zinc-900 rounded-2xl relative z-20">
+            <div className="md:col-span-2 relative">
+              <span className="absolute left-4 top-3.5 text-zinc-500 text-xs">🔍</span>
+              <input
+                type="text"
+                placeholder="Buscar por nome, especialidade ou descrição..."
+                value={mapSearchQuery}
+                onChange={(e) => setMapSearchQuery(e.target.value)}
+                className="w-full bg-[#09090b] border border-zinc-800 rounded-xl pl-10 pr-4 py-3 text-xs text-white placeholder:text-zinc-650 focus:outline-none focus:border-primary/50 transition-colors"
+              />
+            </div>
+            <div>
+              <select
+                value={mapCategoryFilter}
+                onChange={(e) => setMapCategoryFilter(e.target.value)}
+                className="w-full bg-[#09090b] border border-zinc-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-primary/50 transition-colors"
+              >
+                <option value="all">Todas as categorias</option>
+                <option value="comercio">Apenas Comércios</option>
+                <option value="servico">Apenas Serviços</option>
+              </select>
+            </div>
           </div>
 
           <div className="grid lg:grid-cols-5 gap-8 items-start">
             {/* Left Side: Partners List (60% width) */}
-            <div className="lg:col-span-3 space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar no-scrollbar">
+            <div className="lg:col-span-3 space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar no-scrollbar relative z-10">
               {isLoadingNearby ? (
                 // Skeletons
                 Array.from({ length: 3 }).map((_, idx) => (
                   <div key={idx} className="h-28 bg-zinc-950 border border-zinc-900 rounded-2xl animate-pulse" />
                 ))
-              ) : nearbyProviders.length === 0 ? (
+              ) : filteredNearbyProviders.length === 0 ? (
                 <div className="text-zinc-500 text-sm text-center py-12 bg-zinc-950/40 border border-zinc-900 rounded-2xl">
-                  Nenhum profissional com localização registrada.
+                  Nenhum profissional encontrado com os filtros aplicados.
                 </div>
               ) : (
-                nearbyProviders.map((p) => {
+                filteredNearbyProviders.map((p) => {
                   const isSelected = p.id === selectedProviderId;
                   const isFav = !!favorites[p.id];
                   const isPremium = p.plan === "premium" || p.plan === "annual";
