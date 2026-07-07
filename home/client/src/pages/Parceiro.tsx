@@ -28,6 +28,11 @@ import {
   Compass,
   Users,
   Copy,
+  Heart,
+  Star,
+  BarChart3,
+  Settings,
+  Gift,
 } from "lucide-react";
 
 interface Service {
