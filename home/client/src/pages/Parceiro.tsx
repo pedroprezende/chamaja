@@ -486,6 +486,65 @@ export default function Parceiro() {
     toast.success("Foto removida. Salve o perfil para confirmar.");
   };
 
+  // Helper to upload base64 images from browser file input
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  const handleImageUpload = async (
+    file: File,
+    onSuccess: (url: string) => void
+  ) => {
+    if (!sessionToken) {
+      toast.error("Você precisa estar logado para fazer upload.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("O arquivo excede o limite de tamanho de 5MB.");
+      return;
+    }
+
+    setIsUploadingImage(true);
+    const toastId = toast.loading("Enviando imagem...");
+
+    try {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = async () => {
+        const dataUrl = reader.result as string;
+        const base64Data = dataUrl.split(",")[1];
+        const fileType = file.type;
+
+        try {
+          const response = await fetch("/api/business-partner/upload-image", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${sessionToken}`,
+            },
+            body: JSON.stringify({ base64Data, fileType }),
+          });
+
+          const result = await response.json();
+          if (response.ok && result.success && result.publicUrl) {
+            onSuccess(result.publicUrl);
+            toast.success("Imagem enviada com sucesso!", { id: toastId });
+          } else {
+            toast.error(result.error || "Erro ao fazer upload.", { id: toastId });
+          }
+        } catch (err) {
+          console.error("Upload fetch error:", err);
+          toast.error("Erro ao conectar com o servidor para upload.", { id: toastId });
+        } finally {
+          setIsUploadingImage(false);
+        }
+      };
+    } catch (err) {
+      console.error("FileReader error:", err);
+      toast.error("Erro ao processar arquivo local.", { id: toastId });
+      setIsUploadingImage(false);
+    }
+  };
+
   // Service limit check
   const maxServicos = permissions?.maxServicos ?? 1;
   const isLimitReached =
@@ -1828,72 +1887,125 @@ export default function Parceiro() {
                                 capa e imagens dos seus produtos/serviços).
                               </p>
                             </div>
-
                             <form onSubmit={saveProfile} className="space-y-6">
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* Avatar Link */}
-                                <div className="space-y-3 bg-background/30 border border-border rounded-2xl p-5">
-                                  <label className="text-xs font-bold text-white uppercase tracking-wider block">
-                                    Foto de Perfil (Logo ou Avatar)
-                                  </label>
-                                  <div className="w-16 h-16 rounded-xl bg-zinc-800 border border-zinc-700/50 overflow-hidden flex items-center justify-center mb-3">
-                                    {busAvatarUri ? (
-                                      <img
-                                        src={busAvatarUri}
-                                        alt="Preview Avatar"
-                                        className="w-full h-full object-cover"
-                                      />
-                                    ) : (
-                                      <ImageIcon className="h-6 w-6 text-zinc-500" />
-                                    )}
+                                {/* Avatar Upload */}
+                                <div className="space-y-3 bg-background/30 border border-border rounded-2xl p-5 flex flex-col justify-between">
+                                  <div>
+                                    <label className="text-xs font-bold text-white uppercase tracking-wider block">
+                                      Foto de Perfil (Logo ou Avatar)
+                                    </label>
+                                    <span className="text-[10px] text-zinc-500 block mb-3">Arraste ou clique abaixo para fazer upload</span>
+                                    <div className="w-16 h-16 rounded-xl bg-zinc-800 border border-zinc-700/55 overflow-hidden flex items-center justify-center mb-3">
+                                      {busAvatarUri ? (
+                                        <img
+                                          src={busAvatarUri}
+                                          alt="Preview Avatar"
+                                          className="w-full h-full object-cover"
+                                        />
+                                      ) : (
+                                        <ImageIcon className="h-6 w-6 text-zinc-500" />
+                                      )}
+                                    </div>
                                   </div>
-                                  <Input
-                                    type="text"
-                                    placeholder="https://imagem.com/logo.jpg"
-                                    value={busAvatarUri}
-                                    onChange={e => setBusAvatarUri(e.target.value)}
-                                    className="bg-background border-border text-xs rounded-xl focus-visible:ring-primary"
-                                  />
+                                  <div className="space-y-2">
+                                    <label className="cursor-pointer bg-zinc-900 border border-zinc-800 hover:bg-zinc-800/80 text-white text-xs font-bold py-2 px-3 rounded-xl block text-center transition-all duration-200">
+                                      <span>Escolher arquivo...</span>
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0];
+                                          if (file) handleImageUpload(file, setBusAvatarUri);
+                                        }}
+                                      />
+                                    </label>
+                                    <Input
+                                      type="text"
+                                      placeholder="Ou cole o link da foto de perfil..."
+                                      value={busAvatarUri}
+                                      onChange={e => setBusAvatarUri(e.target.value)}
+                                      className="bg-background border-border text-xs rounded-xl focus-visible:ring-primary"
+                                    />
+                                  </div>
                                 </div>
 
-                                {/* Cover Link */}
-                                <div className="space-y-3 bg-background/30 border border-border rounded-2xl p-5">
-                                  <label className="text-xs font-bold text-white uppercase tracking-wider block">
-                                    Foto de Capa do Perfil
-                                  </label>
-                                  <div className="w-full h-16 rounded-xl bg-zinc-800 border border-zinc-700/50 overflow-hidden flex items-center justify-center mb-3">
-                                    {busCoverUri ? (
-                                      <img
-                                        src={busCoverUri}
-                                        alt="Preview Cover"
-                                        className="w-full h-full object-cover"
-                                      />
-                                    ) : (
-                                      <span className="text-xs text-zinc-500">
-                                        Sem Capa
-                                      </span>
-                                    )}
+                                {/* Cover Upload */}
+                                <div className="space-y-3 bg-background/30 border border-border rounded-2xl p-5 flex flex-col justify-between">
+                                  <div>
+                                    <label className="text-xs font-bold text-white uppercase tracking-wider block">
+                                      Foto de Capa do Perfil
+                                    </label>
+                                    <span className="text-[10px] text-zinc-500 block mb-3">Arraste ou clique abaixo para fazer upload</span>
+                                    <div className="w-full h-16 rounded-xl bg-zinc-800 border border-zinc-700/55 overflow-hidden flex items-center justify-center mb-3">
+                                      {busCoverUri ? (
+                                        <img
+                                          src={busCoverUri}
+                                          alt="Preview Cover"
+                                          className="w-full h-full object-cover"
+                                        />
+                                      ) : (
+                                        <span className="text-xs text-zinc-500">Sem Capa</span>
+                                      )}
+                                    </div>
                                   </div>
-                                  <Input
-                                    type="text"
-                                    placeholder="https://imagem.com/capa.jpg"
-                                    value={busCoverUri}
-                                    onChange={e => setBusCoverUri(e.target.value)}
-                                    className="bg-background border-border text-xs rounded-xl focus-visible:ring-primary"
-                                  />
+                                  <div className="space-y-2">
+                                    <label className="cursor-pointer bg-zinc-900 border border-zinc-800 hover:bg-zinc-800/80 text-white text-xs font-bold py-2 px-3 rounded-xl block text-center transition-all duration-200">
+                                      <span>Escolher arquivo...</span>
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0];
+                                          if (file) handleImageUpload(file, setBusCoverUri);
+                                        }}
+                                      />
+                                    </label>
+                                    <Input
+                                      type="text"
+                                      placeholder="Ou cole o link da foto de capa..."
+                                      value={busCoverUri}
+                                      onChange={e => setBusCoverUri(e.target.value)}
+                                      className="bg-background border-border text-xs rounded-xl focus-visible:ring-primary"
+                                    />
+                                  </div>
                                 </div>
                               </div>
 
                               {/* Gallery Link Lists */}
                               <div className="space-y-4 bg-background/30 border border-border rounded-2xl p-5">
-                                <label className="text-xs font-bold text-white uppercase tracking-wider block">
-                                  Galeria de Fotos (Destaques)
-                                </label>
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                                  <div>
+                                    <label className="text-xs font-bold text-white uppercase tracking-wider block">
+                                      Galeria de Fotos (Destaques)
+                                    </label>
+                                    <span className="text-[10px] text-zinc-500 block">Adicione fotos de produtos/serviços para seu feed do aplicativo</span>
+                                  </div>
+                                  <label className="cursor-pointer bg-[#25D366] hover:bg-[#20ba5a] text-black text-xs font-black py-2 px-4 rounded-xl text-center transition-all duration-200 flex items-center justify-center gap-1.5 self-start">
+                                    <Plus className="h-4.5 w-4.5 text-black" />
+                                    <span>Upload da Galeria</span>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      className="hidden"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                          handleImageUpload(file, (url) => {
+                                            setBusGallery(prev => [...prev, url]);
+                                          });
+                                        }
+                                      }}
+                                    />
+                                  </label>
+                                </div>
 
                                 <div className="flex gap-2">
                                   <Input
                                     type="text"
-                                    placeholder="Insira a URL de uma foto para adicionar à galeria"
+                                    placeholder="Ou cole a URL de uma foto para adicionar à galeria"
                                     value={galleryInput}
                                     onChange={e => setGalleryInput(e.target.value)}
                                     className="bg-background border-border rounded-xl focus-visible:ring-primary focus-visible:border-primary text-sm flex-1"

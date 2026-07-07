@@ -1427,6 +1427,70 @@ async function startServer() {
     }
   });
 
+  // Upload de Imagem (Base64) direto do navegador do parceiro para o Supabase
+  app.post("/api/business-partner/upload-image", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res
+          .status(401)
+          .json({ success: false, error: "Não autorizado. Token ausente." });
+      }
+
+      const token = authHeader.split(" ")[1];
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
+      if (authError || !authUser) {
+        return res
+          .status(401)
+          .json({ success: false, error: "Sessão inválida ou expirada." });
+      }
+
+      const { base64Data, fileType } = req.body;
+      if (!base64Data) {
+        return res.status(400).json({ success: false, error: "Imagem vazia." });
+      }
+
+      const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+      const currentType = fileType || "image/jpeg";
+      if (!allowedTypes.includes(currentType)) {
+        return res.status(400).json({ success: false, error: "Formato de arquivo inválido. Use JPG, PNG ou WEBP." });
+      }
+
+      const ext = currentType.split("/")[1] || "jpg";
+      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
+      const filePath = fileName;
+
+      // Decode base64
+      const { decode } = await import("base64-arraybuffer");
+      const buffer = decode(base64Data);
+
+      const { data, error: uploadError } = await supabase.storage
+        .from("providers")
+        .upload(filePath, buffer, {
+          contentType: currentType,
+          cacheControl: "3600",
+          upsert: true,
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data: { publicUrl } } = supabase.storage.from("providers").getPublicUrl(filePath);
+
+      return res.json({
+        success: true,
+        publicUrl,
+      });
+    } catch (e: any) {
+      console.error("[Web API] Erro no upload-image:", e);
+      return res.status(500).json({
+        success: false,
+        error: e.message || "Erro no upload da imagem.",
+      });
+    }
+  });
+
   // Atualizar Perfil do "Meu Negócio" (incluindo serviços)
   app.put("/api/business-partner/profile", async (req, res) => {
     try {
