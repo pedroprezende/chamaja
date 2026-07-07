@@ -580,7 +580,7 @@ export default function Home() {
 
       <section className="relative py-12 md:py-16 overflow-hidden border-b border-zinc-900 bg-[#070708]">
         <div className="container mx-auto px-4 relative z-10">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-6 md:gap-10 items-center">
+          <div className="grid grid-cols-[1.2fr_0.8fr] gap-4 md:gap-10 items-center">
             {/* Left Content */}
             <div className="space-y-6 relative">
               {/* Mobile Ambient Glow behind Left Content */}
@@ -588,7 +588,7 @@ export default function Home() {
 
               {/* Location Pin & Mobile Mascot wrapper */}
               <div className="flex items-center justify-between gap-4 select-none relative z-10">
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-semibold">
+                <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-muted-foreground font-semibold">
                   <MapPin className="h-4 w-4 text-primary" />
                   <span>Sua localização:</span>
                   <span className="text-primary font-bold underline cursor-pointer hover:text-primary/80 transition">
@@ -607,17 +607,17 @@ export default function Home() {
               </div>
 
               <div className="space-y-3">
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-[1.1] tracking-tight text-white font-sans">
+                <h1 className="text-xl sm:text-4xl md:text-5xl lg:text-6xl font-black leading-[1.1] tracking-tight text-white font-sans">
                   Encontre os melhores
                   <br />
-                  <span className="inline-block text-primary transition-all duration-500 ease-out transform translate-y-0 opacity-100 min-w-[280px]">
+                  <span className="inline-block text-primary transition-all duration-500 ease-out transform translate-y-0 opacity-100 min-w-[140px] sm:min-w-[280px]">
                     {rotatingWords[currentWordIdx]}
                   </span>
                   <br />
                   <span className="text-zinc-400">perto de você.</span>
                 </h1>
 
-                <p className="text-sm md:text-base text-zinc-400 max-w-lg leading-relaxed">
+                <p className="text-[10px] sm:text-sm md:text-base text-zinc-400 max-w-lg leading-relaxed">
                   Busque comércios e prestadores de serviço na sua região de forma simples e rápida.
                 </p>
               </div>
@@ -636,7 +636,7 @@ export default function Home() {
                         handleSearchSubmit();
                       }
                     }}
-                    className="bg-transparent border-none focus:outline-none focus:ring-0 text-white w-full text-sm py-3 placeholder:text-zinc-650"
+                    className="bg-transparent border-none focus:outline-none focus:ring-0 text-white w-full text-xs sm:text-sm py-3 placeholder:text-zinc-650"
                     placeholder="O que você procura? Ex: pizzaria, eletricista..."
                   />
                   {searchQuery && (
@@ -665,7 +665,7 @@ export default function Home() {
                         handleSearchSubmit();
                       }
                     }}
-                    className="bg-transparent border-none focus:outline-none focus:ring-0 text-white w-full text-sm py-3 placeholder:text-zinc-650"
+                    className="bg-transparent border-none focus:outline-none focus:ring-0 text-white w-full text-xs sm:text-sm py-3 placeholder:text-zinc-650"
                     placeholder="Cidade, bairro ou CEP"
                   />
                   {searchLocation && (
@@ -682,14 +682,14 @@ export default function Home() {
                 {/* Search Button */}
                 <Button
                   onClick={handleSearchSubmit}
-                  className="bg-primary hover:bg-primary/95 text-primary-foreground font-black px-8 py-3.5 h-12 rounded-xl transition shadow-lg shadow-primary/10 w-full md:w-auto text-sm"
+                  className="bg-primary hover:bg-primary/95 text-primary-foreground font-black px-8 py-3.5 h-10 sm:h-12 rounded-xl transition shadow-lg shadow-primary/10 w-full md:w-auto text-xs sm:text-sm"
                 >
                   Buscar
                 </Button>
               </div>
 
               {/* Quick Tags */}
-              <div className="flex flex-wrap gap-2 text-xs items-center pt-2">
+              <div className="hidden sm:flex flex-wrap gap-2 text-xs items-center pt-2">
                 <span className="text-muted-foreground">Mais buscados:</span>
                 {["Restaurante", "Eletricista", "Salão de Beleza", "Mecânico", "Marceneiro", "Academia"].map(tag => (
                   <button
@@ -707,14 +707,14 @@ export default function Home() {
             </div>
 
             {/* Right Content */}
-            <div className="flex justify-center relative w-full h-[320px] md:h-[450px] lg:h-[580px] items-center">
+            <div className="flex justify-center relative w-full h-[220px] sm:h-[350px] md:h-[450px] lg:h-[580px] items-center">
               {/* Animated glowing background blobs */}
               <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-primary/20 rounded-full blur-[100px] animate-glow-pulse pointer-events-none z-0"></div>
               <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-emerald-500/10 rounded-full blur-[120px] animate-glow-pulse pointer-events-none z-0" style={{ animationDelay: "2s" }}></div>
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-[#84cc16]/15 rounded-full blur-[90px] animate-glow-pulse pointer-events-none z-0" style={{ animationDelay: "4s" }}></div>
 
               {/* Big 3D Glowing Green X (Mockup image) */}
-              <div className="relative z-10 w-full h-full max-w-[340px] md:max-w-[440px] lg:max-w-[500px] flex items-center justify-center animate-float-slow">
+              <div className="relative z-10 w-full h-full max-w-[200px] sm:max-w-[340px] md:max-w-[440px] lg:max-w-[500px] flex items-center justify-center animate-float-slow">
                 <img
                   src="/assets/images/hero_mockup_right.png"
                   alt="XamaJá App Ecosystem"
@@ -722,21 +722,21 @@ export default function Home() {
                 />
 
                 {/* Floating Widget 1: X marca o local */}
-                <div className="absolute -top-4 right-4 z-20 bg-zinc-950/90 border border-zinc-800/80 p-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-md select-none animate-float-reverse max-w-[170px] hidden sm:block">
-                  <span className="text-primary font-black text-xs block mb-1">X marca o local</span>
-                  <p className="text-[10px] text-zinc-400 leading-normal">
+                <div className="absolute -top-4 -right-2 z-20 bg-zinc-950/90 border border-zinc-800/80 p-2 sm:p-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-md select-none animate-float-reverse max-w-[90px] sm:max-w-[170px]">
+                  <span className="text-primary font-black text-[7px] sm:text-xs block mb-0.5 sm:mb-1">X marca o local</span>
+                  <p className="text-[6px] sm:text-[10px] text-zinc-400 leading-normal">
                     Conectando você aos melhores negócios da sua região.
                   </p>
                 </div>
 
                 {/* Floating Widget 2: 100% Seguro */}
-                <div className="absolute bottom-10 -left-6 z-20 bg-zinc-950/95 border border-zinc-800/85 p-3 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-md select-none animate-float-slow flex items-center gap-2 hidden sm:flex">
-                  <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-                    <ShieldCheck className="w-4.5 h-4.5 text-primary" />
+                <div className="absolute bottom-4 -left-6 z-20 bg-zinc-950/95 border border-zinc-800/85 p-1.5 sm:p-3 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-md select-none animate-float-slow flex items-center gap-1 sm:gap-2">
+                  <div className="w-5 h-5 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                    <ShieldCheck className="w-3 h-3 sm:w-4.5 sm:h-4.5 text-primary" />
                   </div>
                   <div>
-                    <span className="text-white font-extrabold text-[11px] block">100% Seguro</span>
-                    <span className="text-zinc-500 text-[9px] block">Sem intermediários</span>
+                    <span className="text-white font-extrabold text-[7px] sm:text-[11px] block leading-none">100% Seguro</span>
+                    <span className="text-zinc-500 text-[6px] sm:text-[9px] block">Sem intermediários</span>
                   </div>
                 </div>
 
@@ -1231,16 +1231,17 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="grid lg:grid-cols-5 gap-8 items-start">
-            {/* Left Side: Partners List (60% width) */}
-            <div className="lg:col-span-3 space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar no-scrollbar relative z-10">
+          {/* Persistent side-by-side grid on both mobile and desktop */}
+          <div className="grid grid-cols-[1.2fr_0.8fr] md:grid-cols-5 gap-4 md:gap-8 items-start">
+            {/* Left Side: Partners List */}
+            <div className="md:col-span-3 space-y-4 max-h-[380px] sm:max-h-[500px] md:max-h-[600px] overflow-y-auto pr-1 sm:pr-2 custom-scrollbar no-scrollbar relative z-10">
               {isLoadingNearby ? (
                 // Skeletons
                 Array.from({ length: 3 }).map((_, idx) => (
                   <div key={idx} className="h-28 bg-zinc-950 border border-zinc-900 rounded-2xl animate-pulse" />
                 ))
               ) : filteredNearbyProviders.length === 0 ? (
-                <div className="text-zinc-500 text-sm text-center py-12 bg-zinc-950/40 border border-zinc-900 rounded-2xl">
+                <div className="text-zinc-500 text-xs sm:text-sm text-center py-12 bg-zinc-950/40 border border-zinc-900 rounded-2xl">
                   Nenhum profissional encontrado com os filtros aplicados.
                 </div>
               ) : (
@@ -1255,14 +1256,14 @@ export default function Home() {
                       key={p.id}
                       id={`provider-card-${p.id}`}
                       onClick={() => selectProvider(p.id)}
-                      className={`flex gap-4 bg-zinc-950/70 border p-4 rounded-2xl transition-all duration-300 cursor-pointer ${
+                      className={`flex flex-col sm:flex-row gap-3 bg-zinc-950/70 border p-3 rounded-2xl transition-all duration-300 cursor-pointer ${
                         isSelected 
                           ? "border-primary bg-zinc-900/40 shadow-[0_0_20px_rgba(132,204,22,0.1)]" 
                           : "border-zinc-900 hover:border-zinc-800"
                       }`}
                     >
                       {/* Left side cover img */}
-                      <div className="relative w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-zinc-900">
+                      <div className="relative w-full sm:w-24 h-20 sm:h-24 rounded-xl overflow-hidden flex-shrink-0 bg-zinc-900">
                         <img src={p.coverUri || p.avatarUri || "https://images.unsplash.com/photo-1521791136368-1a868270f63b?w=200&q=80"} alt={p.name} className="w-full h-full object-cover" />
                         
                         <button 
@@ -1277,33 +1278,33 @@ export default function Home() {
                       <div className="flex-1 flex flex-col justify-between min-w-0">
                         <div>
                           <div className="flex justify-between items-start gap-1">
-                            <h4 className="font-extrabold text-sm text-white truncate">{p.name}</h4>
-                            <span className="text-yellow-500 text-[11px] font-bold flex-shrink-0 flex items-center gap-0.5">
+                            <h4 className="font-extrabold text-[11px] sm:text-sm text-white truncate">{p.name}</h4>
+                            <span className="text-yellow-500 text-[9px] sm:text-[11px] font-bold flex-shrink-0 flex items-center gap-0.5">
                               ★ {Number(p.rating || 5.0).toFixed(1)}
                             </span>
                           </div>
-                          <span className="text-[10px] font-black text-primary uppercase block mt-0.5">{p.category || 'Parceiro'}</span>
+                          <span className="text-[8px] sm:text-[10px] font-black text-primary uppercase block mt-0.5">{p.category || 'Parceiro'}</span>
                           
-                          <p className="text-zinc-500 text-[11px] line-clamp-1 mt-1 leading-relaxed">
+                          <p className="text-zinc-500 text-[10px] sm:text-[11px] line-clamp-1 mt-1 leading-relaxed">
                             {p.description || "Prestador qualificado disponível."}
                           </p>
                         </div>
 
                         <div className="flex justify-between items-center mt-2 pt-2 border-t border-zinc-900/60">
-                          <div className="flex items-center gap-1 text-[10px] text-zinc-400">
+                          <div className="flex items-center gap-1 text-[9px] sm:text-[10px] text-zinc-400">
                             <MapPin className="w-3 h-3 text-primary" />
                             <span className="truncate">{p.distanceStr || p.neighborhood || p.city}</span>
                           </div>
                           
                           <div className="flex items-center gap-2">
-                            <span className={`text-[10px] font-bold ${p.onlineStatus === true ? 'text-emerald-500' : 'text-zinc-500'}`}>
+                            <span className={`text-[8px] sm:text-[10px] font-bold ${p.onlineStatus === true ? 'text-emerald-500' : 'text-zinc-500'}`}>
                               ● {statusLabel}
                             </span>
                             <a
                               href={`/perfil/${p.id}`}
-                              className="text-[10px] font-extrabold text-[#84cc16] hover:underline"
+                              className="text-[9px] sm:text-[10px] font-extrabold text-[#84cc16] hover:underline"
                             >
-                              Ver Perfil
+                              Perfil
                             </a>
                           </div>
                         </div>
@@ -1315,7 +1316,7 @@ export default function Home() {
             </div>
 
             {/* Right Side: OpenStreetMap Container (40% width) */}
-            <div className="lg:col-span-2 h-[450px] lg:h-[600px] w-full rounded-3xl overflow-hidden border border-zinc-900 bg-zinc-950 relative z-10 sticky top-24">
+            <div className="md:col-span-2 h-[380px] sm:h-[500px] md:h-[600px] w-full rounded-3xl overflow-hidden border border-zinc-900 bg-zinc-950 relative z-10 sticky top-24">
               <div id="nearby-map" className="w-full h-full animate-fade-in"></div>
             </div>
           </div>
