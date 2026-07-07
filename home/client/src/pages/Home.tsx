@@ -510,14 +510,28 @@ export default function Home() {
         <div className="container mx-auto px-4 relative z-10">
           <div className="grid lg:grid-cols-2 gap-10 items-center">
             {/* Left Content */}
-            <div className="space-y-6">
-              {/* Location Pin */}
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium select-none">
-                <MapPin className="h-4 w-4 text-primary" />
-                <span>Sua localização:</span>
-                <span className="text-primary font-bold underline cursor-pointer hover:text-primary/80 transition">
-                  {searchLocation} ▾
-                </span>
+            <div className="space-y-6 relative">
+              {/* Mobile Ambient Glow behind Left Content */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-72 bg-primary/10 rounded-full blur-[100px] pointer-events-none z-0 lg:hidden"></div>
+
+              {/* Location Pin & Mobile Mascot wrapper */}
+              <div className="flex items-center justify-between gap-4 select-none relative z-10">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-semibold">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  <span>Sua localização:</span>
+                  <span className="text-primary font-bold underline cursor-pointer hover:text-primary/80 transition">
+                    {searchLocation} ▾
+                  </span>
+                </div>
+                {/* Mobile Mascot: shows a small cute mascot avatar floating in the upper corner */}
+                <div className="lg:hidden flex-shrink-0 relative group">
+                  <div className="absolute inset-0 bg-primary/20 rounded-full blur-md animate-glow-pulse"></div>
+                  <img
+                    src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/mascote-parrot-WdeTpQk76sVEPj2emyYAPr.webp"
+                    alt="Xará"
+                    className="w-10 h-10 object-contain relative z-10 drop-shadow-md animate-float-slow"
+                  />
+                </div>
               </div>
 
               <div className="space-y-3">
