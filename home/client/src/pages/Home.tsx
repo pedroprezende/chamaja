@@ -28,7 +28,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -90,24 +90,26 @@ export default function Home() {
   // Use refs for Leaflet instances - prevents React re-renders from destroying Leaflet's state
   const mapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
-  const selectedProviderIdRef = useRef<string | null>(null);
   const mapInitializedRef = useRef(false);
 
-  const filteredNearbyProviders = nearbyProviders.filter((p) => {
+  // Memoize so the array reference is stable — avoids re-triggering marker-creation effect on every render
+  const filteredNearbyProviders = useMemo(() => nearbyProviders.filter((p) => {
     if (mapCategoryFilter !== "all") {
-      const isComercio = p.businessType === "comercio" || p.categoryId === "comercios" || p.category?.toLowerCase() === "comércios" || p.category?.toLowerCase() === "comércio";
+      const isComercio = p.businessType === "comercio" || p.categoryId === "comercios"
+        || p.category?.toLowerCase() === "comércios" || p.category?.toLowerCase() === "comércio";
       if (mapCategoryFilter === "comercio" && !isComercio) return false;
       if (mapCategoryFilter === "servico" && isComercio) return false;
     }
     if (mapSearchQuery.trim()) {
       const q = mapSearchQuery.toLowerCase();
-      const nameMatch = p.name?.toLowerCase().includes(q);
-      const descMatch = p.description?.toLowerCase().includes(q);
-      const categoryMatch = p.category?.toLowerCase().includes(q);
-      if (!nameMatch && !descMatch && !categoryMatch) return false;
+      if (
+        !p.name?.toLowerCase().includes(q) &&
+        !p.description?.toLowerCase().includes(q) &&
+        !p.category?.toLowerCase().includes(q)
+      ) return false;
     }
     return true;
-  });
+  }), [nearbyProviders, mapCategoryFilter, mapSearchQuery]);
 
   const toggleFavorite = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -149,34 +151,64 @@ export default function Home() {
     loadNearby();
   }, []);
 
-  // Helper: build the marker icon HTML
+  const DEFAULT_MASCOT = "https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/mascote-parrot-WdeTpQk76sVEPj2emyYAPr.webp";
+
+  // Helper: build marker icon HTML
   const buildIcon = useCallback((L: any, photoUrl: string, isSelected: boolean) => {
     const border = isSelected
       ? 'border-[#25D366] shadow-[0_0_15px_rgba(37,211,102,0.7)]'
       : 'border-[#84cc16] shadow-[0_0_8px_rgba(132,204,22,0.4)]';
-    const scale = isSelected ? 'style="transform:scale(1.25);"' : '';
+    const sizeClass = isSelected ? 'w-10 h-10' : 'w-8 h-8';
     return L.divIcon({
-      html: `<div class="w-8 h-8 rounded-full border-2 ${border} overflow-hidden bg-black" ${scale}><img src="${photoUrl}" class="w-full h-full object-cover" /></div>`,
+      html: `<div class="${sizeClass} rounded-full border-2 ${border} overflow-hidden bg-black" style="transition:all 0.2s;"><img src="${photoUrl}" style="width:100%;height:100%;object-fit:cover;" /></div>`,
       className: "",
-      iconSize: [32, 32],
-      iconAnchor: [16, 16],
-      popupAnchor: [0, -18],
+      iconSize: isSelected ? [40, 40] : [32, 32],
+      iconAnchor: isSelected ? [20, 20] : [16, 16],
+      popupAnchor: [0, isSelected ? -22 : -18],
     });
   }, []);
 
-  // Initialize Leaflet map once when providers are available
+  // Imperative function: select a provider, update icons, pan map, open popup.
+  // Called by BOTH the list card click AND the Leaflet marker click handler.
+  // No useEffect needed — all operations happen synchronously/imperatively.
+  const selectProvider = useCallback((providerId: string) => {
+    const L = (window as any).L;
+    const map = mapRef.current;
+    if (!L || !map) return;
+
+    setSelectedProviderId(providerId);
+
+    markersRef.current.forEach(m => {
+      const mId = (m as any)._xamajaId;
+      const mProvider = nearbyProviders.find(pv => pv.id === mId);
+      if (!mProvider) return;
+      const mPhoto = mProvider.avatarUri || mProvider.coverUri || DEFAULT_MASCOT;
+      const isSel = mId === providerId;
+      m.setIcon(buildIcon(L, mPhoto, isSel));
+      if (isSel) {
+        // Pan to marker first, then open popup after animation settles
+        map.setView(m.getLatLng(), 14, { animate: true, duration: 0.5 });
+        setTimeout(() => {
+          try { m.openPopup(); } catch (_) {}
+        }, 550);
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nearbyProviders, buildIcon]);
+
+  // Create ALL markers once when nearbyProviders loads.
+  // Filter changes do NOT recreate markers — they just show/hide them.
   useEffect(() => {
     if (nearbyProviders.length === 0) return;
 
     const L = (window as any).L;
     if (!L) return;
 
-    // --- Initialise map if not done yet ---
+    // Initialise map on first load
     if (!mapInitializedRef.current) {
       const container = document.getElementById("nearby-map");
       if (!container) return;
 
-      // Clear any stale Leaflet state from a previous HMR
       if ((container as any)._leaflet_id) {
         (container as any)._leaflet_id = null;
         container.innerHTML = "";
@@ -190,15 +222,11 @@ export default function Home() {
           maxZoom: 20,
         }).addTo(map);
         L.control.zoom({ position: "bottomright" }).addTo(map);
-
         map.setView([-22.9527, -46.5419], 13);
         mapRef.current = map;
         mapInitializedRef.current = true;
-
-        // Fix tile rendering after CSS layout settles
         setTimeout(() => map.invalidateSize(), 100);
         setTimeout(() => map.invalidateSize(), 600);
-
         window.addEventListener("resize", () => map.invalidateSize());
       } catch (err) {
         console.error("Leaflet init error:", err);
@@ -209,25 +237,21 @@ export default function Home() {
     const map = mapRef.current;
     if (!map) return;
 
-    const defaultMascot = "https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/mascote-parrot-WdeTpQk76sVEPj2emyYAPr.webp";
-
-    // Remove old markers
-    markersRef.current.forEach(m => { try { map.removeLayer(m); } catch(_){} });
+    // Remove previous markers
+    markersRef.current.forEach(m => { try { map.removeLayer(m); } catch (_) {} });
     markersRef.current = [];
 
     const bounds: any[] = [];
 
-    filteredNearbyProviders.forEach((p) => {
+    nearbyProviders.forEach((p) => {
       if (!p.latitude || !p.longitude) return;
       const lat = Number(p.latitude);
       const lng = Number(p.longitude);
-      const photo = p.avatarUri || p.coverUri || defaultMascot;
-      const coverPhoto = p.coverUri || p.avatarUri || defaultMascot;
+      const photo = p.avatarUri || p.coverUri || DEFAULT_MASCOT;
+      const coverPhoto = p.coverUri || p.avatarUri || DEFAULT_MASCOT;
       const distanceStr = p.distanceStr || p.neighborhood || p.city || "Região local";
 
-      const marker = L.marker([lat, lng], {
-        icon: buildIcon(L, photo, false),
-      }).addTo(map);
+      const marker = L.marker([lat, lng], { icon: buildIcon(L, photo, false) }).addTo(map);
 
       const popupHtml = `
         <div style="background:#09090b;border:1px solid #27272a;border-radius:14px;padding:10px;max-width:190px;font-family:system-ui,sans-serif;">
@@ -237,33 +261,21 @@ export default function Home() {
           <strong style="color:#fff;font-size:11px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</strong>
           <span style="color:#84cc16;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.05em;display:block;margin-top:2px;">${p.category || "Parceiro"}</span>
           <div style="display:flex;justify-content:space-between;align-items:center;font-size:9px;color:#71717a;margin-top:6px;padding-top:6px;border-top:1px solid #27272a;">
-            <span style="color:#eab308;font-weight:700;">★ ${Number(p.rating || 5).toFixed(1)}</span>
-            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100px;">📍 ${distanceStr}</span>
+            <span style="color:#eab308;font-weight:700;">&#9733; ${Number(p.rating || 5).toFixed(1)}</span>
+            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100px;">&#128205; ${distanceStr}</span>
           </div>
           <a href="/perfil/${p.id}" style="display:block;text-align:center;background:#84cc16;color:#000;font-weight:800;font-size:10px;padding:6px;border-radius:8px;margin-top:8px;text-decoration:none;">Ver Perfil</a>
         </div>
       `;
-
       marker.bindPopup(popupHtml, { maxWidth: 200, className: "xamaja-popup" });
 
+      // Leaflet marker click: same selectProvider flow
       marker.on("click", () => {
-        // Update selection state (triggers React render for the list)
-        setSelectedProviderId(p.id);
-        selectedProviderIdRef.current = p.id;
-
-        // Scroll the corresponding list card into view
+        // Scroll matching list card into view
         const card = document.getElementById(`provider-card-${p.id}`);
         if (card) card.scrollIntoView({ behavior: "smooth", block: "nearest" });
-
-        // Update all marker icons imperatively (no state re-render needed)
-        markersRef.current.forEach(m => {
-          const mId = (m as any)._xamajaId;
-          const mProvider = nearbyProviders.find(pv => pv.id === mId);
-          if (mProvider) {
-            const mPhoto = mProvider.avatarUri || mProvider.coverUri || defaultMascot;
-            m.setIcon(buildIcon(L, mPhoto, mId === p.id));
-          }
-        });
+        // Update icons + open popup
+        selectProvider(p.id);
       });
 
       (marker as any)._xamajaId = p.id;
@@ -275,33 +287,30 @@ export default function Home() {
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nearbyProviders, filteredNearbyProviders, buildIcon]);
+  }, [nearbyProviders, buildIcon]);
 
-  // When user clicks a card in the list, pan the map to that marker and open popup
+  // When the search/filter changes, just show or hide markers — no recreation
   useEffect(() => {
-    if (!selectedProviderId || !mapRef.current) return;
-    // Only react if the selection was triggered by the LIST (not by a map click)
-    if (selectedProviderIdRef.current === selectedProviderId) return;
-    selectedProviderIdRef.current = selectedProviderId;
-
-    const L = (window as any).L;
-    if (!L) return;
-
-    const defaultMascot = "https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/mascote-parrot-WdeTpQk76sVEPj2emyYAPr.webp";
+    if (markersRef.current.length === 0) return;
+    const filteredIds = new Set(filteredNearbyProviders.map(p => p.id));
     const map = mapRef.current;
+    if (!map) return;
 
+    const bounds: any[] = [];
     markersRef.current.forEach(m => {
       const mId = (m as any)._xamajaId;
-      const mProvider = nearbyProviders.find(pv => pv.id === mId);
-      if (!mProvider) return;
-      const mPhoto = mProvider.avatarUri || mProvider.coverUri || defaultMascot;
-      m.setIcon(buildIcon(L, mPhoto, mId === selectedProviderId));
-      if (mId === selectedProviderId) {
-        map.setView(m.getLatLng(), 14, { animate: true });
-        setTimeout(() => { try { m.openPopup(); } catch(_){} }, 300);
+      if (filteredIds.has(mId)) {
+        if (!map.hasLayer(m)) map.addLayer(m);
+        const pos = m.getLatLng();
+        bounds.push([pos.lat, pos.lng]);
+      } else {
+        if (map.hasLayer(m)) map.removeLayer(m);
       }
     });
-  }, [selectedProviderId, nearbyProviders, buildIcon]);
+    if (bounds.length > 0) {
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+    }
+  }, [filteredNearbyProviders]);
 
   // Rotating words for the hero title
   const rotatingWords = ["comércios", "eletricistas", "pizzarias", "encanadores", "salões", "mecânicos", "reformas"];
@@ -1255,7 +1264,7 @@ export default function Home() {
                     <div
                       key={p.id}
                       id={`provider-card-${p.id}`}
-                      onClick={() => setSelectedProviderId(p.id)}
+                      onClick={() => selectProvider(p.id)}
                       className={`flex gap-4 bg-zinc-950/70 border p-4 rounded-2xl transition-all duration-300 cursor-pointer ${
                         isSelected 
                           ? "border-primary bg-zinc-900/40 shadow-[0_0_20px_rgba(132,204,22,0.1)]" 
