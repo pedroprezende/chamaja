@@ -148,6 +148,105 @@ export default function Parceiro() {
   const [srvDescription, setSrvDescription] = useState("");
   const [srvPrice, setSrvPrice] = useState("");
 
+  // Extended dashboard views states
+  const [stats, setStats] = useState<{ views: number; whatsappClicks: number } | null>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
+  const [favoriteDetails, setFavoriteDetails] = useState<any[]>([]);
+  const [isLoadingFavs, setIsLoadingFavs] = useState(false);
+  const [userReviews, setUserReviews] = useState<any[]>([]);
+  const [isLoadingUserReviews, setIsLoadingUserReviews] = useState(false);
+
+  // Load Statistics
+  useEffect(() => {
+    if (activeTab === "estatisticas" && business?.id && sessionToken) {
+      async function loadStats() {
+        setIsLoadingStats(true);
+        try {
+          const res = await fetch(`/api/trpc/providers.getProviderStats?input=${encodeURIComponent(JSON.stringify({ providerId: business.id }))}`, {
+            headers: {
+              "Authorization": `Bearer ${sessionToken}`
+            }
+          });
+          if (res.ok) {
+            const json = await res.json();
+            if (json.result && json.result.data) {
+              setStats(json.result.data);
+            }
+          }
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setIsLoadingStats(false);
+        }
+      }
+      loadStats();
+    }
+  }, [activeTab, business?.id, sessionToken]);
+
+  // Load Favorites
+  useEffect(() => {
+    if (activeTab === "favoritos") {
+      async function loadFavs() {
+        setIsLoadingFavs(true);
+        try {
+          const favs = localStorage.getItem("xamaja_favs");
+          if (favs) {
+            const parsed = JSON.parse(favs);
+            if (parsed.length > 0) {
+              const list = [];
+              for (const id of parsed) {
+                const res = await fetch(`/api/trpc/providers.getById?input=${encodeURIComponent(JSON.stringify(id))}`);
+                if (res.ok) {
+                  const json = await res.json();
+                  if (json.result && json.result.data) {
+                    list.push(json.result.data);
+                  }
+                }
+              }
+              setFavoriteDetails(list);
+            } else {
+              setFavoriteDetails([]);
+            }
+          } else {
+            setFavoriteDetails([]);
+          }
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setIsLoadingFavs(false);
+        }
+      }
+      loadFavs();
+    }
+  }, [activeTab]);
+
+  // Load User Reviews
+  useEffect(() => {
+    if (activeTab === "minhas-avaliacoes" && sessionToken) {
+      async function loadUserReviews() {
+        setIsLoadingUserReviews(true);
+        try {
+          const res = await fetch(`/api/trpc/providers.getUserReviews`, {
+            headers: {
+              "Authorization": `Bearer ${sessionToken}`
+            }
+          });
+          if (res.ok) {
+            const json = await res.json();
+            if (json.result && json.result.data) {
+              setUserReviews(json.result.data);
+            }
+          }
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setIsLoadingUserReviews(false);
+        }
+      }
+      loadUserReviews();
+    }
+  }, [activeTab, sessionToken]);
+
   // Check storage on load and set page title
   useEffect(() => {
     document.title = "Área de Parceiros XamaJá";
