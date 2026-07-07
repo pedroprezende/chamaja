@@ -28,7 +28,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -80,15 +80,18 @@ export default function Home() {
   // Nearby Providers and Leaflet Map States
   const [nearbyProviders, setNearbyProviders] = useState<any[]>([]);
   const [isLoadingNearby, setIsLoadingNearby] = useState(true);
-  const [mapInstance, setMapInstance] = useState<any>(null);
-  const [markersList, setMarkersList] = useState<any[]>([]);
   const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
-  const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number }>({ latitude: -22.9527, longitude: -46.5419 });
 
   // Map Search and filtering states
   const [mapSearchQuery, setMapSearchQuery] = useState("");
   const [mapCategoryFilter, setMapCategoryFilter] = useState("all");
+
+  // Use refs for Leaflet instances - prevents React re-renders from destroying Leaflet's state
+  const mapRef = useRef<any>(null);
+  const markersRef = useRef<any[]>([]);
+  const selectedProviderIdRef = useRef<string | null>(null);
+  const mapInitializedRef = useRef(false);
 
   const filteredNearbyProviders = nearbyProviders.filter((p) => {
     if (mapCategoryFilter !== "all") {
@@ -111,104 +114,31 @@ export default function Home() {
     setFavorites(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // Load nearby providers for map section with geolocation fallback flow
+  // Load nearby providers on mount with geolocation fallback
   useEffect(() => {
     async function loadNearby() {
       setIsLoadingNearby(true);
       try {
-        let coords = { latitude: -22.9527, longitude: -46.5419 }; // Default Bragança Paulista
-        let locationFound = false;
+        let coords = { latitude: -22.9527, longitude: -46.5419 };
 
-        // 1. Try Browser Geolocation
+        // Try browser GPS first
         if (navigator.geolocation) {
           try {
-            const pos = await new Promise<any>((resolve, reject) => {
-              navigator.geolocation.getCurrentPosition(resolve, reject, {
-                enableHighAccuracy: true,
-                timeout: 4000,
-              });
-            });
-            coords = {
-              latitude: pos.coords.latitude,
-              longitude: pos.coords.longitude,
-            };
-            locationFound = true;
-            console.log("[XamaJa Geolocation] Found browser GPS position:", coords);
-          } catch (geoError) {
-            console.log("[XamaJa Geolocation] Browser GPS denied or failed. Trying fallbacks...");
+            const pos = await new Promise<any>((resolve, reject) =>
+              navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 4000 })
+            );
+            coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+          } catch (_) {
+            // silently fall through to default
           }
         }
 
-        // 2. Fallback to CEP or City Geocode from searchLocation
-        if (!locationFound && searchLocation) {
-          const cepRegex = /^\d{5}-?\d{3}$/;
-          if (cepRegex.test(searchLocation)) {
-            const cleanCep = searchLocation.replace("-", "");
-            try {
-              const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
-              if (res.ok) {
-                const data = await res.json();
-                if (!data.erro) {
-                  const geoRes = await fetch(
-                    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(`${data.localidade}, ${data.uf}, Brasil`)}&format=json&limit=1`,
-                    { headers: { "User-Agent": "XamaJa-LocalSearch" } }
-                  );
-                  if (geoRes.ok) {
-                    const geoData = await geoRes.json();
-                    if (geoData.length > 0) {
-                      coords = {
-                        latitude: parseFloat(geoData[0].lat),
-                        longitude: parseFloat(geoData[0].lon),
-                      };
-                      locationFound = true;
-                      console.log("[XamaJa Geolocation] Resolved CEP to coordinates:", coords);
-                    }
-                  }
-                }
-              }
-            } catch (cepError) {
-              console.error("[XamaJa Geolocation] CEP lookup error:", cepError);
-            }
-          } else {
-            // Geocode text searchLocation directly via Nominatim
-            try {
-              const geoRes = await fetch(
-                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(`${searchLocation}, Brasil`)}&format=json&limit=1`,
-                { headers: { "User-Agent": "XamaJa-LocalSearch" } }
-              );
-              if (geoRes.ok) {
-                const geoData = await geoRes.json();
-                if (geoData.length > 0) {
-                  coords = {
-                    latitude: parseFloat(geoData[0].lat),
-                    longitude: parseFloat(geoData[0].lon),
-                  };
-                  locationFound = true;
-                  console.log("[XamaJa Geolocation] Resolved search location text to coordinates:", coords);
-                }
-              }
-            } catch (geocodeError) {
-              console.error("[XamaJa Geolocation] Nominatim searchLocation geocoding error:", geocodeError);
-            }
-          }
-        }
-
-        // Save resolved coordinates
-        setUserCoords(coords);
-
-        const input = {
-          sortBy: "distance",
-          profileType: "all",
-          userLatitude: coords.latitude,
-          userLongitude: coords.longitude,
-        };
+        const input = { sortBy: "distance", profileType: "all", userLatitude: coords.latitude, userLongitude: coords.longitude };
         const url = `/api/trpc/providers.searchFiltered?input=${encodeURIComponent(JSON.stringify(input))}`;
         const res = await fetch(url);
         if (res.ok) {
           const json = await res.json();
-          if (json.result && json.result.data) {
-            setNearbyProviders(json.result.data);
-          }
+          if (json.result?.data) setNearbyProviders(json.result.data);
         }
       } catch (e) {
         console.error("Failed to load nearby providers:", e);
@@ -217,186 +147,161 @@ export default function Home() {
       }
     }
     loadNearby();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Initialize Leaflet map ONCE when nearbyProviders is loaded
+  // Helper: build the marker icon HTML
+  const buildIcon = useCallback((L: any, photoUrl: string, isSelected: boolean) => {
+    const border = isSelected
+      ? 'border-[#25D366] shadow-[0_0_15px_rgba(37,211,102,0.7)]'
+      : 'border-[#84cc16] shadow-[0_0_8px_rgba(132,204,22,0.4)]';
+    const scale = isSelected ? 'style="transform:scale(1.25);"' : '';
+    return L.divIcon({
+      html: `<div class="w-8 h-8 rounded-full border-2 ${border} overflow-hidden bg-black" ${scale}><img src="${photoUrl}" class="w-full h-full object-cover" /></div>`,
+      className: "",
+      iconSize: [32, 32],
+      iconAnchor: [16, 16],
+      popupAnchor: [0, -18],
+    });
+  }, []);
+
+  // Initialize Leaflet map once when providers are available
   useEffect(() => {
+    if (nearbyProviders.length === 0) return;
+
     const L = (window as any).L;
-    if (!L || nearbyProviders.length === 0 || mapInstance) return;
+    if (!L) return;
 
-    const mapContainer = document.getElementById("nearby-map");
-    if (!mapContainer) return;
+    // --- Initialise map if not done yet ---
+    if (!mapInitializedRef.current) {
+      const container = document.getElementById("nearby-map");
+      if (!container) return;
 
-    if ((mapContainer as any)._leaflet_id) {
-      (mapContainer as any)._leaflet_id = null;
+      // Clear any stale Leaflet state from a previous HMR
+      if ((container as any)._leaflet_id) {
+        (container as any)._leaflet_id = null;
+        container.innerHTML = "";
+      }
+
+      try {
+        const map = L.map("nearby-map", { zoomControl: false });
+        L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+          attribution: "&copy; CartoDB",
+          subdomains: "abcd",
+          maxZoom: 20,
+        }).addTo(map);
+        L.control.zoom({ position: "bottomright" }).addTo(map);
+
+        map.setView([-22.9527, -46.5419], 13);
+        mapRef.current = map;
+        mapInitializedRef.current = true;
+
+        // Fix tile rendering after CSS layout settles
+        setTimeout(() => map.invalidateSize(), 100);
+        setTimeout(() => map.invalidateSize(), 600);
+
+        window.addEventListener("resize", () => map.invalidateSize());
+      } catch (err) {
+        console.error("Leaflet init error:", err);
+        return;
+      }
     }
 
-    try {
-      const map = L.map("nearby-map", { zoomControl: false }).setView([userCoords.latitude, userCoords.longitude], 13);
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-        attribution: '&copy; CartoDB',
-        subdomains: 'abcd',
-        maxZoom: 20
-      }).addTo(map);
+    const map = mapRef.current;
+    if (!map) return;
 
-      L.control.zoom({ position: 'bottomright' }).addTo(map);
-      setMapInstance(map);
-
-      // Force recalculation after map init
-      setTimeout(() => {
-        map.invalidateSize();
-      }, 150);
-    } catch (e) {
-      console.error("Failed to initialize Leaflet map on Home:", e);
-    }
-  }, [nearbyProviders, mapInstance, userCoords]);
-
-  // Invalidate map size on window resize and map initialization to fix Leaflet size rendering bugs
-  useEffect(() => {
-    if (!mapInstance) return;
-    
-    mapInstance.invalidateSize();
-    
-    const t1 = setTimeout(() => {
-      mapInstance.invalidateSize();
-    }, 100);
-
-    const t2 = setTimeout(() => {
-      mapInstance.invalidateSize();
-    }, 500);
-
-    const t3 = setTimeout(() => {
-      mapInstance.invalidateSize();
-    }, 1200);
-
-    const handleResize = () => {
-      mapInstance.invalidateSize();
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-      window.removeEventListener("resize", handleResize);
-    };
-  }, [mapInstance]);
-
-  // Sync markers whenever filtered list or map instance changes (markers are NOT recreated on selection change)
-  useEffect(() => {
-    const L = (window as any).L;
-    if (!L || !mapInstance) return;
-
-    // 1. Clear old markers from the map
-    markersList.forEach(m => mapInstance.removeLayer(m));
-
-    // 2. Create new markers for filtered list
-    const newMarkers: any[] = [];
-    const bounds: any[] = [];
     const defaultMascot = "https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/mascote-parrot-WdeTpQk76sVEPj2emyYAPr.webp";
+
+    // Remove old markers
+    markersRef.current.forEach(m => { try { map.removeLayer(m); } catch(_){} });
+    markersRef.current = [];
+
+    const bounds: any[] = [];
 
     filteredNearbyProviders.forEach((p) => {
       if (!p.latitude || !p.longitude) return;
       const lat = Number(p.latitude);
       const lng = Number(p.longitude);
-
-      const markerPhoto = p.avatarUri || p.coverUri || defaultMascot;
-      const iconHtml = `
-        <div class="relative w-8 h-8 rounded-full border-2 border-[#84cc16] overflow-hidden bg-black transition-all duration-300 shadow-[0_0_10px_rgba(132,204,22,0.4)]">
-          <img src="${markerPhoto}" class="w-full h-full object-cover" />
-        </div>
-      `;
-      const customIcon = L.divIcon({
-        html: iconHtml,
-        className: "custom-leaflet-marker",
-        iconSize: [32, 32],
-        iconAnchor: [16, 16],
-      });
-
-      const cardPhoto = p.coverUri || p.avatarUri || defaultMascot;
+      const photo = p.avatarUri || p.coverUri || defaultMascot;
+      const coverPhoto = p.coverUri || p.avatarUri || defaultMascot;
       const distanceStr = p.distanceStr || p.neighborhood || p.city || "Região local";
-      const popupContent = `
-        <div class="p-3 bg-zinc-950 border border-zinc-900 rounded-2xl space-y-2 max-w-[200px] shadow-2xl">
-          <div class="w-full h-20 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800">
-            <img src="${cardPhoto}" class="w-full h-full object-cover animate-fade-in" />
+
+      const marker = L.marker([lat, lng], {
+        icon: buildIcon(L, photo, false),
+      }).addTo(map);
+
+      const popupHtml = `
+        <div style="background:#09090b;border:1px solid #27272a;border-radius:14px;padding:10px;max-width:190px;font-family:system-ui,sans-serif;">
+          <div style="width:100%;height:72px;border-radius:10px;overflow:hidden;background:#18181b;margin-bottom:8px;border:1px solid #27272a">
+            <img src="${coverPhoto}" style="width:100%;height:100%;object-fit:cover;" />
           </div>
-          <div>
-            <strong class="text-white text-xs font-black block leading-tight truncate">${p.name}</strong>
-            <span class="text-primary text-[9px] font-black uppercase tracking-wider block mt-0.5">${p.category || 'Parceiro'}</span>
-            <div class="flex items-center justify-between text-[10px] text-zinc-400 mt-1.5 pt-1.5 border-t border-zinc-900/60">
-              <span class="flex items-center gap-0.5 text-yellow-500 font-bold">★ ${Number(p.rating || 5.0).toFixed(1)}</span>
-              <span class="flex items-center gap-0.5 truncate max-w-[100px]">📍 ${distanceStr}</span>
-            </div>
+          <strong style="color:#fff;font-size:11px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</strong>
+          <span style="color:#84cc16;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.05em;display:block;margin-top:2px;">${p.category || "Parceiro"}</span>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:9px;color:#71717a;margin-top:6px;padding-top:6px;border-top:1px solid #27272a;">
+            <span style="color:#eab308;font-weight:700;">★ ${Number(p.rating || 5).toFixed(1)}</span>
+            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100px;">📍 ${distanceStr}</span>
           </div>
-          <a href="/perfil/${p.id}" class="text-center font-extrabold text-[10px] text-white bg-primary hover:bg-primary/95 py-2 rounded-xl block mt-1 transition" style="text-decoration: none; color: white;">Ver Perfil</a>
+          <a href="/perfil/${p.id}" style="display:block;text-align:center;background:#84cc16;color:#000;font-weight:800;font-size:10px;padding:6px;border-radius:8px;margin-top:8px;text-decoration:none;">Ver Perfil</a>
         </div>
       `;
 
-      const marker = L.marker([lat, lng], { icon: customIcon })
-        .bindPopup(popupContent)
-        .addTo(mapInstance);
+      marker.bindPopup(popupHtml, { maxWidth: 200, className: "xamaja-popup" });
 
-      marker.on('click', () => {
+      marker.on("click", () => {
+        // Update selection state (triggers React render for the list)
         setSelectedProviderId(p.id);
-        const cardElement = document.getElementById(`provider-card-${p.id}`);
-        if (cardElement) {
-          cardElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
+        selectedProviderIdRef.current = p.id;
+
+        // Scroll the corresponding list card into view
+        const card = document.getElementById(`provider-card-${p.id}`);
+        if (card) card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+        // Update all marker icons imperatively (no state re-render needed)
+        markersRef.current.forEach(m => {
+          const mId = (m as any)._xamajaId;
+          const mProvider = nearbyProviders.find(pv => pv.id === mId);
+          if (mProvider) {
+            const mPhoto = mProvider.avatarUri || mProvider.coverUri || defaultMascot;
+            m.setIcon(buildIcon(L, mPhoto, mId === p.id));
+          }
+        });
       });
 
-      (marker as any).providerId = p.id;
-      newMarkers.push(marker);
+      (marker as any)._xamajaId = p.id;
+      markersRef.current.push(marker);
       bounds.push([lat, lng]);
     });
 
-    setMarkersList(newMarkers);
-    // Only auto-fit to bounds when this is the initial load (no provider selected yet)
-    if (bounds.length > 0 && !selectedProviderId) {
-      mapInstance.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+    if (bounds.length > 0) {
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
     }
-  }, [mapInstance, filteredNearbyProviders]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nearbyProviders, filteredNearbyProviders, buildIcon]);
 
-  // Sync selected marker styling and popup centring
+  // When user clicks a card in the list, pan the map to that marker and open popup
   useEffect(() => {
-    if (!mapInstance || markersList.length === 0) return;
+    if (!selectedProviderId || !mapRef.current) return;
+    // Only react if the selection was triggered by the LIST (not by a map click)
+    if (selectedProviderIdRef.current === selectedProviderId) return;
+    selectedProviderIdRef.current = selectedProviderId;
+
     const L = (window as any).L;
     if (!L) return;
 
     const defaultMascot = "https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/mascote-parrot-WdeTpQk76sVEPj2emyYAPr.webp";
+    const map = mapRef.current;
 
-    markersList.forEach((marker) => {
-      const pId = (marker as any).providerId;
-      const isSelected = pId === selectedProviderId;
-      const p = nearbyProviders.find(prov => prov.id === pId);
-      if (!p) return;
-
-      const markerPhoto = p.avatarUri || p.coverUri || defaultMascot;
-      const iconHtml = `
-        <div class="relative w-8 h-8 rounded-full border-2 ${isSelected ? 'border-[#25D366] scale-110 shadow-[0_0_15px_rgba(37,211,102,0.6)]' : 'border-[#84cc16]'} overflow-hidden bg-black transition-all duration-300">
-          <img src="${markerPhoto}" class="w-full h-full object-cover" />
-        </div>
-      `;
-      const customIcon = L.divIcon({
-        html: iconHtml,
-        className: "custom-leaflet-marker",
-        iconSize: [32, 32],
-        iconAnchor: [16, 16],
-      });
-      marker.setIcon(customIcon);
-
-      if (isSelected) {
-        mapInstance.setView(marker.getLatLng(), 14, { animate: true });
-        // Small delay so setView completes before popup tries to render
-        setTimeout(() => {
-          try { marker.openPopup(); } catch (_) {}
-        }, 250);
+    markersRef.current.forEach(m => {
+      const mId = (m as any)._xamajaId;
+      const mProvider = nearbyProviders.find(pv => pv.id === mId);
+      if (!mProvider) return;
+      const mPhoto = mProvider.avatarUri || mProvider.coverUri || defaultMascot;
+      m.setIcon(buildIcon(L, mPhoto, mId === selectedProviderId));
+      if (mId === selectedProviderId) {
+        map.setView(m.getLatLng(), 14, { animate: true });
+        setTimeout(() => { try { m.openPopup(); } catch(_){} }, 300);
       }
     });
-  // NOTE: markersList intentionally excluded - we don't want to re-run just because
-  // a new set of markers was created; we only want to react to selection changes.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedProviderId, mapInstance]);
+  }, [selectedProviderId, nearbyProviders, buildIcon]);
 
   // Rotating words for the hero title
   const rotatingWords = ["comércios", "eletricistas", "pizzarias", "encanadores", "salões", "mecânicos", "reformas"];
