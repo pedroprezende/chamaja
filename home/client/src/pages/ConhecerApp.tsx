@@ -13,6 +13,7 @@ import { useState, useEffect } from "react";
 
 export default function ConhecerApp() {
   const [activeStep, setActiveStep] = useState(1);
+  const [userProfile, setUserProfile] = useState<any | null>(null);
 
   // Form states
   const [name, setName] = useState("");
@@ -28,6 +29,16 @@ export default function ConhecerApp() {
   const [formError, setFormError] = useState("");
 
   useEffect(() => {
+    const token = localStorage.getItem("bp_session_token");
+    const savedUser = localStorage.getItem("bp_user_profile");
+    if (token && savedUser) {
+      try {
+        setUserProfile(JSON.parse(savedUser));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
     // 1. Capture ref parameter from URL search params
     const params = new URLSearchParams(window.location.search);
     const ref = params.get("ref");
@@ -174,12 +185,21 @@ export default function ConhecerApp() {
             </a>
           </nav>
 
-          <Button
-            className="bg-primary text-primary-foreground hover:bg-primary/90"
-            onClick={() => (window.location.href = "/app")}
-          >
-            Entrar
-          </Button>
+          {userProfile ? (
+            <Button
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={() => (window.location.href = "/parceiro")}
+            >
+              Olá, {userProfile.name?.split(" ")[0] || "Minha Conta"}
+            </Button>
+          ) : (
+            <Button
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={() => (window.location.href = "/parceiro")}
+            >
+              Entrar
+            </Button>
+          )}
         </div>
       </header>
 

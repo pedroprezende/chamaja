@@ -1262,309 +1262,49 @@ export default function Parceiro() {
         {view === "dashboard" && user && (
           <section className="flex-1 py-12 bg-background">
             <div className="container mx-auto px-4 max-w-6xl space-y-8">
-              {user.tipo === "cliente" ? (
-                /* Cliente/Usuário comum Referral Dashboard */
-                <div className="space-y-8">
-                  {/* Dashboard Top Header */}
-                  <div className="bg-card border border-border rounded-3xl p-6 md:p-8 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent pointer-events-none"></div>
+              <div className="space-y-8">
+                {/* Dashboard Top Header */}
+                <div className="bg-card border border-border rounded-3xl p-6 md:p-8 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent pointer-events-none"></div>
 
-                    <div className="flex items-center gap-5 relative z-10">
-                      <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-zinc-900 border border-border flex items-center justify-center overflow-hidden flex-shrink-0">
+                  <div className="flex items-center gap-5 relative z-10">
+                    <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-zinc-800 border border-zinc-700/50 flex items-center justify-center overflow-hidden flex-shrink-0">
+                      {user.tipo !== "cliente" && business?.avatarUri ? (
+                        <img
+                          src={business.avatarUri}
+                          alt="Logo Negócio"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : user.tipo === "comercio" ? (
+                        <Store className="h-8 w-8 text-primary" />
+                      ) : user.tipo === "prestador" ? (
+                        <Wrench className="h-8 w-8 text-primary" />
+                      ) : (
                         <User className="h-8 w-8 text-primary" />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <h1 className="text-2xl md:text-3xl font-black text-white leading-tight">
-                          Olá, <span className="text-primary">{partner?.nome || user.name}</span>!
-                        </h1>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-xs text-muted-foreground font-semibold bg-zinc-800 px-2.5 py-1 rounded-lg border border-zinc-700/50 flex items-center gap-1">
-                            <User className="h-3 w-3 text-primary" />
-                            Cliente Indicador
-                          </span>
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 gap-1">
-                            <ShieldCheck className="h-3 w-3" /> Programa de Indicações
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Main Grid for Referral Code and Referred List */}
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    {/* Left: Referral details */}
-                    <div className="lg:col-span-4 space-y-6">
-                      <div className="bg-card border border-border rounded-3xl p-6 shadow-xl space-y-6">
-                        <div className="flex items-center gap-3 pb-4 border-b border-border">
-                          <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20 text-primary">
-                            <Users className="h-6 w-6" />
-                          </div>
-                          <div>
-                            <h2 className="text-lg font-bold text-white">
-                              Sua Identidade
-                            </h2>
-                            <p className="text-xs text-muted-foreground">
-                              Indique novos parceiros
-                            </p>
-                          </div>
-                        </div>
-
-                        {partner && (
-                          <>
-                            <div className="space-y-2">
-                              <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
-                                Seu Código Único
-                              </span>
-                              <div className="bg-background border border-border rounded-2xl px-6 py-4 flex items-center justify-center border-dashed border-primary/30">
-                                <span className="text-3xl font-black tracking-widest text-primary font-mono">
-                                  {partner.codigoIndicacao}
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="space-y-2">
-                              <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
-                                Link de Indicação
-                              </span>
-                              <div className="relative">
-                                <input
-                                  type="text"
-                                  readOnly
-                                  value={`${window.location.origin}/cadastro?ref=${partner.codigoIndicacao}`}
-                                  className="w-full bg-background border border-border text-muted-foreground rounded-2xl pl-4 pr-14 py-3.5 focus:outline-none text-xs text-ellipsis overflow-hidden"
-                                />
-                                <button
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(
-                                      `${window.location.origin}/cadastro?ref=${partner.codigoIndicacao}`
-                                    );
-                                    setCopied(true);
-                                    toast.success("Link de indicação copiado!");
-                                    setTimeout(() => setCopied(false), 2000);
-                                  }}
-                                  className="absolute right-2 top-2 p-2 rounded-xl bg-card border border-border text-foreground hover:text-primary hover:border-primary/50 transition"
-                                  title="Copiar Link"
-                                >
-                                  {copied ? (
-                                    <CheckCircle className="h-4 w-4 text-emerald-400" />
-                                  ) : (
-                                    <Copy className="h-4 w-4 text-zinc-400" />
-                                  )}
-                                </button>
-                              </div>
-                            </div>
-                          </>
-                        )}
-
-                        <div className="pt-2 text-xs text-muted-foreground leading-relaxed flex items-start gap-2 bg-primary/5 border border-primary/10 rounded-2xl p-4">
-                          <CheckCircle className="h-4.5 w-4.5 text-primary flex-shrink-0 mt-0.5" />
-                          <p>
-                            Compartilhe este link com prestadores ou comércios. Ao
-                            se cadastrarem, eles serão vinculados automaticamente à
-                            sua conta.
-                          </p>
-                        </div>
-
-                        {/* Edit Profile Form for Client */}
-                        <div className="border-t border-border pt-6 space-y-4">
-                          <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-                            Editar Meus Dados
-                          </h3>
-                          <form onSubmit={saveProfile} className="space-y-4">
-                            <div className="space-y-1">
-                              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-                                Nome Completo
-                              </label>
-                              <Input
-                                type="text"
-                                required
-                                value={busName}
-                                onChange={e => setBusName(e.target.value)}
-                                className="bg-background border-border h-10 rounded-xl focus-visible:ring-primary text-xs"
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-                                WhatsApp / Celular
-                              </label>
-                              <Input
-                                type="tel"
-                                required
-                                value={busWhatsapp}
-                                onChange={e => setBusWhatsapp(e.target.value)}
-                                className="bg-background border-border h-10 rounded-xl focus-visible:ring-primary text-xs"
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-                                Cidade
-                              </label>
-                              <Input
-                                type="text"
-                                required
-                                value={busCity}
-                                onChange={e => setBusCity(e.target.value)}
-                                className="bg-background border-border h-10 rounded-xl focus-visible:ring-primary text-xs"
-                              />
-                            </div>
-                            <Button
-                              type="submit"
-                              disabled={isLoading}
-                              className="w-full bg-primary text-primary-foreground font-bold hover:bg-primary/90 h-10 rounded-xl text-xs flex items-center justify-center gap-1.5"
-                            >
-                              {isLoading ? "Salvando..." : "Salvar Dados"}
-                            </Button>
-                          </form>
-                        </div>
-                      </div>
+                      )}
                     </div>
 
-                    {/* Right: Referrals list */}
-                    <div className="lg:col-span-8">
-                      <div className="bg-card border border-border rounded-3xl shadow-xl overflow-hidden min-h-[400px] flex flex-col">
-                        <div className="px-6 py-5 border-b border-border flex items-center justify-between bg-card">
-                          <div className="space-y-1">
-                            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                              Indicações Realizadas
-                            </h2>
-                            <p className="text-xs text-muted-foreground">
-                              Acompanhe o andamento dos parceiros que você indicou
-                            </p>
-                          </div>
-                          <span className="bg-zinc-800 text-zinc-200 px-3 py-1 rounded-full text-xs font-bold font-mono">
-                            {referrals.length}{" "}
-                            {referrals.length === 1 ? "indicação" : "indicações"}
-                          </span>
-                        </div>
-
-                        {referrals.length === 0 ? (
-                          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-4">
-                            <div className="w-16 h-16 rounded-full bg-zinc-800/50 flex items-center justify-center text-zinc-600">
-                              <Users className="h-8 w-8" />
-                            </div>
-                            <div className="space-y-1">
-                              <p className="text-base font-bold text-white">
-                                Nenhuma indicação ainda
-                              </p>
-                              <p className="text-sm text-muted-foreground max-w-sm">
-                                Compartilhe seu link exclusivo com prestadores
-                                locais para começar a registrar indicações!
-                              </p>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="overflow-x-auto flex-1">
-                            <table className="w-full text-left border-collapse">
-                              <thead>
-                                <tr className="border-b border-border bg-background/30">
-                                  <th className="px-6 py-4 text-xs font-bold text-zinc-400 uppercase tracking-wider">
-                                    Profissional / Comércio
-                                  </th>
-                                  <th className="px-6 py-4 text-xs font-bold text-zinc-400 uppercase tracking-wider">
-                                    Telefone
-                                  </th>
-                                  <th className="px-6 py-4 text-xs font-bold text-zinc-400 uppercase tracking-wider">
-                                    Data
-                                  </th>
-                                  <th className="px-6 py-4 text-xs font-bold text-zinc-400 uppercase tracking-wider text-right">
-                                    Status
-                                  </th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-border/60">
-                                {referrals.map(ref => (
-                                  <tr
-                                    key={ref.id}
-                                    className="hover:bg-zinc-800/10 transition"
-                                  >
-                                    <td className="px-6 py-4">
-                                      <span className="text-sm font-bold text-white">
-                                        {ref.nomeIndicado}
-                                      </span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                      <span className="text-sm text-zinc-300 font-mono">
-                                        {ref.telefoneIndicado}
-                                      </span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                      <span className="text-sm text-zinc-400">
-                                        {new Date(ref.createdAt).toLocaleDateString(
-                                          "pt-BR"
-                                        )}
-                                      </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                      {ref.status === "novo" && (
-                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-zinc-500/10 text-zinc-400 border border-zinc-500/20">
-                                          Novo
-                                        </span>
-                                      )}
-                                      {ref.status === "contatado" && (
-                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                                          Contatado
-                                        </span>
-                                      )}
-                                      {ref.status === "cadastrado" && (
-                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                                          Cadastrado
-                                        </span>
-                                      )}
-                                      {ref.status === "ativo" && (
-                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
-                                          Ativo
-                                        </span>
-                                      )}
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                /* Business partner dashboard */
-                <div className="space-y-8">
-                  {/* Dashboard Top Header */}
-                  {business && (
-                    <div className="bg-card border border-border rounded-3xl p-6 md:p-8 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent pointer-events-none"></div>
-
-                      <div className="flex items-center gap-5 relative z-10">
-                        <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-zinc-800 border border-zinc-700/50 flex items-center justify-center overflow-hidden flex-shrink-0">
-                          {business.avatarUri ? (
-                            <img
-                              src={business.avatarUri}
-                              alt="Logo Negócio"
-                              className="w-full h-full object-cover"
-                            />
-                          ) : user.tipo === "comercio" ? (
-                            <Store className="h-8 w-8 text-primary" />
+                    <div className="space-y-1.5">
+                      <h1 className="text-2xl md:text-3xl font-black text-white leading-tight">
+                        {user.tipo !== "cliente" && business ? business.name : user.name}
+                      </h1>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs text-muted-foreground font-semibold bg-zinc-800 px-2.5 py-1 rounded-lg border border-zinc-700/50 flex items-center gap-1">
+                          {user.tipo === "comercio" ? (
+                            <Store className="h-3 w-3 text-primary" />
+                          ) : user.tipo === "prestador" ? (
+                            <Wrench className="h-3 w-3 text-primary" />
                           ) : (
-                            <Wrench className="h-8 w-8 text-primary" />
+                            <User className="h-3 w-3 text-primary" />
                           )}
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <h1 className="text-2xl md:text-3xl font-black text-white leading-tight">
-                            {business.name || user.name}
-                          </h1>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-xs text-muted-foreground font-semibold bg-zinc-800 px-2.5 py-1 rounded-lg border border-zinc-700/50 flex items-center gap-1">
-                              {user.tipo === "comercio" ? (
-                                <Store className="h-3 w-3 text-primary" />
-                              ) : (
-                                <Wrench className="h-3 w-3 text-primary" />
-                              )}
-                              {user.tipo === "comercio"
-                                ? "Comércio"
-                                : "Prestador de Serviço"}
-                            </span>
+                          {user.tipo === "comercio"
+                            ? "Comércio"
+                            : user.tipo === "prestador"
+                            ? "Prestador de Serviço"
+                            : "Cliente"}
+                        </span>
+                        {user.tipo !== "cliente" && business && (
+                          <>
                             {business.status === "pendente" && (
                               <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 gap-1 animate-pulse">
                                 <Clock className="h-3 w-3" /> Pendente de Aprovação
@@ -1580,82 +1320,410 @@ export default function Parceiro() {
                                 Rejeitado
                               </span>
                             )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-3 relative z-10 w-full md:w-auto">
+                    {user.tipo !== "cliente" && (
+                      <Button
+                        onClick={() => saveProfile()}
+                        disabled={isLoading}
+                        className="bg-primary text-primary-foreground font-bold hover:bg-primary/90 h-11 px-6 rounded-xl flex items-center justify-center gap-2 w-full sm:w-auto"
+                      >
+                        {isLoading ? (
+                          <span className="loader-btn w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></span>
+                        ) : (
+                          "Salvar Alterações"
+                        )}
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleLogout()}
+                      className="text-zinc-400 hover:text-white hover:bg-zinc-900 border border-zinc-800 rounded-xl h-11 px-5 text-sm flex items-center justify-center gap-2"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sair
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Sub-warning for pending profiles */}
+                {business?.status === "pendente" && (
+                  <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-4 text-amber-400 text-sm flex items-start gap-3">
+                    <Clock className="h-5 w-5 flex-shrink-0 mt-0.5 animate-pulse" />
+                    <div>
+                      <strong>Seu negócio está pendente de aprovação:</strong>{" "}
+                      Você já pode preencher os dados, cadastrar fotos e adicionar
+                      serviços. No entanto, o seu perfil não aparecerá nas buscas
+                      públicas dos clientes até que um administrador aprove seu
+                      cadastro.
+                    </div>
+                  </div>
+                )}
+
+                {/* Tab Selector & Main Layout */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  {/* Sidebar Navigation */}
+                  <div className="lg:col-span-3 space-y-3">
+                    {(user?.tipo === "cliente"
+                      ? [
+                          { id: "perfil", label: "Meu Perfil", icon: User },
+                          { id: "favoritos", label: "Meus Favoritos", icon: Heart },
+                          { id: "minhas-avaliacoes", label: "Minhas Avaliações", icon: Star },
+                          { id: "indicacoes", label: "Indique e Ganhe", icon: Gift },
+                          { id: "configuracoes", label: "Configurações", icon: Settings },
+                        ]
+                      : [
+                          { id: "perfil", label: "Meu Perfil", icon: User },
+                          { id: "dados", label: "Meu Negócio", icon: Store },
+                          { id: "localizacao", label: "Endereço & Localização", icon: MapPin },
+                          { id: "fotos", label: "Fotos & Galeria", icon: ImageIcon },
+                          { id: "servicos", label: "Meus Serviços", icon: Wrench },
+                          { id: "estatisticas", label: "Estatísticas", icon: BarChart3 },
+                          { id: "favoritos", label: "Meus Favoritos", icon: Heart },
+                          { id: "minhas-avaliacoes", label: "Minhas Avaliações", icon: Star },
+                          { id: "indicacoes", label: "Indique e Ganhe", icon: Gift },
+                          { id: "assinatura", label: "Plano & Limites", icon: CreditCard },
+                          { id: "configuracoes", label: "Configurações", icon: Settings },
+                        ]
+                    ).map(tab => {
+                      const Icon = tab.icon;
+                      return (
+                        <button
+                          key={tab.id}
+                          onClick={() => setActiveTab(tab.id as any)}
+                          className={`w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl font-bold text-sm transition-all border ${
+                            activeTab === tab.id
+                              ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/5"
+                              : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-card/85"
+                          }`}
+                        >
+                          <Icon className="h-4.5 w-4.5" />
+                          <span>{tab.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Tabs Panels Container */}
+                  <div className="lg:col-span-9">
+                    <div className="bg-card border border-border rounded-3xl p-6 md:p-8 shadow-xl min-h-[500px]">
+                      {/* MEU PERFIL PANEL */}
+                      {activeTab === "perfil" && (
+                        <div className="space-y-6">
+                          <div className="pb-4 border-b border-border">
+                            <h2 className="text-xl font-black text-white">Meu Perfil</h2>
+                            <p className="text-xs text-muted-foreground">
+                              Gerencie as informações da sua conta pessoal.
+                            </p>
+                          </div>
+
+                          <div className="flex flex-col md:flex-row gap-6 items-center pb-6 border-b border-border">
+                            <div className="w-24 h-24 rounded-full bg-zinc-900 border border-border flex items-center justify-center overflow-hidden">
+                              {user.avatarUrl ? (
+                                <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <User className="h-10 w-10 text-primary" />
+                              )}
+                            </div>
+                            <div className="space-y-1.5 text-center md:text-left">
+                              <h3 className="text-lg font-bold text-white">{user.name}</h3>
+                              <p className="text-sm text-muted-foreground">{user.email}</p>
+                              <span className="inline-block px-3 py-1 bg-primary/10 border border-primary/20 text-primary text-xs font-semibold rounded-lg">
+                                {user.tipo === "cliente" ? "Cliente Indicador" : "Parceiro Comercial"}
+                              </span>
+                            </div>
+                          </div>
+
+                          {user.tipo === "cliente" && (
+                            <div className="bg-primary/5 border border-primary/20 rounded-3xl p-6 space-y-4">
+                              <div className="space-y-1.5">
+                                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                                  <Sparkles className="h-5 w-5 text-primary" />
+                                  Tornar-se um Parceiro XamaJá
+                                </h3>
+                                <p className="text-sm text-zinc-400 leading-relaxed">
+                                  Deseja divulgar seus serviços ou comércio para milhares de clientes na região? Cadastre seu perfil profissional agora mesmo!
+                                </p>
+                              </div>
+                              <Button
+                                onClick={() => setView("complete-profile")}
+                                className="bg-primary text-primary-foreground font-black px-6 py-2.5 rounded-xl hover:bg-primary/95 transition shadow-lg shadow-primary/15"
+                              >
+                                Cadastrar Meu Negócio
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* FAVORITOS PANEL */}
+                      {activeTab === "favoritos" && (
+                        <div className="space-y-6">
+                          <div className="pb-4 border-b border-border">
+                            <h2 className="text-xl font-black text-white">Meus Favoritos</h2>
+                            <p className="text-xs text-muted-foreground">
+                              Seus prestadores e comércios favoritos para rápido acesso.
+                            </p>
+                          </div>
+
+                          {isLoadingFavs ? (
+                            <div className="flex justify-center py-12">
+                              <span className="loader-btn w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></span>
+                            </div>
+                          ) : favoriteDetails.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-12 text-center space-y-3">
+                              <div className="p-3 bg-zinc-900 border border-zinc-850 rounded-2xl text-zinc-500">
+                                <Heart className="h-6 w-6" />
+                              </div>
+                              <div className="space-y-1">
+                                <h4 className="font-bold text-white text-sm">Nenhum favorito adicionado</h4>
+                                <p className="text-xs text-zinc-500 max-w-xs">
+                                  Quando encontrar um profissional ou comércio no mapa ou buscas, clique no botão de favorito!
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {favoriteDetails.map((fav) => (
+                                <div
+                                  key={fav.id}
+                                  onClick={() => window.location.href = `/prestador/${fav.id}`}
+                                  className="bg-[#0b0b0d] border border-zinc-850 rounded-2xl p-4 flex gap-4 cursor-pointer hover:border-primary/45 transition duration-300"
+                                >
+                                  <div className="w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0">
+                                    {fav.avatarUri ? (
+                                      <img src={fav.avatarUri} alt={fav.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <Store className="h-5 w-5 text-primary" />
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0 space-y-1">
+                                    <h4 className="font-bold text-white text-sm truncate">{fav.name}</h4>
+                                    <p className="text-xs text-zinc-400 capitalize">{fav.category || "Categoria"}</p>
+                                    <p className="text-[11px] text-zinc-500">{fav.city} - {fav.neighborhood}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* MINHAS AVALIACOES PANEL */}
+                      {activeTab === "minhas-avaliacoes" && (
+                        <div className="space-y-6">
+                          <div className="pb-4 border-b border-border">
+                            <h2 className="text-xl font-black text-white">Minhas Avaliações & Comentários</h2>
+                            <p className="text-xs text-muted-foreground">
+                              Histórico de avaliações que você publicou na plataforma.
+                            </p>
+                          </div>
+
+                          {isLoadingUserReviews ? (
+                            <div className="flex justify-center py-12">
+                              <span className="loader-btn w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></span>
+                            </div>
+                          ) : userReviews.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-12 text-center space-y-3">
+                              <div className="p-3 bg-zinc-900 border border-zinc-850 rounded-2xl text-zinc-500">
+                                <Star className="h-6 w-6" />
+                              </div>
+                              <div className="space-y-1">
+                                <h4 className="font-bold text-white text-sm">Nenhuma avaliação publicada</h4>
+                                <p className="text-xs text-zinc-500 max-w-xs">
+                                  Avalie os prestadores e comércios que contratou ou visitou para ajudar outros usuários!
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-4">
+                              {userReviews.map((rev) => (
+                                <div
+                                  key={rev.id}
+                                  className="bg-[#0b0b0d] border border-zinc-850 rounded-2xl p-5 space-y-3"
+                                >
+                                  <div className="flex items-center justify-between gap-4">
+                                    <div
+                                      onClick={() => window.location.href = `/prestador/${rev.provider.id}`}
+                                      className="cursor-pointer group"
+                                    >
+                                      <h4 className="font-bold text-white text-sm group-hover:text-primary transition">{rev.provider.name}</h4>
+                                      <p className="text-[11px] text-zinc-400 capitalize">{rev.provider.category}</p>
+                                    </div>
+                                    <span className="text-[10px] font-mono text-zinc-500">{rev.createdAt}</span>
+                                  </div>
+                                  <div className="flex items-center gap-0.5">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                      <Star
+                                        key={star}
+                                        className={`w-3.5 h-3.5 ${
+                                          star <= rev.rating ? "text-primary fill-current" : "text-zinc-800"
+                                        }`}
+                                      />
+                                    ))}
+                                  </div>
+                                  {rev.comment && (
+                                    <p className="text-xs text-zinc-400 bg-zinc-950/50 p-3 rounded-xl border border-zinc-900/60 leading-relaxed">
+                                      {rev.comment}
+                                    </p>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* INDICACOES PANEL */}
+                      {activeTab === "indicacoes" && (
+                        <div className="space-y-6">
+                          <div className="pb-4 border-b border-border">
+                            <h2 className="text-xl font-black text-white">Indique e Ganhe</h2>
+                            <p className="text-xs text-muted-foreground">
+                              Indique prestadores e comércios locais e ganhe recompensas!
+                            </p>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-5 space-y-4">
+                              <h3 className="font-bold text-white text-sm">Seu Código de Indicação</h3>
+                              <div className="flex items-center gap-2 bg-background border border-border p-3 rounded-xl">
+                                <span className="text-sm font-black text-white tracking-wider flex-1">
+                                  {partner?.codigoIndicacao || "---"}
+                                </span>
+                                <Button
+                                  onClick={() => {
+                                    if (!partner?.codigoIndicacao) return;
+                                    navigator.clipboard.writeText(partner.codigoIndicacao);
+                                    toast.success("Código copiado!");
+                                  }}
+                                  className="h-9 px-3 rounded-lg font-bold text-xs bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white"
+                                >
+                                  Copiar
+                                </Button>
+                              </div>
+                            </div>
+
+                            <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-5 space-y-4">
+                              <h3 className="font-bold text-white text-sm">Link de Indicação Direto</h3>
+                              <div className="flex items-center gap-2 bg-background border border-border p-3 rounded-xl">
+                                <span className="text-xs font-mono text-zinc-400 truncate flex-1">
+                                  {partner?.codigoIndicacao
+                                    ? `${window.location.origin}/cadastro?ref=${partner.codigoIndicacao}`
+                                    : "---"}
+                                </span>
+                                <Button
+                                  onClick={() => {
+                                    if (!partner?.codigoIndicacao) return;
+                                    navigator.clipboard.writeText(
+                                      `${window.location.origin}/cadastro?ref=${partner.codigoIndicacao}`
+                                    );
+                                    toast.success("Link copiado!");
+                                  }}
+                                  className="h-9 px-3 rounded-lg font-bold text-xs bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white"
+                                >
+                                  Copiar
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-5 space-y-4">
+                            <h3 className="font-bold text-white text-sm pb-2 border-b border-zinc-900">Suas Indicações ({referrals.length})</h3>
+                            {referrals.length === 0 ? (
+                              <p className="text-xs text-zinc-500 text-center py-6">Nenhuma indicação realizada ainda.</p>
+                            ) : (
+                              <div className="overflow-x-auto">
+                                  <table className="w-full text-left border-collapse">
+                                    <thead>
+                                      <tr className="border-b border-zinc-900 text-zinc-400 text-xs font-bold uppercase tracking-wider">
+                                        <th className="pb-3">Nome</th>
+                                        <th className="pb-3">Contato</th>
+                                        <th className="pb-3 text-right">Status</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-zinc-900/50">
+                                      {referrals.map(ref => (
+                                        <tr key={ref.id} className="hover:bg-zinc-800/5 transition">
+                                          <td className="py-3 text-xs font-bold text-white">{ref.nomeIndicado}</td>
+                                          <td className="py-3 text-xs text-zinc-400 font-mono">{ref.telefoneIndicado}</td>
+                                          <td className="py-3 text-xs text-right">
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                              ref.status === "ativo" ? "bg-primary/10 text-primary border border-primary/20" : "bg-zinc-850 text-zinc-400"
+                                            }`}>
+                                              {ref.status}
+                                            </span>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                            )}
                           </div>
                         </div>
-                      </div>
+                      )}
 
-                      <div className="flex flex-col sm:flex-row gap-3 relative z-10 w-full md:w-auto">
-                        <Button
-                          onClick={() => saveProfile()}
-                          disabled={isLoading}
-                          className="bg-primary text-primary-foreground font-bold hover:bg-primary/90 h-11 px-6 rounded-xl flex items-center justify-center gap-2 w-full sm:w-auto"
-                        >
-                          {isLoading ? (
-                            <span className="loader-btn w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></span>
+                      {/* ESTATISTICAS PANEL */}
+                      {activeTab === "estatisticas" && (
+                        <div className="space-y-6">
+                          <div className="pb-4 border-b border-border">
+                            <h2 className="text-xl font-black text-white">Estatísticas do Negócio</h2>
+                            <p className="text-xs text-muted-foreground">
+                              Desempenho e visualizações do seu perfil comercial.
+                            </p>
+                          </div>
+
+                          {isLoadingStats ? (
+                            <div className="flex justify-center py-12">
+                              <span className="loader-btn w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></span>
+                            </div>
                           ) : (
-                            "Salvar Alterações"
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                              <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 space-y-3 shadow-md relative overflow-hidden group hover:border-primary/25 transition">
+                                <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Visualizações de Perfil</div>
+                                <div className="text-4xl font-black text-white tracking-tight">{stats?.views || 0}</div>
+                                <p className="text-xs text-zinc-500">Número total de vezes que clientes abriram seu perfil.</p>
+                              </div>
+
+                              <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 space-y-3 shadow-md relative overflow-hidden group hover:border-primary/25 transition">
+                                <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Cliques no WhatsApp</div>
+                                <div className="text-4xl font-black text-primary tracking-tight">{stats?.whatsappClicks || 0}</div>
+                                <p className="text-xs text-zinc-500">Número de clientes que clicaram para falar com você.</p>
+                              </div>
+                            </div>
                           )}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
+                        </div>
+                      )}
 
-                  {/* Sub-warning for pending profiles */}
-                  {business?.status === "pendente" && (
-                    <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-4 text-amber-400 text-sm flex items-start gap-3">
-                      <Clock className="h-5 w-5 flex-shrink-0 mt-0.5 animate-pulse" />
-                      <div>
-                        <strong>Seu negócio está pendente de aprovação:</strong>{" "}
-                        Você já pode preencher os dados, cadastrar fotos e adicionar
-                        serviços. No entanto, o seu perfil não aparecerá nas buscas
-                        públicas dos clientes até que um administrador aprove seu
-                        cadastro.
-                      </div>
-                    </div>
-                  )}
+                      {/* CONFIGURACOES PANEL */}
+                      {activeTab === "configuracoes" && (
+                        <div className="space-y-6">
+                          <div className="pb-4 border-b border-border">
+                            <h2 className="text-xl font-black text-white">Configurações</h2>
+                            <p className="text-xs text-muted-foreground">
+                              Preferências gerais da sua conta XamaJá.
+                            </p>
+                          </div>
 
-                  {/* Tab Selector & Main Layout */}
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    {/* Sidebar Navigation */}
-                    <div className="lg:col-span-3 space-y-3">
-                      {[
-                        { id: "dados", label: "Dados do Negócio", icon: User },
-                        {
-                          id: "localizacao",
-                          label: "Endereço & Localização",
-                          icon: MapPin,
-                        },
-                        { id: "fotos", label: "Fotos & Galeria", icon: ImageIcon },
-                        { id: "servicos", label: "Meus Serviços", icon: Wrench },
-                        {
-                          id: "assinatura",
-                          label: "Plano & Limites",
-                          icon: CreditCard,
-                        },
-                      ].map(tab => {
-                        const Icon = tab.icon;
-                        return (
-                          <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id as any)}
-                            className={`w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl font-bold text-sm transition-all border ${
-                              activeTab === tab.id
-                                ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/5"
-                                : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-card/85"
-                            }`}
-                          >
-                            <Icon className="h-4.5 w-4.5" />
-                            <span>{tab.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
+                          <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-6 space-y-4">
+                            <div className="space-y-1">
+                              <h4 className="font-bold text-white text-sm">Privacidade de Dados</h4>
+                              <p className="text-xs text-zinc-500 leading-relaxed">
+                                Suas informações estão protegidas de acordo com as diretrizes da LGPD brasileira. Seus dados cadastrais não são compartilhados com terceiros.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
-                    {/* Tabs Panels Container */}
-                    <div className="lg:col-span-9">
-                      <div className="bg-card border border-border rounded-3xl p-6 md:p-8 shadow-xl min-h-[500px]">
-                        {/* DADOS PANEL */}
-                        {activeTab === "dados" && (
+                      {/* DADOS PANEL */}
+                      {activeTab === "dados" && (
                           <div className="space-y-6">
                             <div className="pb-4 border-b border-border">
                               <h2 className="text-xl font-black text-white">
@@ -2305,10 +2373,9 @@ export default function Parceiro() {
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
-          </section>
-        )}
+              </div>
+            </section>
+          )}
       </main>
 
       {/* Services Edit Modal */}

@@ -22,6 +22,7 @@ export default function Busca() {
   // Navigation & UI States
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileShowMap, setMobileShowMap] = useState(false);
+  const [userProfile, setUserProfile] = useState<any | null>(null);
 
   // Search & Filters States
   const [providersList, setProvidersList] = useState<any[]>([]);
@@ -55,6 +56,16 @@ export default function Busca() {
   // Load favorites, request geolocation, and load leaflet
   useEffect(() => {
     console.log("[Audit Busca] Componente Busca montado. Iniciando ciclo de vida do mapa.");
+
+    const token = localStorage.getItem("bp_session_token");
+    const savedUser = localStorage.getItem("bp_user_profile");
+    if (token && savedUser) {
+      try {
+        setUserProfile(JSON.parse(savedUser));
+      } catch (e) {
+        console.error(e);
+      }
+    }
 
     // Load Local Favorites
     const favs = localStorage.getItem("xamaja_favs");
@@ -668,18 +679,29 @@ export default function Busca() {
 
           {/* CTA */}
           <div className="hidden md:flex items-center gap-4">
-            <button
-              onClick={() => (window.location.href = "/app")}
-              className="text-sm font-semibold text-zinc-300 hover:text-white px-5 py-2.5 rounded-xl border border-zinc-900 bg-zinc-950 transition-all duration-200"
-            >
-              Entrar
-            </button>
-            <button
-              onClick={() => (window.location.href = "/#cadastro")}
-              className="text-sm font-bold text-primary-foreground bg-primary hover:bg-primary/90 px-6 py-2.5 rounded-xl shadow-[0_0_20px_rgba(37,211,102,0.15)] transition"
-            >
-              Cadastre-se
-            </button>
+            {userProfile ? (
+              <button
+                onClick={() => (window.location.href = "/parceiro")}
+                className="text-sm font-bold text-primary-foreground bg-primary hover:bg-primary/90 px-6 py-2.5 rounded-xl shadow-[0_0_20px_rgba(37,211,102,0.15)] transition"
+              >
+                Olá, {userProfile.name?.split(" ")[0] || "Minha Conta"}
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => (window.location.href = "/parceiro")}
+                  className="text-sm font-semibold text-zinc-300 hover:text-white px-5 py-2.5 rounded-xl border border-zinc-900 bg-zinc-950 transition-all duration-200"
+                >
+                  Entrar
+                </button>
+                <button
+                  onClick={() => (window.location.href = "/#cadastro")}
+                  className="text-sm font-bold text-primary-foreground bg-primary hover:bg-primary/90 px-6 py-2.5 rounded-xl shadow-[0_0_20px_rgba(37,211,102,0.15)] transition"
+                >
+                  Cadastre-se
+                </button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Icon */}
@@ -710,18 +732,38 @@ export default function Busca() {
               </a>
             </nav>
             <div className="flex flex-col gap-3 pt-2">
-              <button
-                onClick={() => (window.location.href = "/app")}
-                className="w-full text-center text-sm font-semibold text-zinc-300 py-3 rounded-xl border border-zinc-900 bg-zinc-950"
-              >
-                Entrar
-              </button>
-              <button
-                onClick={() => (window.location.href = "/#cadastro")}
-                className="w-full text-center text-sm font-bold text-primary-foreground bg-primary py-3 rounded-xl"
-              >
-                Cadastre-se
-              </button>
+              {userProfile ? (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    window.location.href = "/parceiro";
+                  }}
+                  className="w-full text-center text-sm font-bold text-primary-foreground bg-primary py-3 rounded-xl"
+                >
+                  Olá, {userProfile.name || "Minha Conta"}
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      window.location.href = "/parceiro";
+                    }}
+                    className="w-full text-center text-sm font-semibold text-zinc-300 py-3 rounded-xl border border-zinc-900 bg-zinc-950"
+                  >
+                    Entrar
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      window.location.href = "/#cadastro";
+                    }}
+                    className="w-full text-center text-sm font-bold text-primary-foreground bg-primary py-3 rounded-xl"
+                  >
+                    Cadastre-se
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}

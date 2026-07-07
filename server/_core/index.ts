@@ -330,17 +330,18 @@ async function startServer() {
         }
       }
 
-      if (!userProfile) {
-        const name = data.user.user_metadata?.full_name || data.user.email?.split("@")[0] || "Usuário";
-        await db.upsertUser({
-          openId: data.user.id,
-          name,
-          email: data.user.email ?? null,
-          loginMethod: "google",
-          tipo: "cliente",
-        });
-        userProfile = await db.getUserByOpenId(data.user.id);
-      }
+      const googleAvatar = data.user.user_metadata?.avatar_url || null;
+      const name = data.user.user_metadata?.full_name || data.user.email?.split("@")[0] || "Usuário";
+      
+      await db.upsertUser({
+        openId: data.user.id,
+        name,
+        email: data.user.email ?? null,
+        loginMethod: "google",
+        avatarUrl: googleAvatar,
+        ...(userProfile ? {} : { tipo: "cliente" }),
+      });
+      userProfile = await db.getUserByOpenId(data.user.id);
 
       // Find or create partner profile
       let partnerProfile = await db.getPartnerById(data.user.id);

@@ -35,6 +35,7 @@ export default function Home() {
   const [activeStep, setActiveStep] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLocation, setSearchLocation] = useState("Bragança Paulista - SP");
+  const [userProfile, setUserProfile] = useState<any | null>(null);
 
   // Form states
   const [name, setName] = useState("");
@@ -58,6 +59,16 @@ export default function Home() {
   const [isLoadingFeaturedAds, setIsLoadingFeaturedAds] = useState(true);
 
   useEffect(() => {
+    const token = localStorage.getItem("bp_session_token");
+    const savedUser = localStorage.getItem("bp_user_profile");
+    if (token && savedUser) {
+      try {
+        setUserProfile(JSON.parse(savedUser));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
     async function loadFeaturedAds() {
       try {
         const res = await fetch("/api/trpc/featuredAds.list");
@@ -496,25 +507,36 @@ export default function Home() {
               <Heart className="h-4 w-4" />
               <span>Favoritos</span>
             </a>
-            <Button
-              variant="ghost"
-              onClick={() => (window.location.href = "/app")}
-              className="text-white hover:text-white hover:bg-zinc-900 border border-zinc-800 rounded-xl px-5 h-10 text-xs"
-            >
-              Entrar
-            </Button>
-            <Button
-              onClick={() => {
-                document
-                  .getElementById("cadastro")
-                  ?.scrollIntoView({ behavior: "smooth", block: "center" });
-              }}
-              className="bg-primary text-primary-foreground hover:bg-primary/95 font-semibold rounded-xl px-5 h-10 text-xs transition"
-            >
-              Cadastre-se
-            </Button>
+            {userProfile ? (
+              <Button
+                onClick={() => (window.location.href = "/parceiro")}
+                className="bg-primary text-primary-foreground hover:bg-primary/95 font-semibold rounded-xl px-5 h-10 text-xs transition"
+              >
+                Olá, {userProfile.name?.split(" ")[0] || "Minha Conta"}
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="ghost"
+                  onClick={() => (window.location.href = "/parceiro")}
+                  className="text-white hover:text-white hover:bg-zinc-900 border border-zinc-800 rounded-xl px-5 h-10 text-xs"
+                >
+                  Entrar
+                </Button>
+                <Button
+                  onClick={() => {
+                    document
+                      .getElementById("cadastro")
+                      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  }}
+                  className="bg-primary text-primary-foreground hover:bg-primary/95 font-semibold rounded-xl px-5 h-10 text-xs transition"
+                >
+                  Cadastre-se
+                </Button>
+              </>
+            )}
           </nav>
-
+ 
           {/* Mobile Menu Icon */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -523,7 +545,7 @@ export default function Home() {
             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
         </div>
-
+ 
         {/* Mobile Nav Dropdown */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-zinc-900 bg-background/95 backdrop-blur-sm py-4 px-6 space-y-4 animate-in slide-in-from-top duration-200">
@@ -552,27 +574,41 @@ export default function Home() {
               </a>
             </nav>
             <div className="flex flex-col gap-3 pt-2">
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  window.location.href = "/app";
-                }}
-                className="w-full text-center text-white hover:bg-zinc-900 border border-zinc-800 rounded-xl py-3 text-sm font-semibold"
-              >
-                Entrar
-              </Button>
-              <Button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  document
-                    .getElementById("cadastro")
-                    ?.scrollIntoView({ behavior: "smooth", block: "center" });
-                }}
-                className="w-full text-center bg-primary text-primary-foreground hover:bg-primary/95 font-bold rounded-xl py-3 text-sm transition"
-              >
-                Cadastre-se
-              </Button>
+              {userProfile ? (
+                <Button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    window.location.href = "/parceiro";
+                  }}
+                  className="w-full text-center bg-primary text-primary-foreground hover:bg-primary/95 font-bold rounded-xl py-3 text-sm transition"
+                >
+                  Olá, {userProfile.name || "Minha Conta"}
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      window.location.href = "/parceiro";
+                    }}
+                    className="w-full text-center text-white hover:bg-zinc-900 border border-zinc-800 rounded-xl py-3 text-sm font-semibold"
+                  >
+                    Entrar
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      document
+                        .getElementById("cadastro")
+                        .scrollIntoView({ behavior: "smooth", block: "center" });
+                    }}
+                    className="w-full text-center bg-primary text-primary-foreground hover:bg-primary/95 font-bold rounded-xl py-3 text-sm transition"
+                  >
+                    Cadastre-se
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         )}

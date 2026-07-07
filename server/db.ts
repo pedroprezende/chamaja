@@ -56,7 +56,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   try {
     const values: InsertUser = { openId: user.openId };
     const updateSet: Record<string, unknown> = {};
-    const textFields = ["name", "email", "loginMethod"] as const;
+    const textFields = ["name", "email", "loginMethod", "avatarUrl"] as const;
     textFields.forEach((field) => {
       const value = user[field];
       if (value === undefined) return;
@@ -615,6 +615,16 @@ export async function getReviewsByProfessional(professionalId: string) {
     .select()
     .from(reviews)
     .where(eq(reviews.professionalId, professionalId))
+    .orderBy(desc(reviews.createdAt));
+}
+
+export async function getReviewsByUser(userId: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(reviews)
+    .where(eq(reviews.userId, userId))
     .orderBy(desc(reviews.createdAt));
 }
 

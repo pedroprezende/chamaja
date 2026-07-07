@@ -30,6 +30,10 @@ export default function Perfil({ params }: { params: { id: string } }) {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"about" | "catalog" | "reviews">("about");
 
+  // Auth States
+  const [userProfile, setUserProfile] = useState<any | null>(null);
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
+
   // New Review Form States
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
@@ -45,6 +49,27 @@ export default function Perfil({ params }: { params: { id: string } }) {
   useEffect(() => {
     fetchProviderDetails();
     fetchReviews();
+
+    // Check session
+    const token = localStorage.getItem("bp_session_token");
+    const savedUser = localStorage.getItem("bp_user_profile");
+    if (token && savedUser) {
+      try {
+        const parsedUser = JSON.parse(savedUser);
+        setSessionToken(token);
+        setUserProfile(parsedUser);
+        setReviewerName(parsedUser.name || "");
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // Check initial tab
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialTab = urlParams.get("tab");
+    if (initialTab === "reviews") {
+      setActiveTab("reviews");
+    }
 
     // Check favorite status
     const favs = localStorage.getItem("xamaja_favs");
@@ -306,8 +331,8 @@ export default function Perfil({ params }: { params: { id: string } }) {
   // Submit Review Form
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!reviewerName.trim()) {
-      toast.error("Por favor, informe seu nome.");
+    if (!sessionToken) {
+      toast.error("Você precisa estar logado para avaliar.");
       return;
     }
 
@@ -316,12 +341,14 @@ export default function Perfil({ params }: { params: { id: string } }) {
       const url = "/api/trpc/providers.submitReview";
       const res = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${sessionToken}`
+        },
         body: JSON.stringify({
           providerId,
           rating,
           comment: comment.trim(),
-          userName: reviewerName.trim(),
         }),
       });
 
@@ -329,7 +356,6 @@ export default function Perfil({ params }: { params: { id: string } }) {
       if (res.ok && json.result && json.result.data) {
         toast.success("Avaliação enviada com sucesso!");
         setComment("");
-        setReviewerName("");
         // Reload reviews & updates provider rating
         fetchReviews();
         fetchProviderDetails();
@@ -755,61 +781,75 @@ export default function Perfil({ params }: { params: { id: string } }) {
             {/* REVIEWS TAB */}
             {activeTab === "reviews" && (
               <div className="space-y-6">
-                {/* Submit review card */}
-                <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 md:p-8 space-y-5">
-                  <h3 className="font-extrabold text-lg text-white">Escrever uma Avaliação</h3>
-                  <form onSubmit={handleSubmitReview} className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="flex flex-col gap-2">
-                        <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Seu Nome *</label>
-                        <Input
-                          type="text"
-                          required
-                          placeholder="Ex: Pedro Henrique"
-                          value={reviewerName}
-                          onChange={(e) => setReviewerName(e.target.value)}
-                          className="bg-[#0c0c0e] border-zinc-900 text-white rounded-xl focus:border-primary focus-visible:ring-0"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Nota (1 a 5) *</label>
-                        <div className="flex items-center gap-1.5 h-11">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <button
-                              key={star}
-                              type="button"
-                              onClick={() => setRating(star)}
-                              className="focus:outline-none"
-                            >
-                              <Star
-                                className={`w-6 h-6 ${
-                                  star <= rating ? "text-primary fill-current" : "text-zinc-700"
-                                }`}
-                              />
-                            </button>
-                          ))}
+                {!userProfile ? (
+                  <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 md:p-8 text-center space-y-4">
+                    <h3 className="font-extrabold text-lg text-white">Escrever uma Avaliação</h3>
+                    <p className="text-sm text-zinc-400 max-w-md mx-auto">
+                      Para avaliar ou comentar, você deve obrigatoriamente estar logado com sua conta do Google ou e-mail do XamaJá.
+                    </p>
+                    <Button
+                      onClick={() => {
+                        window.location.href = `/parceiro?redirect=${encodeURIComponent(window.location.pathname + "?tab=reviews")}`;
+                      }}
+                      className="bg-primary hover:bg-primary/95 text-primary-foreground font-black px-8 py-3 rounded-xl transition shadow-lg shadow-primary/10"
+                    >
+                      Entrar / Criar Conta
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 md:p-8 space-y-5">
+                    <h3 className="font-extrabold text-lg text-white">Escrever uma Avaliação</h3>
+                    <form onSubmit={handleSubmitReview} className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="flex flex-col gap-2">
+                          <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Identidade</label>
+                          <Input
+                            type="text"
+                            disabled
+                            value={`${userProfile.name} (Sua Conta)`}
+                            className="bg-[#0c0c0e]/50 border-zinc-900 text-zinc-400 rounded-xl cursor-not-allowed opacity-80"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Nota (1 a 5) *</label>
+                          <div className="flex items-center gap-1.5 h-11">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                key={star}
+                                type="button"
+                                onClick={() => setRating(star)}
+                                className="focus:outline-none"
+                              >
+                                <Star
+                                  className={`w-6 h-6 ${
+                                    star <= rating ? "text-primary fill-current" : "text-zinc-700"
+                                  }`}
+                                />
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Comentário</label>
-                      <Textarea
-                        rows={3}
-                        placeholder="Escreva como foi sua experiência com este parceiro..."
-                        value={comment}
-                        onChange={(e) => setComment(e.target.value)}
-                        className="bg-[#0c0c0e] border-zinc-900 text-white rounded-xl focus:border-primary focus-visible:ring-0 resize-none"
-                      />
-                    </div>
-                    <Button
-                      type="submit"
-                      disabled={isSubmittingReview}
-                      className="bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold px-6 rounded-xl h-11 disabled:opacity-75"
-                    >
-                      {isSubmittingReview ? "Enviando..." : "Enviar Avaliação"}
-                    </Button>
-                  </form>
-                </div>
+                      <div className="flex flex-col gap-2">
+                        <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Comentário</label>
+                        <Textarea
+                          rows={3}
+                          placeholder="Escreva como foi sua experiência com este parceiro..."
+                          value={comment}
+                          onChange={(e) => setComment(e.target.value)}
+                          className="bg-[#0c0c0e] border-zinc-900 text-white rounded-xl focus:border-primary focus-visible:ring-0 resize-none"
+                        />
+                      </div>
+                      <Button
+                        type="submit"
+                        disabled={isSubmittingReview}
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold px-6 rounded-xl h-11 disabled:opacity-75"
+                      >
+                        {isSubmittingReview ? "Enviando..." : "Enviar Avaliação"}
+                      </Button>
+                    </form>
+                  </div>
+                )}
 
                 {/* Reviews List */}
                 <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 md:p-8 space-y-6">

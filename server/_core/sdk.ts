@@ -75,6 +75,7 @@ class SDKServer {
             null,
           email: authUser.email ?? null,
           loginMethod: authUser.app_metadata?.provider ?? "email",
+          avatarUrl: authUser.user_metadata?.avatar_url || null,
           lastSignedIn: signedInAt,
         });
         user = await db.getUserByOpenId(sessionUserId);
@@ -98,6 +99,7 @@ class SDKServer {
 
     await db.upsertUser({
       openId: user.openId,
+      avatarUrl: authUser.user_metadata?.avatar_url || null,
       lastSignedIn: signedInAt,
     });
 

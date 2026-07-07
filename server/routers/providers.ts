@@ -11,8 +11,11 @@ import {
   providers,
   appEvents,
   businessPermissions,
+  reviews,
+  serviceViews,
+  whatsappClicks,
 } from "../../drizzle/schema";
-import { eq, or, ilike, and, gte, lte, ne, desc, asc, sql } from "drizzle-orm";
+import { eq, or, ilike, and, gte, lte, ne, desc, asc, sql, count } from "drizzle-orm";
 import { getReviewsByProfessional as getMockReviewsByProfessional } from "../../data/mock";
 import { geocodeAddress } from "../geocoding";
 
@@ -1121,14 +1124,12 @@ export const providersRouter = router({
     return [...formattedDb, ...mockReviews];
   }),
 
-  submitReview: publicProcedure
+  submitReview: protectedProcedure
     .input(
       z.object({
         providerId: z.string(),
         rating: z.number().min(1).max(5),
         comment: z.string().optional(),
-        userName: z.string().optional(),
-        userAvatar: z.string().optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
@@ -1167,11 +1168,10 @@ export const providersRouter = router({
         })
         .where(eq(providers.id, provider.id));
 
-      const reviewerName =
-        input.userName || ctx.user?.name || "Cliente Anônimo";
+      const reviewerName = ctx.user.name || "Cliente XamaJá";
       const reviewerAvatar =
-        input.userAvatar ||
-        `https://ui-avatars.com/api/?name=${encodeURIComponent(reviewerName)}`;
+        ctx.user.avatarUrl ||
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(reviewerName)}&background=25D366&color=000`;
       const reviewId = `rev-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
       await db.createReview({
@@ -1181,10 +1181,83 @@ export const providersRouter = router({
         userAvatar: reviewerAvatar,
         rating: input.rating,
         comment: input.comment || null,
+        userId: ctx.user.openId,
         createdAt: new Date(),
       });
 
       return { success: true, rating: newRating, ratingCount: newRatingCount };
+    }),
+
+  getUserReviews: protectedProcedure.query(async ({ ctx }) => {
+    const dbInstance = await db.getDb();
+    if (!dbInstance) throw new Error("DB not found");
+
+    const dbReviews = await dbInstance
+      .select({
+        id: reviews.id,
+        rating: reviews.rating,
+        comment: reviews.comment,
+        createdAt: reviews.createdAt,
+        providerId: providers.id,
+        providerName: providers.name,
+        providerCategory: providers.category,
+      })
+      .from(reviews)
+      .innerJoin(providers, eq(reviews.professionalId, providers.id))
+      .where(eq(reviews.userId, ctx.user.openId))
+      .orderBy(desc(reviews.createdAt));
+
+    return dbReviews.map((r) => ({
+      id: r.id,
+      rating: r.rating,
+      comment: r.comment || "",
+      createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString().split("T")[0] : String(r.createdAt),
+      provider: {
+        id: r.providerId,
+        name: r.providerName,
+        category: r.providerCategory || "",
+      },
+    }));
+  }),
+
+  getProviderStats: protectedProcedure
+    .input(z.object({ providerId: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const dbInstance = await db.getDb();
+      if (!dbInstance) throw new Error("DB not found");
+
+      // Verify ownership
+      const provs = await dbInstance
+        .select()
+        .from(providers)
+        .where(
+          and(
+            eq(providers.id, input.providerId),
+            eq(providers.userId, ctx.user.openId),
+          ),
+        )
+        .limit(1);
+
+      if (provs.length === 0) {
+        throw new Error("Provider not found or access denied");
+      }
+
+      // Count visualizações
+      const [viewsCount] = await dbInstance
+        .select({ value: count() })
+        .from(serviceViews)
+        .where(eq(serviceViews.serviceId, input.providerId));
+
+      // Count clicks
+      const [whatsappCount] = await dbInstance
+        .select({ value: count() })
+        .from(whatsappClicks)
+        .where(eq(whatsappClicks.providerId, input.providerId));
+
+      return {
+        views: viewsCount?.value || 0,
+        whatsappClicks: whatsappCount?.value || 0,
+      };
     }),
 
   // Admin routes (preserved)
