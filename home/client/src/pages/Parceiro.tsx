@@ -766,7 +766,7 @@ export default function Parceiro() {
                 </div>
 
                 {/* Partner Type Selector cards */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div
                     onClick={() => setCompleteType("prestador")}
                     className={`cursor-pointer rounded-2xl p-4 border flex flex-col items-center gap-2 text-center transition-all duration-300 ${
@@ -795,6 +795,21 @@ export default function Parceiro() {
                     />
                     <span className="text-xs font-bold leading-tight">
                       Comércio / Loja
+                    </span>
+                  </div>
+                  <div
+                    onClick={() => setCompleteType("cliente")}
+                    className={`cursor-pointer rounded-2xl p-4 border flex flex-col items-center gap-2 text-center transition-all duration-300 ${
+                      completeType === "cliente"
+                        ? "border-primary bg-primary/5 text-white shadow-lg shadow-primary/5"
+                        : "border-border bg-background text-zinc-400 hover:border-zinc-700"
+                    }`}
+                  >
+                    <User
+                      className={`h-6 w-6 transition-colors duration-300 ${completeType === "cliente" ? "text-primary" : "text-zinc-500"}`}
+                    />
+                    <span className="text-xs font-bold leading-tight">
+                      Cliente (Indicador)
                     </span>
                   </div>
                 </div>

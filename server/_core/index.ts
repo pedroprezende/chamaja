@@ -1314,7 +1314,7 @@ async function startServer() {
           .json({ success: false, error: "Todos os campos são obrigatórios." });
       }
 
-      if (type !== "prestador" && type !== "comercio") {
+      if (type !== "prestador" && type !== "comercio" && type !== "cliente") {
         return res
           .status(400)
           .json({ success: false, error: "Tipo de parceiro inválido." });
@@ -1363,42 +1363,53 @@ async function startServer() {
         });
       }
 
-      // 5. Salvar/Atualizar perfil de negócio (providers) se ainda não existir
-      let businessProfile = await db.getProviderByUserId(authUser.id);
-      if (!businessProfile) {
-        const providerId = `prov_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        await db.createProvider({
-          id: providerId,
-          userId: authUser.id,
-          name: userProfile.name || "Negócio Parceiro",
-          phone: whatsapp,
-          whatsapp,
-          city,
-          isActive: false, // Requer aprovação do admin
-          status: "pendente",
-          businessType: type === "comercio" ? "comercio" : "servicos",
-          categoryId: type === "comercio" ? "comercios" : null,
-          category: type === "comercio" ? "Comércios" : null,
-          services: "[]",
-          rating: 5,
-          ratingCount: 0,
-          priceLevel: 2,
-          onlineStatus: false,
-        });
+      // 5. Salvar/Atualizar perfil de negócio (providers) se ainda não existir (apenas para comércio/prestador)
+      if (type !== "cliente") {
+        let businessProfile = await db.getProviderByUserId(authUser.id);
+        if (!businessProfile) {
+          const providerId = `prov_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          await db.createProvider({
+            id: providerId,
+            userId: authUser.id,
+            name: userProfile.name || "Negócio Parceiro",
+            phone: whatsapp,
+            whatsapp,
+            city,
+            isActive: false, // Requer aprovação do admin
+            status: "pendente",
+            businessType: type === "comercio" ? "comercio" : "servicos",
+            categoryId: type === "comercio" ? "comercios" : null,
+            category: type === "comercio" ? "Comércios" : null,
+            services: "[]",
+            rating: 5,
+            ratingCount: 0,
+            priceLevel: 2,
+            onlineStatus: false,
+          });
 
-        // 6. Salvar permissões do negócio (businessPermissions)
-        await db.createBusinessPermission({
-          businessId: providerId,
-          maxServicos: 1,
-          status: "pendente",
-        });
+          // 6. Salvar permissões do negócio (businessPermissions)
+          await db.createBusinessPermission({
+            businessId: providerId,
+            maxServicos: 1,
+            status: "pendente",
+          });
 
-        // Log event
+          // Log event
+          await db.createAppEvent({
+            tipoEvento: "cadastro",
+            valor: `parceiro_completou_${type}`,
+            cidade: city,
+            prestadorId: providerId,
+            usuarioId: authUser.id,
+          });
+        }
+      } else {
+        // Log event para cliente indicador
         await db.createAppEvent({
           tipoEvento: "cadastro",
-          valor: `parceiro_completou_${type}`,
+          valor: `parceiro_completou_cliente`,
           cidade: city,
-          prestadorId: providerId,
+          prestadorId: null,
           usuarioId: authUser.id,
         });
       }
