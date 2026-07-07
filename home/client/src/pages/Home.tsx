@@ -580,15 +580,16 @@ export default function Home() {
 
       <section className="relative py-12 md:py-16 overflow-hidden border-b border-zinc-900 bg-[#070708]">
         <div className="container mx-auto px-4 relative z-10">
-          <div className="grid grid-cols-[1.2fr_0.8fr] gap-4 md:gap-10 items-center">
+          {/* Stacked on mobile, side-by-side grid on desktop/tablets */}
+          <div className="flex flex-col md:grid md:grid-cols-2 gap-8 md:gap-10 items-center">
             {/* Left Content */}
-            <div className="space-y-6 relative">
+            <div className="space-y-6 relative w-full">
               {/* Mobile Ambient Glow behind Left Content */}
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-72 bg-primary/10 rounded-full blur-[100px] pointer-events-none z-0 lg:hidden"></div>
 
               {/* Location Pin & Mobile Mascot wrapper */}
               <div className="flex items-center justify-between gap-4 select-none relative z-10">
-                <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-muted-foreground font-semibold">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-semibold">
                   <MapPin className="h-4 w-4 text-primary" />
                   <span>Sua localização:</span>
                   <span className="text-primary font-bold underline cursor-pointer hover:text-primary/80 transition">
@@ -607,17 +608,17 @@ export default function Home() {
               </div>
 
               <div className="space-y-3">
-                <h1 className="text-xl sm:text-4xl md:text-5xl lg:text-6xl font-black leading-[1.1] tracking-tight text-white font-sans">
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-[1.1] tracking-tight text-white font-sans">
                   Encontre os melhores
                   <br />
-                  <span className="inline-block text-primary transition-all duration-500 ease-out transform translate-y-0 opacity-100 min-w-[140px] sm:min-w-[280px]">
+                  <span className="inline-block text-primary transition-all duration-500 ease-out transform translate-y-0 opacity-100 min-w-[280px]">
                     {rotatingWords[currentWordIdx]}
                   </span>
                   <br />
                   <span className="text-zinc-400">perto de você.</span>
                 </h1>
 
-                <p className="text-[10px] sm:text-sm md:text-base text-zinc-400 max-w-lg leading-relaxed">
+                <p className="text-sm md:text-base text-zinc-400 max-w-lg leading-relaxed">
                   Busque comércios e prestadores de serviço na sua região de forma simples e rápida.
                 </p>
               </div>
@@ -707,14 +708,14 @@ export default function Home() {
             </div>
 
             {/* Right Content */}
-            <div className="flex justify-center relative w-full h-[220px] sm:h-[350px] md:h-[450px] lg:h-[580px] items-center">
+            <div className="flex justify-center relative w-full h-[320px] md:h-[450px] lg:h-[580px] items-center">
               {/* Animated glowing background blobs */}
               <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-primary/20 rounded-full blur-[100px] animate-glow-pulse pointer-events-none z-0"></div>
               <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-emerald-500/10 rounded-full blur-[120px] animate-glow-pulse pointer-events-none z-0" style={{ animationDelay: "2s" }}></div>
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-[#84cc16]/15 rounded-full blur-[90px] animate-glow-pulse pointer-events-none z-0" style={{ animationDelay: "4s" }}></div>
 
               {/* Big 3D Glowing Green X (Mockup image) */}
-              <div className="relative z-10 w-full h-full max-w-[200px] sm:max-w-[340px] md:max-w-[440px] lg:max-w-[500px] flex items-center justify-center animate-float-slow">
+              <div className="relative z-10 w-full h-full max-w-[340px] md:max-w-[440px] lg:max-w-[500px] flex items-center justify-center animate-float-slow">
                 <img
                   src="/assets/images/hero_mockup_right.png"
                   alt="XamaJá App Ecosystem"
@@ -722,21 +723,21 @@ export default function Home() {
                 />
 
                 {/* Floating Widget 1: X marca o local */}
-                <div className="absolute -top-4 -right-2 z-20 bg-zinc-950/90 border border-zinc-800/80 p-2 sm:p-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-md select-none animate-float-reverse max-w-[90px] sm:max-w-[170px]">
-                  <span className="text-primary font-black text-[7px] sm:text-xs block mb-0.5 sm:mb-1">X marca o local</span>
-                  <p className="text-[6px] sm:text-[10px] text-zinc-400 leading-normal">
+                <div className="absolute -top-4 right-4 z-20 bg-zinc-950/90 border border-zinc-800/80 p-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-md select-none animate-float-reverse max-w-[170px]">
+                  <span className="text-primary font-black text-xs block mb-1">X marca o local</span>
+                  <p className="text-[10px] text-zinc-400 leading-normal">
                     Conectando você aos melhores negócios da sua região.
                   </p>
                 </div>
 
                 {/* Floating Widget 2: 100% Seguro */}
-                <div className="absolute bottom-4 -left-6 z-20 bg-zinc-950/95 border border-zinc-800/85 p-1.5 sm:p-3 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-md select-none animate-float-slow flex items-center gap-1 sm:gap-2">
-                  <div className="w-5 h-5 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-                    <ShieldCheck className="w-3 h-3 sm:w-4.5 sm:h-4.5 text-primary" />
+                <div className="absolute bottom-10 -left-6 z-20 bg-zinc-950/95 border border-zinc-800/85 p-3 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-md select-none animate-float-slow flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                    <ShieldCheck className="w-4.5 h-4.5 text-primary" />
                   </div>
                   <div>
-                    <span className="text-white font-extrabold text-[7px] sm:text-[11px] block leading-none">100% Seguro</span>
-                    <span className="text-zinc-500 text-[6px] sm:text-[9px] block">Sem intermediários</span>
+                    <span className="text-white font-extrabold text-[11px] block">100% Seguro</span>
+                    <span className="text-zinc-500 text-[9px] block">Sem intermediários</span>
                   </div>
                 </div>
 
