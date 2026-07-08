@@ -660,7 +660,7 @@ export default function Home() {
               </div>
 
               {/* Integrated Search Bar (Airbnb / Google Maps Inspired) */}
-              <div className="bg-[#0c0c0e] border border-zinc-800 p-2 rounded-2xl flex flex-col md:flex-row items-center gap-2 shadow-2xl w-full max-w-2xl transition-all duration-300 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20">
+              <div className="bg-[#0c0c0e] border border-zinc-800 p-2 rounded-2xl flex flex-col md:flex-row items-center gap-2 shadow-2xl w-full max-w-4xl transition-all duration-300 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20">
                 {/* Input 1: O que você procura */}
                 <div className="flex-1 flex items-center px-4 gap-3 w-full group">
                   <Search className="text-zinc-500 group-focus-within:text-primary h-5 w-5 flex-shrink-0 transition-colors" />
