@@ -39,96 +39,60 @@ describe("Roles and Permissions", () => {
     });
   });
 
-  describe("Comerciante Permissions", () => {
-    it("comerciante should have limited permissions", () => {
-      const comerciantePerms = ROLE_PERMISSIONS.comerciante;
-      expect(comerciantePerms.permissions.length).toBeGreaterThan(0);
-      expect(comerciantePerms.role).toBe("comerciante");
+  describe("User Permissions", () => {
+    it("user should have limited permissions", () => {
+      const userPerms = ROLE_PERMISSIONS.user;
+      expect(userPerms.permissions.length).toBeGreaterThan(0);
+      expect(userPerms.role).toBe("user");
     });
 
-    it("comerciante should be able to read commerces", () => {
-      const hasReadPerm = hasPermission("comerciante", "comercios", "read");
+    it("user should be able to read commerces", () => {
+      const hasReadPerm = hasPermission("user", "comercios", "read");
       expect(hasReadPerm).toBe(true);
     });
 
-    it("comerciante should be able to create commerces", () => {
-      const hasCreatePerm = hasPermission("comerciante", "comercios", "create");
+    it("user should be able to create reviews", () => {
+      const hasCreatePerm = hasPermission("user", "avaliacoes", "create");
       expect(hasCreatePerm).toBe(true);
     });
 
-    it("comerciante should NOT be able to delete users", () => {
-      const hasDeletePerm = hasPermission("comerciante", "usuarios", "delete");
+    it("user should NOT be able to delete users", () => {
+      const hasDeletePerm = hasPermission("user", "usuarios", "delete");
       expect(hasDeletePerm).toBe(false);
     });
 
-    it("comerciante should only manage their own commerce", () => {
-      const ownCommerceId = "comerciant-123";
-      const userId = "comerciant-123";
-      const canManage = canManageCommerce("comerciante", ownCommerceId, userId);
+    it("user should only manage their own commerce", () => {
+      const ownCommerceId = "user-123";
+      const userId = "user-123";
+      const canManage = canManageCommerce("user", ownCommerceId, userId);
       expect(canManage).toBe(true);
     });
 
-    it("comerciante should NOT manage other commerce", () => {
+    it("user should NOT manage other commerce", () => {
       const otherCommerceId = "commerce-456";
-      const userId = "comerciant-123";
-      const canManage = canManageCommerce(
-        "comerciante",
-        otherCommerceId,
-        userId,
-      );
+      const userId = "user-123";
+      const canManage = canManageCommerce("user", otherCommerceId, userId);
       expect(canManage).toBe(false);
     });
 
-    it("comerciante should only manage their own account", () => {
-      const ownId = "comerciant-123";
-      const userId = "comerciant-123";
-      const canManage = canManageComerciant("comerciante", ownId, userId);
+    it("user should only manage their own account", () => {
+      const ownId = "user-123";
+      const userId = "user-123";
+      const canManage = canManageComerciant("user", ownId, userId);
       expect(canManage).toBe(true);
     });
 
-    it("comerciante should NOT manage other account", () => {
-      const otherId = "comerciant-456";
-      const userId = "comerciant-123";
-      const canManage = canManageComerciant("comerciante", otherId, userId);
-      expect(canManage).toBe(false);
-    });
-  });
-
-  describe("Cliente Permissions", () => {
-    it("cliente should have minimal permissions", () => {
-      const clientePerms = ROLE_PERMISSIONS.cliente;
-      expect(clientePerms.permissions.length).toBeGreaterThan(0);
-      expect(clientePerms.role).toBe("cliente");
-    });
-
-    it("cliente should be able to read commerces", () => {
-      const hasReadPerm = hasPermission("cliente", "comercios", "read");
-      expect(hasReadPerm).toBe(true);
-    });
-
-    it("cliente should NOT be able to create commerces", () => {
-      const hasCreatePerm = hasPermission("cliente", "comercios", "create");
-      expect(hasCreatePerm).toBe(false);
-    });
-
-    it("cliente should be able to create reviews", () => {
-      const hasCreatePerm = hasPermission("cliente", "avaliacoes", "create");
-      expect(hasCreatePerm).toBe(true);
-    });
-
-    it("cliente should NOT manage any commerce", () => {
-      const canManage = canManageCommerce(
-        "cliente",
-        "commerce-123",
-        "user-456",
-      );
+    it("user should NOT manage other account", () => {
+      const otherId = "user-456";
+      const userId = "user-123";
+      const canManage = canManageComerciant("user", otherId, userId);
       expect(canManage).toBe(false);
     });
   });
 
   describe("Permission Verification", () => {
     it("should correctly identify missing permissions", () => {
-      const hasDeletePerm = hasPermission("cliente", "comercios", "delete");
+      const hasDeletePerm = hasPermission("user", "comercios", "delete");
       expect(hasDeletePerm).toBe(false);
     });
 

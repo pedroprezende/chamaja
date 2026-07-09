@@ -1,6 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
-import { View, Text, StyleSheet, Pressable } from "react-native";
+import { View, Text, StyleSheet, Pressable, Appearance } from "react-native";
 import { logger } from "@/lib/logger";
+import { SchemeColors } from "@/constants/theme";
 
 interface Props {
   children?: ReactNode;
@@ -53,29 +54,33 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 }
 
+// Get theme colors based on system appearance
+const colorScheme = Appearance.getColorScheme() || "light";
+const colors = SchemeColors[colorScheme];
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     padding: 24,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: colors.background,
   },
   title: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#111827",
+    color: colors.foreground,
     marginBottom: 12,
   },
   subtitle: {
     fontSize: 15,
-    color: "#4B5563",
+    color: colors.muted,
     textAlign: "center",
     marginBottom: 24,
     lineHeight: 22,
   },
   button: {
-    backgroundColor: "#25D366",
+    backgroundColor: colors.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,

@@ -37,6 +37,7 @@ export interface AuthContextType {
   role: UserRole | null;
   isAdmin: boolean;
   isLoading: boolean;
+  roleVerified: boolean;
   isSignedIn: boolean;
   signInWithGoogle: () => Promise<void>;
   signInWithMicrosoft: () => Promise<void>;
@@ -57,6 +58,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [roleVerified, setRoleVerified] = useState(false);
 
   // Função central para buscar a Role do banco de dados (Fonte da Verdade)
   const getCurrentUserRole = async (
@@ -105,6 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!session?.user) {
       logger.info("AUTH", "Sessão vazia, limpando dados de usuário");
       setUser(null);
+      setRoleVerified(false);
       await AsyncStorage.removeItem("@chamaja_user");
       await removeSessionToken();
       return;
@@ -147,14 +150,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     // Atualiza o estado imediatamente para liberar a navegação do usuário
+    // mas NÃO libera acesso admin até que a role seja verificada no servidor
     setUser(dbUser);
+    setRoleVerified(false);
     await AsyncStorage.setItem("@chamaja_user", JSON.stringify(dbUser));
     logger.info(
       "AUTH",
       "Sessão de usuário persistida temporariamente com a role inicial",
     );
 
-    // Consulta a role atualizada do banco em background de forma não-bloqueante
+    // Consulta a role atualizada do banco de forma não-bloqueante
     getCurrentUserRole(authUser.id, authUser.email || "")
       .then(async (userRole) => {
         if (userRole !== initialRole) {
@@ -172,6 +177,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       .catch((err) => {
         logger.warn("AUTH", "Falha ao sincronizar role em background", err);
+      })
+      .finally(() => {
+        // Role verificada (sucesso ou falha) — liberar acesso condicional
+        setRoleVerified(true);
       });
   };
 
@@ -572,6 +581,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       // Limpa o estado local imediatamente para feedback visual instantâneo
       setUser(null);
+      setRoleVerified(false);
       await AsyncStorage.removeItem("@chamaja_user");
       await removeSessionToken();
 
@@ -595,6 +605,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     role: user?.role || null,
     isAdmin: user?.role === "admin",
     isLoading,
+    roleVerified,
     isSignedIn: user !== null,
     signInWithGoogle,
     signInWithMicrosoft,

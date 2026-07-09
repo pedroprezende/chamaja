@@ -3,7 +3,9 @@
  * Define os tipos de usuários e suas permissões no app
  */
 
-export type UserRole = "admin" | "comerciante" | "cliente";
+import type { UserRole } from "./auth-context";
+
+export type { UserRole };
 
 export interface Permission {
   resource: string;
@@ -43,27 +45,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
       { resource: "relatorios", action: "read" },
     ],
   },
-  comerciante: {
-    role: "comerciante",
-    description: "Comerciante - pode gerenciar apenas suas lojas",
-    permissions: [
-      // Pode ler suas próprias lojas
-      { resource: "comercios", action: "read" },
-      // Pode criar novas lojas
-      { resource: "comercios", action: "create" },
-      // Pode atualizar apenas suas lojas (verificado no backend)
-      { resource: "comercios", action: "update" },
-      // Pode deletar apenas suas lojas (verificado no backend)
-      { resource: "comercios", action: "delete" },
-      // Pode ler seu próprio perfil
-      { resource: "usuarios", action: "read" },
-      // Pode atualizar seu próprio perfil
-      { resource: "usuarios", action: "update" },
-    ],
-  },
-  cliente: {
-    role: "cliente",
-    description: "Cliente - pode visualizar comércios e deixar avaliações",
+  user: {
+    role: "user",
+    description: "Usuário comum - pode visualizar e interagir",
     permissions: [
       // Pode ler comércios
       { resource: "comercios", action: "read" },
@@ -100,13 +84,8 @@ export function canManageCommerce(
     return true;
   }
 
-  // Comerciante só pode gerenciar seus próprios comércios
-  if (role === "comerciante") {
-    return commerceOwnerId === currentUserId;
-  }
-
-  // Cliente não pode gerenciar comércios
-  return false;
+  // Usuário só pode gerenciar seus próprios comércios (se for dono)
+  return commerceOwnerId === currentUserId;
 }
 
 export function canManageComerciant(
@@ -119,11 +98,6 @@ export function canManageComerciant(
     return true;
   }
 
-  // Comerciante só pode gerenciar sua própria conta
-  if (role === "comerciante") {
-    return comerciantId === currentUserId;
-  }
-
-  // Cliente não pode gerenciar comerciantes
-  return false;
+  // Usuário só pode gerenciar sua própria conta
+  return comerciantId === currentUserId;
 }

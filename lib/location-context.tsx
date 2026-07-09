@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { DEFAULT_CITY, DEFAULT_COORDINATES, GEOCODING_USER_AGENT } from "@/constants/app";
 
 const Location =
   Platform.OS !== "web" || typeof window !== "undefined"
@@ -35,7 +36,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({
   const [coords, setCoords] = useState<Coordinates | null>(null);
   const [gpsCoords, setGpsCoords] = useState<Coordinates | null>(null);
   const [addressName, setAddressName] = useState<string>(
-    "Bragança Paulista - SP",
+    `${DEFAULT_CITY} - SP`,
   );
   const [permissionGranted, setPermissionGranted] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
@@ -48,8 +49,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({
         `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`,
         {
           headers: {
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "User-Agent": GEOCODING_USER_AGENT,
           },
         },
       );
@@ -85,8 +85,8 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       if (Platform.OS === "web") {
         if (typeof window === "undefined" || !navigator.geolocation) {
-          setCoords({ latitude: -22.952, longitude: -46.542 });
-          setAddressName("Bragança Paulista - SP");
+          setCoords(DEFAULT_COORDINATES);
+          setAddressName(`${DEFAULT_CITY} - SP`);
           setLoading(false);
           return;
         }
@@ -104,8 +104,8 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({
             },
             (error) => {
               console.warn("Web fetchCoords failed:", error);
-              setCoords({ latitude: -22.952, longitude: -46.542 });
-              setAddressName("Bragança Paulista - SP");
+              setCoords(DEFAULT_COORDINATES);
+              setAddressName(`${DEFAULT_CITY} - SP`);
               setLoading(false);
               resolve();
             },
@@ -116,8 +116,8 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (!Location) {
         // Fallback for web without geolocation API
-        setCoords({ latitude: -22.952, longitude: -46.542 });
-        setAddressName("Bragança Paulista - SP");
+        setCoords(DEFAULT_COORDINATES);
+        setAddressName(`${DEFAULT_CITY} - SP`);
         setLoading(false);
         return;
       }
@@ -150,8 +150,8 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({
       console.warn("Error fetching current position:", err);
       setErrorMsg(err.message || "Could not fetch current location");
       // Default fallback
-      setCoords({ latitude: -22.952, longitude: -46.542 });
-      setAddressName("Bragança Paulista - SP");
+      setCoords(DEFAULT_COORDINATES);
+      setAddressName(`${DEFAULT_CITY} - SP`);
     } finally {
       setLoading(false);
     }
@@ -161,8 +161,8 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({
     setLoading(true);
     if (Platform.OS === "web") {
       if (typeof window === "undefined" || !navigator.geolocation) {
-        setCoords({ latitude: -22.952, longitude: -46.542 });
-        setAddressName("Bragança Paulista - SP");
+        setCoords(DEFAULT_COORDINATES);
+        setAddressName(`${DEFAULT_CITY} - SP`);
         setLoading(false);
         return false;
       }
@@ -182,8 +182,8 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({
           (error) => {
             console.warn("Web Geolocation permission denied or failed:", error);
             setPermissionGranted(false);
-            setCoords({ latitude: -22.952, longitude: -46.542 });
-            setAddressName("Bragança Paulista - SP");
+            setCoords(DEFAULT_COORDINATES);
+            setAddressName(`${DEFAULT_CITY} - SP`);
             setLoading(false);
             resolve(false);
           },
@@ -193,8 +193,8 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     if (!Location) {
-      setCoords({ latitude: -22.952, longitude: -46.542 });
-      setAddressName("Bragança Paulista - SP");
+      setCoords(DEFAULT_COORDINATES);
+      setAddressName(`${DEFAULT_CITY} - SP`);
       setLoading(false);
       return true;
     }
@@ -206,16 +206,16 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({
         await fetchCoords();
       } else {
         // Permission denied fallback
-        setCoords({ latitude: -22.952, longitude: -46.542 });
-        setAddressName("Bragança Paulista - SP");
+        setCoords(DEFAULT_COORDINATES);
+        setAddressName(`${DEFAULT_CITY} - SP`);
         setLoading(false);
       }
       return granted;
     } catch (err: any) {
       console.warn("Error requesting permission:", err);
       setErrorMsg(err.message || "Permission request failed");
-      setCoords({ latitude: -22.952, longitude: -46.542 });
-      setAddressName("Bragança Paulista - SP");
+      setCoords(DEFAULT_COORDINATES);
+      setAddressName(`${DEFAULT_CITY} - SP`);
       setLoading(false);
       return false;
     }
@@ -275,7 +275,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({
         setErrorMsg("Location services not available on this browser");
         await updateLocation(
           { latitude: -22.952, longitude: -46.542 },
-          "Bragança Paulista - SP",
+          `${DEFAULT_CITY} - SP`,
         );
         setLoading(false);
         return;
@@ -300,7 +300,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({
             setErrorMsg("GPS request failed: " + error.message);
             await updateLocation(
               { latitude: -22.952, longitude: -46.542 },
-              "Bragança Paulista - SP",
+              `${DEFAULT_CITY} - SP`,
             );
             setPermissionGranted(false);
             setLoading(false);
@@ -383,7 +383,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({
       // Fallback
       await updateLocation(
         { latitude: -22.952, longitude: -46.542 },
-        "Bragança Paulista - SP",
+        `${DEFAULT_CITY} - SP`,
       );
     } finally {
       setLoading(false);

@@ -19,6 +19,44 @@ import { eq, or, ilike, and, gte, lte, ne, desc, asc, sql, count } from "drizzle
 import { getReviewsByProfessional as getMockReviewsByProfessional } from "../../data/mock";
 import { geocodeAddress } from "../geocoding";
 
+// Schema for admin provider create/update
+const adminProviderSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1),
+  category: z.string().nullable().optional(),
+  categoryId: z.string().nullable().optional(),
+  city: z.string().nullable().optional(),
+  neighborhood: z.string().nullable().optional(),
+  phone: z.string().nullable().optional(),
+  plan: z.string().optional(),
+  serviceId: z.string().nullable().optional(),
+  serviceName: z.string().nullable().optional(),
+  subcategoryId: z.string().nullable().optional(),
+  subcategoryName: z.string().nullable().optional(),
+  whatsapp: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  address: z.string().nullable().optional(),
+  avatarUri: z.string().nullable().optional(),
+  avatarThumbnailUri: z.string().nullable().optional(),
+  gallery: z.array(z.string()).nullable().optional(),
+  latitude: z.number().nullable().optional(),
+  longitude: z.number().nullable().optional(),
+  coverUri: z.string().nullable().optional(),
+  coverThumbnailUri: z.string().nullable().optional(),
+  isActive: z.boolean().optional(),
+  isVerified: z.boolean().optional(),
+  destaque: z.boolean().optional(),
+  onlineStatus: z.boolean().optional(),
+  responseTime: z.string().nullable().optional(),
+  clientsServed: z.number().optional(),
+  foundedYear: z.number().nullable().optional(),
+  topBadge: z.string().nullable().optional(),
+  popularServices: z.union([z.string(), z.array(z.string())]).nullable().optional(),
+  tags: z.union([z.string(), z.array(z.string())]).nullable().optional(),
+  workingHours: z.union([z.string(), z.record(z.string())]).nullable().optional(),
+  hasCatalog: z.boolean().optional(),
+});
+
 const safeStringify = (val: any) => {
   if (val === undefined || val === null) return null;
   if (typeof val === "string") return val;
@@ -1261,7 +1299,7 @@ export const providersRouter = router({
     }),
 
   // Admin routes (preserved)
-  create: adminWriteProcedure.input(z.any()).mutation(async ({ input }) => {
+  create: adminWriteProcedure.input(adminProviderSchema).mutation(async ({ input }) => {
     // Used by admin dashboard
     const all = await db.getProviders(false);
     const maxOrder =
@@ -1331,7 +1369,7 @@ export const providersRouter = router({
     });
   }),
 
-  update: adminWriteProcedure.input(z.any()).mutation(async ({ input }) => {
+  update: adminWriteProcedure.input(adminProviderSchema).mutation(async ({ input }) => {
     const { id, ...data } = input;
     const dbInstance = await db.getDb();
     if (dbInstance) {

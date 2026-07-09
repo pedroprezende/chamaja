@@ -2,12 +2,10 @@ import { describe, it, expect } from "vitest";
 import {
   categories,
   sections,
-  services,
   professionals,
   getProfessionalsByService,
-  getServicesByCategory,
   getProfessionalById,
-  getSectionServices,
+  subcategoriesByCategory,
 } from "../data/mock";
 
 describe("Mock Data", () => {
@@ -24,12 +22,14 @@ describe("Mock Data", () => {
     expect(sections[0]).toHaveProperty("title");
   });
 
-  it("deve ter serviços definidos", () => {
-    expect(services.length).toBeGreaterThan(0);
-    expect(services[0]).toHaveProperty("id");
-    expect(services[0]).toHaveProperty("name");
-    expect(services[0]).toHaveProperty("categoryId");
-    expect(services[0]).toHaveProperty("image");
+  it("deve ter subcategorias definidas por categoria", () => {
+    expect(Object.keys(subcategoriesByCategory).length).toBeGreaterThan(0);
+    const firstCategoryId = Object.keys(subcategoriesByCategory)[0];
+    const subs = subcategoriesByCategory[firstCategoryId];
+    expect(subs.length).toBeGreaterThan(0);
+    expect(subs[0]).toHaveProperty("id");
+    expect(subs[0]).toHaveProperty("name");
+    expect(subs[0]).toHaveProperty("categoryId");
   });
 
   it("deve ter profissionais definidos", () => {
@@ -46,12 +46,6 @@ describe("Mock Data", () => {
     eletricistas.forEach((p) => expect(p.categoryId).toBe("eletricista"));
   });
 
-  it("deve filtrar serviços por categoria", () => {
-    const reformas = getServicesByCategory("reformas-reparos");
-    expect(reformas.length).toBeGreaterThan(0);
-    reformas.forEach((s) => expect(s.categoryId).toBe("reformas-reparos"));
-  });
-
   it("deve encontrar profissional por ID", () => {
     const prof = getProfessionalById("eletrica-ze");
     expect(prof).toBeDefined();
@@ -61,11 +55,6 @@ describe("Mock Data", () => {
   it("deve retornar undefined para ID inexistente", () => {
     const prof = getProfessionalById("inexistente");
     expect(prof).toBeUndefined();
-  });
-
-  it("deve retornar no máximo 3 serviços por seção", () => {
-    const reformas = getSectionServices("reformas-reparos");
-    expect(reformas.length).toBeLessThanOrEqual(3);
   });
 
   it("profissionais devem ter número de telefone válido", () => {

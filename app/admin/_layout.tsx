@@ -4,16 +4,16 @@ import { useEffect } from "react";
 import { View, ActivityIndicator } from "react-native";
 
 export default function AdminLayout() {
-  const { isAdmin, isLoading } = useAuth();
+  const { isAdmin, isLoading, roleVerified } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && !isAdmin) {
+    if (!isLoading && roleVerified && !isAdmin) {
       router.replace("/");
     }
-  }, [isAdmin, isLoading]);
+  }, [isAdmin, isLoading, roleVerified]);
 
-  if (isLoading || !isAdmin) {
+  if (isLoading || !roleVerified || !isAdmin) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
         <ActivityIndicator size="large" color="#25D366" />

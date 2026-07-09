@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Image,
   ImageProps,
@@ -22,6 +22,11 @@ export const SafeImage: React.FC<SafeImageProps> = ({
 }) => {
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Reset error state when source changes
+  useEffect(() => {
+    setError(false);
+  }, [source]);
 
   // Check if source is empty
   const isEmpty =

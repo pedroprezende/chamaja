@@ -33,18 +33,16 @@ export function Skeleton({
     ).start();
   }, [opacity]);
 
+  const animatedStyle: ViewStyle = {
+    borderRadius,
+    opacity,
+  };
+  if (width !== undefined) animatedStyle.width = width as ViewStyle["width"];
+  if (height !== undefined) animatedStyle.height = height as ViewStyle["height"];
+
   return (
     <Animated.View
-      style={[
-        styles.skeleton,
-        {
-          width: width as any,
-          height: height as any,
-          borderRadius,
-          opacity,
-        },
-        style,
-      ]}
+      style={[styles.skeleton, animatedStyle, style]}
     />
   );
 }

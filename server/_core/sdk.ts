@@ -8,9 +8,13 @@ import { ENV } from "./env";
 import { COOKIE_NAME } from "../../shared/const.js";
 
 // Initialize Supabase Client for the server
+// Uses SERVICE_ROLE_KEY when available (for admin operations like user deletion),
+// falls back to anon key for basic auth verification
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || "";
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "";
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabaseKey = supabaseServiceKey || supabaseAnonKey;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 class SDKServer {
   private parseCookies(cookieHeader: string | undefined) {

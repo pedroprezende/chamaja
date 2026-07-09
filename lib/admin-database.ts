@@ -6,14 +6,14 @@
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export type UserRole = "ADMIN" | "CONTRACTOR";
+type AdminRole = "ADMIN" | "CONTRACTOR";
 
 export interface AdminAccount {
   id: string;
   email: string;
   password: string;
   name: string;
-  role: UserRole;
+  role: AdminRole;
   createdAt: string;
   updatedAt: string;
   isActive: boolean;
