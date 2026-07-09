@@ -10,6 +10,7 @@ import Parceiros from "./pages/Parceiros";
 import Parceiro from "./pages/Parceiro";
 import Busca from "./pages/Busca";
 import Perfil from "./pages/Perfil";
+import IndiqueGanhe from "./pages/IndiqueGanhe";
 
 function Router() {
   return (
@@ -24,6 +25,7 @@ function Router() {
       <Route path={"/parceiro"} component={Parceiro} />
       <Route path={"/parceiro/dashboard"} component={Parceiro} />
       <Route path={"/indique"} component={Parceiro} />
+      <Route path={"/indique-e-ganhe"} component={IndiqueGanhe} />
       <Route path={"/indicacoes"} component={Parceiro} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}

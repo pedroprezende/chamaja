@@ -160,29 +160,19 @@ export default function ConhecerApp() {
               Como funciona
             </a>
             <a
-              href="#para-prestadores"
-              className="text-muted-foreground hover:text-foreground transition"
-            >
-              Para prestadores
-            </a>
-            <a
-              href="#para-comercios"
-              className="text-muted-foreground hover:text-foreground transition"
-            >
-              Para comércios
-            </a>
-            <a
               href="/busca"
               className="text-primary font-semibold hover:text-primary/80 transition"
             >
               Buscar Serviços 🔍
             </a>
-            <a
-              href="/parceiros"
+            <button
+              onClick={() => {
+                window.location.href = "/#cadastro";
+              }}
               className="text-zinc-400 hover:text-white transition font-semibold"
             >
-              Seja um Parceiro ✦
-            </a>
+              Anunciar meu negócio ✦
+            </button>
           </nav>
 
           {userProfile ? (
@@ -193,12 +183,21 @@ export default function ConhecerApp() {
               Olá, {userProfile.name?.split(" ")[0] || "Minha Conta"}
             </Button>
           ) : (
-            <Button
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-              onClick={() => (window.location.href = "/parceiro")}
-            >
-              Entrar
-            </Button>
+            <div className="hidden md:flex items-center gap-3">
+              <Button
+                variant="ghost"
+                className="border border-zinc-800 text-white hover:bg-zinc-900 rounded-xl px-5 h-10 text-xs"
+                onClick={() => (window.location.href = "/parceiro")}
+              >
+                Entrar
+              </Button>
+              <Button
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                onClick={() => (window.location.href = "/parceiro")}
+              >
+                Criar Conta
+              </Button>
+            </div>
           )}
         </div>
       </header>

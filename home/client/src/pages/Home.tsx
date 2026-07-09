@@ -488,24 +488,21 @@ export default function Home() {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
-            <a
-              href="/parceiros"
+            <button
+              onClick={() =>
+                document
+                  .getElementById("cadastro")
+                  ?.scrollIntoView({ behavior: "smooth", block: "center" })
+              }
               className="text-muted-foreground hover:text-white transition"
             >
-              Seja um parceiro
-            </a>
+              Anunciar meu negócio
+            </button>
             <a
-              href="/parceiros#indicacao"
+              href="/indique-e-ganhe"
               className="text-muted-foreground hover:text-white transition"
             >
               Indique e ganhe
-            </a>
-            <a
-              href="/busca?filter=favorites"
-              className="text-muted-foreground hover:text-white transition flex items-center gap-1.5"
-            >
-              <Heart className="h-4 w-4" />
-              <span>Favoritos</span>
             </a>
             {userProfile ? (
               <Button
@@ -524,14 +521,10 @@ export default function Home() {
                   Entrar
                 </Button>
                 <Button
-                  onClick={() => {
-                    document
-                      .getElementById("cadastro")
-                      ?.scrollIntoView({ behavior: "smooth", block: "center" });
-                  }}
+                  onClick={() => (window.location.href = "/parceiro")}
                   className="bg-primary text-primary-foreground hover:bg-primary/95 font-semibold rounded-xl px-5 h-10 text-xs transition"
                 >
-                  Cadastre-se
+                  Criar Conta
                 </Button>
               </>
             )}
@@ -550,27 +543,23 @@ export default function Home() {
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-zinc-900 bg-background/95 backdrop-blur-sm py-4 px-6 space-y-4 animate-in slide-in-from-top duration-200">
             <nav className="flex flex-col gap-3">
-              <a 
-                href="/parceiros" 
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-muted-foreground hover:text-white py-2 text-base font-semibold border-b border-zinc-900"
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  document
+                    .getElementById("cadastro")
+                    ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                }}
+                className="text-muted-foreground hover:text-white py-2 text-base font-semibold border-b border-zinc-900 text-left"
               >
-                Seja um parceiro
-              </a>
-              <a 
-                href="/parceiros#indicacao" 
+                Anunciar meu negócio
+              </button>
+              <a
+                href="/indique-e-ganhe"
                 onClick={() => setMobileMenuOpen(false)}
                 className="text-muted-foreground hover:text-white py-2 text-base font-semibold border-b border-zinc-900"
               >
                 Indique e ganhe
-              </a>
-              <a 
-                href="/busca?filter=favorites" 
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-primary py-2 text-base font-semibold flex items-center gap-2"
-              >
-                <Heart className="h-4.5 w-4.5 fill-current" />
-                <span>Favoritos</span>
               </a>
             </nav>
             <div className="flex flex-col gap-3 pt-2">
@@ -599,13 +588,11 @@ export default function Home() {
                   <Button
                     onClick={() => {
                       setMobileMenuOpen(false);
-                      document
-                        .getElementById("cadastro")
-                        .scrollIntoView({ behavior: "smooth", block: "center" });
+                      window.location.href = "/parceiro";
                     }}
                     className="w-full text-center bg-primary text-primary-foreground hover:bg-primary/95 font-bold rounded-xl py-3 text-sm transition"
                   >
-                    Cadastre-se
+                    Criar Conta
                   </Button>
                 </>
               )}
@@ -2022,16 +2009,20 @@ export default function Home() {
                   </a>
                 </li>
                 <li>
-                  <a
-                    href="/parceiros"
-                    className="text-primary hover:text-primary/80 transition font-semibold"
+                  <button
+                    onClick={() =>
+                      document
+                        .getElementById("cadastro")
+                        ?.scrollIntoView({ behavior: "smooth", block: "center" })
+                    }
+                    className="text-primary hover:text-primary/80 transition font-semibold text-left"
                   >
-                    Seja um Parceiro ✦
-                  </a>
+                    Anunciar meu negócio ✦
+                  </button>
                 </li>
                 <li>
                   <a
-                    href="/indique"
+                    href="/indique-e-ganhe"
                     className="text-zinc-400 hover:text-foreground transition"
                   >
                     Indique e Ganhe ✦
