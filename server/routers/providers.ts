@@ -18,6 +18,7 @@ import {
 import { eq, or, ilike, and, gte, lte, ne, desc, asc, sql, count } from "drizzle-orm";
 import { getReviewsByProfessional as getMockReviewsByProfessional } from "../../data/mock";
 import { geocodeAddress } from "../geocoding";
+import { getProvidersBenefitsMap } from "../../lib/plan-benefits";
 
 // Schema for admin provider create/update
 const adminProviderSchema = z.object({
@@ -53,7 +54,7 @@ const adminProviderSchema = z.object({
   topBadge: z.string().nullable().optional(),
   popularServices: z.union([z.string(), z.array(z.string())]).nullable().optional(),
   tags: z.union([z.string(), z.array(z.string())]).nullable().optional(),
-  workingHours: z.union([z.string(), z.record(z.string())]).nullable().optional(),
+  workingHours: z.union([z.string(), z.any()]).nullable().optional(),
   hasCatalog: z.boolean().optional(),
 });
 
@@ -720,15 +721,7 @@ export const providersRouter = router({
         orderByExprs.push(asc(providers.name));
       } else {
         // relevance: Destaques/Premium primeiro, depois displayOrder/distância
-        orderByExprs.push(
-          desc(
-            sql`CASE WHEN ${providers.plan} IN ('premium', 'annual') THEN 1 ELSE 0 END`,
-          ),
-          asc(providers.displayOrder),
-        );
-        if (hasCoords) {
-          orderByExprs.push(asc(distanceSqlExpr));
-        }
+        // We'll sort post-query using benefit keys
       }
 
       queryBuilder.orderBy(...orderByExprs);
@@ -750,6 +743,29 @@ export const providersRouter = router({
           distanceStr,
         };
       });
+
+      // For relevance sort, reorder by featured_search benefit
+      if (sortBy === "relevance" || !sortBy) {
+        const providerIds = mapped.map((r) => r.id);
+        const benefitsMap = await getProvidersBenefitsMap(dbInstance, providerIds);
+
+        mapped.sort((a, b) => {
+          const aFeatured = benefitsMap.get(a.id)?.has("featured_search") ? 1 : 0;
+          const bFeatured = benefitsMap.get(b.id)?.has("featured_search") ? 1 : 0;
+          if (bFeatured !== aFeatured) return bFeatured - aFeatured;
+
+          // Secondary sort by displayOrder
+          if (a.displayOrder !== b.displayOrder) return a.displayOrder - b.displayOrder;
+
+          // Tertiary sort by distance if available
+          if (a.distanceKm !== undefined && b.distanceKm !== undefined) {
+            return a.distanceKm - b.distanceKm;
+          }
+
+          return 0;
+        });
+      }
+
       return sanitizeProvidersForUser(mapped, ctx.user);
     }),
 
@@ -1369,7 +1385,7 @@ export const providersRouter = router({
     });
   }),
 
-  update: adminWriteProcedure.input(adminProviderSchema).mutation(async ({ input }) => {
+  update: adminWriteProcedure.input(adminProviderSchema.extend({ id: z.string() })).mutation(async ({ input }) => {
     const { id, ...data } = input;
     const dbInstance = await db.getDb();
     if (dbInstance) {

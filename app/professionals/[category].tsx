@@ -98,7 +98,8 @@ function dbToProfessional(
     category: p.category,
     categoryId: p.categoryId || "",
     type:
-      p.plan === "premium" || p.plan === "monthly" || p.plan === "annual"
+      p.benefitKeys?.includes("premium_badge") ||
+      p.benefitKeys?.includes("featured_search")
         ? "PREMIUM"
         : "FREE",
     rating: p.rating || 0,

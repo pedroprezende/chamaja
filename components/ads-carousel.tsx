@@ -66,7 +66,7 @@ export function AdsCarousel({ ads }: AdsCarouselProps) {
   if (ads.length === 0) return null;
 
   return (
-    <View>
+    <View style={[styles.container, { width: CARD_WIDTH }]}>
       <ScrollView
         ref={scrollRef}
         horizontal
@@ -121,7 +121,11 @@ export function AdsCarousel({ ads }: AdsCarouselProps) {
       {ads.length > 1 && (
         <View style={styles.dots}>
           {ads.map((_, i) => (
-            <Pressable key={i} onPress={() => scrollToIndex(i)}>
+            <Pressable 
+              key={i} 
+              onPress={() => scrollToIndex(i)}
+              style={styles.dotPressable}
+            >
               <View
                 style={[styles.dot, i === activeIndex && styles.dotActive]}
               />
@@ -163,6 +167,10 @@ export function AdsCarousel({ ads }: AdsCarouselProps) {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    position: "relative",
+    alignSelf: "center",
+  },
   card: {
     borderRadius: 16,
     overflow: "hidden",
@@ -184,6 +192,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
     gap: 6,
+  },
+  dotPressable: {
+    padding: 4,
+    ...Platform.select({
+      web: {
+        cursor: "pointer",
+      },
+    }),
   },
   dot: {
     width: 6,
@@ -211,6 +227,11 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
     zIndex: 10,
+    ...Platform.select({
+      web: {
+        cursor: "pointer",
+      },
+    }),
   },
   arrowLeft: {
     left: 8,

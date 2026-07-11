@@ -13,16 +13,17 @@ import { useState } from "react";
 
 import { ScreenContainer } from "@/components/screen-container";
 import {
-  premiumPlans,
   upgradeToPremium,
   getProfessionalById,
 } from "@/data/mock";
+import { trpc } from "@/lib/trpc";
 
 export default function ProfessionalPlansScreen() {
   const router = useRouter();
   const { professionalId } = useLocalSearchParams<{ professionalId: string }>();
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { data: premiumPlans, isLoading: plansLoading } = trpc.plans.list.useQuery();
 
   const professional = professionalId
     ? getProfessionalById(professionalId)
@@ -65,7 +66,19 @@ export default function ProfessionalPlansScreen() {
     }
   };
 
-  const plan = premiumPlans.find((p) => p.id === selectedPlan);
+  const plan = premiumPlans?.find((p) => p.id === selectedPlan);
+
+  if (plansLoading) {
+    return (
+      <ScreenContainer
+        containerClassName="bg-[#F5F5F5]"
+        className="items-center justify-center"
+      >
+        <ActivityIndicator size="large" color="#25D366" />
+        <Text style={{ marginTop: 12 }}>Carregando planos...</Text>
+      </ScreenContainer>
+    );
+  }
 
   return (
     <ScreenContainer containerClassName="bg-[#F5F5F5]" className="">
@@ -98,7 +111,7 @@ export default function ProfessionalPlansScreen() {
 
           {/* Plans */}
           <View style={styles.plansContainer}>
-            {premiumPlans.map((p) => (
+            {premiumPlans?.map((p) => (
               <Pressable
                 key={p.id}
                 style={({ pressed }) => [
@@ -110,16 +123,16 @@ export default function ProfessionalPlansScreen() {
                   setSelectedPlan(selectedPlan === p.id ? null : p.id)
                 }
               >
-                {p.period === "annual" && (
+                {p.isFeatured && (
                   <View style={styles.saveBadge}>
-                    <Text style={styles.saveBadgeText}>Economize 50%</Text>
+                    <Text style={styles.saveBadgeText}>RECOMENDADO</Text>
                   </View>
                 )}
 
                 <View style={styles.planHeader}>
                   <View>
                     <Text style={styles.planName}>{p.name}</Text>
-                    <Text style={styles.planPeriod}>{p.description}</Text>
+                    {p.description ? <Text style={styles.planPeriod}>{p.description}</Text> : null}
                   </View>
                   <MaterialIcons
                     name={
@@ -133,10 +146,8 @@ export default function ProfessionalPlansScreen() {
                 </View>
 
                 <View style={styles.priceSection}>
-                  <Text style={styles.price}>R$ {p.price.toFixed(2)}</Text>
-                  <Text style={styles.period}>
-                    {p.period === "monthly" ? "/mês" : "/ano"}
-                  </Text>
+                  <Text style={styles.price}>R$ {p.monthlyPrice.toFixed(2)}</Text>
+                  <Text style={styles.period}>/mês</Text>
                 </View>
 
                 {selectedPlan === p.id && (
@@ -144,14 +155,14 @@ export default function ProfessionalPlansScreen() {
                     <Text style={styles.benefitsTitle}>
                       Benefícios inclusos:
                     </Text>
-                    {p.benefits.map((benefit, idx) => (
+                    {p.benefits?.map((benefit: any, idx: number) => (
                       <View key={idx} style={styles.benefitItem}>
                         <MaterialIcons
                           name="check-circle"
                           size={16}
                           color="#25D366"
                         />
-                        <Text style={styles.benefitText}>{benefit}</Text>
+                        <Text style={styles.benefitText}>{benefit.name}</Text>
                       </View>
                     ))}
                   </View>

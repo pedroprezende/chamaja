@@ -449,7 +449,13 @@ export default function AdminPaymentsScreen() {
                         <View style={styles.subDetailRow}>
                           <Text style={styles.detailLabel}>Plano atual:</Text>
                           <Text style={styles.detailValue}>
-                            {prov.plan === "annual" ? "Anual" : "Mensal"}
+                            {prov.billingCycle === "annual"
+                              ? "Anual"
+                              : prov.billingCycle === "semiannual"
+                                ? "Semestral"
+                                : prov.billingCycle === "quarterly"
+                                  ? "Trimestral"
+                                  : "Mensal"}
                           </Text>
                         </View>
                         <View style={styles.subDetailRow}>

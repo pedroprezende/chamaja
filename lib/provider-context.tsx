@@ -26,6 +26,9 @@ export interface ProviderProfile {
   coverThumbnailUri?: string;
   description: string;
   plan: PlanType;
+  planId?: string | null;
+  planStatus?: string | null;
+  billingCycle?: string | null;
   planExpiresAt: string | null;
   isActive: boolean;
   createdAt: string;
@@ -41,6 +44,7 @@ export interface ProviderProfile {
   status?: string;
   businessType?: string;
   deliveryTime?: string | null;
+  benefitKeys: string[];
 }
 
 export interface ProviderService {

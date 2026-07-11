@@ -9,11 +9,55 @@ import {
   timestamp,
   real,
   index,
+  jsonb,
+  uuid,
 } from "drizzle-orm/pg-core";
 
 // ── Enums ─────────────────────────────────────────────────────────────────────
 export const userRoleEnum = pgEnum("user_role", ["user", "admin"]);
 export const planEnum = pgEnum("plan_type", ["monthly", "annual"]);
+
+// ── Plans (Gestão de Planos) ──────────────────────────────────────────────────
+export const plans = pgTable("plans", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  monthlyPrice: real("monthly_price").notNull().default(0),
+  quarterlyPrice: real("quarterly_price").notNull().default(0),
+  semiannualPrice: real("semiannual_price").notNull().default(0),
+  annualPrice: real("annual_price").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  displayOrder: integer("display_order").notNull().default(0),
+  isFeatured: boolean("is_featured").notNull().default(false),
+  badgeColor: varchar("badge_color", { length: 50 }),
+  applyOnlyToNew: boolean("apply_only_to_new").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const planBenefits = pgTable("plan_benefits", {
+  id: serial("id").primaryKey(),
+  planId: uuid("plan_id").notNull().references(() => plans.id, { onDelete: "cascade" }),
+  key: varchar("key", { length: 100 }).notNull(), // Structured benefit key (e.g. "verified_badge")
+  name: varchar("name", { length: 255 }).notNull(), // Display label (human-readable)
+  displayOrder: integer("display_order").notNull().default(0),
+});
+
+export const planPriceHistory = pgTable("plan_price_history", {
+  id: serial("id").primaryKey(),
+  planId: uuid("plan_id").notNull().references(() => plans.id, { onDelete: "cascade" }),
+  adminId: varchar("admin_id", { length: 64 }).notNull(),
+  oldValues: jsonb("old_values").notNull(),
+  newValues: jsonb("new_values").notNull(),
+  changedAt: timestamp("changed_at").defaultNow().notNull(),
+});
+
+export type Plan = typeof plans.$inferSelect;
+export type InsertPlan = typeof plans.$inferInsert;
+export type PlanBenefit = typeof planBenefits.$inferSelect;
+export type InsertPlanBenefit = typeof planBenefits.$inferInsert;
+export type PlanPriceHistory = typeof planPriceHistory.$inferSelect;
+export type InsertPlanPriceHistory = typeof planPriceHistory.$inferInsert;
 
 // ── Users ─────────────────────────────────────────────────────────────────────
 export const users = pgTable("users", {
@@ -127,7 +171,10 @@ export const providers = pgTable(
     neighborhood: varchar("neighborhood", { length: 255 }),
     cep: varchar("cep", { length: 20 }),
     phone: varchar("phone", { length: 20 }),
-    plan: varchar("plan", { length: 20 }),
+    plan: varchar("plan", { length: 20 }), // LEGACY: keep for now
+    planId: uuid("plan_id").references(() => plans.id, { onDelete: "set null" }),
+    billingCycle: varchar("billing_cycle", { length: 50 }), // 'monthly', 'quarterly', 'semiannual', 'annual'
+    lockedPrice: real("locked_price"),
     planExpiresAt: timestamp("plan_expires_at"),
     services: text("services"), // Using text for JSON stringified services to match StoredProvider easily
     serviceId: varchar("service_id", { length: 64 }),
@@ -146,6 +193,8 @@ export const providers = pgTable(
     longitude: real("longitude"),
     coverUri: text("cover_uri"),
     coverThumbnailUri: text("cover_thumbnail_uri"),
+    planStatus: varchar("plan_status", { length: 50 }).default("gratuito"),
+    planStartedAt: timestamp("plan_started_at"),
     isVerified: boolean("is_verified").default(false).notNull(),
     hasCatalog: boolean("has_catalog").default(false).notNull(),
     onlineStatus: boolean("online_status").default(false).notNull(),
@@ -331,7 +380,8 @@ export const payments = pgTable("pagamentos", {
   prestadorId: varchar("prestador_id", { length: 64 })
     .notNull()
     .references(() => providers.id, { onDelete: "cascade" }),
-  plano: varchar("plano", { length: 20 }).notNull(), // 'mensal' / 'anual'
+  plano: varchar("plano", { length: 20 }).notNull(), // 'mensal' / 'anual' (LEGACY)
+  planId: uuid("plan_id").references(() => plans.id, { onDelete: "set null" }), // NEW: FK to plans
   valor: real("valor").notNull(),
   dataPagamento: timestamp("data_pagamento").notNull(),
   metodo: varchar("metodo", { length: 50 }).notNull(), // 'pix'

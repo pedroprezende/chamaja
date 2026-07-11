@@ -57,6 +57,38 @@ export default function Home() {
   // Dynamic featured ads from app's database
   const [featuredAdsList, setFeaturedAdsList] = useState<any[]>([]);
   const [isLoadingFeaturedAds, setIsLoadingFeaturedAds] = useState(true);
+  const [currentAdIndex, setCurrentAdIndex] = useState(0);
+
+  const adsToRender = useMemo(() => {
+    return featuredAdsList.length > 0 ? featuredAdsList : [
+      {
+        id: "mock-ad-japa",
+        providerId: "mock-ad-japa",
+        providerName: "Pizzaria Japá",
+        title: "Alimentação",
+        description: "A pizzaria mais querida da região. Venha experimentar o melhor rodízio e pizzas gourmet com borda recheada de Bragança Paulista.",
+        imageUrl: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=1200&q=80",
+        whatsapp: "11988888888"
+      },
+      {
+        id: "mock-ad-clinica",
+        providerId: "mock-ad-clinica",
+        providerName: "Dr. Heron Rocha - Saúde",
+        title: "Saúde",
+        description: "Atendimento médico domiciliar de excelência. Check-ups preventivos, exames e consultas completas com cuidado e dedicação.",
+        imageUrl: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=1200&q=80",
+        whatsapp: "11977777777"
+      }
+    ];
+  }, [featuredAdsList]);
+
+  useEffect(() => {
+    if (adsToRender.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentAdIndex((prev) => (prev + 1) % adsToRender.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [adsToRender]);
 
   useEffect(() => {
     const token = localStorage.getItem("bp_session_token");
@@ -797,18 +829,23 @@ export default function Home() {
           </div>
 
           {/* Banner Slider Container */}
-          <div className="flex gap-6 overflow-x-auto pb-4 pt-1 scrollbar-none no-scrollbar snap-x snap-mandatory w-full">
-            {isLoadingFeaturedAds ? (
-              // Loading skeletons
-              <div className="w-full max-w-4xl mx-auto h-[160px] md:h-[250px] bg-zinc-950/60 border border-zinc-900 rounded-2xl animate-pulse"></div>
-            ) : featuredAdsList.length > 0 ? (
-              featuredAdsList.map((p) => {
-                const linkUrl = `/perfil/${p.providerId || ""}`;
+          <div className="relative overflow-hidden w-full rounded-2xl border border-zinc-900 bg-zinc-950">
+            <div 
+              className="flex transition-transform duration-500 ease-in-out w-full"
+              style={{ transform: `translateX(-${currentAdIndex * 100}%)` }}
+            >
+              {isLoadingFeaturedAds ? (
+                <div className="w-full min-w-[100%] h-[160px] md:h-[250px] bg-zinc-950/60 border border-zinc-900 rounded-2xl animate-pulse"></div>
+              ) : adsToRender.map((p) => {
+                const linkUrl = p.id.startsWith("mock-ad") ? "/busca" : `/perfil/${p.providerId || ""}`;
+                const isMock = p.id.startsWith("mock-ad");
+                const cleanPhone = p.whatsapp;
+                const waMessage = encodeURIComponent(`Olá ${p.providerName}, vi seu destaque no XamaJá e gostaria de realizar um pedido/combinar serviço.`);
 
                 return (
                   <div
                     key={p.id}
-                    className="w-full max-w-4xl mx-auto min-w-[100%] aspect-[16/6] md:aspect-[21/7] min-h-[160px] md:min-h-[250px] rounded-2xl overflow-hidden border border-zinc-900 bg-zinc-950 relative snap-start group shadow-2xl transition duration-500"
+                    className="w-full min-w-[100%] aspect-[16/6] md:aspect-[21/7] min-h-[160px] md:min-h-[250px] overflow-hidden bg-zinc-950 relative snap-start group shadow-2xl transition duration-500"
                   >
                     {/* Background visual cover image */}
                     <img
@@ -872,110 +909,51 @@ export default function Home() {
                         >
                           Ver Detalhes
                         </Button>
+                        {isMock && cleanPhone && (
+                          <Button
+                            onClick={() => window.open(`https://wa.me/55${cleanPhone}?text=${waMessage}`, "_blank")}
+                            className="flex-1 md:flex-initial bg-[#25D366] hover:bg-[#20ba5a] text-white font-black text-[10px] md:text-xs px-4 h-9 rounded-lg transition-all shadow-xl flex items-center justify-center gap-1.5"
+                          >
+                            <MessageSquare className="w-4 h-4" />
+                            <span>WhatsApp</span>
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>
                 );
-              })
-            ) : (
-              // Fallback Mock ads matching app screenshot layout (e.g. Pizzaria Japá storefront advertisement)
-              [
-                {
-                  id: "mock-ad-japa",
-                  providerId: "mock-ad-japa",
-                  providerName: "Pizzaria Japá",
-                  title: "Alimentação",
-                  description: "A pizzaria mais querida da região. Venha experimentar o melhor rodízio e pizzas gourmet com borda recheada de Bragança Paulista.",
-                  imageUrl: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=1200&q=80",
-                  whatsapp: "11988888888"
-                },
-                {
-                  id: "mock-ad-clinica",
-                  providerId: "mock-ad-clinica",
-                  providerName: "Dr. Heron Rocha - Saúde",
-                  title: "Saúde",
-                  description: "Atendimento médico domiciliar de excelência. Check-ups preventivos, exames e consultas completas com cuidado e dedicação.",
-                  imageUrl: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=1200&q=80",
-                  whatsapp: "11977777777"
-                }
-              ].map((p) => {
-                const linkUrl = "/busca";
-                const cleanPhone = p.whatsapp;
-                const waMessage = encodeURIComponent(`Olá ${p.providerName}, vi seu destaque no XamaJá e gostaria de realizar um pedido/combinar serviço.`);
+              })}
+            </div>
 
-                return (
-                  <div
-                    key={p.id}
-                    className="w-full max-w-4xl mx-auto min-w-[100%] aspect-[16/6] md:aspect-[21/7] min-h-[160px] md:min-h-[250px] rounded-2xl overflow-hidden border border-zinc-900 bg-zinc-950 relative snap-start group shadow-2xl transition duration-500"
-                  >
-                    <img
-                      src={p.imageUrl}
-                      alt={p.providerName}
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-102 transition duration-700 pointer-events-none"
+            {/* Navigation buttons and indicators */}
+            {adsToRender.length > 1 && (
+              <>
+                <button 
+                  onClick={() => setCurrentAdIndex((prev) => (prev - 1 + adsToRender.length) % adsToRender.length)}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-30 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full hidden md:flex items-center justify-center transition-colors"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button 
+                  onClick={() => setCurrentAdIndex((prev) => (prev + 1) % adsToRender.length)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-30 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full hidden md:flex items-center justify-center transition-colors"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+
+                {/* Dot Indicators */}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex gap-2">
+                  {adsToRender.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentAdIndex(idx)}
+                      className={`w-2 h-2 rounded-full transition-all duration-300 ${currentAdIndex === idx ? 'bg-primary w-4' : 'bg-white/40'}`}
                     />
-
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent z-10 pointer-events-none"></div>
-                    <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-transparent z-10 pointer-events-none"></div>
-
-                    <div className="absolute top-4 right-4 z-20">
-                      <span className="text-[9px] font-black tracking-widest bg-yellow-500 text-black border border-yellow-500 px-2.5 py-0.5 rounded-md uppercase shadow-lg">
-                        Patrocinado
-                      </span>
-                    </div>
-
-                    <div className="absolute inset-x-0 bottom-0 p-4 md:p-6 z-20 flex flex-col md:flex-row md:items-end justify-between gap-4">
-                      <div className="flex items-center gap-3 md:gap-4 min-w-0">
-                        <div className="w-12 h-12 md:w-16 md:h-16 rounded-full border-3 border-zinc-950 bg-black overflow-hidden flex-shrink-0 shadow-2xl">
-                          <img
-                            src="https://images.unsplash.com/photo-1590947132387-155cc02f3212?w=100&q=80"
-                            alt={p.providerName}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-
-                        <div className="space-y-1 min-w-0">
-                          <span className="inline-block text-[8px] font-black text-primary uppercase tracking-widest bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded">
-                            {p.title}
-                          </span>
-                          
-                          <h3 className="text-base md:text-2xl font-black text-white leading-none truncate drop-shadow-md">
-                            {p.providerName}
-                          </h3>
-
-                          <p className="text-zinc-300 text-[10px] md:text-xs line-clamp-1 max-w-lg font-medium leading-relaxed drop-shadow-md">
-                            {p.description}
-                          </p>
-
-                          <div className="flex items-center gap-2 text-zinc-400 text-[10px] md:text-xs">
-                            <span className="flex items-center gap-0.5 text-yellow-500 font-bold">
-                              ★ <span className="text-white">5.0</span>
-                            </span>
-                            <span>•</span>
-                            <span className="truncate">Região local</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-2 flex-shrink-0 w-full md:w-auto">
-                        <Button
-                          onClick={() => window.location.href = linkUrl}
-                          className="flex-1 md:flex-initial bg-white hover:bg-zinc-200 text-black font-black text-[10px] md:text-xs px-4 h-9 rounded-lg transition-all shadow-xl"
-                        >
-                          Ver Detalhes
-                        </Button>
-                        <Button
-                          onClick={() => window.open(`https://wa.me/55${cleanPhone}?text=${waMessage}`, "_blank")}
-                          className="flex-1 md:flex-initial bg-[#25D366] hover:bg-[#20ba5a] text-white font-black text-[10px] md:text-xs px-4 h-9 rounded-lg transition-all shadow-xl flex items-center justify-center gap-1.5"
-                        >
-                          <MessageSquare className="w-4 h-4" />
-                          <span>WhatsApp</span>
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
+                  ))}
+                </div>
+              </>
             )}
+          </div>
           </div>
         </div>
       </section>
@@ -1095,7 +1073,7 @@ export default function Home() {
                 const coverImage = p.coverUri || categoryImages[p.categoryId || ""] || "https://images.unsplash.com/photo-1521791136368-1a868270f63b?w=600&q=80";
                 const logoImage = p.avatarUri || categoryLogos[p.categoryId || ""] || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80";
                 const isVerified = p.isVerified === true;
-                const isPremium = p.plan === "premium" || p.plan === "annual";
+                const isPremium = p.benefitKeys?.includes("premium_badge") || p.benefitKeys?.includes("featured_search");
                 const statusLabel = p.onlineStatus === true ? "Aberto agora" : "Fechado";
                 const linkUrl = `/perfil/${p.id}`;
                 const isFav = !!favorites[p.id];
@@ -1272,7 +1250,7 @@ export default function Home() {
                 filteredNearbyProviders.map((p) => {
                   const isSelected = p.id === selectedProviderId;
                   const isFav = !!favorites[p.id];
-                  const isPremium = p.plan === "premium" || p.plan === "annual";
+                  const isPremium = p.benefitKeys?.includes("premium_badge") || p.benefitKeys?.includes("featured_search");
                   const statusLabel = p.onlineStatus === true ? "Aberto agora" : "Fechado";
 
                   return (

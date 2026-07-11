@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { DashboardHome } from "./DashboardHome";
+import { PlansManagement } from "./PlansManagement";
 import { supabase } from "../supabase";
 import {
   Users,
@@ -31,6 +33,7 @@ import {
   Heart,
   Edit,
   Save,
+  Rocket,
   Image as ImageIcon,
   Settings,
   Shield,
@@ -414,6 +417,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     | "financial"
     | "settings"
     | "referrals"
+    | "plans"
   >("dashboard");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -498,9 +502,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
     "all" | "active" | "past_due" | "canceled"
   >("all");
 
-  // Dashboard period filter: hoje, 7dias, 30dias, 1ano
+  // Dashboard period filter: hoje, 7dias, 30dias, 90dias, 1ano
   const [dashboardPeriod, setDashboardPeriod] = useState<
-    "hoje" | "7dias" | "30dias" | "1ano"
+    "hoje" | "7dias" | "30dias" | "90dias" | "1ano"
   >("30dias");
 
   // User detail modal states
@@ -555,9 +559,23 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [editAddress, setEditAddress] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editPlan, setEditPlan] = useState("");
+  const [editPlanId, setEditPlanId] = useState<string | null>(null);
+  const [editPlanStatus, setEditPlanStatus] = useState("gratuito");
+  const [editBillingCycle, setEditBillingCycle] = useState("monthly");
   const [editPlanExpiresAt, setEditPlanExpiresAt] = useState("");
+  const [editPlanStartedAt, setEditPlanStartedAt] = useState("");
   const [editBusinessType, setEditBusinessType] = useState("servicos");
   const [editDeliveryTime, setEditDeliveryTime] = useState("");
+  const [editIsVerified, setEditIsVerified] = useState(false);
+  const [editTopBadge, setEditTopBadge] = useState<string | null>(null);
+  const [editDestaque, setEditDestaque] = useState(false);
+  const [isAdLoading, setIsAdLoading] = useState(false);
+  const [existingAd, setExistingAd] = useState<any | null>(null);
+  const [adTitle, setAdTitle] = useState("");
+  const [adDescription, setAdDescription] = useState("");
+  const [adImageUrl, setAdImageUrl] = useState("");
+  const [adIsFeatured, setAdIsFeatured] = useState(true);
+  const [plansList, setPlansList] = useState<any[]>([]);
 
   // Promote custom states
   const [promoBusinessType, setPromoBusinessType] = useState("servicos");
@@ -667,6 +685,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
       if (partnersError)
         console.warn("Erro ao buscar parceiros:", partnersError);
 
+      // Fetch plans
+      const { data: plans, error: plansError } = await supabase
+        .from("plans")
+        .select("*, benefits:plan_benefits(*)")
+        .eq("is_active", true)
+        .order("display_order", { ascending: true });
+
+      if (plansError)
+        console.warn("Erro ao buscar planos:", plansError);
+
       setUsersList(users || []);
       setProvidersList(providers || []);
       setPaymentsList(payments || []);
@@ -679,6 +707,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       setCategoriesList(categories || []);
       setReferralsList(referrals || []);
       setPartnersList(partners || []);
+      setPlansList(plans || []);
 
       // Initialize settings form states with current database values
       if (settings) {
@@ -1036,12 +1065,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
     setEditAddress(provider.address || "");
     setEditDescription(provider.description || "");
     setEditPlan(provider.plan || "free");
+    setEditPlanId(provider.plan_id || null);
+    setEditPlanStatus(provider.plan_status || "gratuito");
+    setEditBillingCycle(provider.billing_cycle || "monthly");
     setEditPlanExpiresAt(
       provider.plan_expires_at ? provider.plan_expires_at.split("T")[0] : "",
+    );
+    setEditPlanStartedAt(
+      provider.plan_started_at ? provider.plan_started_at.split("T")[0] : "",
     );
     setEditHasCatalog(provider.has_catalog || false);
     setEditBusinessType(provider.business_type || "servicos");
     setEditDeliveryTime(provider.delivery_time || "");
+    setEditIsVerified(provider.is_verified || false);
+    setEditTopBadge(provider.top_badge || null);
+    setEditDestaque(provider.destaque || false);
+    setExistingAd(null);
+    setAdTitle(provider.category || "");
+    setAdImageUrl(provider.cover_thumbnail_uri || provider.avatar_thumbnail_uri || provider.avatar_uri || "");
+    setAdDescription("");
+    setAdIsFeatured(true);
 
     try {
       // 1. Fetch reviews
@@ -1084,6 +1127,38 @@ export const Dashboard: React.FC<DashboardProps> = ({
       if (permData) {
         setAdvertiserPermission(permData);
         setEditMaxServicos(permData.max_servicos);
+      }
+
+      // 5. Fetch associated featured ad (sponsorship banner)
+      setIsAdLoading(true);
+      const { data: ads } = await supabase
+        .from("featured_ads")
+        .select("*");
+      if (ads) {
+        const assocAd = ads.find((a: any) => {
+          try {
+            if (a.description?.startsWith("{")) {
+              const parsed = JSON.parse(a.description);
+              return parsed.providerId === provider.id;
+            }
+          } catch (e) {}
+          return a.description === provider.id;
+        });
+        if (assocAd) {
+          setExistingAd(assocAd);
+          setAdTitle(assocAd.title || "");
+          setAdImageUrl(assocAd.image_url || "");
+          try {
+            if (assocAd.description?.startsWith("{")) {
+              setAdDescription(JSON.parse(assocAd.description).description || "");
+            } else {
+              setAdDescription("");
+            }
+          } catch (e) {
+            setAdDescription("");
+          }
+          setAdIsFeatured(assocAd.is_featured);
+        }
       }
 
       setAdvertiserReviews(reviews || []);
@@ -1135,13 +1210,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
           address: editAddress,
           description: editDescription,
           plan: editPlan,
+          plan_id: editPlanId,
+          plan_status: editPlanStatus,
+          billing_cycle: editBillingCycle,
           plan_expires_at: editPlanExpiresAt
             ? new Date(editPlanExpiresAt).toISOString()
+            : null,
+          plan_started_at: editPlanStartedAt
+            ? new Date(editPlanStartedAt).toISOString()
             : null,
           has_catalog: editHasCatalog,
           business_type: editBusinessType,
           delivery_time:
             editBusinessType === "alimentacao" ? editDeliveryTime : null,
+          is_verified: editIsVerified,
+          top_badge: editTopBadge,
         })
         .eq("id", selectedAdvertiser.id);
 
@@ -1174,13 +1257,117 @@ export const Dashboard: React.FC<DashboardProps> = ({
       alert("Informações do anunciante atualizadas com sucesso!");
       await logAdminActivity(
         "edit_advertiser",
-        `Informações do anunciante ${selectedAdvertiser.name} (ID: ${selectedAdvertiser.id}) editadas. Plano: ${editPlan}, Categoria: ${editCategory}`,
+        `Informações do anunciante ${selectedAdvertiser.name} (ID: ${selectedAdvertiser.id}) editadas. Plano: ${editPlan || "Gratuito"}, Status: ${editPlanStatus}, Ciclo: ${editBillingCycle}, Categoria: ${editCategory}`,
       );
       setIsEditing(false);
       await fetchData();
     } catch (err: any) {
       console.error("Erro ao salvar informações do anunciante:", err);
       alert(`Erro: ${err.message || "Não foi possível salvar as alterações."}`);
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  // Save or Update Featured Ad (Destaques em Evidência)
+  const handleSaveFeaturedAd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedAdvertiser) return;
+    setModalLoading(true);
+    try {
+      const combinedDescription = JSON.stringify({
+        providerId: selectedAdvertiser.id,
+        description: adDescription,
+      });
+
+      if (existingAd) {
+        // Update
+        const { error } = await supabase
+          .from("featured_ads")
+          .update({
+            title: adTitle,
+            image_url: adImageUrl,
+            description: combinedDescription,
+            is_featured: adIsFeatured,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existingAd.id);
+        if (error) throw error;
+        alert("Banner patrocinado atualizado com sucesso!");
+      } else {
+        // Create
+        // Get max order first
+        const { data: allAds } = await supabase.from("featured_ads").select("display_order");
+        const maxOrder = allAds && allAds.length > 0 ? Math.max(...allAds.map((a: any) => a.display_order || 0)) : -1;
+        const newId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
+        const { error } = await supabase
+          .from("featured_ads")
+          .insert({
+            id: newId,
+            title: adTitle,
+            provider_name: selectedAdvertiser.name,
+            image_url: adImageUrl,
+            description: combinedDescription,
+            is_featured: adIsFeatured,
+            display_order: maxOrder + 1,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+        if (error) throw error;
+        alert("Banner patrocinado criado com sucesso!");
+      }
+      
+      // Reload advertiser modal details
+      await handleSelectAdvertiser(selectedAdvertiser);
+    } catch (err: any) {
+      console.error("Erro ao salvar banner:", err);
+      alert(`Erro: ${err.message || "Não foi possível salvar o banner."}`);
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  // Delete Featured Ad
+  const handleDeleteFeaturedAd = async () => {
+    if (!existingAd) return;
+    if (!window.confirm("Tem certeza que deseja remover este anúncio patrocinado em evidência?")) return;
+    setModalLoading(true);
+    try {
+      const { error } = await supabase
+        .from("featured_ads")
+        .delete()
+        .eq("id", existingAd.id);
+      if (error) throw error;
+      alert("Banner patrocinado removido com sucesso!");
+      // Reload
+      await handleSelectAdvertiser(selectedAdvertiser);
+    } catch (err: any) {
+      console.error("Erro ao excluir banner:", err);
+      alert(`Erro: ${err.message || "Não foi possível excluir o banner."}`);
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  // Save "Destaques para você" status
+  const handleToggleDestaqueStatus = async (status: boolean) => {
+    if (!selectedAdvertiser) return;
+    setModalLoading(true);
+    try {
+      const { error } = await supabase
+        .from("providers")
+        .update({ destaque: status })
+        .eq("id", selectedAdvertiser.id);
+      if (error) throw error;
+      alert(`Prestador ${status ? 'adicionado aos' : 'removido dos'} Destaques para você!`);
+      // Update selected provider in local state
+      setSelectedAdvertiser({ ...selectedAdvertiser, destaque: status });
+      setEditDestaque(status);
+      await fetchData();
+    } catch (err: any) {
+      console.error("Erro ao atualizar destaque:", err);
+      alert(`Erro: ${err.message || "Não foi possível atualizar o status de destaque."}`);
     } finally {
       setModalLoading(false);
     }
@@ -1710,7 +1897,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const annualActive = providersList.filter(
       (p) => p.plan === "annual" && p.is_active,
     ).length;
-    const mrr = monthlyActive * 10 + (annualActive * 99.9) / 12;
+    // Use locked_price from each provider for accurate MRR
+    const mrr = providersList
+      .filter(p => p.plan_status === "ativo" && p.is_active)
+      .reduce((sum, p) => {
+        const monthly = p.billing_cycle === "annual"
+          ? (p.locked_price || 0) / 12
+          : (p.locked_price || 0);
+        return sum + monthly;
+      }, 0);
 
     let est = mrr;
     if (dashboardPeriod === "hoje") est = mrr / 30;
@@ -2039,10 +2234,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const isCom = p.category_id === "comercios";
     const type = isCom ? "comércio" : "prestador";
     const status = p.status || "ativo";
-    const isPremium = p.plan === "monthly" || p.plan === "annual";
-    const hasExpired = p.plan_expires_at
-      ? new Date(p.plan_expires_at) < new Date()
-      : true;
+    const isPremium = p.plan_status === "ativo";
+    const hasExpired = p.plan_status === "expirado";
 
     // Search check
     const matchesSearch =
@@ -2065,7 +2258,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     } else if (filterAdvertiserStatus === "suspensos") {
       matchesStatus = status === "suspenso";
     } else if (filterAdvertiserStatus === "vencidos") {
-      matchesStatus = isPremium && hasExpired;
+      matchesStatus = hasExpired;
     } else if (filterAdvertiserStatus === "premium") {
       matchesStatus = isPremium && !hasExpired;
     }
@@ -2406,6 +2599,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
               Configurações
             </button>
           </li>
+          <li
+            className={`sidebar-item ${activeTab === "plans" ? "active" : ""}`}
+          >
+            <button onClick={() => setActiveTab("plans")}>
+              <Award size={18} />
+              Planos
+            </button>
+          </li>
         </nav>
 
         <div className="sidebar-footer">
@@ -2442,6 +2643,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               {activeTab === "financial" && "Módulo Financeiro"}
               {activeTab === "settings" && "Configurações Administrativas"}
               {activeTab === "referrals" && "Controle de Indicações"}
+              {activeTab === "plans" && "Gestão de Planos e Assinaturas"}
             </h1>
             <p>
               {activeTab === "dashboard" &&
@@ -2458,43 +2660,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 "Controle de permissões, logs de atividades e parametrização geral do aplicativo"}
               {activeTab === "referrals" &&
                 "Painel administrativo de controle de parceiros e acompanhamento do status de leads indicados"}
+              {activeTab === "plans" &&
+                "Configure os planos, preços e benefícios oferecidos."}
             </p>
           </div>
 
           <div className="header-actions">
-            {activeTab === "dashboard" && (
-              <div className="filter-row" style={{ marginRight: "0.5rem" }}>
-                <button
-                  className={`btn-action ${dashboardPeriod === "hoje" ? "btn-action-reactivate" : "btn-logout"}`}
-                  style={{ width: "auto", padding: "0.4rem 0.8rem" }}
-                  onClick={() => setDashboardPeriod("hoje")}
-                >
-                  Hoje
-                </button>
-                <button
-                  className={`btn-action ${dashboardPeriod === "7dias" ? "btn-action-reactivate" : "btn-logout"}`}
-                  style={{ width: "auto", padding: "0.4rem 0.8rem" }}
-                  onClick={() => setDashboardPeriod("7dias")}
-                >
-                  7 Dias
-                </button>
-                <button
-                  className={`btn-action ${dashboardPeriod === "30dias" ? "btn-action-reactivate" : "btn-logout"}`}
-                  style={{ width: "auto", padding: "0.4rem 0.8rem" }}
-                  onClick={() => setDashboardPeriod("30dias")}
-                >
-                  30 Dias
-                </button>
-                <button
-                  className={`btn-action ${dashboardPeriod === "1ano" ? "btn-action-reactivate" : "btn-logout"}`}
-                  style={{ width: "auto", padding: "0.4rem 0.8rem" }}
-                  onClick={() => setDashboardPeriod("1ano")}
-                >
-                  1 Ano
-                </button>
-              </div>
-            )}
-
             <button
               className="btn-refresh"
               onClick={handleRefresh}
@@ -2512,424 +2683,29 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </header>
 
+        {/* PLANS TAB */}
+        {activeTab === "plans" && (
+          <PlansManagement />
+        )}
+
         {/* DASHBOARD TAB */}
         {activeTab === "dashboard" && (
-          <>
-            {/* KPI Cards Grid */}
-            <div
-              className="kpi-grid"
-              style={{
-                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-                marginBottom: "2rem",
-              }}
-            >
-              <div
-                className="kpi-card users"
-                style={{ cursor: "pointer" }}
-                onClick={() => setActiveTab("users")}
-              >
-                <div className="kpi-info">
-                  <span className="kpi-title">Total Usuários</span>
-                  <span className="kpi-value">{totalUsers}</span>
-                </div>
-                <div className="kpi-icon-wrapper">
-                  <Users size={22} />
-                </div>
-              </div>
-
-              <div
-                className="kpi-card providers"
-                style={{ cursor: "pointer" }}
-                onClick={() => {
-                  setActiveTab("advertisers");
-                  setFilterAdvertiserType("prestador");
-                }}
-              >
-                <div className="kpi-info">
-                  <span className="kpi-title">Total Prestadores</span>
-                  <span className="kpi-value">{totalProviders}</span>
-                </div>
-                <div className="kpi-icon-wrapper">
-                  <Briefcase size={22} />
-                </div>
-              </div>
-
-              <div
-                className="kpi-card commerce"
-                style={{ cursor: "pointer" }}
-                onClick={() => {
-                  setActiveTab("advertisers");
-                  setFilterAdvertiserType("comércio");
-                }}
-              >
-                <div className="kpi-info">
-                  <span className="kpi-title">Total Comércios</span>
-                  <span className="kpi-value">{totalCommerce}</span>
-                </div>
-                <div className="kpi-icon-wrapper">
-                  <Store size={22} />
-                </div>
-              </div>
-
-              <div className="kpi-card active-users">
-                <div className="kpi-info">
-                  <span className="kpi-title">Novos Hoje</span>
-                  <span className="kpi-value">{newUsersToday}</span>
-                </div>
-                <div className="kpi-icon-wrapper">
-                  <UserPlus size={22} />
-                </div>
-              </div>
-
-              <div className="kpi-card active-ads">
-                <div className="kpi-info">
-                  <span className="kpi-title">Cadastros Semana</span>
-                  <span className="kpi-value">{newRegistrationsWeek}</span>
-                </div>
-                <div className="kpi-icon-wrapper">
-                  <Calendar size={22} />
-                </div>
-              </div>
-
-              <div
-                className="kpi-card users"
-                style={{ background: "rgba(37, 211, 102, 0.03)" }}
-              >
-                <div className="kpi-info">
-                  <span
-                    className="kpi-title"
-                    style={{ color: "var(--accent-primary)" }}
-                  >
-                    Receita Estimada
-                  </span>
-                  <span
-                    className="kpi-value"
-                    style={{ fontSize: "1.6rem", color: "var(--text-primary)" }}
-                  >
-                    R${" "}
-                    {getEstimatedRevenue().toLocaleString("pt-BR", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </span>
-                </div>
-                <div
-                  className="kpi-icon-wrapper"
-                  style={{
-                    backgroundColor: "rgba(37, 211, 102, 0.15)",
-                    color: "var(--accent-primary)",
-                  }}
-                >
-                  <DollarSign size={22} />
-                </div>
-              </div>
-            </div>
-
-            {/* CHARTS GRID */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-                gap: "1.5rem",
-                marginBottom: "2rem",
-              }}
-            >
-              <div className="section-container" style={{ padding: "1.25rem" }}>
-                <SVGLineChart
-                  data={chartPoints.map((p) => ({
-                    label: p.label,
-                    value: p.users,
-                  }))}
-                  color="var(--accent-blue)"
-                  gradientId="grad-users"
-                  title="Crescimento de Usuários"
-                />
-              </div>
-
-              <div className="section-container" style={{ padding: "1.25rem" }}>
-                <SVGLineChart
-                  data={chartPoints.map((p) => ({
-                    label: p.label,
-                    value: p.providers,
-                  }))}
-                  color="var(--accent-primary)"
-                  gradientId="grad-providers"
-                  title="Crescimento de Prestadores"
-                />
-              </div>
-
-              <div className="section-container" style={{ padding: "1.25rem" }}>
-                <SVGLineChart
-                  data={chartPoints.map((p) => ({
-                    label: p.label,
-                    value: p.accesses,
-                  }))}
-                  color="var(--accent-purple)"
-                  gradientId="grad-accesses"
-                  title="Quantidade de Acessos (Tráfego)"
-                />
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
-                gap: "1.5rem",
-                marginBottom: "2.5rem",
-              }}
-            >
-              <div className="section-container">
-                <div className="section-header">
-                  <div className="section-title">
-                    <h2>Categorias Mais Procuradas</h2>
-                  </div>
-                </div>
-                <SVGBarChart
-                  data={topCategories}
-                  color="var(--accent-orange)"
-                  title="Termos de busca e categorias populares no aplicativo"
-                />
-              </div>
-
-              <div className="section-container">
-                <div className="section-header">
-                  <div className="section-title">
-                    <h2>Cidades com Mais Prestadores</h2>
-                  </div>
-                </div>
-                <SVGBarChart
-                  data={topCities}
-                  color="var(--accent-blue)"
-                  title="Cidades com maior densidade de profissionais registrados"
-                />
-              </div>
-            </div>
-
-            {/* Dashboard Widgets */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(450px, 1fr))",
-                gap: "2rem",
-              }}
-            >
-              <div className="section-container">
-                <div className="section-header">
-                  <div className="section-title">
-                    <h2>Últimos Usuários Cadastrados</h2>
-                  </div>
-                  <button
-                    className="theme-toggle-btn"
-                    style={{ width: "auto", padding: "0" }}
-                    onClick={() => setActiveTab("users")}
-                  >
-                    Ver todos <ArrowRight size={14} />
-                  </button>
-                </div>
-
-                <div className="table-wrapper">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Usuário</th>
-                        <th>Login</th>
-                        <th>Criado em</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recentUsers.map((u) => (
-                        <tr
-                          key={u.id}
-                          style={{ cursor: "pointer" }}
-                          onClick={() => handleSelectUser(u)}
-                        >
-                          <td>
-                            <div className="user-cell">
-                              <div
-                                className="user-avatar-small"
-                                style={{
-                                  backgroundColor:
-                                    u.role === "admin"
-                                      ? "var(--accent-purple)"
-                                      : "var(--accent-blue)",
-                                }}
-                              >
-                                {getInitials(u.name || u.email)}
-                              </div>
-                              <div>
-                                <div style={{ fontWeight: 600 }}>
-                                  {u.name || "Sem Nome"}
-                                </div>
-                                <div
-                                  style={{
-                                    fontSize: "0.75rem",
-                                    color: "var(--text-muted)",
-                                  }}
-                                >
-                                  {u.email}
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                          <td>
-                            <span
-                              className={`badge ${u.role === "admin" ? "badge-admin" : "badge-user"}`}
-                            >
-                              {u.login_method || "E-mail"}
-                            </span>
-                          </td>
-                          <td
-                            style={{
-                              fontSize: "0.8rem",
-                              color: "var(--text-secondary)",
-                            }}
-                          >
-                            {formatDate(u.created_at)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div className="section-container">
-                <div className="section-header">
-                  <div className="section-title">
-                    <h2>Últimos Profissionais / Lojas</h2>
-                  </div>
-                  <button
-                    className="theme-toggle-btn"
-                    style={{ width: "auto", padding: "0" }}
-                    onClick={() => {
-                      setActiveTab("advertisers");
-                      setSearchAdvertiser("");
-                    }}
-                  >
-                    Ver todos <ArrowRight size={14} />
-                  </button>
-                </div>
-
-                <div className="table-wrapper">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Nome</th>
-                        <th>Categoria</th>
-                        <th>Status / Plano</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recentProviders.map((p) => {
-                        const isCom = p.category_id === "comercios";
-                        const isPremium =
-                          p.plan === "monthly" || p.plan === "annual";
-                        const hasExpired = p.plan_expires_at
-                          ? new Date(p.plan_expires_at) < new Date()
-                          : true;
-
-                        return (
-                          <tr
-                            key={p.id}
-                            style={{ cursor: "pointer" }}
-                            onClick={() => handleSelectAdvertiser(p)}
-                          >
-                            <td>
-                              <div style={{ fontWeight: 600 }}>{p.name}</div>
-                              <div
-                                style={{
-                                  fontSize: "0.75rem",
-                                  color: "var(--text-muted)",
-                                }}
-                              >
-                                {p.city || "Sem Cidade"}
-                              </div>
-                            </td>
-                            <td>
-                              <span
-                                style={{
-                                  fontSize: "0.85rem",
-                                  color: "var(--text-secondary)",
-                                }}
-                              >
-                                {isCom
-                                  ? "Comércio"
-                                  : p.category || "Profissional"}
-                              </span>
-                            </td>
-                            <td>
-                              <div
-                                style={{
-                                  display: "flex",
-                                  gap: "0.25rem",
-                                  flexDirection: "column",
-                                  alignItems: "flex-start",
-                                }}
-                              >
-                                <span
-                                  className={`badge ${
-                                    p.is_active && status === "ativo"
-                                      ? "badge-active"
-                                      : status === "pendente"
-                                        ? "badge-inactive"
-                                        : "badge-inactive"
-                                  }`}
-                                  style={{
-                                    backgroundColor:
-                                      status === "suspenso"
-                                        ? "rgba(245, 158, 11, 0.15)"
-                                        : status === "pendente"
-                                          ? "rgba(59, 130, 246, 0.15)"
-                                          : undefined,
-                                    color:
-                                      status === "suspenso"
-                                        ? "var(--accent-orange)"
-                                        : status === "pendente"
-                                          ? "var(--accent-blue)"
-                                          : undefined,
-                                    borderColor:
-                                      status === "suspenso"
-                                        ? "rgba(245, 158, 11, 0.2)"
-                                        : status === "pendente"
-                                          ? "rgba(59, 130, 246, 0.2)"
-                                          : undefined,
-                                  }}
-                                >
-                                  {status === "suspenso"
-                                    ? "SUSPENSO"
-                                    : status === "pendente"
-                                      ? "PENDENTE"
-                                      : p.is_active
-                                        ? "ATIVO"
-                                        : "INATIVO"}
-                                </span>
-                                {isPremium && !hasExpired ? (
-                                  <span
-                                    className="badge badge-premium"
-                                    style={{
-                                      display: "inline-flex",
-                                      gap: "4px",
-                                    }}
-                                  >
-                                    <Award size={10} /> PREMIUM
-                                  </span>
-                                ) : (
-                                  <span className="badge badge-free">
-                                    GRATUITO
-                                  </span>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </>
+          <DashboardHome
+            adminUser={adminUser}
+            dashboardPeriod={dashboardPeriod}
+            setDashboardPeriod={setDashboardPeriod}
+            onRefresh={handleRefresh}
+            refreshing={refreshing}
+            usersList={usersList}
+            providersList={providersList}
+            partnersList={partnersList}
+            referralsList={referralsList}
+            paymentsList={paymentsList}
+            subscriptionsList={subscriptionsList}
+            reportsList={reportsList}
+            setActiveTab={setActiveTab}
+            setFilterAdvertiserType={setFilterAdvertiserType}
+          />
         )}
 
         {/* USERS TAB */}
@@ -3156,11 +2932,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <tbody>
                     {filteredAdvertisers.map((p) => {
                       const isCom = p.category_id === "comercios";
-                      const isPremium =
-                        p.plan === "monthly" || p.plan === "annual";
-                      const hasExpired = p.plan_expires_at
-                        ? new Date(p.plan_expires_at) < new Date()
-                        : true;
+                      const isPremium = p.plan_status === "ativo";
+                      const hasExpired = p.plan_status === "expirado";
                       const status = p.status || "ativo";
                       let servicesCount = 0;
                       try {
@@ -3196,9 +2969,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           <td>
                             {isPremium && !hasExpired ? (
                               <span className="badge badge-premium">
-                                {p.plan === "monthly"
-                                  ? "Mensal (PREMIUM)"
-                                  : "Anual (PREMIUM)"}
+                                {p.billing_cycle === "annual"
+                                  ? "Anual (PREMIUM)"
+                                  : p.billing_cycle === "semiannual"
+                                    ? "Semestral (PREMIUM)"
+                                    : p.billing_cycle === "quarterly"
+                                      ? "Trimestral (PREMIUM)"
+                                      : "Mensal (PREMIUM)"}
                               </span>
                             ) : (
                               <span className="badge badge-free">Gratuito</span>
@@ -5874,13 +5651,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <div className="modal-info-label">Plano Ativo</div>
                   <div className="modal-info-value">
                     <span
-                      className={`badge ${selectedAdvertiser.plan === "monthly" || selectedAdvertiser.plan === "annual" ? "badge-premium" : "badge-free"}`}
+                      className={`badge ${selectedAdvertiser.plan_status === "ativo" ? "badge-premium" : "badge-free"}`}
                     >
-                      {selectedAdvertiser.plan === "monthly"
-                        ? "Mensal (PREMIUM)"
-                        : selectedAdvertiser.plan === "annual"
+                      {selectedAdvertiser.plan_status === "ativo"
+                        ? selectedAdvertiser.billing_cycle === "annual"
                           ? "Anual (PREMIUM)"
-                          : "Gratuito"}
+                          : selectedAdvertiser.billing_cycle === "semiannual"
+                            ? "Semestral (PREMIUM)"
+                            : selectedAdvertiser.billing_cycle === "quarterly"
+                              ? "Trimestral (PREMIUM)"
+                              : "Mensal (PREMIUM)"
+                        : "Gratuito"}
                     </span>
                   </div>
 
@@ -5891,6 +5672,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           " ",
                         )[0]
                       : "-"}
+                  </div>
+
+                  <div className="modal-info-label">Selo Verificado</div>
+                  <div className="modal-info-value">
+                    {selectedAdvertiser.is_verified ? (
+                      <span className="badge badge-active" style={{ backgroundColor: "rgba(34, 197, 94, 0.15)", color: "#22c55e", borderColor: "rgba(34, 197, 94, 0.2)" }}>Sim (Verificado)</span>
+                    ) : (
+                      <span className="badge badge-inactive">Não</span>
+                    )}
+                  </div>
+
+                  <div className="modal-info-label">Selo de Destaque</div>
+                  <div className="modal-info-value">
+                    {selectedAdvertiser.top_badge ? (
+                      <span className="badge badge-premium" style={{ backgroundColor: selectedAdvertiser.top_badge === "Patrocinado" ? "rgba(245, 158, 11, 0.15)" : selectedAdvertiser.top_badge === "Destaque" ? "rgba(59, 130, 246, 0.15)" : "rgba(34, 197, 94, 0.15)", color: selectedAdvertiser.top_badge === "Patrocinado" ? "#f59e0b" : selectedAdvertiser.top_badge === "Destaque" ? "#3b82f6" : "#22c55e", borderColor: selectedAdvertiser.top_badge === "Patrocinado" ? "rgba(245, 158, 11, 0.2)" : selectedAdvertiser.top_badge === "Destaque" ? "rgba(59, 130, 246, 0.2)" : "rgba(34, 197, 94, 0.2)" }}>
+                        {selectedAdvertiser.top_badge}
+                      </span>
+                    ) : (
+                      <span className="badge badge-inactive">Nenhum</span>
+                    )}
                   </div>
 
                   <div className="modal-info-label">Status do Anúncio</div>
@@ -5974,6 +5775,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   >
                     <Briefcase size={14} />
                     Serviços
+                  </button>
+                  <button
+                    className={`tab-btn ${advertiserTab === "sponsorship" ? "active" : ""}`}
+                    onClick={() => setAdvertiserTab("sponsorship")}
+                  >
+                    <Rocket size={14} />
+                    Destaques & Banner
                   </button>
                 </nav>
 
@@ -6107,13 +5915,74 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             <select
                               className="filter-select"
                               style={{ width: "100%" }}
-                              value={editPlan}
-                              onChange={(e) => setEditPlan(e.target.value)}
+                              value={editPlanId || ""}
+                              onChange={(e) => {
+                                const selectedId = e.target.value || null;
+                                setEditPlanId(selectedId);
+                                if (selectedId) {
+                                  const selectedPlan = plansList.find(p => p.id === selectedId);
+                                  if (selectedPlan) {
+                                    setEditPlan(selectedPlan.name);
+                                    setEditPlanStatus("ativo");
+                                  }
+                                } else {
+                                  setEditPlan("free");
+                                  setEditPlanStatus("gratuito");
+                                }
+                              }}
                             >
-                              <option value="free">Gratuito</option>
-                              <option value="monthly">Mensal (PREMIUM)</option>
-                              <option value="annual">Anual (PREMIUM)</option>
+                              <option value="">Gratuito</option>
+                              {plansList.map((plan) => (
+                                <option key={plan.id} value={plan.id}>
+                                  {plan.name} - R$ {plan.monthly_price?.toFixed(2) || "0,00"}/mês
+                                </option>
+                              ))}
                             </select>
+                          </div>
+
+                          <div className="form-group">
+                            <label className="form-label">Status do Plano</label>
+                            <select
+                              className="filter-select"
+                              style={{ width: "100%" }}
+                              value={editPlanStatus}
+                              onChange={(e) => setEditPlanStatus(e.target.value)}
+                            >
+                              <option value="gratuito">Gratuito</option>
+                              <option value="ativo">Ativo</option>
+                              <option value="suspenso">Suspenso</option>
+                              <option value="cancelado">Cancelado</option>
+                              <option value="expirado">Expirado</option>
+                              <option value="em_teste">Em teste</option>
+                            </select>
+                          </div>
+
+                          <div className="form-group">
+                            <label className="form-label">Ciclo de Cobrança</label>
+                            <select
+                              className="filter-select"
+                              style={{ width: "100%" }}
+                              value={editBillingCycle}
+                              onChange={(e) => setEditBillingCycle(e.target.value)}
+                            >
+                              <option value="monthly">Mensal</option>
+                              <option value="quarterly">Trimestral</option>
+                              <option value="semiannual">Semestral</option>
+                              <option value="annual">Anual</option>
+                            </select>
+                          </div>
+
+                          <div className="form-group">
+                            <label className="form-label">Data de Início</label>
+                            <input
+                              type="date"
+                              className="form-input"
+                              style={{ paddingLeft: "0.75rem" }}
+                              value={editPlanStartedAt}
+                              onChange={(e) =>
+                                setEditPlanStartedAt(e.target.value)
+                              }
+                            />
                           </div>
 
                           <div className="form-group">
@@ -6148,6 +6017,33 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               min="-1"
                               required
                             />
+                          </div>
+
+                          <div className="form-group">
+                            <label className="form-label" style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", marginTop: "8px" }}>
+                              <input
+                                type="checkbox"
+                                checked={editIsVerified}
+                                onChange={(e) => setEditIsVerified(e.target.checked)}
+                                style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                              />
+                              Selo Verificado (Verificado)
+                            </label>
+                          </div>
+
+                          <div className="form-group">
+                            <label className="form-label">Selo de Destaque (Badge)</label>
+                            <select
+                              className="filter-select"
+                              style={{ width: "100%" }}
+                              value={editTopBadge || ""}
+                              onChange={(e) => setEditTopBadge(e.target.value || null)}
+                            >
+                              <option value="">Nenhum</option>
+                              <option value="Patrocinado">Patrocinado</option>
+                              <option value="Destaque">Destaque</option>
+                              <option value="Verificado">Verificado</option>
+                            </select>
                           </div>
 
                           <div className="form-group">
@@ -6815,6 +6711,130 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             );
                           }
                         })()}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 5: Sponsorship & Highlights */}
+                  {!modalLoading && advertiserTab === "sponsorship" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+                      {/* Section 1: Destaques para você */}
+                      <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid var(--border-color)", padding: "1.25rem", borderRadius: "12px" }}>
+                        <h4 style={{ margin: "0 0 0.5rem 0", color: "var(--text-primary)", fontSize: "1rem", fontWeight: 750 }}>
+                          Destaques Para Você (Home)
+                        </h4>
+                        <p style={{ margin: "0 0 1rem 0", fontSize: "0.82rem", color: "var(--text-muted)" }}>
+                          Controla se este prestador aparece na seção recomendada da Home no aplicativo móvel.
+                        </p>
+                        
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                          {selectedAdvertiser.destaque ? (
+                            <>
+                              <span className="badge badge-active" style={{ backgroundColor: "rgba(132, 204, 22, 0.15)", color: "#84cc16", borderColor: "rgba(132, 204, 22, 0.2)" }}>ATIVO</span>
+                              <button 
+                                onClick={() => handleToggleDestaqueStatus(false)} 
+                                className="btn btn-logout" 
+                                style={{ width: "auto", margin: 0, padding: "0.4rem 1rem", fontSize: "0.82rem" }}
+                              >
+                                Remover dos Destaques
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <span className="badge badge-inactive">INATIVO</span>
+                              <button 
+                                onClick={() => handleToggleDestaqueStatus(true)} 
+                                className="btn btn-primary" 
+                                style={{ width: "auto", margin: 0, padding: "0.4rem 1rem", fontSize: "0.82rem", display: "flex", alignItems: "center", gap: "6px" }}
+                              >
+                                Adicionar aos Destaques
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Section 2: Destaques em Evidência (Banner Rotativo) */}
+                      <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid var(--border-color)", padding: "1.25rem", borderRadius: "12px" }}>
+                        <h4 style={{ margin: "0 0 0.5rem 0", color: "var(--text-primary)", fontSize: "1rem", fontWeight: 750 }}>
+                          Destaques em Evidência (Banner Patrocinado na Home)
+                        </h4>
+                        <p style={{ margin: "0 0 1rem 0", fontSize: "0.82rem", color: "var(--text-muted)" }}>
+                          Cria um banner de patrocínio em tela cheia na home do site e do aplicativo.
+                        </p>
+
+                        {isAdLoading ? (
+                          <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Buscando informações do banner...</p>
+                        ) : existingAd ? (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                            {/* Preview Banner */}
+                            <div style={{ position: "relative", width: "100%", height: "130px", borderRadius: "8px", overflow: "hidden", border: "1px solid var(--border-color)" }}>
+                              <img src={adImageUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="Banner Preview" />
+                              <div style={{ position: "absolute", top: "8px", right: "8px", zIndex: 10 }}>
+                                <span className="text-[8px] font-black tracking-widest bg-yellow-500 text-black px-2 py-0.5 rounded uppercase">Patrocinado</span>
+                              </div>
+                              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(transparent, rgba(0,0,0,0.8))", zIndex: 5 }}></div>
+                              <div style={{ position: "absolute", bottom: "8px", left: "8px", zIndex: 10 }}>
+                                <span style={{ fontSize: "8px", color: "var(--accent-primary)", textTransform: "uppercase", fontWeight: "bold" }}>{adTitle}</span>
+                                <h4 style={{ margin: 0, color: "white", fontSize: "12px", fontWeight: "bold" }}>{selectedAdvertiser.name}</h4>
+                                <p style={{ margin: 0, color: "#d1d5db", fontSize: "9px" }}>{adDescription}</p>
+                              </div>
+                            </div>
+
+                            <form onSubmit={handleSaveFeaturedAd} style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                              <div className="form-group">
+                                <label className="form-label">Título da Categoria / Serviço</label>
+                                <input type="text" className="form-input" style={{ paddingLeft: "0.75rem" }} value={adTitle} onChange={(e) => setAdTitle(e.target.value)} required />
+                              </div>
+                              <div className="form-group">
+                                <label className="form-label">Descrição Curta do Anúncio</label>
+                                <input type="text" className="form-input" style={{ paddingLeft: "0.75rem" }} value={adDescription} onChange={(e) => setAdDescription(e.target.value)} />
+                              </div>
+                              <div className="form-group">
+                                <label className="form-label">URL da Imagem do Banner</label>
+                                <input type="text" className="form-input" style={{ paddingLeft: "0.75rem" }} value={adImageUrl} onChange={(e) => setAdImageUrl(e.target.value)} required />
+                              </div>
+                              
+                              <div className="form-group" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <input type="checkbox" id="adIsFeatured" checked={adIsFeatured} onChange={(e) => setAdIsFeatured(e.target.checked)} style={{ width: "16px", height: "16px" }} />
+                                <label htmlFor="adIsFeatured" className="form-label" style={{ margin: 0, cursor: "pointer", fontSize: "0.85rem" }}>Banner Ativo</label>
+                              </div>
+
+                              <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "0.5rem" }}>
+                                <button type="button" onClick={handleDeleteFeaturedAd} className="btn btn-logout" style={{ width: "auto", margin: 0 }}>
+                                  Remover Banner
+                                </button>
+                                <button type="submit" className="btn btn-primary" style={{ width: "auto", margin: 0 }}>
+                                  Atualizar Banner
+                                </button>
+                              </div>
+                            </form>
+                          </div>
+                        ) : (
+                          <div>
+                            <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "1rem" }}>Este prestador não tem um anúncio patrocinado em evidência na home.</p>
+                            <form onSubmit={handleSaveFeaturedAd} style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                              <div className="form-group">
+                                <label className="form-label">Título da Categoria / Serviço</label>
+                                <input type="text" className="form-input" style={{ paddingLeft: "0.75rem" }} value={adTitle} onChange={(e) => setAdTitle(e.target.value)} required />
+                              </div>
+                              <div className="form-group">
+                                <label className="form-label">Descrição Curta do Anúncio</label>
+                                <input type="text" className="form-input" style={{ paddingLeft: "0.75rem" }} value={adDescription} onChange={(e) => setAdDescription(e.target.value)} />
+                              </div>
+                              <div className="form-group">
+                                <label className="form-label">URL da Imagem do Banner</label>
+                                <input type="text" className="form-input" style={{ paddingLeft: "0.75rem" }} value={adImageUrl} onChange={(e) => setAdImageUrl(e.target.value)} required />
+                              </div>
+
+                              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "0.5rem" }}>
+                                <button type="submit" className="btn btn-primary" style={{ width: "auto", margin: 0 }}>
+                                  Criar Banner Patrocinado
+                                </button>
+                              </div>
+                            </form>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

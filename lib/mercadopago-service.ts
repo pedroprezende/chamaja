@@ -13,7 +13,7 @@ export interface PaymentPlan {
   id: string;
   name: string;
   price: number;
-  period: "monthly" | "annual";
+  period: "monthly" | "annual" | "quarterly" | "semiannual";
   description: string;
 }
 
@@ -47,7 +47,9 @@ export const PAYMENT_METHODS: PaymentMethod[] = [
   },
 ];
 
-// Available plans
+// NOTE: PAYMENT_PLANS is now fetched from the database via trpc.plans.list
+// This legacy constant is kept as fallback only and should not be used
+/** @deprecated Use trpc.plans.list instead */
 export const PAYMENT_PLANS: PaymentPlan[] = [
   {
     id: "premium_monthly",
@@ -64,6 +66,26 @@ export const PAYMENT_PLANS: PaymentPlan[] = [
     description: "Acesso premium por 1 ano (economize 17%)",
   },
 ];
+
+/**
+ * Convert a plan from the database to PaymentPlan format
+ */
+export function dbPlanToPaymentPlan(dbPlan: any, billingCycle: string = "monthly"): PaymentPlan {
+  const priceMap: Record<string, number> = {
+    monthly: dbPlan.monthlyPrice || 0,
+    quarterly: dbPlan.quarterlyPrice || 0,
+    semiannual: dbPlan.semiannualPrice || 0,
+    annual: dbPlan.annualPrice || 0,
+  };
+
+  return {
+    id: dbPlan.id,
+    name: dbPlan.name,
+    price: priceMap[billingCycle] || dbPlan.monthlyPrice || 0,
+    period: billingCycle as any,
+    description: dbPlan.description || `${dbPlan.name} - ${billingCycle}`,
+  };
+}
 
 /**
  * Create a payment preference in Mercado Pago

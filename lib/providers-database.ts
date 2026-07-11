@@ -18,6 +18,9 @@ export interface StoredProvider {
   address: string;
   gallery: string[];
   plan: "monthly" | "annual" | "free" | null;
+  planId: string | null;
+  planStatus: string | null;
+  billingCycle: string | null;
   planExpiresAt: string | null;
   isActive: boolean;
   createdAt: string;
@@ -32,6 +35,7 @@ export interface StoredProvider {
   status?: string;
   businessType?: string;
   deliveryTime?: string | null;
+  benefitKeys: string[];
   services: Array<{
     id: string;
     name: string;
@@ -68,6 +72,9 @@ function mapToStoredProvider(dbProvider: any): StoredProvider {
     address: dbProvider.address || "",
     gallery: dbProvider.gallery || [],
     plan: (dbProvider.plan as any) || null,
+    planId: dbProvider.planId || null,
+    planStatus: dbProvider.planStatus || null,
+    billingCycle: dbProvider.billingCycle || null,
     planExpiresAt: dbProvider.planExpiresAt
       ? new Date(dbProvider.planExpiresAt).toISOString()
       : null,
@@ -96,6 +103,7 @@ function mapToStoredProvider(dbProvider: any): StoredProvider {
     status: dbProvider.status || "pendente",
     businessType: dbProvider.businessType || "servicos",
     deliveryTime: dbProvider.deliveryTime || null,
+    benefitKeys: dbProvider.benefitKeys || [],
   };
 }
 

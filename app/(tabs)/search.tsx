@@ -1044,10 +1044,8 @@ export default function SearchScreen() {
                             rating: Number(item.rating) || 0,
                             phone: item.phone || item.whatsapp || "",
                             type:
-                              typeof item.plan === "string" &&
-                              (item.plan.toLowerCase() === "premium" ||
-                                item.plan.toLowerCase() === "annual" ||
-                                item.plan.toLowerCase() === "monthly")
+                              item.benefitKeys?.includes("premium_badge") ||
+                              item.benefitKeys?.includes("featured_search")
                                 ? "premium"
                                 : "free",
                             latitude: item.latitude

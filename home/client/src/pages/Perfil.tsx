@@ -561,7 +561,7 @@ export default function Perfil({ params }: { params: { id: string } }) {
               <div className="flex flex-col md:flex-row md:items-center gap-2 justify-center md:justify-start">
                 <h1 className="text-3xl font-black text-white leading-tight">{provider.name}</h1>
                 <div className="flex items-center gap-2 justify-center">
-                  {provider.plan === "premium" && (
+                  {(provider.benefitKeys?.includes("premium_badge") || provider.benefitKeys?.includes("featured_search")) && (
                     <span className="px-2.5 py-0.5 bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-wider rounded">
                       Parceiro
                     </span>
