@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
@@ -88,6 +88,19 @@ export default function IndiqueGanhe() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [userProfile, setUserProfile] = useState<any | null>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem("bp_session_token");
+    const savedUser = localStorage.getItem("bp_user_profile");
+    if (token && savedUser) {
+      try {
+        setUserProfile(JSON.parse(savedUser));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, []);
 
   const exampleCode = "SEUCOD123";
   const exampleLink = `https://xamaja.com.br/?ref=${exampleCode}`;
@@ -132,19 +145,30 @@ export default function IndiqueGanhe() {
             >
               Anunciar meu negócio
             </button>
-            <Button
-              variant="ghost"
-              onClick={() => (window.location.href = "/parceiro")}
-              className="text-white hover:text-white hover:bg-zinc-900 border border-zinc-800 rounded-xl px-5 h-10 text-xs"
-            >
-              Entrar
-            </Button>
-            <Button
-              onClick={() => (window.location.href = "/parceiro")}
-              className="bg-primary text-primary-foreground hover:bg-primary/95 font-semibold rounded-xl px-5 h-10 text-xs transition"
-            >
-              Criar Conta
-            </Button>
+            {userProfile ? (
+              <Button
+                onClick={() => (window.location.href = "/parceiro")}
+                className="bg-primary text-primary-foreground hover:bg-primary/95 font-semibold rounded-xl px-5 h-10 text-xs transition"
+              >
+                Olá, {userProfile.name?.split(" ")[0] || "Minha Conta"}
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="ghost"
+                  onClick={() => (window.location.href = "/parceiro")}
+                  className="text-white hover:text-white hover:bg-zinc-900 border border-zinc-800 rounded-xl px-5 h-10 text-xs"
+                >
+                  Entrar
+                </Button>
+                <Button
+                  onClick={() => (window.location.href = "/parceiro")}
+                  className="bg-primary text-primary-foreground hover:bg-primary/95 font-semibold rounded-xl px-5 h-10 text-xs transition"
+                >
+                  Criar Conta
+                </Button>
+              </>
+            )}
           </nav>
 
           {/* Mobile toggle */}
@@ -176,25 +200,39 @@ export default function IndiqueGanhe() {
               </a>
             </nav>
             <div className="flex flex-col gap-3 pt-2">
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  window.location.href = "/parceiro";
-                }}
-                className="w-full text-white hover:bg-zinc-900 border border-zinc-800 rounded-xl py-3 text-sm font-semibold"
-              >
-                Entrar
-              </Button>
-              <Button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  window.location.href = "/parceiro";
-                }}
-                className="w-full bg-primary text-primary-foreground hover:bg-primary/95 font-bold rounded-xl py-3 text-sm transition"
-              >
-                Criar Conta
-              </Button>
+              {userProfile ? (
+                <Button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    window.location.href = "/parceiro";
+                  }}
+                  className="w-full text-center bg-primary text-primary-foreground hover:bg-primary/95 font-bold rounded-xl py-3 text-sm transition"
+                >
+                  Olá, {userProfile.name || "Minha Conta"}
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      window.location.href = "/parceiro";
+                    }}
+                    className="w-full text-white hover:bg-zinc-900 border border-zinc-800 rounded-xl py-3 text-sm font-semibold"
+                  >
+                    Entrar
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      window.location.href = "/parceiro";
+                    }}
+                    className="w-full bg-primary text-primary-foreground hover:bg-primary/95 font-bold rounded-xl py-3 text-sm transition"
+                  >
+                    Criar Conta
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -227,20 +265,32 @@ export default function IndiqueGanhe() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button
-              onClick={() => (window.location.href = "/parceiro")}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 font-black px-8 py-4 h-14 rounded-xl text-base transition shadow-lg shadow-primary/20 hover:-translate-y-0.5 flex items-center gap-2"
-            >
-              Criar Conta Grátis
-              <ArrowRight className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => (window.location.href = "/parceiro")}
-              className="border border-zinc-800 text-white hover:bg-zinc-900 px-8 h-14 rounded-xl text-base font-semibold"
-            >
-              Já tenho conta — Entrar
-            </Button>
+            {userProfile ? (
+              <Button
+                onClick={() => (window.location.href = "/parceiro")}
+                className="bg-primary text-primary-foreground hover:bg-primary/90 font-black px-8 py-4 h-14 rounded-xl text-base transition shadow-lg shadow-primary/20 hover:-translate-y-0.5 flex items-center gap-2"
+              >
+                Acessar minha conta
+                <ArrowRight className="h-5 w-5" />
+              </Button>
+            ) : (
+              <>
+                <Button
+                  onClick={() => (window.location.href = "/parceiro")}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 font-black px-8 py-4 h-14 rounded-xl text-base transition shadow-lg shadow-primary/20 hover:-translate-y-0.5 flex items-center gap-2"
+                >
+                  Criar Conta Grátis
+                  <ArrowRight className="h-5 w-5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => (window.location.href = "/parceiro")}
+                  className="border border-zinc-800 text-white hover:bg-zinc-900 px-8 h-14 rounded-xl text-base font-semibold"
+                >
+                  Já tenho conta — Entrar
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Social proof */}
@@ -615,20 +665,32 @@ export default function IndiqueGanhe() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button
-              onClick={() => (window.location.href = "/parceiro")}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 font-black px-10 py-4 h-14 rounded-xl text-base transition shadow-lg shadow-primary/20 hover:-translate-y-0.5 flex items-center justify-center gap-2"
-            >
-              Criar Conta Grátis
-              <ArrowRight className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => (window.location.href = "/parceiro")}
-              className="border border-zinc-800 text-white hover:bg-zinc-900 px-10 h-14 rounded-xl text-base font-semibold"
-            >
-              Entrar na minha conta
-            </Button>
+            {userProfile ? (
+              <Button
+                onClick={() => (window.location.href = "/parceiro")}
+                className="bg-primary text-primary-foreground hover:bg-primary/90 font-black px-10 py-4 h-14 rounded-xl text-base transition shadow-lg shadow-primary/20 hover:-translate-y-0.5 flex items-center justify-center gap-2"
+              >
+                Acessar minha conta
+                <ArrowRight className="h-5 w-5" />
+              </Button>
+            ) : (
+              <>
+                <Button
+                  onClick={() => (window.location.href = "/parceiro")}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 font-black px-10 py-4 h-14 rounded-xl text-base transition shadow-lg shadow-primary/20 hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                >
+                  Criar Conta Grátis
+                  <ArrowRight className="h-5 w-5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => (window.location.href = "/parceiro")}
+                  className="border border-zinc-800 text-white hover:bg-zinc-900 px-10 h-14 rounded-xl text-base font-semibold"
+                >
+                  Entrar na minha conta
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </section>
