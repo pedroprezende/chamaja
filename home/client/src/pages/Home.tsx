@@ -27,28 +27,179 @@ import {
   MessageSquare,
   Menu,
   X,
+  Sparkles,
+  Check,
+  Minus,
+  Crown,
+  Zap,
+  BadgeCheck,
 } from "lucide-react";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 
+// ── Fallback plans (used when admin API has no plans configured yet) ──────────
+const FALLBACK_PLANS = [
+  {
+    id: "essencial",
+    name: "Essencial",
+    description: "Ideal para começar",
+    monthlyPrice: 14.9,
+    quarterlyPrice: 39.9,
+    semiannualPrice: 79.9,
+    annualPrice: 139.9,
+    isFeatured: false,
+    badgeColor: null,
+    benefits: [
+      { key: "public_profile", name: "Perfil público" },
+      { key: "company_name", name: "Nome da empresa" },
+      { key: "category", name: "Categoria" },
+      { key: "description", name: "Descrição" },
+      { key: "profile_photo", name: "Foto de perfil" },
+      { key: "photos_5", name: "Até 5 fotos" },
+      { key: "whatsapp", name: "WhatsApp" },
+      { key: "phone", name: "Telefone" },
+      { key: "address", name: "Endereço" },
+      { key: "map_location", name: "Localização no mapa" },
+      { key: "business_hours", name: "Horário de funcionamento" },
+      { key: "receive_reviews", name: "Receber avaliações" },
+      { key: "reply_reviews", name: "Responder avaliações" },
+      { key: "social_links", name: "Link para redes sociais" },
+      { key: "basic_stats", name: "Estatísticas básicas" },
+      { key: "profile_views", name: "Visualizações do perfil" },
+      { key: "whatsapp_clicks", name: "Cliques no WhatsApp" },
+      { key: "call_clicks", name: "Quantidade de ligações" },
+      { key: "route_opens", name: "Abertura de rotas" },
+    ],
+  },
+  {
+    id: "profissional",
+    name: "Profissional",
+    description: "Mais escolhido",
+    monthlyPrice: 29.9,
+    quarterlyPrice: 79.9,
+    semiannualPrice: 149.9,
+    annualPrice: 279.9,
+    isFeatured: true,
+    badgeColor: "#84cc16",
+    benefits: [
+      { key: "public_profile", name: "Perfil público" },
+      { key: "company_name", name: "Nome da empresa" },
+      { key: "category", name: "Categoria" },
+      { key: "description", name: "Descrição" },
+      { key: "profile_photo", name: "Foto de perfil" },
+      { key: "photos_10", name: "Até 10 fotos" },
+      { key: "whatsapp", name: "WhatsApp" },
+      { key: "phone", name: "Telefone" },
+      { key: "address", name: "Endereço" },
+      { key: "map_location", name: "Localização no mapa" },
+      { key: "business_hours", name: "Horário de funcionamento" },
+      { key: "receive_reviews", name: "Receber avaliações" },
+      { key: "reply_reviews", name: "Responder avaliações" },
+      { key: "social_links", name: "Link para redes sociais" },
+      { key: "menu", name: "Cardápio (quando aplicável)" },
+      { key: "service_catalog", name: "Catálogo de serviços" },
+      { key: "category_highlight", name: "Perfil em destaque na categoria" },
+      { key: "search_priority", name: "Destaque moderado nas pesquisas" },
+      { key: "full_stats", name: "Estatísticas completas" },
+      { key: "views_history", name: "Histórico de visualizações" },
+      { key: "favorites_count", name: "Quantidade de favoritos" },
+      { key: "shares_count", name: "Quantidade de compartilhamentos" },
+      { key: "monthly_reports", name: "Relatórios mensais" },
+      { key: "map_priority", name: "Melhor posicionamento no mapa" },
+      { key: "priority_over_essencial", name: "Prioridade sobre o plano Essencial" },
+      { key: "partner_badge", name: "Badge Parceiro XamaJá" },
+    ],
+  },
+  {
+    id: "premium",
+    name: "Premium",
+    description: "Máxima visibilidade",
+    monthlyPrice: 49.9,
+    quarterlyPrice: 134.9,
+    semiannualPrice: 259.9,
+    annualPrice: 499.9,
+    isFeatured: false,
+    badgeColor: null,
+    benefits: [
+      { key: "public_profile", name: "Perfil público" },
+      { key: "company_name", name: "Nome da empresa" },
+      { key: "category", name: "Categoria" },
+      { key: "description", name: "Descrição" },
+      { key: "profile_photo", name: "Foto de perfil" },
+      { key: "photos_unlimited", name: "Fotos ilimitadas" },
+      { key: "whatsapp", name: "WhatsApp" },
+      { key: "phone", name: "Telefone" },
+      { key: "address", name: "Endereço" },
+      { key: "map_location", name: "Localização no mapa" },
+      { key: "business_hours", name: "Horário de funcionamento" },
+      { key: "receive_reviews", name: "Receber avaliações" },
+      { key: "reply_reviews", name: "Responder avaliações" },
+      { key: "social_links", name: "Link para redes sociais" },
+      { key: "menu", name: "Cardápio (quando aplicável)" },
+      { key: "service_catalog", name: "Catálogo de serviços" },
+      { key: "verified_profile", name: "Perfil Verificado" },
+      { key: "verified_badge", name: "Selo Verificado" },
+      { key: "premium_search_highlight", name: "Destaque Premium nas pesquisas" },
+      { key: "premium_map_highlight", name: "Destaque Premium no mapa" },
+      { key: "home_highlight", name: "Destaque na página inicial" },
+      { key: "category_highlight", name: "Destaque nas categorias" },
+      { key: "promo_banner", name: "Banner promocional" },
+      { key: "advanced_stats", name: "Estatísticas avançadas" },
+      { key: "full_insights", name: "Insights completos" },
+      { key: "top_display_priority", name: "Maior prioridade de exibição" },
+      { key: "priority_support", name: "Atendimento prioritário" },
+      { key: "early_access", name: "Acesso antecipado a novos recursos" },
+    ],
+  },
+];
+
+// Linhas da tabela de comparação (na ordem desejada)
+const COMPARISON_ROWS = [
+  { key: "public_profile", label: "Perfil público" },
+  { key: "photos_5", label: "Fotos (até 5)", altKeys: ["photos_10", "photos_unlimited"] },
+  { key: "menu", label: "Cardápio" },
+  { key: "service_catalog", label: "Catálogo de serviços" },
+  { key: "receive_reviews", label: "Avaliações" },
+  { key: "reply_reviews", label: "Responder avaliações" },
+  { key: "profile_views", label: "Visualizações" },
+  { key: "favorites_count", label: "Favoritos" },
+  { key: "full_stats", label: "Estatísticas completas", altKeys: ["basic_stats"] },
+  { key: "monthly_reports", label: "Relatórios" },
+  { key: "search_priority", label: "Destaque nas buscas", altKeys: ["premium_search_highlight"] },
+  { key: "map_priority", label: "Destaque no mapa", altKeys: ["premium_map_highlight"] },
+  { key: "home_highlight", label: "Página inicial" },
+  { key: "verified_profile", label: "Perfil Verificado" },
+  { key: "verified_badge", label: "Selo Verificado" },
+];
+
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeStep, setActiveStep] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLocation, setSearchLocation] = useState("Bragança Paulista - SP");
   const [userProfile, setUserProfile] = useState<any | null>(null);
 
   // Form states
-  const [name, setName] = useState("");
+  const [name, setName] = useState("");            // nome do responsável
+  const [businessName, setBusinessName] = useState(""); // nome do negócio
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [otherCategory, setOtherCategory] = useState("");
   const [city, setCity] = useState("");
+  const [state, setStateField] = useState("");
+  const [cep, setCep] = useState("");
   const [neighborhood, setNeighborhood] = useState("");
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formSuccess, setFormSuccess] = useState(false);
   const [formError, setFormError] = useState("");
+
+  // Plan selection states
+  const [plans, setPlans] = useState<any[]>([]);
+  const [isLoadingPlans, setIsLoadingPlans] = useState(true);
+  const [selectedPlan, setSelectedPlan] = useState<any | null>(null);
+  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "quarterly" | "semiannual" | "annual">("monthly");
+  const [formBillingPeriod, setFormBillingPeriod] = useState<"monthly" | "quarterly" | "semiannual" | "annual">("monthly");
 
   // Dynamic featured providers from DB
   const [featuredProviders, setFeaturedProviders] = useState<any[]>([]);
@@ -409,16 +560,59 @@ export default function Home() {
       }
     }
     loadFeatured();
+
+    // Carregar planos do painel admin
+    async function loadPlans() {
+      try {
+        const res = await fetch("/api/trpc/plans.list");
+        if (res.ok) {
+          const json = await res.json();
+          if (json.result?.data?.length > 0) {
+            setPlans(json.result.data);
+          } else {
+            setPlans(FALLBACK_PLANS);
+          }
+        } else {
+          setPlans(FALLBACK_PLANS);
+        }
+      } catch {
+        setPlans(FALLBACK_PLANS);
+      } finally {
+        setIsLoadingPlans(false);
+      }
+    }
+    loadPlans();
   }, []);
 
-  const handleNextStep = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleSelectPlan = (plan: any) => {
+    setSelectedPlan(plan);
+    setFormBillingPeriod(billingPeriod);
+    setFormSuccess(false);
     setFormError("");
-    if (!name || !email || !phone) {
-      setFormError("Por favor, preencha todos os campos obrigatórios da identificação.");
-      return;
-    }
-    setActiveStep(2);
+    setTimeout(() => {
+      document.getElementById("cadastro-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+  };
+
+  const getPlanPrice = (plan: any, period: "monthly" | "quarterly" | "semiannual" | "annual") => {
+    if (!plan) return 0;
+    const map: Record<string, number> = {
+      monthly: plan.monthlyPrice,
+      quarterly: plan.quarterlyPrice,
+      semiannual: plan.semiannualPrice,
+      annual: plan.annualPrice,
+    };
+    return map[period] ?? plan.monthlyPrice;
+  };
+
+  const formatPrice = (val: number) =>
+    val?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) ?? "R$ 0,00";
+
+  const periodLabels: Record<string, string> = {
+    monthly: "mês",
+    quarterly: "trimestre",
+    semiannual: "semestre",
+    annual: "ano",
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -427,15 +621,7 @@ export default function Home() {
     setFormSuccess(false);
     setFormError("");
 
-    if (
-      !name ||
-      !email ||
-      !phone ||
-      !categoryId ||
-      !city ||
-      !neighborhood ||
-      !description
-    ) {
+    if (!name || !email || !phone || !categoryId || !city || !neighborhood || !description) {
       setFormError("Por favor, preencha todos os campos obrigatórios.");
       setIsSubmitting(false);
       return;
@@ -451,18 +637,22 @@ export default function Home() {
       const refCode = localStorage.getItem("ref_code") || undefined;
       const response = await fetch("/api/web-register-provider", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
+          businessName,
           email,
           phone,
+          whatsapp,
           categoryId,
           otherCategory,
           city,
+          state,
+          cep,
           neighborhood,
           description,
+          planId: selectedPlan?.id || null,
+          billingCycle: formBillingPeriod,
           refCode,
         }),
       });
@@ -470,26 +660,16 @@ export default function Home() {
       const result = await response.json();
       if (response.ok && result.success) {
         setFormSuccess(true);
-        setName("");
-        setEmail("");
-        setPhone("");
-        setCategoryId("");
-        setOtherCategory("");
-        setCity("");
-        setNeighborhood("");
+        setName(""); setBusinessName(""); setEmail(""); setPhone("");
+        setWhatsapp(""); setCategoryId(""); setOtherCategory("");
+        setCity(""); setStateField(""); setCep(""); setNeighborhood("");
         setDescription("");
-        setActiveStep(1);
       } else {
-        setFormError(
-          result.error ||
-            "Ocorreu um erro ao realizar o cadastro. Tente novamente."
-        );
+        setFormError(result.error || "Ocorreu um erro ao realizar o cadastro. Tente novamente.");
       }
     } catch (err) {
       console.error("Error submitting form:", err);
-      setFormError(
-        "Falha na conexão com o servidor. Verifique sua conexão e tente novamente."
-      );
+      setFormError("Falha na conexão com o servidor. Verifique sua conexão e tente novamente.");
     } finally {
       setIsSubmitting(false);
     }
@@ -799,6 +979,415 @@ export default function Home() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section
+        id="cadastro"
+        className="py-24 bg-[#020203] border-b border-zinc-900/80 relative overflow-hidden"
+      >
+        {/* Ambient glows */}
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[130px] pointer-events-none" />
+        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none" />
+
+        <div className="container mx-auto px-4 max-w-6xl relative z-10">
+
+          {/* ── Cabeçalho ── */}
+          <div className="text-center max-w-2xl mx-auto mb-14 space-y-4">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/10 border border-primary/25 rounded-full animate-badge-glow">
+              <Sparkles className="w-3.5 h-3.5 text-primary" />
+              <span className="text-primary text-xs font-black uppercase tracking-widest">Plano XamaJá</span>
+            </div>
+            <h2 className="text-3xl md:text-5xl font-black text-white leading-tight">
+              Escolha o plano ideal para<br />
+              <span className="text-primary">divulgar seu negócio</span>
+            </h2>
+            <p className="text-sm md:text-base text-zinc-400 max-w-lg mx-auto leading-relaxed">
+              Quanto mais completo for seu perfil, maiores serão suas chances de ser encontrado por novos clientes.
+            </p>
+          </div>
+
+          {/* ── Toggle de periodicidade ── */}
+          <div className="flex justify-center mb-10">
+            <div className="inline-flex bg-zinc-950 border border-zinc-800 rounded-2xl p-1 gap-1">
+              {(["monthly", "quarterly", "semiannual", "annual"] as const).map((p) => {
+                const labels: Record<string, string> = { monthly: "Mensal", quarterly: "Trimestral", semiannual: "Semestral", annual: "Anual" };
+                return (
+                  <button
+                    key={p}
+                    id={`billing-toggle-${p}`}
+                    onClick={() => setBillingPeriod(p)}
+                    className={`relative px-3 md:px-5 py-2 text-xs md:text-sm font-bold rounded-xl transition-all duration-200 ${
+                      billingPeriod === p
+                        ? "bg-primary text-black shadow-lg shadow-primary/20"
+                        : "text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    {labels[p]}
+                    {p === "annual" && billingPeriod === p && (
+                      <span className="absolute -top-2 -right-1 text-[9px] bg-emerald-400 text-black font-black px-1.5 py-0.5 rounded-full leading-none">
+                        ✦ Melhor
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── Cards de Planos ── */}
+          {isLoadingPlans ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-[520px] bg-zinc-950 border border-zinc-900 rounded-3xl animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+              {plans.map((plan, idx) => {
+                const isFeatured = plan.isFeatured;
+                const isSelected = selectedPlan?.id === plan.id;
+                const price = getPlanPrice(plan, billingPeriod);
+                const PlanIcon = idx === 0 ? Zap : idx === 1 ? Crown : BadgeCheck;
+
+                return (
+                  <div
+                    key={plan.id}
+                    id={`plan-card-${plan.id}`}
+                    className={`relative flex flex-col rounded-3xl border transition-all duration-300 cursor-pointer group
+                      ${isFeatured
+                        ? "bg-zinc-950 border-primary/40 shadow-[0_0_40px_rgba(132,204,22,0.08)] hover:shadow-[0_0_60px_rgba(132,204,22,0.15)] hover:border-primary/70 md:scale-[1.02]"
+                        : "bg-zinc-950/80 border-zinc-800/70 hover:border-zinc-600 hover:shadow-[0_0_30px_rgba(255,255,255,0.03)]"
+                      }
+                      ${isSelected ? "ring-2 ring-primary ring-offset-2 ring-offset-black" : ""}
+                    `}
+                  >
+                    {isFeatured && (
+                      <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
+                        <span className="px-4 py-1 bg-primary text-black text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-primary/30">
+                          ✦ {plan.description || "Mais escolhido"}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="p-7 flex-1 flex flex-col">
+                      <div className="flex items-start justify-between mb-6">
+                        <div>
+                          {!isFeatured && (
+                            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block mb-1">
+                              {plan.description}
+                            </span>
+                          )}
+                          <h3 className={`text-2xl font-black ${isFeatured ? "text-primary" : "text-white"}`}>
+                            {plan.name}
+                          </h3>
+                        </div>
+                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 ${
+                          isFeatured ? "bg-primary/20 border border-primary/30" : "bg-zinc-900 border border-zinc-800"
+                        }`}>
+                          <PlanIcon className={`w-5 h-5 ${isFeatured ? "text-primary" : "text-zinc-400"}`} />
+                        </div>
+                      </div>
+
+                      <div className="mb-6">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-4xl font-black text-white">{formatPrice(price)}</span>
+                          <span className="text-zinc-500 text-sm font-medium">/{periodLabels[billingPeriod]}</span>
+                        </div>
+                        {billingPeriod !== "monthly" && (
+                          <p className="text-xs text-zinc-500 mt-1">
+                            ≈ {formatPrice(price / (billingPeriod === "quarterly" ? 3 : billingPeriod === "semiannual" ? 6 : 12))}/mês
+                          </p>
+                        )}
+                        {billingPeriod === "annual" && (
+                          <span className="inline-block mt-2 text-[10px] font-black text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-2 py-0.5 rounded-full">
+                            Economize no plano anual
+                          </span>
+                        )}
+                      </div>
+
+                      <ul className="space-y-2.5 mb-7 flex-1">
+                        {(plan.benefits || []).slice(0, 8).map((b: any) => (
+                          <li key={b.key} className="flex items-start gap-2 text-sm text-zinc-300">
+                            <Check className={`w-4 h-4 mt-0.5 flex-shrink-0 ${isFeatured ? "text-primary" : "text-emerald-500"}`} />
+                            <span>{b.name}</span>
+                          </li>
+                        ))}
+                        {(plan.benefits || []).length > 8 && (
+                          <li className="text-xs text-zinc-500 pl-6">
+                            + {(plan.benefits || []).length - 8} benefícios adicionais
+                          </li>
+                        )}
+                      </ul>
+
+                      <button
+                        id={`btn-select-plan-${plan.id}`}
+                        onClick={() => handleSelectPlan(plan)}
+                        className={`w-full py-3.5 rounded-xl font-black text-sm transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0
+                          ${isFeatured
+                            ? "bg-primary text-black hover:bg-primary/90 shadow-lg shadow-primary/25"
+                            : isSelected
+                              ? "bg-zinc-800 text-white border border-zinc-700"
+                              : "bg-zinc-900 text-white border border-zinc-800 hover:border-zinc-600"
+                          }
+                        `}
+                      >
+                        {isSelected ? "✓ Selecionado" : `Escolher ${plan.name}`}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ── Tabela de Comparação ── */}
+          <div className="mb-16 overflow-x-auto">
+            <div className="min-w-[520px]">
+              <div className="flex items-center gap-2 mb-5">
+                <h3 className="text-sm font-black text-zinc-400 uppercase tracking-widest">Comparação detalhada</h3>
+                <div className="flex-1 h-px bg-zinc-900" />
+              </div>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-zinc-900">
+                    <th className="text-left py-3 pr-6 text-zinc-500 font-semibold text-xs w-1/2">Recurso</th>
+                    {plans.map(plan => (
+                      <th key={plan.id} className={`text-center py-3 px-4 text-xs font-black ${plan.isFeatured ? "text-primary" : "text-zinc-400"}`}>
+                        {plan.name}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {COMPARISON_ROWS.map((row, ridx) => (
+                    <tr key={row.key} className={`border-b border-zinc-900/50 ${ridx % 2 === 0 ? "bg-zinc-950/30" : ""}`}>
+                      <td className="py-3 pr-6 text-zinc-400 font-medium">{row.label}</td>
+                      {plans.map(plan => {
+                        const benefitKeys = (plan.benefits || []).map((b: any) => b.key);
+                        const hasIt = benefitKeys.includes(row.key) || (row.altKeys || []).some((k: string) => benefitKeys.includes(k));
+                        return (
+                          <td key={plan.id} className="text-center py-3 px-4">
+                            {hasIt
+                              ? <Check className={`w-4 h-4 mx-auto ${plan.isFeatured ? "text-primary" : "text-emerald-500"}`} />
+                              : <Minus className="w-4 h-4 mx-auto text-zinc-700" />
+                            }
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* ── Formulário Expandível ── */}
+          {selectedPlan && (
+            <div id="cadastro-form" className="animate-expand-down">
+              {/* Plan summary bar */}
+              <div className="bg-zinc-950 border border-primary/30 rounded-2xl p-5 mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
+                    <BadgeCheck className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-zinc-500 font-semibold">Você escolheu</p>
+                    <p className="text-white font-black text-lg leading-tight">Plano {selectedPlan.name}</p>
+                    <p className="text-primary text-sm font-bold">{formatPrice(getPlanPrice(selectedPlan, formBillingPeriod))}/{periodLabels[formBillingPeriod]}</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5 w-full md:w-auto">
+                  <span className="text-xs text-zinc-500 font-semibold">Periodicidade preferida</span>
+                  <div className="inline-flex bg-zinc-900 border border-zinc-800 rounded-xl p-0.5 gap-0.5">
+                    {(["monthly", "quarterly", "semiannual", "annual"] as const).map(p => {
+                      const ls: Record<string, string> = { monthly: "Mensal", quarterly: "Trimestral", semiannual: "Semestral", annual: "Anual" };
+                      return (
+                        <button
+                          key={p}
+                          id={`form-billing-${p}`}
+                          type="button"
+                          onClick={() => setFormBillingPeriod(p)}
+                          className={`px-2.5 py-1.5 text-[11px] font-bold rounded-lg transition-all duration-150 ${
+                            formBillingPeriod === p ? "bg-primary text-black" : "text-zinc-400 hover:text-white"
+                          }`}
+                        >
+                          {ls[p]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedPlan(null)}
+                  className="text-zinc-600 hover:text-zinc-400 transition text-xs self-start md:self-auto"
+                >
+                  ✕ Trocar plano
+                </button>
+              </div>
+
+              {/* Main form card */}
+              <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-8 md:p-10 shadow-2xl">
+                <div className="mb-8">
+                  <h3 className="text-xl font-black text-white mb-1">Seus dados de cadastro</h3>
+                  <p className="text-sm text-zinc-500">Preencha o formulário abaixo. Nossa equipe analisará e entrará em contato para ativar seu perfil.</p>
+                </div>
+
+                {formSuccess ? (
+                  <div className="text-center py-12 space-y-4 animate-expand-down">
+                    <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto">
+                      <CheckCircle className="w-8 h-8 text-emerald-400" />
+                    </div>
+                    <h4 className="text-xl font-black text-white">Cadastro enviado com sucesso!</h4>
+                    <p className="text-zinc-400 text-sm max-w-md mx-auto">
+                      Recebemos suas informações para o <strong className="text-primary">Plano {selectedPlan.name}</strong>.
+                      Nossa equipe analisará os dados e entrará em contato para ativar seu perfil no XamaJá.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedPlan(null); setFormSuccess(false); }}
+                      className="mt-2 text-sm text-primary hover:underline font-semibold"
+                    >
+                      Fazer outro cadastro
+                    </button>
+                  </div>
+                ) : (
+                  <form id="registration-form" onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div className="flex flex-col gap-2">
+                        <label htmlFor="reg-name" className="text-sm font-bold text-zinc-300">Seu nome *</label>
+                        <Input id="reg-name" type="text" placeholder="Ex: João Silva" required value={name} onChange={e => setName(e.target.value)}
+                          className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <label htmlFor="reg-business-name" className="text-sm font-bold text-zinc-300">Nome do negócio *</label>
+                        <Input id="reg-business-name" type="text" placeholder="Ex: Pinturas Silva, Restaurante Japá..." required value={businessName} onChange={e => setBusinessName(e.target.value)}
+                          className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <label htmlFor="reg-email" className="text-sm font-bold text-zinc-300">E-mail *</label>
+                      <Input id="reg-email" type="email" placeholder="Ex: joao@gmail.com" required value={email} onChange={e => setEmail(e.target.value)}
+                        className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div className="flex flex-col gap-2">
+                        <label htmlFor="reg-phone" className="text-sm font-bold text-zinc-300">Telefone *</label>
+                        <Input id="reg-phone" type="tel" placeholder="Ex: (11) 3333-4444" required value={phone} onChange={e => setPhone(e.target.value)}
+                          className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <label htmlFor="reg-whatsapp" className="text-sm font-bold text-zinc-300">WhatsApp</label>
+                        <Input id="reg-whatsapp" type="tel" placeholder="Ex: (11) 99999-9999" value={whatsapp} onChange={e => setWhatsapp(e.target.value)}
+                          className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <label htmlFor="reg-category" className="text-sm font-bold text-zinc-300">Categoria Principal *</label>
+                      <select id="reg-category" required value={categoryId} onChange={e => setCategoryId(e.target.value)}
+                        className="bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 h-12 focus:border-primary focus:outline-none transition text-sm">
+                        <option value="" className="bg-zinc-950">Selecione uma categoria...</option>
+                        <option value="reformas-reparos" className="bg-zinc-950">Reformas e Reparos</option>
+                        <option value="comercios" className="bg-zinc-950">Alimentação</option>
+                        <option value="beleza-estetica" className="bg-zinc-950">Beleza e Estética</option>
+                        <option value="automotivo" className="bg-zinc-950">Automotivo</option>
+                        <option value="servicos-domesticos" className="bg-zinc-950">Serviços Domésticos</option>
+                        <option value="assistencia-tecnica" className="bg-zinc-950">Tecnologia / Assistência Técnica</option>
+                        <option value="pets" className="bg-zinc-950">Pets</option>
+                        <option value="saude" className="bg-zinc-950">Saúde</option>
+                        <option value="academias" className="bg-zinc-950">Academias / Fitness</option>
+                        <option value="educacao" className="bg-zinc-950">Educação</option>
+                        <option value="outro" className="bg-zinc-950">Outro (especificar)...</option>
+                      </select>
+                    </div>
+
+                    {categoryId === "outro" && (
+                      <div className="flex flex-col gap-2 animate-expand-down">
+                        <label htmlFor="reg-other-category" className="text-sm font-bold text-zinc-300">Especifique a categoria *</label>
+                        <Input id="reg-other-category" type="text" placeholder="Ex: Pet Shop, Consultoria, etc." required value={otherCategory} onChange={e => setOtherCategory(e.target.value)}
+                          className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div className="flex flex-col gap-2">
+                        <label htmlFor="reg-city" className="text-sm font-bold text-zinc-300">Cidade *</label>
+                        <Input id="reg-city" type="text" placeholder="Ex: Bragança Paulista" required value={city} onChange={e => setCity(e.target.value)}
+                          className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <label htmlFor="reg-state" className="text-sm font-bold text-zinc-300">Estado</label>
+                        <Input id="reg-state" type="text" placeholder="Ex: SP" value={state} onChange={e => setStateField(e.target.value)}
+                          className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div className="flex flex-col gap-2">
+                        <label htmlFor="reg-neighborhood" className="text-sm font-bold text-zinc-300">Bairro *</label>
+                        <Input id="reg-neighborhood" type="text" placeholder="Ex: Centro" required value={neighborhood} onChange={e => setNeighborhood(e.target.value)}
+                          className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <label htmlFor="reg-cep" className="text-sm font-bold text-zinc-300">CEP</label>
+                        <Input id="reg-cep" type="text" placeholder="Ex: 12900-000" value={cep} onChange={e => setCep(e.target.value)}
+                          className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <label htmlFor="reg-description" className="text-sm font-bold text-zinc-300">Descrição do negócio *</label>
+                      <Textarea id="reg-description" rows={4} placeholder="Descreva brevemente seu negócio, produtos ou serviços oferecidos..." required value={description} onChange={e => setDescription(e.target.value)}
+                        className="bg-zinc-900 border-zinc-800 text-white rounded-xl px-4 py-3 focus-visible:ring-primary focus-visible:border-primary text-sm resize-none" />
+                    </div>
+
+                    {formError && (
+                      <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-4 gap-3 text-sm flex items-start">
+                        <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                        <span>{formError}</span>
+                      </div>
+                    )}
+
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting}
+                      id="btn-submit-registration"
+                      className="w-full flex items-center justify-center gap-3 bg-primary text-black font-black py-4 h-14 rounded-xl hover:bg-primary/90 transition shadow-lg shadow-primary/20 hover:-translate-y-0.5 disabled:opacity-75 disabled:cursor-not-allowed text-sm"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <span>Enviando...</span>
+                          <span className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                        </>
+                      ) : (
+                        <>
+                          <span>Enviar cadastro — Plano {selectedPlan.name}</span>
+                          <ArrowRight className="h-5 w-5" />
+                        </>
+                      )}
+                    </Button>
+
+                    <p className="text-center text-xs text-zinc-600">
+                      ✦ Sem cobrança automática. O administrador aprovará seu cadastro manualmente.
+                    </p>
+                  </form>
+                )}
+              </div>
+            </div>
+          )}
+
+          {!selectedPlan && !isLoadingPlans && (
+            <div className="text-center mt-2">
+              <p className="text-zinc-600 text-sm">↑ Escolha um plano acima para iniciar seu cadastro</p>
+            </div>
+          )}
+
         </div>
       </section>
 
@@ -1597,287 +2186,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Form Section (Registration) */}
-      <section
-        id="cadastro"
-        className="py-20 bg-card/10 border-b border-border"
-      >
-        <div className="container mx-auto px-4 max-w-4xl">
-          <div className="text-center max-w-2xl mx-auto mb-12 space-y-4">
-            <h2 className="text-3xl md:text-5xl font-black text-white">
-              Cadastre seu <span className="text-primary">Serviço</span> ou{" "}
-              <span className="text-primary">Negócio</span>
-            </h2>
-            <p className="text-sm md:text-base text-muted-foreground">
-              Preencha o formulário abaixo com as informações do seu negócio ou
-              serviço. Nossa equipe fará a verificação e entrará em contato para
-              ativar seu perfil.
-            </p>
-          </div>
-
-          <div className="bg-card border border-border rounded-3xl p-8 md:p-12 shadow-2xl relative">
-            {/* Step Progress Bar */}
-            <div className="flex items-center justify-center gap-4 mb-8 border-b border-border/40 pb-6">
-              <div className="flex items-center gap-2">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border transition-all duration-300 ${activeStep === 1 ? 'bg-primary text-primary-foreground border-primary shadow-[0_0_15px_rgba(37,211,102,0.2)]' : 'bg-primary/20 text-primary border-primary'}`}>
-                  {activeStep > 1 ? "✓" : "1"}
-                </div>
-                <span className={`text-xs font-semibold ${activeStep === 1 ? 'text-white' : 'text-zinc-500'}`}>Identificação</span>
-              </div>
-              <div className="w-8 h-px bg-zinc-800"></div>
-              <div className="flex items-center gap-2">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border transition-all duration-300 ${activeStep === 2 ? 'bg-primary text-primary-foreground border-primary shadow-[0_0_15px_rgba(37,211,102,0.2)]' : 'bg-background border-zinc-800 text-zinc-500'}`}>2</div>
-                <span className={`text-xs font-semibold ${activeStep === 2 ? 'text-white' : 'text-zinc-500'}`}>Profissional</span>
-              </div>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {activeStep === 1 && (
-                <div className="space-y-6 animate-in fade-in duration-300">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex flex-col gap-2">
-                      <label
-                        htmlFor="name"
-                        className="text-sm font-semibold text-white"
-                      >
-                        Nome do Profissional ou Negócio *
-                      </label>
-                      <Input
-                        type="text"
-                        id="name"
-                        placeholder="Ex: João Silva ou Pinturas Silva"
-                        required
-                        value={name}
-                        onChange={e => setName(e.target.value)}
-                        className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <label
-                        htmlFor="email"
-                        className="text-sm font-semibold text-white"
-                      >
-                        E-mail *
-                      </label>
-                      <Input
-                        type="email"
-                        id="email"
-                        placeholder="Ex: joao@gmail.com"
-                        required
-                        value={email}
-                        onChange={e => setEmail(e.target.value)}
-                        className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label
-                      htmlFor="phone"
-                      className="text-sm font-semibold text-white"
-                    >
-                      Telefone / WhatsApp *
-                    </label>
-                    <Input
-                      type="tel"
-                      id="phone"
-                      placeholder="Ex: (11) 99999-9999"
-                      required
-                      value={phone}
-                      onChange={e => setPhone(e.target.value)}
-                      className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
-                    />
-                  </div>
-
-                  <div className="pt-4">
-                    <Button
-                      type="button"
-                      onClick={handleNextStep}
-                      className="w-full flex items-center justify-center gap-3 bg-primary text-primary-foreground font-black py-4 h-14 rounded-xl hover:bg-primary/90 transition shadow-lg shadow-primary/20 hover:-translate-y-0.5"
-                    >
-                      <span>Avançar</span>
-                      <ArrowRight className="h-5 w-5" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {activeStep === 2 && (
-                <div className="space-y-6 animate-in fade-in duration-300">
-                  <div className="flex flex-col gap-2">
-                    <label
-                      htmlFor="categoryId"
-                      className="text-sm font-semibold text-white font-body"
-                    >
-                      Categoria Principal *
-                    </label>
-                    <select
-                      id="categoryId"
-                      required
-                      value={categoryId}
-                      onChange={e => setCategoryId(e.target.value)}
-                      className="bg-background border border-border text-foreground rounded-xl px-4 py-3 h-12 focus:border-primary focus:outline-none transition text-sm"
-                    >
-                      <option value="" className="bg-card">
-                        Selecione uma categoria...
-                      </option>
-                      <option value="reformas-reparos" className="bg-card">
-                        Reformas
-                      </option>
-                      <option value="comercios" className="bg-card">
-                        Alimentação
-                      </option>
-                      <option value="beleza-estetica" className="bg-card">
-                        Beleza
-                      </option>
-                      <option value="automotivo" className="bg-card">
-                        Automotivo
-                      </option>
-                      <option value="servicos-domesticos" className="bg-card">
-                        Casa
-                      </option>
-                      <option value="assistencia-tecnica" className="bg-card">
-                        Tecnologia / Assistência Técnica
-                      </option>
-                      <option value="pets" className="bg-card">
-                        Pets
-                      </option>
-                      <option value="saude" className="bg-card">
-                        Saúde
-                      </option>
-                      <option value="academias" className="bg-card">
-                        Academias / Fitness
-                      </option>
-                      <option value="outro" className="bg-card">
-                        Outro (Especificar)...
-                      </option>
-                    </select>
-                  </div>
-
-                  {categoryId === "outro" && (
-                    <div className="flex flex-col gap-2">
-                      <label
-                        htmlFor="otherCategory"
-                        className="text-sm font-semibold text-white"
-                      >
-                        Especifique a Categoria *
-                      </label>
-                      <Input
-                        type="text"
-                        id="otherCategory"
-                        placeholder="Ex: Pet Shop, Consultoria, etc."
-                        required
-                        value={otherCategory}
-                        onChange={e => setOtherCategory(e.target.value)}
-                        className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
-                      />
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex flex-col gap-2">
-                      <label
-                        htmlFor="city"
-                        className="text-sm font-semibold text-white"
-                      >
-                        Cidade *
-                      </label>
-                      <Input
-                        type="text"
-                        id="city"
-                        placeholder="Ex: Bragança Paulista"
-                        required
-                        value={city}
-                        onChange={e => setCity(e.target.value)}
-                        className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <label
-                        htmlFor="neighborhood"
-                        className="text-sm font-semibold text-white"
-                      >
-                        Bairro *
-                      </label>
-                      <Input
-                        type="text"
-                        id="neighborhood"
-                        placeholder="Ex: Centro"
-                        required
-                        value={neighborhood}
-                        onChange={e => setNeighborhood(e.target.value)}
-                        className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label
-                      htmlFor="description"
-                      className="text-sm font-semibold text-white"
-                    >
-                      Descrição do seu negócio, produtos ou serviços *
-                    </label>
-                    <Textarea
-                      id="description"
-                      rows={4}
-                      placeholder="Descreva brevemente o seu comércio, loja, os produtos que vende ou serviços que oferece..."
-                      required
-                      value={description}
-                      onChange={e => setDescription(e.target.value)}
-                      className="bg-background border-border text-foreground rounded-xl px-4 py-3 focus-visible:ring-primary focus-visible:border-primary text-sm resize-none"
-                    />
-                  </div>
-
-                  {/* Status Messages */}
-                  {formSuccess && (
-                    <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl p-4 gap-3 text-sm flex items-start">
-                      <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <strong>Cadastro enviado com sucesso!</strong> Recebemos
-                        suas informações. Analisaremos os dados e entraremos em
-                        contato para ativar o seu perfil no app XamaJá.
-                      </div>
-                    </div>
-                  )}
-
-                  {formError && (
-                    <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-4 gap-3 text-sm flex items-start">
-                      <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                      <span>{formError}</span>
-                    </div>
-                  )}
-
-                  <div className="flex gap-4 pt-4">
-                    <Button
-                      type="button"
-                      onClick={() => setActiveStep(1)}
-                      variant="outline"
-                      className="flex-[0.4] border-border text-foreground hover:bg-card h-14 rounded-xl font-bold"
-                    >
-                      Voltar
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="flex-1 flex items-center justify-center gap-3 bg-primary text-primary-foreground font-black py-4 h-14 rounded-xl hover:bg-primary/90 transition shadow-lg shadow-primary/20 hover:-translate-y-0.5 disabled:opacity-75 disabled:cursor-not-allowed"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <span>Enviando...</span>
-                          <span className="loader-btn w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></span>
-                        </>
-                      ) : (
-                        <span>Enviar Formulário</span>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </form>
-          </div>
-        </div>
-      </section>
 
       {/* Partners Banner Section */}
       <section className="py-16 bg-card border-y border-border relative overflow-hidden">
@@ -2072,3 +2380,4 @@ export default function Home() {
     </div>
   );
 }
+

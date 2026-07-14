@@ -546,14 +546,20 @@ async function startServer() {
     async (req, res) => {
     try {
       const {
-        name,
+        name,          // nome do responsável
+        businessName,  // nome do negócio (novo)
         email,
         phone,
+        whatsapp,      // novo campo separado
         categoryId,
         otherCategory,
         city,
         neighborhood,
+        state,         // novo campo estado
+        cep,           // novo campo CEP
         description,
+        planId,        // ID do plano escolhido (novo)
+        billingCycle,  // periodicidade (novo): monthly | quarterly | semiannual | annual
         refCode,
       } = req.body;
 
@@ -571,6 +577,10 @@ async function startServer() {
           error: "Preencha todos os campos obrigatórios.",
         });
       }
+
+      // Validar billingCycle se fornecido
+      const validCycles = ["monthly", "quarterly", "semiannual", "annual"];
+      const finalBillingCycle = billingCycle && validCycles.includes(billingCycle) ? billingCycle : "monthly";
 
       const CATEGORY_MAP: Record<string, string> = {
         "reformas-reparos": "Reformas e Reparos",
@@ -597,18 +607,25 @@ async function startServer() {
           : CATEGORY_MAP[categoryId] || "";
       const providerId = `prov_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+      // Nome de exibição: nome do negócio (se informado) ou nome do responsável
+      const displayName = businessName?.trim() || name;
+
       await db.createProvider({
         id: providerId,
         userId: null,
-        name,
+        name: displayName,
         category: finalCategory,
         categoryId,
         city,
         neighborhood,
         phone,
-        whatsapp: phone,
+        whatsapp: whatsapp || phone,
         description,
-        plan: "monthly",
+        cep: cep || null,
+        address: state ? `${city}, ${state}` : city,
+        plan: "monthly", // LEGACY
+        planId: planId || null,
+        billingCycle: finalBillingCycle,
         isActive: false,
         status: "pendente",
         isVerified: false,
@@ -619,7 +636,7 @@ async function startServer() {
       });
 
       console.log(
-        `[Web API] Provider registered successfully: ${name} (${providerId}) in category: ${finalCategory}`,
+        `[Web API] Provider registered successfully: ${displayName} (${providerId}) plan=${planId || 'none'} cycle=${finalBillingCycle} category=${finalCategory}`,
       );
 
       // Se houver código de indicação, associa o lead ao parceiro

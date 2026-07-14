@@ -240,3 +240,27 @@
 .animate-slide-hint {
   animation: slide-hint 1.5s cubic-bezier(0.25, 1, 0.5, 1) infinite;
 }
+
+@keyframes expand-down {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-expand-down {
+  animation: expand-down 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes shimmer-badge {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(132, 204, 22, 0); }
+  50% { box-shadow: 0 0 16px 4px rgba(132, 204, 22, 0.25); }
+}
+
+.animate-badge-glow {
+  animation: shimmer-badge 2.5s ease-in-out infinite;
+}
