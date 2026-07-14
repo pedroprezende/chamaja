@@ -154,21 +154,20 @@ const FALLBACK_PLANS = [
 
 // Linhas da tabela de comparação (na ordem desejada)
 const COMPARISON_ROWS = [
-  { key: "public_profile", label: "Perfil público" },
-  { key: "photos_5", label: "Fotos (até 5)", altKeys: ["photos_10", "photos_unlimited"] },
-  { key: "menu", label: "Cardápio" },
-  { key: "service_catalog", label: "Catálogo de serviços" },
-  { key: "receive_reviews", label: "Avaliações" },
-  { key: "reply_reviews", label: "Responder avaliações" },
-  { key: "profile_views", label: "Visualizações" },
-  { key: "favorites_count", label: "Favoritos" },
-  { key: "full_stats", label: "Estatísticas completas", altKeys: ["basic_stats"] },
-  { key: "monthly_reports", label: "Relatórios" },
-  { key: "search_priority", label: "Destaque nas buscas", altKeys: ["premium_search_highlight"] },
-  { key: "map_priority", label: "Destaque no mapa", altKeys: ["premium_map_highlight"] },
-  { key: "home_highlight", label: "Página inicial" },
-  { key: "verified_profile", label: "Perfil Verificado" },
+  { key: "public_profile", label: "Perfil Completo" },
+  { key: "photos_5", label: "Fotos do Negócio (Até 5)" },
+  { key: "business_hours", label: "Horário de Funcionamento" },
+  { key: "map_location", label: "Localização no Mapa" },
+  { key: "receive_reviews", label: "Recebimento de Avaliações" },
+  { key: "whatsapp_contact", label: "WhatsApp & Telefone de Contato" },
+  { key: "social_links", label: "Links de Redes Sociais" },
   { key: "verified_badge", label: "Selo Verificado" },
+  { key: "search_highlight", label: "Destaque nas Buscas" },
+  { key: "statistics", label: "Painel de Estatísticas" },
+  { key: "support", label: "Suporte" },
+  { key: "home_highlight", label: "Destaque na Página Inicial" },
+  { key: "premium_badge", label: "Selo Premium" },
+  { key: "unlimited_photos", label: "Fotos Ilimitadas" },
 ];
 
 export default function Home() {
@@ -608,6 +607,53 @@ export default function Home() {
   const formatPrice = (val: number) =>
     val?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) ?? "R$ 0,00";
 
+  const checkBenefit = (planIndex: number, rowKey: string) => {
+    if (!plans || plans.length === 0) return false;
+    for (let i = 0; i <= planIndex; i++) {
+      const plan = plans[i];
+      if (!plan) continue;
+      const hasIt = (plan.benefits || []).some((b: any) => {
+        const key = (b.key || "").toLowerCase();
+        const name = (b.name || "").toLowerCase();
+        
+        switch (rowKey) {
+          case "public_profile":
+            return name.includes("perfil") || key.includes("profile");
+          case "photos_5":
+            return name.includes("foto") || key.includes("photo");
+          case "business_hours":
+            return name.includes("horário") || key.includes("hour");
+          case "map_location":
+            return name.includes("mapa") || name.includes("localização") || key.includes("map");
+          case "receive_reviews":
+            return name.includes("avalia") || key.includes("review");
+          case "whatsapp_contact":
+            return name.includes("whatsapp") || name.includes("contato") || key.includes("whatsapp") || key.includes("phone");
+          case "social_links":
+            return name.includes("instagram") || name.includes("facebook") || name.includes("rede") || key.includes("social") || key.includes("link");
+          case "verified_badge":
+            return name.includes("verificado") || key.includes("verified");
+          case "search_highlight":
+            return name.includes("pesquisa") || name.includes("busca") || key.includes("search") || key.includes("highlight");
+          case "statistics":
+            return name.includes("estatística") || name.includes("analytics") || name.includes("stats") || key.includes("stat");
+          case "support":
+            return name.includes("suporte") || key.includes("support");
+          case "home_highlight":
+            return name.includes("inicial") || name.includes("home") || key.includes("home");
+          case "premium_badge":
+            return name.includes("selo premium") || key.includes("premium");
+          case "unlimited_photos":
+            return name.includes("ilimitada") || key.includes("unlimited");
+          default:
+            return false;
+        }
+      });
+      if (hasIt) return true;
+    }
+    return false;
+  };
+
   const periodLabels: Record<string, string> = {
     monthly: "mês",
     quarterly: "trimestre",
@@ -979,415 +1025,6 @@ export default function Home() {
               </div>
             </div>
           </div>
-        </div>
-      </section>
-
-      <section
-        id="cadastro"
-        className="py-24 bg-[#020203] border-b border-zinc-900/80 relative overflow-hidden"
-      >
-        {/* Ambient glows */}
-        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[130px] pointer-events-none" />
-        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none" />
-
-        <div className="container mx-auto px-4 max-w-6xl relative z-10">
-
-          {/* ── Cabeçalho ── */}
-          <div className="text-center max-w-2xl mx-auto mb-14 space-y-4">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/10 border border-primary/25 rounded-full animate-badge-glow">
-              <Sparkles className="w-3.5 h-3.5 text-primary" />
-              <span className="text-primary text-xs font-black uppercase tracking-widest">Plano XamaJá</span>
-            </div>
-            <h2 className="text-3xl md:text-5xl font-black text-white leading-tight">
-              Escolha o plano ideal para<br />
-              <span className="text-primary">divulgar seu negócio</span>
-            </h2>
-            <p className="text-sm md:text-base text-zinc-400 max-w-lg mx-auto leading-relaxed">
-              Quanto mais completo for seu perfil, maiores serão suas chances de ser encontrado por novos clientes.
-            </p>
-          </div>
-
-          {/* ── Toggle de periodicidade ── */}
-          <div className="flex justify-center mb-10">
-            <div className="inline-flex bg-zinc-950 border border-zinc-800 rounded-2xl p-1 gap-1">
-              {(["monthly", "quarterly", "semiannual", "annual"] as const).map((p) => {
-                const labels: Record<string, string> = { monthly: "Mensal", quarterly: "Trimestral", semiannual: "Semestral", annual: "Anual" };
-                return (
-                  <button
-                    key={p}
-                    id={`billing-toggle-${p}`}
-                    onClick={() => setBillingPeriod(p)}
-                    className={`relative px-3 md:px-5 py-2 text-xs md:text-sm font-bold rounded-xl transition-all duration-200 ${
-                      billingPeriod === p
-                        ? "bg-primary text-black shadow-lg shadow-primary/20"
-                        : "text-zinc-400 hover:text-white"
-                    }`}
-                  >
-                    {labels[p]}
-                    {p === "annual" && billingPeriod === p && (
-                      <span className="absolute -top-2 -right-1 text-[9px] bg-emerald-400 text-black font-black px-1.5 py-0.5 rounded-full leading-none">
-                        ✦ Melhor
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* ── Cards de Planos ── */}
-          {isLoadingPlans ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="h-[520px] bg-zinc-950 border border-zinc-900 rounded-3xl animate-pulse" />
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-              {plans.map((plan, idx) => {
-                const isFeatured = plan.isFeatured;
-                const isSelected = selectedPlan?.id === plan.id;
-                const price = getPlanPrice(plan, billingPeriod);
-                const PlanIcon = idx === 0 ? Zap : idx === 1 ? Crown : BadgeCheck;
-
-                return (
-                  <div
-                    key={plan.id}
-                    id={`plan-card-${plan.id}`}
-                    className={`relative flex flex-col rounded-3xl border transition-all duration-300 cursor-pointer group
-                      ${isFeatured
-                        ? "bg-zinc-950 border-primary/40 shadow-[0_0_40px_rgba(132,204,22,0.08)] hover:shadow-[0_0_60px_rgba(132,204,22,0.15)] hover:border-primary/70 md:scale-[1.02]"
-                        : "bg-zinc-950/80 border-zinc-800/70 hover:border-zinc-600 hover:shadow-[0_0_30px_rgba(255,255,255,0.03)]"
-                      }
-                      ${isSelected ? "ring-2 ring-primary ring-offset-2 ring-offset-black" : ""}
-                    `}
-                  >
-                    {isFeatured && (
-                      <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
-                        <span className="px-4 py-1 bg-primary text-black text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-primary/30">
-                          ✦ {plan.description || "Mais escolhido"}
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="p-7 flex-1 flex flex-col">
-                      <div className="flex items-start justify-between mb-6">
-                        <div>
-                          {!isFeatured && (
-                            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block mb-1">
-                              {plan.description}
-                            </span>
-                          )}
-                          <h3 className={`text-2xl font-black ${isFeatured ? "text-primary" : "text-white"}`}>
-                            {plan.name}
-                          </h3>
-                        </div>
-                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 ${
-                          isFeatured ? "bg-primary/20 border border-primary/30" : "bg-zinc-900 border border-zinc-800"
-                        }`}>
-                          <PlanIcon className={`w-5 h-5 ${isFeatured ? "text-primary" : "text-zinc-400"}`} />
-                        </div>
-                      </div>
-
-                      <div className="mb-6">
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-4xl font-black text-white">{formatPrice(price)}</span>
-                          <span className="text-zinc-500 text-sm font-medium">/{periodLabels[billingPeriod]}</span>
-                        </div>
-                        {billingPeriod !== "monthly" && (
-                          <p className="text-xs text-zinc-500 mt-1">
-                            ≈ {formatPrice(price / (billingPeriod === "quarterly" ? 3 : billingPeriod === "semiannual" ? 6 : 12))}/mês
-                          </p>
-                        )}
-                        {billingPeriod === "annual" && (
-                          <span className="inline-block mt-2 text-[10px] font-black text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-2 py-0.5 rounded-full">
-                            Economize no plano anual
-                          </span>
-                        )}
-                      </div>
-
-                      <ul className="space-y-2.5 mb-7 flex-1">
-                        {(plan.benefits || []).slice(0, 8).map((b: any) => (
-                          <li key={b.key} className="flex items-start gap-2 text-sm text-zinc-300">
-                            <Check className={`w-4 h-4 mt-0.5 flex-shrink-0 ${isFeatured ? "text-primary" : "text-emerald-500"}`} />
-                            <span>{b.name}</span>
-                          </li>
-                        ))}
-                        {(plan.benefits || []).length > 8 && (
-                          <li className="text-xs text-zinc-500 pl-6">
-                            + {(plan.benefits || []).length - 8} benefícios adicionais
-                          </li>
-                        )}
-                      </ul>
-
-                      <button
-                        id={`btn-select-plan-${plan.id}`}
-                        onClick={() => handleSelectPlan(plan)}
-                        className={`w-full py-3.5 rounded-xl font-black text-sm transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0
-                          ${isFeatured
-                            ? "bg-primary text-black hover:bg-primary/90 shadow-lg shadow-primary/25"
-                            : isSelected
-                              ? "bg-zinc-800 text-white border border-zinc-700"
-                              : "bg-zinc-900 text-white border border-zinc-800 hover:border-zinc-600"
-                          }
-                        `}
-                      >
-                        {isSelected ? "✓ Selecionado" : `Escolher ${plan.name}`}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* ── Tabela de Comparação ── */}
-          <div className="mb-16 overflow-x-auto">
-            <div className="min-w-[520px]">
-              <div className="flex items-center gap-2 mb-5">
-                <h3 className="text-sm font-black text-zinc-400 uppercase tracking-widest">Comparação detalhada</h3>
-                <div className="flex-1 h-px bg-zinc-900" />
-              </div>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-zinc-900">
-                    <th className="text-left py-3 pr-6 text-zinc-500 font-semibold text-xs w-1/2">Recurso</th>
-                    {plans.map(plan => (
-                      <th key={plan.id} className={`text-center py-3 px-4 text-xs font-black ${plan.isFeatured ? "text-primary" : "text-zinc-400"}`}>
-                        {plan.name}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {COMPARISON_ROWS.map((row, ridx) => (
-                    <tr key={row.key} className={`border-b border-zinc-900/50 ${ridx % 2 === 0 ? "bg-zinc-950/30" : ""}`}>
-                      <td className="py-3 pr-6 text-zinc-400 font-medium">{row.label}</td>
-                      {plans.map(plan => {
-                        const benefitKeys = (plan.benefits || []).map((b: any) => b.key);
-                        const hasIt = benefitKeys.includes(row.key) || (row.altKeys || []).some((k: string) => benefitKeys.includes(k));
-                        return (
-                          <td key={plan.id} className="text-center py-3 px-4">
-                            {hasIt
-                              ? <Check className={`w-4 h-4 mx-auto ${plan.isFeatured ? "text-primary" : "text-emerald-500"}`} />
-                              : <Minus className="w-4 h-4 mx-auto text-zinc-700" />
-                            }
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* ── Formulário Expandível ── */}
-          {selectedPlan && (
-            <div id="cadastro-form" className="animate-expand-down">
-              {/* Plan summary bar */}
-              <div className="bg-zinc-950 border border-primary/30 rounded-2xl p-5 mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
-                    <BadgeCheck className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-zinc-500 font-semibold">Você escolheu</p>
-                    <p className="text-white font-black text-lg leading-tight">Plano {selectedPlan.name}</p>
-                    <p className="text-primary text-sm font-bold">{formatPrice(getPlanPrice(selectedPlan, formBillingPeriod))}/{periodLabels[formBillingPeriod]}</p>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1.5 w-full md:w-auto">
-                  <span className="text-xs text-zinc-500 font-semibold">Periodicidade preferida</span>
-                  <div className="inline-flex bg-zinc-900 border border-zinc-800 rounded-xl p-0.5 gap-0.5">
-                    {(["monthly", "quarterly", "semiannual", "annual"] as const).map(p => {
-                      const ls: Record<string, string> = { monthly: "Mensal", quarterly: "Trimestral", semiannual: "Semestral", annual: "Anual" };
-                      return (
-                        <button
-                          key={p}
-                          id={`form-billing-${p}`}
-                          type="button"
-                          onClick={() => setFormBillingPeriod(p)}
-                          className={`px-2.5 py-1.5 text-[11px] font-bold rounded-lg transition-all duration-150 ${
-                            formBillingPeriod === p ? "bg-primary text-black" : "text-zinc-400 hover:text-white"
-                          }`}
-                        >
-                          {ls[p]}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setSelectedPlan(null)}
-                  className="text-zinc-600 hover:text-zinc-400 transition text-xs self-start md:self-auto"
-                >
-                  ✕ Trocar plano
-                </button>
-              </div>
-
-              {/* Main form card */}
-              <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-8 md:p-10 shadow-2xl">
-                <div className="mb-8">
-                  <h3 className="text-xl font-black text-white mb-1">Seus dados de cadastro</h3>
-                  <p className="text-sm text-zinc-500">Preencha o formulário abaixo. Nossa equipe analisará e entrará em contato para ativar seu perfil.</p>
-                </div>
-
-                {formSuccess ? (
-                  <div className="text-center py-12 space-y-4 animate-expand-down">
-                    <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto">
-                      <CheckCircle className="w-8 h-8 text-emerald-400" />
-                    </div>
-                    <h4 className="text-xl font-black text-white">Cadastro enviado com sucesso!</h4>
-                    <p className="text-zinc-400 text-sm max-w-md mx-auto">
-                      Recebemos suas informações para o <strong className="text-primary">Plano {selectedPlan.name}</strong>.
-                      Nossa equipe analisará os dados e entrará em contato para ativar seu perfil no XamaJá.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => { setSelectedPlan(null); setFormSuccess(false); }}
-                      className="mt-2 text-sm text-primary hover:underline font-semibold"
-                    >
-                      Fazer outro cadastro
-                    </button>
-                  </div>
-                ) : (
-                  <form id="registration-form" onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      <div className="flex flex-col gap-2">
-                        <label htmlFor="reg-name" className="text-sm font-bold text-zinc-300">Seu nome *</label>
-                        <Input id="reg-name" type="text" placeholder="Ex: João Silva" required value={name} onChange={e => setName(e.target.value)}
-                          className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <label htmlFor="reg-business-name" className="text-sm font-bold text-zinc-300">Nome do negócio *</label>
-                        <Input id="reg-business-name" type="text" placeholder="Ex: Pinturas Silva, Restaurante Japá..." required value={businessName} onChange={e => setBusinessName(e.target.value)}
-                          className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-2">
-                      <label htmlFor="reg-email" className="text-sm font-bold text-zinc-300">E-mail *</label>
-                      <Input id="reg-email" type="email" placeholder="Ex: joao@gmail.com" required value={email} onChange={e => setEmail(e.target.value)}
-                        className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      <div className="flex flex-col gap-2">
-                        <label htmlFor="reg-phone" className="text-sm font-bold text-zinc-300">Telefone *</label>
-                        <Input id="reg-phone" type="tel" placeholder="Ex: (11) 3333-4444" required value={phone} onChange={e => setPhone(e.target.value)}
-                          className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <label htmlFor="reg-whatsapp" className="text-sm font-bold text-zinc-300">WhatsApp</label>
-                        <Input id="reg-whatsapp" type="tel" placeholder="Ex: (11) 99999-9999" value={whatsapp} onChange={e => setWhatsapp(e.target.value)}
-                          className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-2">
-                      <label htmlFor="reg-category" className="text-sm font-bold text-zinc-300">Categoria Principal *</label>
-                      <select id="reg-category" required value={categoryId} onChange={e => setCategoryId(e.target.value)}
-                        className="bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 h-12 focus:border-primary focus:outline-none transition text-sm">
-                        <option value="" className="bg-zinc-950">Selecione uma categoria...</option>
-                        <option value="reformas-reparos" className="bg-zinc-950">Reformas e Reparos</option>
-                        <option value="comercios" className="bg-zinc-950">Alimentação</option>
-                        <option value="beleza-estetica" className="bg-zinc-950">Beleza e Estética</option>
-                        <option value="automotivo" className="bg-zinc-950">Automotivo</option>
-                        <option value="servicos-domesticos" className="bg-zinc-950">Serviços Domésticos</option>
-                        <option value="assistencia-tecnica" className="bg-zinc-950">Tecnologia / Assistência Técnica</option>
-                        <option value="pets" className="bg-zinc-950">Pets</option>
-                        <option value="saude" className="bg-zinc-950">Saúde</option>
-                        <option value="academias" className="bg-zinc-950">Academias / Fitness</option>
-                        <option value="educacao" className="bg-zinc-950">Educação</option>
-                        <option value="outro" className="bg-zinc-950">Outro (especificar)...</option>
-                      </select>
-                    </div>
-
-                    {categoryId === "outro" && (
-                      <div className="flex flex-col gap-2 animate-expand-down">
-                        <label htmlFor="reg-other-category" className="text-sm font-bold text-zinc-300">Especifique a categoria *</label>
-                        <Input id="reg-other-category" type="text" placeholder="Ex: Pet Shop, Consultoria, etc." required value={otherCategory} onChange={e => setOtherCategory(e.target.value)}
-                          className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      <div className="flex flex-col gap-2">
-                        <label htmlFor="reg-city" className="text-sm font-bold text-zinc-300">Cidade *</label>
-                        <Input id="reg-city" type="text" placeholder="Ex: Bragança Paulista" required value={city} onChange={e => setCity(e.target.value)}
-                          className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <label htmlFor="reg-state" className="text-sm font-bold text-zinc-300">Estado</label>
-                        <Input id="reg-state" type="text" placeholder="Ex: SP" value={state} onChange={e => setStateField(e.target.value)}
-                          className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      <div className="flex flex-col gap-2">
-                        <label htmlFor="reg-neighborhood" className="text-sm font-bold text-zinc-300">Bairro *</label>
-                        <Input id="reg-neighborhood" type="text" placeholder="Ex: Centro" required value={neighborhood} onChange={e => setNeighborhood(e.target.value)}
-                          className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <label htmlFor="reg-cep" className="text-sm font-bold text-zinc-300">CEP</label>
-                        <Input id="reg-cep" type="text" placeholder="Ex: 12900-000" value={cep} onChange={e => setCep(e.target.value)}
-                          className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-2">
-                      <label htmlFor="reg-description" className="text-sm font-bold text-zinc-300">Descrição do negócio *</label>
-                      <Textarea id="reg-description" rows={4} placeholder="Descreva brevemente seu negócio, produtos ou serviços oferecidos..." required value={description} onChange={e => setDescription(e.target.value)}
-                        className="bg-zinc-900 border-zinc-800 text-white rounded-xl px-4 py-3 focus-visible:ring-primary focus-visible:border-primary text-sm resize-none" />
-                    </div>
-
-                    {formError && (
-                      <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-4 gap-3 text-sm flex items-start">
-                        <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                        <span>{formError}</span>
-                      </div>
-                    )}
-
-                    <Button
-                      type="submit"
-                      disabled={isSubmitting}
-                      id="btn-submit-registration"
-                      className="w-full flex items-center justify-center gap-3 bg-primary text-black font-black py-4 h-14 rounded-xl hover:bg-primary/90 transition shadow-lg shadow-primary/20 hover:-translate-y-0.5 disabled:opacity-75 disabled:cursor-not-allowed text-sm"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <span>Enviando...</span>
-                          <span className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                        </>
-                      ) : (
-                        <>
-                          <span>Enviar cadastro — Plano {selectedPlan.name}</span>
-                          <ArrowRight className="h-5 w-5" />
-                        </>
-                      )}
-                    </Button>
-
-                    <p className="text-center text-xs text-zinc-600">
-                      ✦ Sem cobrança automática. O administrador aprovará seu cadastro manualmente.
-                    </p>
-                  </form>
-                )}
-              </div>
-            </div>
-          )}
-
-          {!selectedPlan && !isLoadingPlans && (
-            <div className="text-center mt-2">
-              <p className="text-zinc-600 text-sm">↑ Escolha um plano acima para iniciar seu cadastro</p>
-            </div>
-          )}
-
         </div>
       </section>
 
@@ -2185,6 +1822,416 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+
+      <section
+        id="cadastro"
+        className="py-24 bg-[#020203] border-b border-zinc-900/80 relative overflow-hidden"
+      >
+        {/* Ambient glows */}
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[130px] pointer-events-none" />
+        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none" />
+
+        <div className="container mx-auto px-4 max-w-6xl relative z-10">
+
+          {/* ── Cabeçalho ── */}
+          <div className="text-center max-w-2xl mx-auto mb-14 space-y-4">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/10 border border-primary/25 rounded-full animate-badge-glow">
+              <Sparkles className="w-3.5 h-3.5 text-primary" />
+              <span className="text-primary text-xs font-black uppercase tracking-widest">Plano XamaJá</span>
+            </div>
+            <h2 className="text-3xl md:text-5xl font-black text-white leading-tight">
+              Escolha o plano ideal para<br />
+              <span className="text-primary">divulgar seu negócio</span>
+            </h2>
+            <p className="text-sm md:text-base text-zinc-400 max-w-lg mx-auto leading-relaxed">
+              Quanto mais completo for seu perfil, maiores serão suas chances de ser encontrado por novos clientes.
+            </p>
+          </div>
+
+          {/* ── Toggle de periodicidade ── */}
+          <div className="flex justify-center mb-10">
+            <div className="inline-flex bg-zinc-950 border border-zinc-800 rounded-2xl p-1 gap-1">
+              {(["monthly", "quarterly", "semiannual", "annual"] as const).map((p) => {
+                const labels: Record<string, string> = { monthly: "Mensal", quarterly: "Trimestral", semiannual: "Semestral", annual: "Anual" };
+                return (
+                  <button
+                    key={p}
+                    id={`billing-toggle-${p}`}
+                    onClick={() => setBillingPeriod(p)}
+                    className={`relative px-3 md:px-5 py-2 text-xs md:text-sm font-bold rounded-xl transition-all duration-200 ${
+                      billingPeriod === p
+                        ? "bg-primary text-black shadow-lg shadow-primary/20"
+                        : "text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    {labels[p]}
+                    {p === "annual" && billingPeriod === p && (
+                      <span className="absolute -top-2 -right-1 text-[9px] bg-emerald-400 text-black font-black px-1.5 py-0.5 rounded-full leading-none">
+                        ✦ Melhor
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── Cards de Planos ── */}
+          {isLoadingPlans ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-[520px] bg-zinc-950 border border-zinc-900 rounded-3xl animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+              {plans.map((plan, idx) => {
+                const isFeatured = plan.isFeatured;
+                const isSelected = selectedPlan?.id === plan.id;
+                const price = getPlanPrice(plan, billingPeriod);
+                const PlanIcon = idx === 0 ? Zap : idx === 1 ? Crown : BadgeCheck;
+
+                return (
+                  <div
+                    key={plan.id}
+                    id={`plan-card-${plan.id}`}
+                    className={`relative flex flex-col rounded-3xl border transition-all duration-300 cursor-pointer group
+                      ${isFeatured
+                        ? "bg-zinc-950 border-primary/40 shadow-[0_0_40px_rgba(132,204,22,0.08)] hover:shadow-[0_0_60px_rgba(132,204,22,0.15)] hover:border-primary/70 md:scale-[1.02]"
+                        : "bg-zinc-950/80 border-zinc-800/70 hover:border-zinc-600 hover:shadow-[0_0_30px_rgba(255,255,255,0.03)]"
+                      }
+                      ${isSelected ? "ring-2 ring-primary ring-offset-2 ring-offset-black" : ""}
+                    `}
+                  >
+                    {isFeatured && (
+                      <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10 w-max max-w-[90%]">
+                        <span className="px-4 py-1.5 bg-primary text-black text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-primary/30 block text-center truncate">
+                          ✦ RECOMENDADO
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="p-7 flex-1 flex flex-col">
+                        <div className="flex items-start justify-between mb-4">
+                          <div>
+                            <h3 className={`text-2xl font-black ${isFeatured ? "text-primary" : "text-white"}`}>
+                              {plan.name}
+                            </h3>
+                          </div>
+                          <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 ${
+                            isFeatured ? "bg-primary/20 border border-primary/30" : "bg-zinc-900 border border-zinc-800"
+                          }`}>
+                            <PlanIcon className={`w-5 h-5 ${isFeatured ? "text-primary" : "text-zinc-400"}`} />
+                          </div>
+                        </div>
+                        {plan.description && (
+                          <p className="text-[11px] text-zinc-400 leading-relaxed mb-6">
+                            {plan.description}
+                          </p>
+                        )}
+
+                      <div className="mb-6">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-4xl font-black text-white">{formatPrice(price)}</span>
+                          <span className="text-zinc-500 text-sm font-medium">/{periodLabels[billingPeriod]}</span>
+                        </div>
+                        {billingPeriod !== "monthly" && (
+                          <p className="text-xs text-zinc-500 mt-1">
+                            ≈ {formatPrice(price / (billingPeriod === "quarterly" ? 3 : billingPeriod === "semiannual" ? 6 : 12))}/mês
+                          </p>
+                        )}
+                        {billingPeriod === "annual" && (
+                          <span className="inline-block mt-2 text-[10px] font-black text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-2 py-0.5 rounded-full">
+                            Economize no plano anual
+                          </span>
+                        )}
+                      </div>
+
+                      <ul className="space-y-2.5 mb-7 flex-1">
+                        {(plan.benefits || []).slice(0, 8).map((b: any) => (
+                          <li key={b.key} className="flex items-start gap-2 text-sm text-zinc-300">
+                            <Check className={`w-4 h-4 mt-0.5 flex-shrink-0 ${isFeatured ? "text-primary" : "text-emerald-500"}`} />
+                            <span>{b.name}</span>
+                          </li>
+                        ))}
+                        {(plan.benefits || []).length > 8 && (
+                          <li className="text-xs text-zinc-500 pl-6">
+                            + {(plan.benefits || []).length - 8} benefícios adicionais
+                          </li>
+                        )}
+                      </ul>
+
+                      <button
+                        id={`btn-select-plan-${plan.id}`}
+                        onClick={() => handleSelectPlan(plan)}
+                        className={`w-full py-3.5 rounded-xl font-black text-sm transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0
+                          ${isFeatured
+                            ? "bg-primary text-black hover:bg-primary/90 shadow-lg shadow-primary/25"
+                            : isSelected
+                              ? "bg-zinc-800 text-white border border-zinc-700"
+                              : "bg-zinc-900 text-white border border-zinc-800 hover:border-zinc-600"
+                          }
+                        `}
+                      >
+                        {isSelected ? "✓ Selecionado" : `Escolher ${plan.name}`}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ── Tabela de Comparação ── */}
+          <div className="mb-16 overflow-x-auto">
+            <div className="min-w-[520px]">
+              <div className="flex items-center gap-2 mb-5">
+                <h3 className="text-sm font-black text-zinc-400 uppercase tracking-widest">Comparação detalhada</h3>
+                <div className="flex-1 h-px bg-zinc-900" />
+              </div>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-zinc-900">
+                    <th className="text-left py-3 pr-6 text-zinc-500 font-semibold text-xs w-1/2">Recurso</th>
+                    {plans.map(plan => (
+                      <th key={plan.id} className={`text-center py-3 px-4 text-xs font-black ${plan.isFeatured ? "text-primary" : "text-zinc-400"}`}>
+                        {plan.name}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {COMPARISON_ROWS.map((row, ridx) => (
+                    <tr key={row.key} className={`border-b border-zinc-900/50 ${ridx % 2 === 0 ? "bg-zinc-950/30" : ""}`}>
+                      <td className="py-3 pr-6 text-zinc-400 font-medium">{row.label}</td>
+                      {plans.map(plan => {
+                        const hasIt = checkBenefit(plans.indexOf(plan), row.key);
+                        return (
+                          <td key={plan.id} className="text-center py-3 px-4">
+                            {hasIt
+                              ? <Check className={`w-4 h-4 mx-auto ${plan.isFeatured ? "text-primary" : "text-emerald-500"}`} />
+                              : <Minus className="w-4 h-4 mx-auto text-zinc-700" />
+                            }
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* ── Formulário Expandível ── */}
+          {selectedPlan && (
+            <div id="cadastro-form" className="animate-expand-down">
+              {/* Plan summary bar */}
+              <div className="bg-zinc-950 border border-primary/30 rounded-2xl p-5 mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
+                    <BadgeCheck className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-zinc-500 font-semibold">Você escolheu</p>
+                    <p className="text-white font-black text-lg leading-tight">Plano {selectedPlan.name}</p>
+                    <p className="text-primary text-sm font-bold">{formatPrice(getPlanPrice(selectedPlan, formBillingPeriod))}/{periodLabels[formBillingPeriod]}</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5 w-full md:w-auto">
+                  <span className="text-xs text-zinc-500 font-semibold">Periodicidade preferida</span>
+                  <div className="inline-flex bg-zinc-900 border border-zinc-800 rounded-xl p-0.5 gap-0.5">
+                    {(["monthly", "quarterly", "semiannual", "annual"] as const).map(p => {
+                      const ls: Record<string, string> = { monthly: "Mensal", quarterly: "Trimestral", semiannual: "Semestral", annual: "Anual" };
+                      return (
+                        <button
+                          key={p}
+                          id={`form-billing-${p}`}
+                          type="button"
+                          onClick={() => setFormBillingPeriod(p)}
+                          className={`px-2.5 py-1.5 text-[11px] font-bold rounded-lg transition-all duration-150 ${
+                            formBillingPeriod === p ? "bg-primary text-black" : "text-zinc-400 hover:text-white"
+                          }`}
+                        >
+                          {ls[p]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedPlan(null)}
+                  className="text-zinc-600 hover:text-zinc-400 transition text-xs self-start md:self-auto"
+                >
+                  ✕ Trocar plano
+                </button>
+              </div>
+
+              {/* Main form card */}
+              <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-8 md:p-10 shadow-2xl">
+                <div className="mb-8">
+                  <h3 className="text-xl font-black text-white mb-1">Seus dados de cadastro</h3>
+                  <p className="text-sm text-zinc-500">Preencha o formulário abaixo. Nossa equipe analisará e entrará em contato para ativar seu perfil.</p>
+                </div>
+
+                {formSuccess ? (
+                  <div className="text-center py-12 space-y-4 animate-expand-down">
+                    <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto">
+                      <CheckCircle className="w-8 h-8 text-emerald-400" />
+                    </div>
+                    <h4 className="text-xl font-black text-white">Cadastro enviado com sucesso!</h4>
+                    <p className="text-zinc-400 text-sm max-w-md mx-auto">
+                      Recebemos suas informações para o <strong className="text-primary">Plano {selectedPlan.name}</strong>.
+                      Nossa equipe analisará os dados e entrará em contato para ativar seu perfil no XamaJá.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedPlan(null); setFormSuccess(false); }}
+                      className="mt-2 text-sm text-primary hover:underline font-semibold"
+                    >
+                      Fazer outro cadastro
+                    </button>
+                  </div>
+                ) : (
+                  <form id="registration-form" onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div className="flex flex-col gap-2">
+                        <label htmlFor="reg-name" className="text-sm font-bold text-zinc-300">Seu nome *</label>
+                        <Input id="reg-name" type="text" placeholder="Ex: João Silva" required value={name} onChange={e => setName(e.target.value)}
+                          className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <label htmlFor="reg-business-name" className="text-sm font-bold text-zinc-300">Nome do negócio *</label>
+                        <Input id="reg-business-name" type="text" placeholder="Ex: Pinturas Silva, Restaurante Japá..." required value={businessName} onChange={e => setBusinessName(e.target.value)}
+                          className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <label htmlFor="reg-email" className="text-sm font-bold text-zinc-300">E-mail *</label>
+                      <Input id="reg-email" type="email" placeholder="Ex: joao@gmail.com" required value={email} onChange={e => setEmail(e.target.value)}
+                        className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div className="flex flex-col gap-2">
+                        <label htmlFor="reg-phone" className="text-sm font-bold text-zinc-300">Telefone *</label>
+                        <Input id="reg-phone" type="tel" placeholder="Ex: (11) 3333-4444" required value={phone} onChange={e => setPhone(e.target.value)}
+                          className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <label htmlFor="reg-whatsapp" className="text-sm font-bold text-zinc-300">WhatsApp</label>
+                        <Input id="reg-whatsapp" type="tel" placeholder="Ex: (11) 99999-9999" value={whatsapp} onChange={e => setWhatsapp(e.target.value)}
+                          className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <label htmlFor="reg-category" className="text-sm font-bold text-zinc-300">Categoria Principal *</label>
+                      <select id="reg-category" required value={categoryId} onChange={e => setCategoryId(e.target.value)}
+                        className="bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 h-12 focus:border-primary focus:outline-none transition text-sm">
+                        <option value="" className="bg-zinc-950">Selecione uma categoria...</option>
+                        <option value="reformas-reparos" className="bg-zinc-950">Reformas e Reparos</option>
+                        <option value="comercios" className="bg-zinc-950">Alimentação</option>
+                        <option value="beleza-estetica" className="bg-zinc-950">Beleza e Estética</option>
+                        <option value="automotivo" className="bg-zinc-950">Automotivo</option>
+                        <option value="servicos-domesticos" className="bg-zinc-950">Serviços Domésticos</option>
+                        <option value="assistencia-tecnica" className="bg-zinc-950">Tecnologia / Assistência Técnica</option>
+                        <option value="pets" className="bg-zinc-950">Pets</option>
+                        <option value="saude" className="bg-zinc-950">Saúde</option>
+                        <option value="academias" className="bg-zinc-950">Academias / Fitness</option>
+                        <option value="educacao" className="bg-zinc-950">Educação</option>
+                        <option value="outro" className="bg-zinc-950">Outro (especificar)...</option>
+                      </select>
+                    </div>
+
+                    {categoryId === "outro" && (
+                      <div className="flex flex-col gap-2 animate-expand-down">
+                        <label htmlFor="reg-other-category" className="text-sm font-bold text-zinc-300">Especifique a categoria *</label>
+                        <Input id="reg-other-category" type="text" placeholder="Ex: Pet Shop, Consultoria, etc." required value={otherCategory} onChange={e => setOtherCategory(e.target.value)}
+                          className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div className="flex flex-col gap-2">
+                        <label htmlFor="reg-city" className="text-sm font-bold text-zinc-300">Cidade *</label>
+                        <Input id="reg-city" type="text" placeholder="Ex: Bragança Paulista" required value={city} onChange={e => setCity(e.target.value)}
+                          className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <label htmlFor="reg-state" className="text-sm font-bold text-zinc-300">Estado</label>
+                        <Input id="reg-state" type="text" placeholder="Ex: SP" value={state} onChange={e => setStateField(e.target.value)}
+                          className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div className="flex flex-col gap-2">
+                        <label htmlFor="reg-neighborhood" className="text-sm font-bold text-zinc-300">Bairro *</label>
+                        <Input id="reg-neighborhood" type="text" placeholder="Ex: Centro" required value={neighborhood} onChange={e => setNeighborhood(e.target.value)}
+                          className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <label htmlFor="reg-cep" className="text-sm font-bold text-zinc-300">CEP</label>
+                        <Input id="reg-cep" type="text" placeholder="Ex: 12900-000" value={cep} onChange={e => setCep(e.target.value)}
+                          className="bg-zinc-900 border-zinc-800 text-white rounded-xl h-12 focus-visible:ring-primary focus-visible:border-primary text-sm" />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <label htmlFor="reg-description" className="text-sm font-bold text-zinc-300">Descrição do negócio *</label>
+                      <Textarea id="reg-description" rows={4} placeholder="Descreva brevemente seu negócio, produtos ou serviços oferecidos..." required value={description} onChange={e => setDescription(e.target.value)}
+                        className="bg-zinc-900 border-zinc-800 text-white rounded-xl px-4 py-3 focus-visible:ring-primary focus-visible:border-primary text-sm resize-none" />
+                    </div>
+
+                    {formError && (
+                      <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-4 gap-3 text-sm flex items-start">
+                        <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                        <span>{formError}</span>
+                      </div>
+                    )}
+
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting}
+                      id="btn-submit-registration"
+                      className="w-full flex items-center justify-center gap-3 bg-primary text-black font-black py-4 h-14 rounded-xl hover:bg-primary/90 transition shadow-lg shadow-primary/20 hover:-translate-y-0.5 disabled:opacity-75 disabled:cursor-not-allowed text-sm"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <span>Enviando...</span>
+                          <span className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                        </>
+                      ) : (
+                        <>
+                          <span>Enviar cadastro — Plano {selectedPlan.name}</span>
+                          <ArrowRight className="h-5 w-5" />
+                        </>
+                      )}
+                    </Button>
+
+                    <p className="text-center text-xs text-zinc-600">
+                      ✦ Sem cobrança automática. O administrador aprovará seu cadastro manualmente.
+                    </p>
+                  </form>
+                )}
+              </div>
+            </div>
+          )}
+
+          {!selectedPlan && !isLoadingPlans && (
+            <div className="text-center mt-2">
+              <p className="text-zinc-600 text-sm">↑ Escolha um plano acima para iniciar seu cadastro</p>
+            </div>
+          )}
+
+        </div>
+      </section>
+
 
 
       {/* Partners Banner Section */}
