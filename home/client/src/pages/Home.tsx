@@ -125,7 +125,7 @@ const FALLBACK_PLANS = [
       { key: "category", name: "Categoria" },
       { key: "description", name: "Descrição" },
       { key: "profile_photo", name: "Foto de perfil" },
-      { key: "photos_unlimited", name: "Fotos ilimitadas" },
+      { key: "photos_unlimited", name: "Fotos profissionais" },
       { key: "whatsapp", name: "WhatsApp" },
       { key: "phone", name: "Telefone" },
       { key: "address", name: "Endereço" },
@@ -167,7 +167,7 @@ const COMPARISON_ROWS = [
   { key: "support", label: "Suporte" },
   { key: "home_highlight", label: "Destaque na Página Inicial" },
   { key: "premium_badge", label: "Selo Premium" },
-  { key: "unlimited_photos", label: "Fotos Ilimitadas" },
+  { key: "unlimited_photos", label: "Fotos Profissionais" },
 ];
 
 export default function Home() {

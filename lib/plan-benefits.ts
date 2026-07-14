@@ -10,7 +10,7 @@ export const BENEFIT_KEYS = {
   homepage_highlight: "Destaque na Página Inicial",
   analytics_basic: "Estatísticas Básicas",
   analytics_advanced: "Estatísticas Avançadas",
-  unlimited_photos: "Fotos Ilimitadas",
+  unlimited_photos: "Fotos Profissionais",
   priority_support: "Suporte Prioritário",
   reports: "Relatórios",
   favorites_statistics: "Estatísticas de Favoritos",

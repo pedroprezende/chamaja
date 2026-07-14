@@ -22,7 +22,7 @@ const AVAILABLE_BENEFITS = [
   { key: "homepage_highlight", label: "Destaque na Página Inicial" },
   { key: "analytics_basic", label: "Estatísticas Básicas" },
   { key: "analytics_advanced", label: "Estatísticas Avançadas" },
-  { key: "unlimited_photos", label: "Fotos Ilimitadas" },
+  { key: "unlimited_photos", label: "Fotos Profissionais" },
   { key: "priority_support", label: "Suporte Prioritário" },
   { key: "reports", label: "Relatórios" },
   { key: "favorites_statistics", label: "Estatísticas de Favoritos" },
