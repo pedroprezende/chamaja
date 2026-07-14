@@ -26,6 +26,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/lib/auth-context";
 import { addReview } from "@/data/mock";
 import { useLocation } from "@/lib/location-context";
+import { SOCIAL_NETWORKS } from "@/constants/app";
 import { supabase } from "@/lib/supabase";
 import {
   calculateHaversineDistance,
@@ -1027,6 +1028,67 @@ export default function ProfessionalDetailScreen() {
             </View>
           </View>
         </View>
+
+        {/* Social Media Links */}
+        {prof.socialLinks && Object.keys(prof.socialLinks).length > 0 && (
+          <View
+            style={[
+              styles.infoList,
+              { backgroundColor: colors.surface, borderColor: colors.border, marginTop: 12 },
+            ]}
+          >
+            <View style={[styles.infoItem, { paddingBottom: 12 }]}>
+              <View
+                style={[styles.infoIconWrap, { backgroundColor: colors.primary + "12" }]}
+              >
+                <MaterialIcons name="share" size={20} color={colors.primary} />
+              </View>
+              <View style={styles.infoContent}>
+                <Text style={[styles.infoLabel, { color: colors.foreground }]}>
+                  Redes Sociais
+                </Text>
+              </View>
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: 12,
+                paddingHorizontal: 16,
+                paddingBottom: 16,
+              }}
+            >
+              {SOCIAL_NETWORKS.filter(
+                (n) => prof.socialLinks?.[n.key],
+              ).map((network) => {
+                const url = prof.socialLinks![network.key];
+                const fullUrl = url.startsWith("http") ? url : `https://${url}`;
+                return (
+                  <Pressable
+                    key={network.key}
+                    style={({ pressed }) => ({
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 6,
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                      borderRadius: 12,
+                      backgroundColor: pressed ? network.color + "20" : colors.background,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                    })}
+                    onPress={() => Linking.openURL(fullUrl).catch(() => {})}
+                  >
+                    <MaterialIcons name={network.icon} size={18} color={network.color} />
+                    <Text style={{ fontSize: 13, fontWeight: "600", color: colors.foreground }}>
+                      {network.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        )}
 
         {/* Reviews Section */}
         <View style={styles.section}>

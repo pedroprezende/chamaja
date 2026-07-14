@@ -55,6 +55,7 @@ const adminProviderSchema = z.object({
   popularServices: z.union([z.string(), z.array(z.string())]).nullable().optional(),
   tags: z.union([z.string(), z.array(z.string())]).nullable().optional(),
   workingHours: z.union([z.string(), z.any()]).nullable().optional(),
+  socialLinks: z.union([z.string(), z.record(z.string(), z.string())]).nullable().optional(),
   hasCatalog: z.boolean().optional(),
 });
 
@@ -98,6 +99,7 @@ const ProviderUpsertSchema = z.object({
   popularServices: z.any().optional(),
   tags: z.any().optional(),
   workingHours: z.any().optional(),
+  socialLinks: z.any().optional(),
   utmSource: z.string().nullable().optional(),
   hasCatalog: z.boolean().optional(),
   isActive: z.boolean().optional(),
@@ -135,6 +137,7 @@ const ProviderUpdateSchema = z.object({
     popularServices: z.any().optional(),
     tags: z.any().optional(),
     workingHours: z.any().optional(),
+    socialLinks: z.any().optional(),
     hasCatalog: z.boolean().optional(),
     businessType: z.string().optional(),
     deliveryTime: z.string().nullable().optional(),
@@ -275,6 +278,7 @@ export const providersRouter = router({
             popularServices: safeStringify(input.popularServices),
             tags: safeStringify(input.tags),
             workingHours: safeStringify(input.workingHours),
+            socialLinks: safeStringify(input.socialLinks),
             businessType: input.businessType,
             deliveryTime: input.deliveryTime,
             updatedAt: new Date(),
@@ -321,6 +325,7 @@ export const providersRouter = router({
           popularServices: safeStringify(input.popularServices),
           tags: safeStringify(input.tags),
           workingHours: safeStringify(input.workingHours),
+          socialLinks: safeStringify(input.socialLinks),
           isActive: input.isActive ?? false,
           status: input.status ?? "pendente",
           businessType: input.businessType || "servicos",
@@ -426,6 +431,8 @@ export const providersRouter = router({
         mappedUpdates.tags = safeStringify(input.updates.tags);
       if (input.updates.workingHours !== undefined)
         mappedUpdates.workingHours = safeStringify(input.updates.workingHours);
+      if (input.updates.socialLinks !== undefined)
+        mappedUpdates.socialLinks = safeStringify(input.updates.socialLinks);
       if (input.updates.businessType !== undefined)
         mappedUpdates.businessType = input.updates.businessType;
       if (input.updates.deliveryTime !== undefined)
@@ -1381,6 +1388,7 @@ export const providersRouter = router({
       popularServices: safeStringify(input.popularServices),
       tags: safeStringify(input.tags),
       workingHours: safeStringify(input.workingHours),
+      socialLinks: safeStringify(input.socialLinks),
       hasCatalog: input.hasCatalog ?? false,
     });
   }),
@@ -1425,6 +1433,8 @@ export const providersRouter = router({
     if (data.tags !== undefined) data.tags = safeStringify(data.tags);
     if (data.workingHours !== undefined)
       data.workingHours = safeStringify(data.workingHours);
+    if (data.socialLinks !== undefined)
+      data.socialLinks = safeStringify(data.socialLinks);
     if (data.clientsServed !== undefined)
       data.clientsServed = Number(data.clientsServed);
     if (data.foundedYear !== undefined)

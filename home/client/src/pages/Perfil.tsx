@@ -914,6 +914,55 @@ export default function Perfil({ params }: { params: { id: string } }) {
               </div>
             </div>
 
+            {/* Social Media Links */}
+            {provider.socialLinks && Object.keys(provider.socialLinks).length > 0 && (
+              <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 shadow-xl space-y-4">
+                <div className="flex items-center gap-3 pb-2">
+                  <div className="p-3 bg-zinc-900 rounded-xl text-primary border border-zinc-850">
+                    <Share2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white text-sm">Redes Sociais</h3>
+                    <p className="text-xs text-zinc-500">Siga nas redes sociais</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { key: "instagram", label: "Instagram", icon: "camera-alt", color: "#E4405F" },
+                    { key: "facebook", label: "Facebook", icon: "facebook", color: "#1877F2" },
+                    { key: "youtube", label: "YouTube", icon: "play-circle", color: "#FF0000" },
+                    { key: "tiktok", label: "TikTok", icon: "music_note", color: "#000000" },
+                    { key: "website", label: "Site", icon: "language", color: "#2563EB" },
+                    { key: "linkedin", label: "LinkedIn", icon: "work", color: "#0A66C2" },
+                    { key: "telegram", label: "Telegram", icon: "send", color: "#26A5E4" },
+                    { key: "whatsapp_channel", label: "WhatsApp", icon: "chat", color: "#25D366" },
+                  ]
+                    .filter((n) => provider.socialLinks?.[n.key])
+                    .map((network) => {
+                      const url = provider.socialLinks![network.key];
+                      const fullUrl = url.startsWith("http") ? url : `https://${url}`;
+                      return (
+                        <a
+                          key={network.key}
+                          href={fullUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-colors text-sm font-semibold text-zinc-300 hover:text-white"
+                        >
+                          <span
+                            className="material-icons text-base"
+                            style={{ color: network.color }}
+                          >
+                            {network.icon}
+                          </span>
+                          {network.label}
+                        </a>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
+
             {isComercio && provider.deliveryTime && (
               <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 shadow-xl space-y-4">
                 <div className="flex items-center gap-3 pb-2">

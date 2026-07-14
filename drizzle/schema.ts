@@ -205,6 +205,7 @@ export const providers = pgTable(
     popularServices: text("popular_services"),
     tags: text("tags"),
     workingHours: text("working_hours"),
+    socialLinks: text("social_links"), // JSON stringified: { instagram, facebook, youtube, tiktok, website, linkedin, telegram, whatsapp_channel }
     priceLevel: integer("price_level").default(2).notNull(),
     isActive: boolean("is_active").notNull().default(true),
     status: varchar("status", { length: 50 }).default("ativo"),

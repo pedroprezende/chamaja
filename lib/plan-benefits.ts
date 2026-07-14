@@ -15,6 +15,8 @@ export const BENEFIT_KEYS = {
   reports: "Relatórios",
   favorites_statistics: "Estatísticas de Favoritos",
   real_time_statistics: "Estatísticas em Tempo Real",
+  social_links: "Links de Redes Sociais",
+  social_links_unlimited: "Redes Sociais Ilimitadas",
 } as const;
 
 export type BenefitKey = keyof typeof BENEFIT_KEYS;

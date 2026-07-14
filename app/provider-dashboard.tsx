@@ -22,6 +22,7 @@ import {
   PLANS,
   type ProviderService,
 } from "@/lib/provider-context";
+import { SOCIAL_NETWORKS } from "@/constants/app";
 
 export default function ProviderDashboard() {
   const router = useRouter();
@@ -70,6 +71,7 @@ export default function ProviderDashboard() {
     workingHours: "",
     businessType: "servicos",
     deliveryTime: "",
+    socialLinks: {} as Record<string, string>,
   });
   const [savingProfile, setSavingProfile] = useState(false);
 
@@ -238,6 +240,7 @@ export default function ProviderDashboard() {
           profileForm.businessType === "alimentacao"
             ? profileForm.deliveryTime.trim()
             : null,
+        socialLinks: profileForm.socialLinks,
       });
       setShowEditProfileModal(false);
       Alert.alert("Sucesso", "Dados do negócio atualizados com sucesso.");
@@ -533,6 +536,7 @@ export default function ProviderDashboard() {
                   workingHours: rawValue,
                   businessType: provider.businessType || "servicos",
                   deliveryTime: provider.deliveryTime || "",
+                  socialLinks: provider.socialLinks || {},
                 });
                 setShowEditProfileModal(true);
               }}
@@ -1523,6 +1527,67 @@ export default function ProviderDashboard() {
                   </View>
                 </View>
               </View>
+
+              {/* Social Media Links */}
+              <Text style={styles.fieldLabel}>Redes Sociais</Text>
+              <Text
+                style={[
+                  styles.fieldLabel,
+                  { fontSize: 11, color: "#9CA3AF", marginTop: -8, marginBottom: 8 },
+                ]}
+              >
+                Adicione os links do seu perfil nas redes sociais
+              </Text>
+              {SOCIAL_NETWORKS.map((network) => (
+                <View key={network.key} style={{ marginBottom: 10 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                    <View
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: 12,
+                        backgroundColor: network.color + "18",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <MaterialIcons name={network.icon} size={14} color={network.color} />
+                    </View>
+                    <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151" }}>
+                      {network.label}
+                    </Text>
+                  </View>
+                  <View style={styles.fieldBox}>
+                    <TextInput
+                      style={styles.fieldInput}
+                      placeholder={network.placeholder}
+                      placeholderTextColor="#9CA3AF"
+                      value={profileForm.socialLinks[network.key] || ""}
+                      onChangeText={(t) =>
+                        setProfileForm({
+                          ...profileForm,
+                          socialLinks: { ...profileForm.socialLinks, [network.key]: t },
+                        })
+                      }
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      keyboardType="url"
+                    />
+                    {!!profileForm.socialLinks[network.key] && (
+                      <Pressable
+                        onPress={() => {
+                          const updated = { ...profileForm.socialLinks };
+                          delete updated[network.key];
+                          setProfileForm({ ...profileForm, socialLinks: updated });
+                        }}
+                        style={{ padding: 4 }}
+                      >
+                        <MaterialIcons name="close" size={16} color="#9CA3AF" />
+                      </Pressable>
+                    )}
+                  </View>
+                </View>
+              ))}
 
               <View style={styles.modalActions}>
                 <Pressable

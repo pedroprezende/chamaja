@@ -35,6 +35,7 @@ export interface StoredProvider {
   status?: string;
   businessType?: string;
   deliveryTime?: string | null;
+  socialLinks?: Record<string, string>;
   benefitKeys: string[];
   services: Array<{
     id: string;
@@ -103,6 +104,11 @@ function mapToStoredProvider(dbProvider: any): StoredProvider {
     status: dbProvider.status || "pendente",
     businessType: dbProvider.businessType || "servicos",
     deliveryTime: dbProvider.deliveryTime || null,
+    socialLinks: (() => {
+      if (!dbProvider.socialLinks) return undefined;
+      if (typeof dbProvider.socialLinks === "object") return dbProvider.socialLinks;
+      try { return JSON.parse(dbProvider.socialLinks); } catch { return undefined; }
+    })(),
     benefitKeys: dbProvider.benefitKeys || [],
   };
 }

@@ -135,6 +135,8 @@ export default function RegisterProfessionalScreen() {
           description: formData.description,
           businessType: formData.businessType,
           deliveryTime: formData.deliveryTime,
+          socialLinks: {},
+          benefitKeys: [],
         },
         user.id,
         "free",

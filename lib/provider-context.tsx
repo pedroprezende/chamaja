@@ -44,6 +44,7 @@ export interface ProviderProfile {
   status?: string;
   businessType?: string;
   deliveryTime?: string | null;
+  socialLinks?: Record<string, string>;
   benefitKeys: string[];
 }
 
@@ -169,6 +170,8 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
             hasCatalog: dbProvider.hasCatalog,
             businessType: dbProvider.businessType,
             deliveryTime: dbProvider.deliveryTime,
+            socialLinks: dbProvider.socialLinks,
+            benefitKeys: dbProvider.benefitKeys || [],
           };
           await save(syncedProvider);
         }
@@ -280,6 +283,11 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
       workingHours: data.workingHours,
       businessType: data.businessType,
       deliveryTime: data.deliveryTime,
+      socialLinks: data.socialLinks,
+      planId: null,
+      planStatus: null,
+      billingCycle: null,
+      benefitKeys: [],
     });
   };
 
@@ -329,6 +337,7 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
       gallery: updated.gallery,
       businessType: updated.businessType,
       deliveryTime: updated.deliveryTime,
+      socialLinks: updated.socialLinks,
     });
   };
 

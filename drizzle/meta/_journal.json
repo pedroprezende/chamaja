@@ -15,6 +15,13 @@
       "when": 1783627380387,
       "tag": "0001_oval_doctor_spectrum",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784049596987,
+      "tag": "0002_classy_dazzler",
+      "breakpoints": true
     }
   ]
 }
