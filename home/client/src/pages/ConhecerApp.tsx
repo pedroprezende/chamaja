@@ -294,7 +294,7 @@ export default function ConhecerApp() {
               <Button
                 onClick={() =>
                   (window.location.href = "/#cadastro")
-                }}
+                }
                 className="bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 Quero ser encontrado
