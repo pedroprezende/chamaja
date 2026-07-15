@@ -15,6 +15,8 @@ import {
   Star,
   Map as MapIcon,
   List as ListIcon,
+  CheckCircle,
+  Eye,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
