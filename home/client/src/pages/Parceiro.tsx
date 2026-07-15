@@ -42,6 +42,11 @@ interface Service {
   price: number;
 }
 
+interface PlanBenefit {
+  key: string;
+  name: string;
+}
+
 interface BusinessProfile {
   id: string;
   name: string;
@@ -61,6 +66,15 @@ interface BusinessProfile {
   services: Service[];
   latitude: number | null;
   longitude: number | null;
+  // ── Dados do Plano (vindos do Admin Panel via servidor) ──
+  planId: string | null;
+  planName: string | null;
+  planStatus: "gratuito" | "ativo" | "suspenso" | "expirado" | "cancelado" | string;
+  billingCycle: "monthly" | "quarterly" | "semiannual" | "annual" | null;
+  lockedPrice: number | null;
+  planStartedAt: string | null;
+  planExpiresAt: string | null;
+  benefits: PlanBenefit[];
 }
 
 interface UserProfile {
@@ -2546,102 +2560,125 @@ export default function Parceiro() {
                                 Plano & Limites de Assinatura
                               </h2>
                               <p className="text-xs text-muted-foreground">
-                                Gerencie seus limites corporativos e consulte os
-                                benefícios dos planos do XamaJá.
+                                Informações do plano configurado pelo administrador.
+                                Todos os dados são carregados automaticamente.
                               </p>
                             </div>
 
-                            {/* Plan Summary Card */}
-                            <div className="grid md:grid-cols-2 gap-6">
-                              <div className="bg-[#0c0c0e] border border-primary/20 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between">
-                                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl"></div>
+                            {/* Current Plan Card */}
+                            <div className="bg-[#0c0c0e] border border-primary/20 rounded-3xl p-6 relative overflow-hidden">
+                              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl pointer-events-none"></div>
 
-                                <div className="space-y-4">
-                                  <div className="inline-block px-3 py-1 bg-primary/10 border border-primary/20 rounded-full">
+                              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+                                <div className="space-y-1">
+                                  <div className="inline-block px-3 py-1 bg-primary/10 border border-primary/20 rounded-full mb-2">
                                     <span className="text-primary text-[10px] font-black uppercase tracking-wider">
                                       Seu plano atual
                                     </span>
                                   </div>
-
                                   <h3 className="text-3xl font-black text-white">
-                                    Plano Grátis
+                                    {business?.planName || "Plano Gratuito"}
                                   </h3>
-                                  <p className="text-xs text-muted-foreground leading-relaxed">
-                                    Limite inicial para novos cadastros. Permite
-                                    configurar o seu perfil completo de negócio e
-                                    listar até 1 serviço.
-                                  </p>
                                 </div>
-
-                                <div className="pt-6 border-t border-border mt-6 space-y-2">
-                                  <div className="flex justify-between text-xs text-muted-foreground">
-                                    <span>Limite de Serviços:</span>
-                                    <span className="text-white font-bold">
-                                      {servicesList.length} / {maxServicos}
+                                {/* Status Badge */}
+                                {(() => {
+                                  const s = business?.planStatus || "gratuito";
+                                  const cfg: Record<string, { label: string; cls: string }> = {
+                                    ativo:     { label: "Ativo",     cls: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" },
+                                    gratuito:  { label: "Gratuito",  cls: "bg-zinc-700/40 text-zinc-400 border-zinc-600/30" },
+                                    expirado:  { label: "Expirado",  cls: "bg-red-500/15 text-red-400 border-red-500/30" },
+                                    suspenso:  { label: "Suspenso",  cls: "bg-amber-500/15 text-amber-400 border-amber-500/30" },
+                                    cancelado: { label: "Cancelado", cls: "bg-red-500/15 text-red-400 border-red-500/30" },
+                                  };
+                                  const { label, cls } = cfg[s] || cfg.gratuito;
+                                  return (
+                                    <span className={`self-start sm:self-auto inline-flex items-center px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border ${cls}`}>
+                                      {label}
                                     </span>
-                                  </div>
-                                  <div className="flex justify-between text-xs text-muted-foreground">
-                                    <span>Selo de Verificação:</span>
-                                    <span className="text-red-400 font-bold">
-                                      Não ativo
-                                    </span>
-                                  </div>
-                                </div>
+                                  );
+                                })()}
                               </div>
 
-                              {/* Premium Plan Offer */}
-                              <div className="bg-card border border-border rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden group hover:border-primary/50 transition duration-300">
-                                <div className="absolute top-0 right-0 w-28 h-28 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-all"></div>
-
-                                <div className="space-y-4">
-                                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 border border-primary/30 rounded-full">
-                                    <Sparkles className="h-3 w-3 text-primary" />
-                                    <span className="text-primary text-[10px] font-black uppercase tracking-wider">
-                                      Recomendado
+                              {/* Plan details grid */}
+                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-5 border-t border-zinc-800">
+                                {business?.billingCycle && (
+                                  <div className="space-y-1">
+                                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Tipo de cobrança</span>
+                                    <span className="text-sm font-bold text-white">
+                                      {({ monthly: "Mensal", quarterly: "Trimestral", semiannual: "Semestral", annual: "Anual" } as Record<string, string>)[business.billingCycle] || business.billingCycle}
                                     </span>
                                   </div>
-
-                                  <h3 className="text-3xl font-black text-white">
-                                    Plano Premium
-                                  </h3>
-                                  <p className="text-xs text-muted-foreground leading-relaxed">
-                                    Desbloqueie todo o potencial da plataforma com
-                                    serviços ilimitados, relevância nas buscas e
-                                    suporte prioritário.
-                                  </p>
-                                </div>
-
-                                <div className="pt-6 space-y-4">
-                                  <ul className="space-y-2.5 text-xs text-zinc-300">
-                                    <li className="flex items-center gap-2">
-                                      <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
-                                      <span>Serviços Ilimitados</span>
-                                    </li>
-                                    <li className="flex items-center gap-2">
-                                      <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
-                                      <span>Selo de Verificação Premium</span>
-                                    </li>
-                                    <li className="flex items-center gap-2">
-                                      <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
-                                      <span>Destaque nas buscas de clientes</span>
-                                    </li>
-                                  </ul>
-
-                                  <Button
-                                    type="button"
-                                    onClick={() =>
-                                      toast.info(
-                                        "Funcionalidade de pagamento online será ativada em breve. Fale com o administrador."
-                                      )
-                                    }
-                                    className="w-full bg-primary text-primary-foreground font-black uppercase tracking-wider h-11 rounded-xl flex items-center justify-center gap-2 hover:bg-primary/95 transition shadow-lg shadow-primary/10"
-                                  >
-                                    <span>Quero ser Premium</span>
-                                    <ArrowRight className="h-4 w-4" />
-                                  </Button>
+                                )}
+                                {business?.lockedPrice != null && business.lockedPrice > 0 && (
+                                  <div className="space-y-1">
+                                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Valor pago</span>
+                                    <span className="text-sm font-bold text-primary">
+                                      R$ {business.lockedPrice.toFixed(2).replace(".", ",")}
+                                    </span>
+                                  </div>
+                                )}
+                                {business?.planStartedAt && (
+                                  <div className="space-y-1">
+                                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Data de início</span>
+                                    <span className="text-sm font-bold text-white">
+                                      {new Date(business.planStartedAt).toLocaleDateString("pt-BR")}
+                                    </span>
+                                  </div>
+                                )}
+                                {business?.planExpiresAt && (
+                                  <div className="space-y-1">
+                                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">
+                                      {new Date(business.planExpiresAt) > new Date() ? "Próxima renovação" : "Vencido em"}
+                                    </span>
+                                    <span className={`text-sm font-bold ${new Date(business.planExpiresAt) < new Date() ? "text-red-400" : "text-white"}`}>
+                                      {new Date(business.planExpiresAt).toLocaleDateString("pt-BR")}
+                                    </span>
+                                  </div>
+                                )}
+                                <div className="space-y-1">
+                                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Serviços</span>
+                                  <span className="text-sm font-bold text-white">
+                                    {servicesList.length} / {maxServicos === -1 ? "∞" : maxServicos}
+                                  </span>
                                 </div>
                               </div>
                             </div>
+
+                            {/* Benefits Section — dynamic from plan_benefits */}
+                            {business?.benefits && business.benefits.length > 0 ? (
+                              <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-6 space-y-4">
+                                <div>
+                                  <h4 className="text-sm font-black text-white uppercase tracking-wider">Benefícios incluídos</h4>
+                                  <p className="text-xs text-zinc-500 mt-0.5">Recursos ativos no seu plano atual.</p>
+                                </div>
+                                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                  {business.benefits.map((benefit) => (
+                                    <li key={benefit.key} className="flex items-center gap-2.5 text-sm text-zinc-200">
+                                      <CheckCircle className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                                      <span>{benefit.name}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            ) : (
+                              /* Empty state — free plan or no plan configured */
+                              <div className="bg-zinc-950 border border-dashed border-zinc-800 rounded-3xl p-8 text-center flex flex-col items-center space-y-3">
+                                <Sparkles className="h-8 w-8 text-zinc-600" />
+                                <p className="text-sm font-bold text-white">Sem benefícios ativos</p>
+                                <p className="text-xs text-zinc-500 max-w-sm">
+                                  Seu plano atual não inclui benefícios extras. Faça upgrade para desbloquear destaque nas buscas, selo de verificação, galeria e muito mais.
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    toast.info("Funcionalidade de pagamento online será ativada em breve. Fale com o administrador.")
+                                  }
+                                  className="mt-2 text-xs font-bold text-primary hover:underline flex items-center gap-1"
+                                >
+                                  Conhecer planos <ArrowRight className="h-3 w-3" />
+                                </button>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>

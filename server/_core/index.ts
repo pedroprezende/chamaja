@@ -12,6 +12,9 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { getPrivacyPolicyHtml, getDeletionPolicyHtml, getTermsOfUseHtml } from "./privacy";
 import * as db from "../db";
+import { getDb } from "../db";
+import { plans, planBenefits } from "../../drizzle/schema";
+import { eq } from "drizzle-orm";
 import { createClient } from "@supabase/supabase-js";
 import { rateLimit } from "./rate-limit";
 import { COOKIE_NAME } from "../../shared/const.js";
@@ -1243,6 +1246,38 @@ async function startServer() {
         ? await db.getBusinessPermissionByProviderId(businessProfile.id)
         : null;
 
+      // ── Buscar dados do plano e benefícios dinâmicos ──────────────────────────
+      let planName: string | null = null;
+      let planBenefitsList: Array<{ key: string; name: string }> = [];
+
+      if (businessProfile?.planId) {
+        const dbInstance = await getDb();
+        if (dbInstance) {
+          // 1. Nome do plano
+          const planRows = await dbInstance
+            .select({ name: plans.name })
+            .from(plans)
+            .where(eq(plans.id, businessProfile.planId))
+            .limit(1);
+          planName = planRows[0]?.name || null;
+
+          // 2. Benefícios — só retornar se o plano não expirou
+          const isExpired =
+            businessProfile.planExpiresAt &&
+            new Date(businessProfile.planExpiresAt) < new Date();
+
+          if (!isExpired) {
+            const benefitRows = await dbInstance
+              .select({ key: planBenefits.key, name: planBenefits.name })
+              .from(planBenefits)
+              .where(eq(planBenefits.planId, businessProfile.planId))
+              .orderBy(planBenefits.displayOrder);
+            planBenefitsList = benefitRows;
+          }
+        }
+      }
+      // ──────────────────────────────────────────────────────────────────────────
+
       res.json({
         success: true,
         user: {
@@ -1272,6 +1307,20 @@ async function startServer() {
               services: businessProfile.services
                 ? JSON.parse(businessProfile.services)
                 : [],
+              // ── Dados do Plano (sempre vindos do banco, nunca hardcoded) ──
+              planId: businessProfile.planId || null,
+              planName: planName,
+              planStatus: businessProfile.planStatus || "gratuito",
+              billingCycle: businessProfile.billingCycle || null,
+              lockedPrice: businessProfile.lockedPrice || null,
+              planStartedAt: businessProfile.planStartedAt
+                ? businessProfile.planStartedAt.toISOString()
+                : null,
+              planExpiresAt: businessProfile.planExpiresAt
+                ? businessProfile.planExpiresAt.toISOString()
+                : null,
+              benefits: planBenefitsList,
+              // ─────────────────────────────────────────────────────────────
             }
           : null,
         partner: partnerProfile
