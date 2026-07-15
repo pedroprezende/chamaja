@@ -692,6 +692,8 @@ export const providersRouter = router({
         priceLevel: providers.priceLevel,
         businessType: providers.businessType,
         deliveryTime: providers.deliveryTime,
+        phone: providers.phone,
+        whatsapp: providers.whatsapp,
       };
 
       let distanceSqlExpr = sql<number>`NULL`;
