@@ -923,73 +923,119 @@ export default function Busca() {
                   <div
                     key={provider.id}
                     onClick={() => (window.location.href = `/perfil/${provider.id}`)}
-                    className="group relative rounded-3xl bg-zinc-950/60 border border-zinc-900 hover:border-primary/30 overflow-hidden shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between cursor-pointer"
+                    className="group relative rounded-3xl bg-zinc-950/80 border border-zinc-900 hover:border-primary/45 overflow-hidden shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between cursor-pointer"
                   >
                     <div>
-                      {/* Cover Image Container (with overflow-hidden) */}
-                      <div className="relative h-40 overflow-hidden bg-zinc-900 rounded-t-3xl">
+                      {/* Cover Image Container */}
+                      <div className="relative h-40 overflow-hidden bg-zinc-900">
                         <img
                           src={provider.coverUri || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&q=80"}
                           alt={provider.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
                         />
 
                         {/* Favorite button */}
                         <button
                           onClick={(e) => toggleFavorite(provider.id, e)}
-                          className="absolute top-3.5 right-3.5 p-1.5 bg-black/60 backdrop-blur-md border border-white/10 hover:bg-primary hover:text-primary-foreground text-white rounded-full transition-all duration-300 z-10"
+                          className="absolute top-3.5 right-3.5 p-2 bg-black/75 backdrop-blur-md border border-white/10 hover:bg-zinc-800 text-white rounded-full transition-all duration-300 z-30"
                         >
                           <Heart
-                            className={`h-4.5 w-4.5 ${isFavorite ? "fill-primary text-primary-foreground" : "text-white"}`}
+                            className={`h-4.5 w-4.5 transition-colors ${isFavorite ? "fill-primary text-primary" : "text-white"}`}
                           />
                         </button>
                       </div>
 
-                      {/* Card Info Content */}
-                      <div className="p-5 pt-8 space-y-1.5 relative">
-                        {/* Brand Avatar Icon (OUTSIDE overflow-hidden cover, relative to Info Content) */}
-                        <div className="absolute -top-7 left-5 w-14 h-14 rounded-full border-4 border-zinc-950 overflow-hidden shadow-xl bg-zinc-950 z-20">
-                          <img
-                            src={provider.avatarUri || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80"}
-                            alt={provider.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        {/* Title & Category */}
-                        <div className="space-y-0.5">
-                          <h3 className="font-bold text-lg text-[#F5F5F5] group-hover:text-primary transition-colors leading-snug line-clamp-1">
-                            {provider.name}
-                          </h3>
-                          <p className="text-[#A1A1A1] text-[9px] font-semibold uppercase tracking-widest">
-                            {provider.category || "Profissional"}
-                          </p>
-                        </div>
-
-                        {/* Rating, Location, and Status */}
-                        <div className="flex items-center justify-between text-xs text-[#A1A1A1] font-semibold pt-3 border-t border-zinc-900/60 mt-2">
-                          <div className="flex items-center gap-1 bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full text-xs text-primary">
-                            <Star className="h-3 w-3 fill-current" />
-                            <span className="font-extrabold">{Number(provider.rating || 5.0).toFixed(1)}</span>
-                            <span className="text-zinc-500 font-semibold text-[10px]">({provider.ratingCount || 10})</span>
+                      {/* Provider Info Grid Layout */}
+                      <div className="p-5 space-y-4">
+                        <div className="flex gap-4">
+                          {/* Left: Avatar with Verified Badge Overlay */}
+                          <div className="relative w-20 h-20 flex-shrink-0">
+                            <div className="w-full h-full rounded-full border-2 border-primary overflow-hidden shadow-xl bg-zinc-900">
+                              <img
+                                src={provider.avatarUri || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&q=80"}
+                                alt={provider.name}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            {provider.isVerified && (
+                              <div className="absolute -bottom-1 -right-1 bg-primary text-zinc-950 p-1 rounded-full border-2 border-zinc-950 flex items-center justify-center">
+                                <CheckCircle className="h-3 w-3 fill-current" />
+                              </div>
+                            )}
                           </div>
 
-                          {provider.distanceStr && (
-                            <span className="text-primary text-[10px] font-bold bg-primary/10 px-2 py-0.5 rounded-full flex items-center gap-1">
-                              <MapPin className="h-3 w-3" />
-                              {provider.distanceStr}
+                          {/* Right: Info Text */}
+                          <div className="flex-1 space-y-1">
+                            <h3 className="font-extrabold text-xl text-white group-hover:text-primary transition-colors leading-snug line-clamp-1">
+                              {provider.name}
+                            </h3>
+                            
+                            <div className="flex items-center gap-1.5 text-xs flex-wrap">
+                              <span className="text-primary font-bold">
+                                {provider.category || "Profissional"}
+                              </span>
+                              <span className="text-zinc-600">|</span>
+                              <span className="text-zinc-400">
+                                {provider.businessType === "comercio" ? "Comércio" : "Saúde e Bem-estar"}
+                              </span>
+                            </div>
+
+                            {provider.description && (
+                              <p className="text-zinc-400 text-xs line-clamp-2 leading-relaxed pt-0.5">
+                                {provider.description}
+                              </p>
+                            )}
+
+                            {/* Ratings, location/distance */}
+                            <div className="flex items-center gap-3 pt-2 text-xs text-zinc-400">
+                              <div className="flex items-center gap-1">
+                                <Star className="h-3.5 w-3.5 text-primary fill-current" />
+                                <span className="text-white font-extrabold">{Number(provider.rating || 5.0).toFixed(1)}</span>
+                                <span className="text-zinc-500">({provider.ratingCount || 12})</span>
+                              </div>
+                              <span className="text-zinc-700">•</span>
+                              <div className="flex items-center gap-1">
+                                <MapPin className="h-3.5 w-3.5 text-primary" />
+                                <span className="text-zinc-300">
+                                  {provider.distanceStr || "75 m de você"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Badges Section */}
+                        <div className="flex items-center gap-2 pt-2 border-t border-zinc-900">
+                          {provider.isVerified && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-zinc-900 border border-emerald-500/20 text-[10px] font-black text-emerald-400 rounded-full uppercase tracking-wider">
+                              <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />
+                              Verificado
+                            </span>
+                          )}
+                          {provider.plan === "premium" && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-zinc-900 border border-amber-500/20 text-[10px] font-black text-amber-400 rounded-full uppercase tracking-wider">
+                              <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                              Premium
                             </span>
                           )}
                         </div>
                       </div>
                     </div>
 
-                    {/* WhatsApp Action Button */}
-                    <div className="p-5 pt-0">
+                    {/* Action Buttons */}
+                    <div className="p-5 pt-0 space-y-2">
+                      <button
+                        onClick={() => (window.location.href = `/perfil/${provider.id}`)}
+                        className="w-full py-3 bg-primary hover:bg-primary/90 text-zinc-950 rounded-xl flex items-center justify-center gap-2 font-black text-xs uppercase tracking-wider transition-all duration-300 active:scale-98"
+                      >
+                        <Eye className="w-4 h-4" />
+                        <span>Ver Perfil</span>
+                      </button>
                       <button
                         onClick={(e) => handleContactWhatsApp(provider, e)}
-                        className="w-full py-3 bg-zinc-900 hover:bg-primary hover:text-primary-foreground border border-zinc-850 hover:border-primary rounded-xl flex items-center justify-center gap-2 font-extrabold text-xs text-zinc-300 transition-all duration-300 hover:scale-102 active:scale-98"
+                        className="w-full py-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-xl flex items-center justify-center gap-2 font-bold text-xs text-zinc-300 transition-all duration-300 active:scale-98"
                       >
-                        <Phone className="w-3.5 h-3.5" />
+                        <Phone className="w-3.5 h-3.5 text-primary" />
                         <span>Chamar no WhatsApp</span>
                       </button>
                     </div>
