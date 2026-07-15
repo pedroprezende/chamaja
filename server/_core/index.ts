@@ -1307,6 +1307,11 @@ async function startServer() {
               services: businessProfile.services
                 ? JSON.parse(businessProfile.services)
                 : [],
+              socialLinks: (() => {
+                if (!businessProfile.socialLinks) return {};
+                if (typeof businessProfile.socialLinks === "object") return businessProfile.socialLinks;
+                try { return JSON.parse(businessProfile.socialLinks); } catch { return {}; }
+              })(),
               // ── Dados do Plano (sempre vindos do banco, nunca hardcoded) ──
               planId: businessProfile.planId || null,
               planName: planName,
@@ -1636,6 +1641,7 @@ async function startServer() {
         coverUri,
         gallery,
         services, // Array de serviços
+        socialLinks, // Record<string, string>
       } = req.body;
 
       if (!name) {
@@ -1703,6 +1709,10 @@ async function startServer() {
 
       if (services !== undefined) {
         updates.services = JSON.stringify(services);
+      }
+
+      if (socialLinks !== undefined) {
+        updates.socialLinks = typeof socialLinks === "object" ? JSON.stringify(socialLinks) : socialLinks;
       }
 
       await db.updateProvider(businessProfile.id, updates);

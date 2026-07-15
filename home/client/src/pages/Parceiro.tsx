@@ -75,6 +75,7 @@ interface BusinessProfile {
   planStartedAt: string | null;
   planExpiresAt: string | null;
   benefits: PlanBenefit[];
+  socialLinks?: Record<string, string>;
 }
 
 interface UserProfile {
@@ -156,6 +157,12 @@ export default function Parceiro() {
 
   // Services Form/Modal States
   const [servicesList, setServicesList] = useState<Service[]>([]);
+  const [socialInstagram, setSocialInstagram] = useState("");
+  const [socialFacebook, setSocialFacebook] = useState("");
+  const [socialYoutube, setSocialYoutube] = useState("");
+  const [socialTiktok, setSocialTiktok] = useState("");
+  const [socialWebsite, setSocialWebsite] = useState("");
+
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
   const [srvName, setSrvName] = useState("");
@@ -367,6 +374,13 @@ export default function Parceiro() {
           setBusCoverUri(result.business.coverUri || "");
           setBusGallery(result.business.gallery || []);
           setServicesList(result.business.services || []);
+
+          const links = result.business.socialLinks || {};
+          setSocialInstagram(links.instagram || "");
+          setSocialFacebook(links.facebook || "");
+          setSocialYoutube(links.youtube || "");
+          setSocialTiktok(links.tiktok || "");
+          setSocialWebsite(links.website || "");
         } else if (result.partner) {
           setBusName(result.partner.nome || "");
           setBusWhatsapp(result.partner.telefone || "");
@@ -548,6 +562,13 @@ export default function Parceiro() {
               coverUri: busCoverUri || null,
               gallery: busGallery,
               services: servicesList,
+              socialLinks: {
+                instagram: socialInstagram || "",
+                facebook: socialFacebook || "",
+                youtube: socialYoutube || "",
+                tiktok: socialTiktok || "",
+                website: socialWebsite || "",
+              },
             };
 
       const response = await fetch("/api/business-partner/profile", {
@@ -2104,6 +2125,75 @@ export default function Parceiro() {
                                   onChange={e => setBusDescription(e.target.value)}
                                   className="bg-background border-border rounded-xl focus-visible:ring-primary focus-visible:border-primary text-sm resize-none"
                                 />
+                              </div>
+
+                              {/* Redes Sociais Section */}
+                              <div className="pt-4 border-t border-zinc-800 space-y-4">
+                                <div>
+                                  <h3 className="text-sm font-black text-white uppercase tracking-wider">
+                                    Redes Sociais & Links
+                                  </h3>
+                                  <p className="text-xs text-zinc-500 mt-0.5">
+                                    Adicione links para seus perfis sociais ajudando os clientes a conhecerem mais do seu trabalho.
+                                  </p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Instagram</label>
+                                    <Input
+                                      type="text"
+                                      placeholder="Ex: https://instagram.com/seu_negocio"
+                                      value={socialInstagram}
+                                      onChange={e => setSocialInstagram(e.target.value)}
+                                      className="bg-background border-border h-11 rounded-xl text-sm"
+                                    />
+                                  </div>
+
+                                  <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">TikTok</label>
+                                    <Input
+                                      type="text"
+                                      placeholder="Ex: https://tiktok.com/@seu_negocio"
+                                      value={socialTiktok}
+                                      onChange={e => setSocialTiktok(e.target.value)}
+                                      className="bg-background border-border h-11 rounded-xl text-sm"
+                                    />
+                                  </div>
+
+                                  <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Facebook</label>
+                                    <Input
+                                      type="text"
+                                      placeholder="Ex: https://facebook.com/seu_negocio"
+                                      value={socialFacebook}
+                                      onChange={e => setSocialFacebook(e.target.value)}
+                                      className="bg-background border-border h-11 rounded-xl text-sm"
+                                    />
+                                  </div>
+
+                                  <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">YouTube</label>
+                                    <Input
+                                      type="text"
+                                      placeholder="Ex: https://youtube.com/@seu_canal"
+                                      value={socialYoutube}
+                                      onChange={e => setSocialYoutube(e.target.value)}
+                                      className="bg-background border-border h-11 rounded-xl text-sm"
+                                    />
+                                  </div>
+
+                                  <div className="space-y-1.5 md:col-span-2">
+                                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Website / Portfólio</label>
+                                    <Input
+                                      type="text"
+                                      placeholder="Ex: https://seusite.com.br"
+                                      value={socialWebsite}
+                                      onChange={e => setSocialWebsite(e.target.value)}
+                                      className="bg-background border-border h-11 rounded-xl text-sm"
+                                    />
+                                  </div>
+                                </div>
                               </div>
 
                               <div className="pt-4 border-t border-border flex justify-end">
