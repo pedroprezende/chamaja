@@ -152,23 +152,7 @@ const FALLBACK_PLANS = [
   },
 ];
 
-// Linhas da tabela de comparação (na ordem desejada)
-const COMPARISON_ROWS = [
-  { key: "public_profile", label: "Perfil Completo" },
-  { key: "photos_5", label: "Fotos do Negócio (Até 5)" },
-  { key: "business_hours", label: "Horário de Funcionamento" },
-  { key: "map_location", label: "Localização no Mapa" },
-  { key: "receive_reviews", label: "Recebimento de Avaliações" },
-  { key: "whatsapp_contact", label: "WhatsApp & Telefone de Contato" },
-  { key: "social_links", label: "Links de Redes Sociais" },
-  { key: "verified_badge", label: "Selo Verificado" },
-  { key: "search_highlight", label: "Destaque nas Buscas" },
-  { key: "statistics", label: "Painel de Estatísticas" },
-  { key: "support", label: "Suporte" },
-  { key: "home_highlight", label: "Destaque na Página Inicial" },
-  { key: "premium_badge", label: "Selo Premium" },
-  { key: "unlimited_photos", label: "Fotos Profissionais" },
-];
+// Comparison rows are derived dynamically from plan benefits — no hardcoded list.
 
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -607,52 +591,28 @@ export default function Home() {
   const formatPrice = (val: number) =>
     val?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) ?? "R$ 0,00";
 
-  const checkBenefit = (planIndex: number, rowKey: string) => {
-    if (!plans || plans.length === 0) return false;
-    for (let i = 0; i <= planIndex; i++) {
-      const plan = plans[i];
-      if (!plan) continue;
-      const hasIt = (plan.benefits || []).some((b: any) => {
-        const key = (b.key || "").toLowerCase();
-        const name = (b.name || "").toLowerCase();
-        
-        switch (rowKey) {
-          case "public_profile":
-            return name.includes("perfil") || key.includes("profile");
-          case "photos_5":
-            return name.includes("foto") || key.includes("photo");
-          case "business_hours":
-            return name.includes("horário") || key.includes("hour");
-          case "map_location":
-            return name.includes("mapa") || name.includes("localização") || key.includes("map");
-          case "receive_reviews":
-            return name.includes("avalia") || key.includes("review");
-          case "whatsapp_contact":
-            return name.includes("whatsapp") || name.includes("contato") || key.includes("whatsapp") || key.includes("phone");
-          case "social_links":
-            return name.includes("instagram") || name.includes("facebook") || name.includes("rede") || key.includes("social") || key.includes("link");
-          case "verified_badge":
-            return name.includes("verificado") || key.includes("verified");
-          case "search_highlight":
-            return name.includes("pesquisa") || name.includes("busca") || key.includes("search") || key.includes("highlight");
-          case "statistics":
-            return name.includes("estatística") || name.includes("analytics") || name.includes("stats") || key.includes("stat");
-          case "support":
-            return name.includes("suporte") || key.includes("support");
-          case "home_highlight":
-            return name.includes("inicial") || name.includes("home") || key.includes("home");
-          case "premium_badge":
-            return name.includes("selo premium") || key.includes("premium");
-          case "unlimited_photos":
-            return name.includes("ilimitada") || key.includes("unlimited");
-          default:
-            return false;
+  // Build the dynamic comparison rows from the union of all benefit keys across all plans.
+  // Order: benefits that appear in plan[0] first (in their displayOrder), then plan[1]-only, then plan[2]-only, etc.
+  const comparisonRows: { key: string; label: string }[] = useMemo(() => {
+    const seen = new Set<string>();
+    const rows: { key: string; label: string }[] = [];
+    for (const plan of plans) {
+      for (const b of (plan.benefits || [])) {
+        const k = (b.key || "").trim();
+        if (k && !seen.has(k)) {
+          seen.add(k);
+          rows.push({ key: k, label: b.name || k });
         }
-      });
-      if (hasIt) return true;
+      }
     }
-    return false;
-  };
+    return rows;
+  }, [plans]);
+
+  // For a given plan, return a Set of its benefit keys for O(1) lookup.
+  const planBenefitKeys = useMemo(
+    () => plans.map(plan => new Set<string>((plan.benefits || []).map((b: any) => (b.key || "").trim()))),
+    [plans]
+  );
 
   const periodLabels: Record<string, string> = {
     monthly: "mês",
@@ -2002,22 +1962,30 @@ export default function Home() {
                   </tr>
                 </thead>
                 <tbody>
-                  {COMPARISON_ROWS.map((row, ridx) => (
-                    <tr key={row.key} className={`border-b border-zinc-900/50 ${ridx % 2 === 0 ? "bg-zinc-950/30" : ""}`}>
-                      <td className="py-3 pr-6 text-zinc-400 font-medium">{row.label}</td>
-                      {plans.map(plan => {
-                        const hasIt = checkBenefit(plans.indexOf(plan), row.key);
-                        return (
-                          <td key={plan.id} className="text-center py-3 px-4">
-                            {hasIt
-                              ? <Check className={`w-4 h-4 mx-auto ${plan.isFeatured ? "text-primary" : "text-emerald-500"}`} />
-                              : <Minus className="w-4 h-4 mx-auto text-zinc-700" />
-                            }
-                          </td>
-                        );
-                      })}
+                  {comparisonRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={plans.length + 1} className="py-8 text-center text-zinc-600 text-xs">
+                        Nenhum benefício cadastrado nos planos.
+                      </td>
                     </tr>
-                  ))}
+                  ) : (
+                    comparisonRows.map((row, ridx) => (
+                      <tr key={row.key} className={`border-b border-zinc-900/50 ${ridx % 2 === 0 ? "bg-zinc-950/30" : ""}`}>
+                        <td className="py-3 pr-6 text-zinc-400 font-medium">{row.label}</td>
+                        {plans.map((plan, pIdx) => {
+                          const hasIt = planBenefitKeys[pIdx]?.has(row.key) ?? false;
+                          return (
+                            <td key={plan.id} className="text-center py-3 px-4">
+                              {hasIt
+                                ? <Check className={`w-4 h-4 mx-auto ${plan.isFeatured ? "text-primary" : "text-emerald-500"}`} />
+                                : <Minus className="w-4 h-4 mx-auto text-zinc-700" />
+                              }
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
