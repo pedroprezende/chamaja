@@ -535,10 +535,11 @@ export default function Home() {
       localStorage.setItem("ref_code", ref);
     }
 
-    // 2. Scroll to #cadastro if URL path is /cadastro or has hash
+    // 2. Scroll to #cadastro if URL path is /cadastro, has hash, or has ?ref= on homepage
     if (
       window.location.pathname === "/cadastro" ||
-      window.location.hash === "#cadastro"
+      window.location.hash === "#cadastro" ||
+      (window.location.pathname === "/" && ref)
     ) {
       setTimeout(() => {
         const element = document.getElementById("cadastro");

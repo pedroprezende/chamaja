@@ -474,13 +474,13 @@ export default function Parceiros() {
                         <input
                           type="text"
                           readOnly
-                          value={`${window.location.origin}/cadastro?ref=${partner.codigoIndicacao}`}
+                          value={`${window.location.origin}/?ref=${partner.codigoIndicacao}`}
                           className="w-full bg-background border border-border text-muted-foreground rounded-2xl pl-4 pr-14 py-3.5 focus:outline-none text-xs text-ellipsis overflow-hidden"
                         />
                         <button
                           onClick={() =>
                             copyReferralLink(
-                              `${window.location.origin}/cadastro?ref=${partner.codigoIndicacao}`
+                              `${window.location.origin}/?ref=${partner.codigoIndicacao}`
                             )
                           }
                           className="absolute right-2 top-2 p-2 rounded-xl bg-card border border-border text-foreground hover:text-primary hover:border-primary/50 transition"

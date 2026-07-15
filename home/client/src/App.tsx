@@ -17,7 +17,7 @@ function Router() {
     <Switch>
       <Route path={"/"} component={Home} />
       <Route path={"/como-funciona"} component={ConhecerApp} />
-      <Route path={"/cadastro"} component={ConhecerApp} />
+      <Route path={"/cadastro"} component={Home} />
       <Route path={"/busca"} component={Busca} />
       <Route path={"/perfil/:id"} component={Perfil} />
       <Route path={"/parceiros"} component={Parceiro} />

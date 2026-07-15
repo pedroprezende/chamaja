@@ -1924,14 +1924,14 @@ export default function Parceiro() {
                               <div className="flex items-center gap-2 bg-background border border-border p-3 rounded-xl">
                                 <span className="text-xs font-mono text-zinc-400 truncate flex-1">
                                   {partner?.codigoIndicacao
-                                    ? `${window.location.origin}/cadastro?ref=${partner.codigoIndicacao}`
+                                    ? `${window.location.origin}/?ref=${partner.codigoIndicacao}`
                                     : "---"}
                                 </span>
                                 <Button
                                   onClick={() => {
                                     if (!partner?.codigoIndicacao) return;
                                     navigator.clipboard.writeText(
-                                      `${window.location.origin}/cadastro?ref=${partner.codigoIndicacao}`
+                                      `${window.location.origin}/?ref=${partner.codigoIndicacao}`
                                     );
                                     toast.success("Link copiado!");
                                   }}

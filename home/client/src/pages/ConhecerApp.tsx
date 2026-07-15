@@ -1,32 +1,16 @@
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   ArrowRight,
   MapPin,
   Users,
   CheckCircle,
   TrendingUp,
-  AlertTriangle,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export default function ConhecerApp() {
   const [activeStep, setActiveStep] = useState(1);
   const [userProfile, setUserProfile] = useState<any | null>(null);
-
-  // Form states
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [categoryId, setCategoryId] = useState("");
-  const [otherCategory, setOtherCategory] = useState("");
-  const [city, setCity] = useState("");
-  const [neighborhood, setNeighborhood] = useState("");
-  const [description, setDescription] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formSuccess, setFormSuccess] = useState(false);
-  const [formError, setFormError] = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem("bp_session_token");
@@ -38,100 +22,7 @@ export default function ConhecerApp() {
         console.error(e);
       }
     }
-
-    // 1. Capture ref parameter from URL search params
-    const params = new URLSearchParams(window.location.search);
-    const ref = params.get("ref");
-    if (ref) {
-      localStorage.setItem("ref_code", ref);
-    }
-
-    // 2. Scroll to #cadastro if URL path is /cadastro or has hash
-    if (
-      window.location.pathname === "/cadastro" ||
-      window.location.hash === "#cadastro"
-    ) {
-      setTimeout(() => {
-        const element = document.getElementById("cadastro");
-        if (element) {
-          element.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-      }, 300);
-    }
   }, []);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setFormSuccess(false);
-    setFormError("");
-
-    if (
-      !name ||
-      !email ||
-      !phone ||
-      !categoryId ||
-      !city ||
-      !neighborhood ||
-      !description
-    ) {
-      setFormError("Por favor, preencha todos os campos obrigatórios.");
-      setIsSubmitting(false);
-      return;
-    }
-
-    if (categoryId === "outro" && !otherCategory) {
-      setFormError("Por favor, especifique a sua categoria.");
-      setIsSubmitting(false);
-      return;
-    }
-
-    try {
-      const refCode = localStorage.getItem("ref_code") || undefined;
-      const response = await fetch("/api/web-register-provider", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name,
-          email,
-          phone,
-          categoryId,
-          otherCategory,
-          city,
-          neighborhood,
-          description,
-          refCode,
-        }),
-      });
-
-      const result = await response.json();
-      if (response.ok && result.success) {
-        setFormSuccess(true);
-        setName("");
-        setEmail("");
-        setPhone("");
-        setCategoryId("");
-        setOtherCategory("");
-        setCity("");
-        setNeighborhood("");
-        setDescription("");
-      } else {
-        setFormError(
-          result.error ||
-            "Ocorreu um erro ao realizar o cadastro. Tente novamente."
-        );
-      }
-    } catch (err) {
-      console.error("Error submitting form:", err);
-      setFormError(
-        "Falha na conexão com o servidor. Verifique sua conexão e tente novamente."
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -402,10 +293,8 @@ export default function ConhecerApp() {
 
               <Button
                 onClick={() =>
-                  document
-                    .getElementById("cadastro")
-                    ?.scrollIntoView({ behavior: "smooth", block: "center" })
-                }
+                  (window.location.href = "/#cadastro")
+                }}
                 className="bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 Quero ser encontrado
@@ -459,11 +348,7 @@ export default function ConhecerApp() {
               </ul>
 
               <Button
-                onClick={() =>
-                  document
-                    .getElementById("cadastro")
-                    ?.scrollIntoView({ behavior: "smooth", block: "center" })
-                }
+                onClick={() => (window.location.href = "/#cadastro")}
                 className="bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 Quero meu comércio
@@ -523,244 +408,6 @@ export default function ConhecerApp() {
         </div>
       </section>
 
-      {/* Form Section (Registration) */}
-      <section
-        id="cadastro"
-        className="py-20 bg-card/10 border-b border-border"
-      >
-        <div className="container mx-auto px-4 max-w-4xl">
-          <div className="text-center max-w-2xl mx-auto mb-12 space-y-4">
-            <h2 className="text-3xl md:text-5xl font-black text-white">
-              Cadastre seu <span className="text-primary">Serviço</span> ou{" "}
-              <span className="text-primary">Negócio</span>
-            </h2>
-            <p className="text-sm md:text-base text-muted-foreground">
-              Preencha o formulário abaixo com as informações do seu negócio ou
-              serviço. Nossa equipe fará a verificação e entrará em contato para
-              ativar seu perfil.
-            </p>
-          </div>
-
-          <div className="bg-card border border-border rounded-3xl p-8 md:p-12 shadow-2xl relative">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="flex flex-col gap-2">
-                  <label
-                    htmlFor="name"
-                    className="text-sm font-semibold text-white"
-                  >
-                    Nome do Profissional ou Negócio *
-                  </label>
-                  <Input
-                    type="text"
-                    id="name"
-                    placeholder="Ex: João Silva ou Pinturas Silva"
-                    required
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                    className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label
-                    htmlFor="email"
-                    className="text-sm font-semibold text-white"
-                  >
-                    E-mail *
-                  </label>
-                  <Input
-                    type="email"
-                    id="email"
-                    placeholder="Ex: joao@gmail.com"
-                    required
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="flex flex-col gap-2">
-                  <label
-                    htmlFor="phone"
-                    className="text-sm font-semibold text-white"
-                  >
-                    Telefone / WhatsApp *
-                  </label>
-                  <Input
-                    type="tel"
-                    id="phone"
-                    placeholder="Ex: (11) 99999-9999"
-                    required
-                    value={phone}
-                    onChange={e => setPhone(e.target.value)}
-                    className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label
-                    htmlFor="categoryId"
-                    className="text-sm font-semibold text-white font-body"
-                  >
-                    Categoria Principal *
-                  </label>
-                  <select
-                    id="categoryId"
-                    required
-                    value={categoryId}
-                    onChange={e => setCategoryId(e.target.value)}
-                    className="bg-background border border-border text-foreground rounded-xl px-4 py-3 h-12 focus:border-primary focus:outline-none transition text-sm"
-                  >
-                    <option value="" className="bg-card">
-                      Selecione uma categoria...
-                    </option>
-                    <option value="reformas-reparos" className="bg-card">
-                      Reformas
-                    </option>
-                    <option value="comercios" className="bg-card">
-                      Alimentação
-                    </option>
-                    <option value="beleza-estetica" className="bg-card">
-                      Beleza
-                    </option>
-                    <option value="automotivo" className="bg-card">
-                      Automotivo
-                    </option>
-                    <option value="servicos-domesticos" className="bg-card">
-                      Casa
-                    </option>
-                    <option value="assistencia-tecnica" className="bg-card">
-                      Tecnologia / Assistência Técnica
-                    </option>
-                    <option value="pets" className="bg-card">
-                      Pets
-                    </option>
-                    <option value="saude" className="bg-card">
-                      Saúde
-                    </option>
-                    <option value="academias" className="bg-card">
-                      Academias / Fitness
-                    </option>
-                    <option value="outro" className="bg-card">
-                      Outro (Especificar)...
-                    </option>
-                  </select>
-                </div>
-              </div>
-
-              {categoryId === "outro" && (
-                <div className="flex flex-col gap-2">
-                  <label
-                    htmlFor="otherCategory"
-                    className="text-sm font-semibold text-white"
-                  >
-                    Especifique a Categoria *
-                  </label>
-                  <Input
-                    type="text"
-                    id="otherCategory"
-                    placeholder="Ex: Pet Shop, Consultoria, etc."
-                    required
-                    value={otherCategory}
-                    onChange={e => setOtherCategory(e.target.value)}
-                    className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
-                  />
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="flex flex-col gap-2">
-                  <label
-                    htmlFor="city"
-                    className="text-sm font-semibold text-white"
-                  >
-                    Cidade *
-                  </label>
-                  <Input
-                    type="text"
-                    id="city"
-                    placeholder="Ex: Bragança Paulista"
-                    required
-                    value={city}
-                    onChange={e => setCity(e.target.value)}
-                    className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label
-                    htmlFor="neighborhood"
-                    className="text-sm font-semibold text-white"
-                  >
-                    Bairro *
-                  </label>
-                  <Input
-                    type="text"
-                    id="neighborhood"
-                    placeholder="Ex: Centro"
-                    required
-                    value={neighborhood}
-                    onChange={e => setNeighborhood(e.target.value)}
-                    className="bg-background border-border text-foreground rounded-xl px-4 py-3.5 focus-visible:ring-primary focus-visible:border-primary text-sm h-12"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <label
-                  htmlFor="description"
-                  className="text-sm font-semibold text-white"
-                >
-                  Descrição do seu negócio, produtos ou serviços *
-                </label>
-                <Textarea
-                  id="description"
-                  rows={4}
-                  placeholder="Descreva brevemente o seu comércio, loja, os produtos que vende ou serviços que oferece..."
-                  required
-                  value={description}
-                  onChange={e => setDescription(e.target.value)}
-                  className="bg-background border-border text-foreground rounded-xl px-4 py-3 focus-visible:ring-primary focus-visible:border-primary text-sm resize-none"
-                />
-              </div>
-
-              {/* Status Messages */}
-              {formSuccess && (
-                <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl p-4 gap-3 text-sm flex items-start">
-                  <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <strong>Cadastro enviado com sucesso!</strong> Recebemos
-                    suas informações. Analisaremos os dados e entraremos em
-                    contato para ativar o seu perfil no app XamaJá.
-                  </div>
-                </div>
-              )}
-
-              {formError && (
-                <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-4 gap-3 text-sm flex items-start">
-                  <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                  <span>{formError}</span>
-                </div>
-              )}
-
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full flex items-center justify-center gap-3 bg-primary text-primary-foreground font-black py-4 h-14 rounded-xl hover:bg-primary/90 transition shadow-lg shadow-primary/20 hover:-translate-y-0.5 disabled:opacity-75 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? (
-                  <>
-                    <span>Enviando...</span>
-                    <span className="loader-btn w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></span>
-                  </>
-                ) : (
-                  <span>Enviar Formulário</span>
-                )}
-              </Button>
-            </form>
-          </div>
-        </div>
-      </section>
 
       {/* Partners Banner Section */}
       <section className="py-16 bg-card border-y border-border relative overflow-hidden">
