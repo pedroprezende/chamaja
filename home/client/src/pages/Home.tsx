@@ -591,28 +591,47 @@ export default function Home() {
   const formatPrice = (val: number) =>
     val?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) ?? "R$ 0,00";
 
-  // Build the dynamic comparison rows from the union of all benefit keys across all plans.
-  // Order: benefits that appear in plan[0] first (in their displayOrder), then plan[1]-only, then plan[2]-only, etc.
+  // Regex to detect "inheritance marker" benefits that should NOT appear as table rows.
+  // e.g. "Tudo do Plano Essencial", "Tudo do Plano Essencial e Profissional"
+  const INHERIT_MARKER_RE = /tudo\s+do\s+plano/i;
+
+  // Build comparison rows: union of all benefit keys across all plans,
+  // excluding inheritance-marker entries.
   const comparisonRows: { key: string; label: string }[] = useMemo(() => {
     const seen = new Set<string>();
     const rows: { key: string; label: string }[] = [];
     for (const plan of plans) {
       for (const b of (plan.benefits || [])) {
         const k = (b.key || "").trim();
-        if (k && !seen.has(k)) {
-          seen.add(k);
-          rows.push({ key: k, label: b.name || k });
-        }
+        const label = (b.name || k).trim();
+        // Skip inheritance-marker benefits — they are informational only in admin
+        if (!k || seen.has(k) || INHERIT_MARKER_RE.test(label)) continue;
+        seen.add(k);
+        rows.push({ key: k, label });
       }
     }
     return rows;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plans]);
 
-  // For a given plan, return a Set of its benefit keys for O(1) lookup.
-  const planBenefitKeys = useMemo(
-    () => plans.map(plan => new Set<string>((plan.benefits || []).map((b: any) => (b.key || "").trim()))),
-    [plans]
-  );
+  // Build CUMULATIVE benefit key sets implementing plan hierarchy:
+  //   plan[0] → its own benefits only
+  //   plan[1] → plan[0] ∪ plan[1]  (inherits Essencial)
+  //   plan[2] → plan[0] ∪ plan[1] ∪ plan[2]  (inherits Essencial + Profissional)
+  // This way a ✓ in a lower-tier plan automatically propagates to all higher tiers.
+  const planBenefitKeys = useMemo(() => {
+    const cumulative: Set<string>[] = [];
+    let accumulated = new Set<string>();
+    for (const plan of plans) {
+      const ownKeys = (plan.benefits || [])
+        .map((b: any) => (b.key || "").trim())
+        .filter((k: string) => k && !INHERIT_MARKER_RE.test((plan.benefits || []).find((b: any) => (b.key || "").trim() === k)?.name || ""));
+      accumulated = new Set([...accumulated, ...ownKeys]);
+      cumulative.push(new Set(accumulated));
+    }
+    return cumulative;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plans]);
 
   const periodLabels: Record<string, string> = {
     monthly: "mês",
