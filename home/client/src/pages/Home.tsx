@@ -193,6 +193,33 @@ export default function Home() {
   const [isLoadingFeaturedAds, setIsLoadingFeaturedAds] = useState(true);
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
 
+  // Touch states for mobile swipe in ads slider
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    if (isLeftSwipe) {
+      setCurrentAdIndex((prev) => (prev + 1) % adsToRender.length);
+    } else if (isRightSwipe) {
+      setCurrentAdIndex((prev) => (prev - 1 + adsToRender.length) % adsToRender.length);
+    }
+  };
+
   const adsToRender = useMemo(() => {
     return featuredAdsList.length > 0 ? featuredAdsList : [
       {
@@ -1034,7 +1061,12 @@ export default function Home() {
           </div>
 
           {/* Banner Slider Container */}
-          <div className="relative overflow-hidden w-full rounded-2xl border border-zinc-900 bg-zinc-950">
+          <div 
+            className="relative overflow-hidden w-full rounded-2xl border border-zinc-900 bg-zinc-950"
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+          >
             <div 
               className="flex transition-transform duration-500 ease-in-out w-full"
               style={{ transform: `translateX(-${currentAdIndex * 100}%)` }}
