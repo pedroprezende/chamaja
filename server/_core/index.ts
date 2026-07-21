@@ -867,7 +867,7 @@ async function startServer() {
     async (req, res) => {
     try {
       const { name, email, password, whatsapp, city, type } = req.body;
-      if (!name || !email || !password || !whatsapp || !city || !type) {
+      if (!name || !email || !password || !whatsapp || !type) {
         return res
           .status(400)
           .json({ success: false, error: "Todos os campos são obrigatórios." });
@@ -965,7 +965,7 @@ async function startServer() {
         name,
         phone: whatsapp,
         whatsapp,
-        city,
+        city: city || "",
         isActive: false, // Requer aprovação do admin
         status: "pendente",
         businessType: type === "comercio" ? "comercio" : "servicos",
