@@ -303,12 +303,12 @@ export default function Parceiro() {
       setSessionToken(token);
       setUser(parsedUser);
       
-      if (parsedUser.tipo === "prestador" || parsedUser.tipo === "comercio") {
+      if (parsedUser.tipo === "prestador" || parsedUser.tipo === "comercio" || parsedUser.tipo === "cliente") {
         setView("dashboard");
         if (location === "/parceiros" || location === "/parceiro") {
           setLocation(location + "/dashboard");
         }
-      } else if (completeRegParam || parsedUser.tipo === "cliente") {
+      } else if (completeRegParam) {
         setView("complete-profile");
       } else {
         setView("dashboard");
