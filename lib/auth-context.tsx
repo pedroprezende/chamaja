@@ -46,7 +46,7 @@ export interface AuthContextType {
     email: string,
     password: string,
     name: string,
-  ) => Promise<{ needsConfirmation: boolean }>;
+  ) => Promise<{ needsConfirmation: boolean; accountAlreadyExisted?: boolean }>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshRole: () => Promise<void>;
@@ -514,7 +514,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email: string,
     password: string,
     name: string,
-  ): Promise<{ needsConfirmation: boolean }> => {
+  ): Promise<{ needsConfirmation: boolean; accountAlreadyExisted?: boolean }> => {
     logger.info("AUTH", `Iniciando cadastro por e-mail: ${email}`);
 
     let utmSource: string | null = null;
@@ -534,6 +534,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       },
     });
+
+    // If Supabase says the user already exists, try to sign them in automatically
+    if (
+      error &&
+      (error.message?.includes("User already registered") ||
+        error.message?.includes("already registered"))
+    ) {
+      logger.info("AUTH", `Conta já existe para ${email}. Tentando login automático.`);
+      const { data: signInData, error: signInError } =
+        await supabase.auth.signInWithPassword({ email, password });
+
+      if (!signInError && signInData?.session) {
+        await syncUserSession(signInData.session);
+        return { needsConfirmation: false, accountAlreadyExisted: true };
+      }
+
+      // Password may be different — tell the user to go to login
+      throw new Error(
+        "Esta conta já existe. Por favor, faça login com sua senha cadastrada.",
+      );
+    }
+
     if (error) {
       logger.error("AUTH", "Erro no cadastro por e-mail", error);
       throw translateAuthError(error);

@@ -2424,13 +2424,17 @@ export default function Home() {
               <h3 className="font-semibold mb-4">Siga-nos</h3>
               <div className="flex gap-4">
                 <a
-                  href="#"
+                  href="https://instagram.com/xamaja.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-primary hover:text-primary/80 transition"
                 >
                   Instagram
                 </a>
                 <a
-                  href="#"
+                  href="https://wa.me/5511973909447"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-primary hover:text-primary/80 transition"
                 >
                   WhatsApp

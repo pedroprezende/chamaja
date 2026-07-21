@@ -690,6 +690,15 @@ async function startServer() {
           .json({ success: false, error: "Todos os campos são obrigatórios." });
       }
 
+      // 0. Verificar se o e-mail já existe no banco local antes de criar no Supabase
+      const existingLocalUser = await db.getUserByEmail(email);
+      if (existingLocalUser) {
+        return res.status(409).json({
+          success: false,
+          error: "Este e-mail já está cadastrado. Faça login para continuar.",
+        });
+      }
+
       // 1. Criar usuário no Supabase Auth
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -697,7 +706,11 @@ async function startServer() {
       });
 
       if (error) {
-        return res.status(400).json({ success: false, error: error.message });
+        // Supabase may also return "User already registered" — normalize the message
+        const msg = error.message?.includes("already registered")
+          ? "Este e-mail já está cadastrado. Faça login para continuar."
+          : error.message;
+        return res.status(400).json({ success: false, error: msg });
       }
 
       if (!data.user) {
@@ -866,6 +879,15 @@ async function startServer() {
           .json({ success: false, error: "Tipo de parceiro inválido." });
       }
 
+      // 0. Verificar se o e-mail já existe no banco local antes de criar no Supabase
+      const existingLocalUser = await db.getUserByEmail(email);
+      if (existingLocalUser) {
+        return res.status(409).json({
+          success: false,
+          error: "Este e-mail já está cadastrado. Faça login para continuar.",
+        });
+      }
+
       // 1. Criar usuário no Supabase Auth
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -873,7 +895,11 @@ async function startServer() {
       });
 
       if (error) {
-        return res.status(400).json({ success: false, error: error.message });
+        // Supabase may also return "User already registered" — normalize the message
+        const msg = error.message?.includes("already registered")
+          ? "Este e-mail já está cadastrado. Faça login para continuar."
+          : error.message;
+        return res.status(400).json({ success: false, error: msg });
       }
 
       if (!data.user) {

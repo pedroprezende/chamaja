@@ -68,29 +68,66 @@ class SDKServer {
 
     let user = await db.getUserByOpenId(sessionUserId);
 
-    // If user not in DB, sync from Supabase automatically
+    // If user not in DB, sync from Supabase — but first check by email
+    // to prevent duplicate accounts when the same email was registered via
+    // a different auth provider (e.g. email/password vs Google OAuth).
     if (!user) {
       try {
-        await db.upsertUser({
-          openId: sessionUserId,
-          name:
-            authUser.user_metadata?.full_name ||
-            authUser.email?.split("@")[0] ||
-            null,
-          email: authUser.email ?? null,
-          loginMethod: authUser.app_metadata?.provider ?? "email",
-          avatarUrl: authUser.user_metadata?.avatar_url || null,
-          lastSignedIn: signedInAt,
-        });
-        user = await db.getUserByOpenId(sessionUserId);
+        const email = authUser.email ?? null;
 
-        // Log user registration event
-        await db.createAppEvent({
-          tipoEvento: "cadastro",
-          valor: authUser.app_metadata?.provider ?? "email",
-          usuarioId: sessionUserId,
-          utmSource: authUser.user_metadata?.utm_source || null,
-        });
+        // Check if this email already belongs to a different local account
+        const existingUserByEmail = email
+          ? await db.getUserByEmail(email)
+          : null;
+
+        if (existingUserByEmail && existingUserByEmail.openId !== sessionUserId) {
+          console.log(
+            `[Auth] E-mail ${email} já existe com openId diferente. ` +
+            `Vinculando openId antigo (${existingUserByEmail.openId}) ao novo (${sessionUserId}).`
+          );
+
+          // Delete the orphan Supabase user record in the local DB if it exists
+          // (the new openId was just created by OAuth and has no local profile yet)
+          const orphanUser = await db.getUserByOpenId(sessionUserId);
+          if (orphanUser) {
+            await db.deleteUserFully(orphanUser.openId);
+          }
+
+          // Re-link the existing local account to the new Supabase openId
+          await db.updateUserOpenId(existingUserByEmail.openId, sessionUserId);
+
+          // Update the login method to reflect the new provider
+          const newLoginMethod = authUser.app_metadata?.provider ?? "email";
+          await db.upsertUser({
+            openId: sessionUserId,
+            loginMethod: newLoginMethod,
+            lastSignedIn: signedInAt,
+            avatarUrl: authUser.user_metadata?.avatar_url || null,
+          });
+        } else {
+          // Truly a new user — create the local profile
+          await db.upsertUser({
+            openId: sessionUserId,
+            name:
+              authUser.user_metadata?.full_name ||
+              authUser.email?.split("@")[0] ||
+              null,
+            email,
+            loginMethod: authUser.app_metadata?.provider ?? "email",
+            avatarUrl: authUser.user_metadata?.avatar_url || null,
+            lastSignedIn: signedInAt,
+          });
+
+          // Log user registration event only for genuinely new accounts
+          await db.createAppEvent({
+            tipoEvento: "cadastro",
+            valor: authUser.app_metadata?.provider ?? "email",
+            usuarioId: sessionUserId,
+            utmSource: authUser.user_metadata?.utm_source || null,
+          });
+        }
+
+        user = await db.getUserByOpenId(sessionUserId);
       } catch (upsertError) {
         console.error("[Auth] Failed to sync user from Supabase:", upsertError);
         throw ForbiddenError("Failed to sync user info");
