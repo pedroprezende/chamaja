@@ -122,7 +122,7 @@ export default function Parceiro() {
   const [regWhatsapp, setRegWhatsapp] = useState("");
   const [regCity, setRegCity] = useState("");
   const [regType, setRegType] = useState<"prestador" | "comercio" | "cliente">(
-    "prestador"
+    "cliente"
   );
 
   // Complete profile fields
@@ -995,6 +995,58 @@ export default function Parceiro() {
                     onSubmit={handleRegister}
                     className="space-y-4"
                   >
+                    {/* Account Type Selector */}
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+                        Tipo de conta
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div
+                          onClick={() => setRegType("prestador")}
+                          className={`cursor-pointer rounded-xl p-3 border flex flex-col items-center gap-1.5 text-center transition-all duration-200 ${
+                            regType === "prestador"
+                              ? "border-primary bg-primary/8 text-white shadow-md shadow-primary/10"
+                              : "border-zinc-800 bg-zinc-950 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300"
+                          }`}
+                        >
+                          <Wrench className={`h-5 w-5 transition-colors duration-200 ${regType === "prestador" ? "text-primary" : "text-zinc-600"}`} />
+                          <span className="text-[10px] font-bold leading-tight">Prestador</span>
+                        </div>
+                        <div
+                          onClick={() => setRegType("comercio")}
+                          className={`cursor-pointer rounded-xl p-3 border flex flex-col items-center gap-1.5 text-center transition-all duration-200 ${
+                            regType === "comercio"
+                              ? "border-primary bg-primary/8 text-white shadow-md shadow-primary/10"
+                              : "border-zinc-800 bg-zinc-950 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300"
+                          }`}
+                        >
+                          <Store className={`h-5 w-5 transition-colors duration-200 ${regType === "comercio" ? "text-primary" : "text-zinc-600"}`} />
+                          <span className="text-[10px] font-bold leading-tight">Comércio</span>
+                        </div>
+                        <div
+                          onClick={() => setRegType("cliente")}
+                          className={`cursor-pointer rounded-xl p-3 border flex flex-col items-center gap-1.5 text-center transition-all duration-200 ${
+                            regType === "cliente"
+                              ? "border-primary bg-primary/8 text-white shadow-md shadow-primary/10"
+                              : "border-zinc-800 bg-zinc-950 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300"
+                          }`}
+                        >
+                          <User className={`h-5 w-5 transition-colors duration-200 ${regType === "cliente" ? "text-primary" : "text-zinc-600"}`} />
+                          <span className="text-[10px] font-bold leading-tight">Cliente</span>
+                        </div>
+                      </div>
+                      {regType === "cliente" && (
+                        <p className="text-[10px] text-zinc-600 leading-relaxed pt-0.5">
+                          Como cliente, você pode indicar negócios e ganhar recompensas.
+                        </p>
+                      )}
+                      {(regType === "prestador" || regType === "comercio") && (
+                        <p className="text-[10px] text-zinc-600 leading-relaxed pt-0.5">
+                          Seu perfil ficará pendente de aprovação após o cadastro.
+                        </p>
+                      )}
+                    </div>
+
                     {/* Name */}
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
