@@ -1487,4 +1487,59 @@ export const providersRouter = router({
       }
       return { success: true };
     }),
+
+  // ── Ownership Transfer ──────────────────────────────────────────────────────
+
+  /**
+   * Search users by email, phone, openId or name.
+   * Admin-only: used to pick a new owner for a provider profile.
+   */
+  searchUsersForTransfer: adminProcedure
+    .input(z.object({ query: z.string().min(1).max(200) }))
+    .query(async ({ input }) => {
+      const results = await db.searchUsersForTransfer(input.query);
+      return results;
+    }),
+
+  /**
+   * Transfer (or revoke) ownership of a provider profile.
+   * Pass newUserId = null to remove the current owner.
+   */
+  transferOwnership: adminWriteProcedure
+    .input(
+      z.object({
+        providerId: z.string().min(1),
+        newUserId: z.string().nullable(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const dbInstance = await db.getDb();
+      if (!dbInstance) throw new Error("DB not found");
+
+      // Verify provider exists
+      const providerRows = await dbInstance
+        .select({ id: providers.id, name: providers.name, userId: providers.userId })
+        .from(providers)
+        .where(eq(providers.id, input.providerId))
+        .limit(1);
+
+      if (providerRows.length === 0) {
+        throw new Error("Provider não encontrado.");
+      }
+
+      const provider = providerRows[0];
+      const previousUserId = provider.userId;
+
+      // Perform the transfer
+      await db.transferProviderOwnership(input.providerId, input.newUserId);
+
+      // Log the action in admin_activity_logs via supabase (best-effort)
+      const actionDetail = input.newUserId
+        ? `Propriedade de "${provider.name}" (ID: ${input.providerId}) transferida de "${previousUserId ?? "nenhum"}" para "${input.newUserId}".`
+        : `Propriedade de "${provider.name}" (ID: ${input.providerId}) removida (anterior: "${previousUserId ?? "nenhum"}").`;
+
+      console.info(`[transferOwnership] admin=${ctx.user.openId} — ${actionDetail}`);
+
+      return { success: true };
+    }),
 });

@@ -1,4 +1,4 @@
-import { eq, desc, asc, and, sql } from "drizzle-orm";
+import { eq, desc, asc, and, sql, or, ilike } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import {
@@ -819,4 +819,85 @@ export async function createBusinessPermission(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.insert(businessPermissions).values(data);
+}
+
+// ── Ownership Transfer ────────────────────────────────────────────────────────
+
+/**
+ * Search users by email, phone, openId or name (partial match).
+ * Used by the admin to find a user to transfer a provider profile to.
+ */
+export async function searchUsersForTransfer(query: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const q = query.trim();
+  if (!q) return [];
+
+  const partial = `%${q}%`;
+
+  const results = await db
+    .select({
+      openId: users.openId,
+      name: users.name,
+      email: users.email,
+      phone: users.phone,
+      tipo: users.tipo,
+      role: users.role,
+      createdAt: users.createdAt,
+    })
+    .from(users)
+    .where(
+      or(
+        eq(users.openId, q),
+        ilike(users.email, partial),
+        ilike(users.phone, partial),
+        ilike(users.name, partial),
+      ),
+    )
+    .limit(10);
+
+  return results;
+}
+
+/**
+ * Transfer (or revoke) ownership of a provider profile.
+ * Pass newUserId = null to remove the current owner.
+ * When assigning a new owner, also updates users.tipo to match the business type.
+ */
+export async function transferProviderOwnership(
+  providerId: string,
+  newUserId: string | null,
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // 1. Fetch the provider to know its businessType
+  const providerRows = await db
+    .select({ businessType: providers.businessType })
+    .from(providers)
+    .where(eq(providers.id, providerId))
+    .limit(1);
+
+  if (providerRows.length === 0) throw new Error("Provider não encontrado.");
+
+  // 2. Update providers.userId
+  await db
+    .update(providers)
+    .set({ userId: newUserId, updatedAt: new Date() })
+    .where(eq(providers.id, providerId));
+
+  // 3. If assigning a new owner, update their tipo in users table
+  if (newUserId) {
+    const businessType = providerRows[0].businessType;
+    const newTipo =
+      businessType === "comercio" || businessType === "alimentacao"
+        ? "comercio"
+        : "prestador";
+
+    await db
+      .update(users)
+      .set({ tipo: newTipo, updatedAt: new Date() })
+      .where(eq(users.openId, newUserId));
+  }
 }

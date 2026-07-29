@@ -581,6 +581,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [promoBusinessType, setPromoBusinessType] = useState("servicos");
   const [promoDeliveryTime, setPromoDeliveryTime] = useState("");
 
+  // Ownership transfer states
+  const [ownerUser, setOwnerUser] = useState<any | null>(null);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferSearch, setTransferSearch] = useState("");
+  const [transferResults, setTransferResults] = useState<any[]>([]);
+  const [transferTarget, setTransferTarget] = useState<any | null>(null);
+  const [transferLoading, setTransferLoading] = useState(false);
+
   const fetchData = async () => {
     try {
       // Fetch users
@@ -590,6 +598,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         .order("created_at", { ascending: false });
 
       if (usersError) throw usersError;
+
 
       // Fetch providers
       const { data: providers, error: providersError } = await supabase
@@ -1168,8 +1177,130 @@ export const Dashboard: React.FC<DashboardProps> = ({
         clicks: clicksCount || 0,
         favorites: favoritesCount || 0,
       });
+
+      // Load owner user info
+      setOwnerUser(null);
+      if (provider.user_id) {
+        const ownerRecord = usersList.find((u: any) => u.open_id === provider.user_id);
+        if (ownerRecord) {
+          setOwnerUser(ownerRecord);
+        } else {
+          // Not yet in list — fetch directly
+          const { data: ownerData } = await supabase
+            .from("users")
+            .select("*")
+            .eq("open_id", provider.user_id)
+            .maybeSingle();
+          if (ownerData) setOwnerUser(ownerData);
+        }
+      }
+
+      // Reset transfer modal state
+      setShowTransferModal(false);
+      setTransferSearch("");
+      setTransferResults([]);
+      setTransferTarget(null);
     } catch (err) {
       console.error("Erro ao carregar detalhes do anunciante:", err);
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  // ── Ownership Transfer Handlers ─────────────────────────────────────────────
+
+  const handleSearchTransferUser = async () => {
+    if (!transferSearch.trim()) return;
+    setTransferLoading(true);
+    setTransferResults([]);
+    try {
+      const { data: results, error } = await supabase
+        .from("users")
+        .select("open_id, name, email, phone, tipo, role, created_at")
+        .or(
+          `open_id.eq.${transferSearch.trim()},email.ilike.%${transferSearch.trim()}%,phone.ilike.%${transferSearch.trim()}%,name.ilike.%${transferSearch.trim()}%`
+        )
+        .limit(10);
+      if (error) throw error;
+      setTransferResults(results || []);
+    } catch (err: any) {
+      console.error("Erro na busca de usuários:", err);
+      alert(`Erro ao buscar usuários: ${err.message}`);
+    } finally {
+      setTransferLoading(false);
+    }
+  };
+
+  const handleConfirmTransfer = async () => {
+    if (!selectedAdvertiser || !transferTarget) return;
+
+    const confirmMsg = `Transferir a propriedade de "${selectedAdvertiser.name}" para ${transferTarget.name || transferTarget.email}?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setTransferLoading(true);
+    try {
+      const { error } = await supabase
+        .from("providers")
+        .update({ user_id: transferTarget.open_id, updated_at: new Date().toISOString() })
+        .eq("id", selectedAdvertiser.id);
+      if (error) throw error;
+
+      // Update users.tipo to match business type
+      const newTipo =
+        selectedAdvertiser.business_type === "comercio" ||
+        selectedAdvertiser.business_type === "alimentacao"
+          ? "comercio"
+          : "prestador";
+      await supabase
+        .from("users")
+        .update({ tipo: newTipo, updated_at: new Date().toISOString() })
+        .eq("open_id", transferTarget.open_id);
+
+      await logAdminActivity(
+        "transfer_ownership",
+        `Propriedade de "${selectedAdvertiser.name}" (ID: ${selectedAdvertiser.id}) transferida para ${transferTarget.name || transferTarget.email} (ID: ${transferTarget.open_id}).`
+      );
+
+      alert(`Propriedade transferida com sucesso para ${transferTarget.name || transferTarget.email}!`);
+      setShowTransferModal(false);
+      setTransferTarget(null);
+      await fetchData();
+      // Reload modal with fresh data
+      const refreshed = providersList.find((p: any) => p.id === selectedAdvertiser.id);
+      if (refreshed) await handleSelectAdvertiser(refreshed);
+    } catch (err: any) {
+      console.error("Erro ao transferir propriedade:", err);
+      alert(`Erro: ${err.message || "Não foi possível transferir a propriedade."}`);
+    } finally {
+      setTransferLoading(false);
+    }
+  };
+
+  const handleRemoveOwnership = async () => {
+    if (!selectedAdvertiser) return;
+
+    const confirmMsg = `Remover o proprietário "${ownerUser?.name || ownerUser?.email || "atual"}" do perfil "${selectedAdvertiser.name}"?\n\nO comerciante perderá o acesso imediatamente.`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setModalLoading(true);
+    try {
+      const { error } = await supabase
+        .from("providers")
+        .update({ user_id: null, updated_at: new Date().toISOString() })
+        .eq("id", selectedAdvertiser.id);
+      if (error) throw error;
+
+      await logAdminActivity(
+        "remove_ownership",
+        `Propriedade de "${selectedAdvertiser.name}" (ID: ${selectedAdvertiser.id}) removida. Anterior: ${ownerUser?.name || ownerUser?.email || ownerUser?.open_id || "desconhecido"}.`
+      );
+
+      alert("Proprietário removido com sucesso!");
+      setOwnerUser(null);
+      await fetchData();
+    } catch (err: any) {
+      console.error("Erro ao remover proprietário:", err);
+      alert(`Erro: ${err.message || "Não foi possível remover o proprietário."}`);
     } finally {
       setModalLoading(false);
     }
@@ -2927,6 +3058,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <th>Plano Contratado</th>
                       <th>Data de Cadastro</th>
                       <th>Status do Anúncio</th>
+                      <th>Proprietário</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -3020,6 +3152,35 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                     ? "ATIVO"
                                     : "INATIVO"}
                             </span>
+                          </td>
+                          <td>
+                            {(() => {
+                              const ownerRecord = p.user_id
+                                ? usersList.find((u: any) => u.open_id === p.user_id)
+                                : null;
+                              if (!p.user_id) {
+                                return (
+                                  <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontStyle: "italic" }}>
+                                    Sem proprietário
+                                  </span>
+                                );
+                              }
+                              return (
+                                <span
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "4px",
+                                    fontSize: "0.75rem",
+                                    fontWeight: 600,
+                                    color: "var(--accent-primary)",
+                                  }}
+                                >
+                                  <UserCheck size={11} />
+                                  {ownerRecord?.name || ownerRecord?.email || p.user_id.slice(0, 8) + "..."}
+                                </span>
+                              );
+                            })()}
                           </td>
                         </tr>
                       );
@@ -6394,6 +6555,95 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             )}
                           </div>
 
+                          {/* ── Propriedade do Perfil ──────────────────── */}
+                          <div
+                            style={{
+                              marginTop: "1.25rem",
+                              borderTop: "1px solid var(--border-color)",
+                              paddingTop: "1.25rem",
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "0.75rem",
+                            }}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <Key size={15} style={{ color: ownerUser ? "var(--accent-primary)" : "var(--text-muted)" }} />
+                                <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                                  Propriedade do Perfil
+                                </span>
+                              </div>
+                              {ownerUser ? (
+                                <span
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "6px",
+                                    background: "rgba(37, 211, 102, 0.12)",
+                                    color: "var(--accent-primary)",
+                                    border: "1px solid rgba(37, 211, 102, 0.25)",
+                                    borderRadius: "20px",
+                                    padding: "3px 10px",
+                                    fontSize: "0.78rem",
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  <UserCheck size={12} />
+                                  {ownerUser.name || ownerUser.email || ownerUser.open_id}
+                                </span>
+                              ) : (
+                                <span
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "6px",
+                                    background: "rgba(156, 163, 175, 0.1)",
+                                    color: "var(--text-muted)",
+                                    border: "1px solid rgba(156, 163, 175, 0.15)",
+                                    borderRadius: "20px",
+                                    padding: "3px 10px",
+                                    fontSize: "0.78rem",
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  <User size={12} />
+                                  Sem proprietário
+                                </span>
+                              )}
+                            </div>
+
+                            {ownerUser && (
+                              <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", paddingLeft: "23px" }}>
+                                {ownerUser.email && <span>E-mail: {ownerUser.email}</span>}
+                                {ownerUser.phone && <span style={{ marginLeft: "12px" }}>Tel: {ownerUser.phone}</span>}
+                              </div>
+                            )}
+
+                            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                              <button
+                                className="btn btn-primary"
+                                style={{ width: "auto", display: "flex", alignItems: "center", gap: "6px", padding: "0.45rem 1rem", fontSize: "0.85rem" }}
+                                onClick={() => { setShowTransferModal(true); setTransferSearch(""); setTransferResults([]); setTransferTarget(null); }}
+                              >
+                                <ArrowRight size={15} />
+                                Transferir Propriedade
+                              </button>
+
+                              {ownerUser && (
+                                <button
+                                  className="btn btn-logout"
+                                  style={{ width: "auto", display: "flex", alignItems: "center", gap: "6px", padding: "0.45rem 1rem", fontSize: "0.85rem", margin: 0 }}
+                                  onClick={handleRemoveOwnership}
+                                  disabled={modalLoading}
+                                >
+                                  <X size={15} />
+                                  Remover Proprietário
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          {/* ───────────────────────────────────────────── */}
+
                           <div
                             style={{
                               marginTop: "1rem",
@@ -6413,6 +6663,194 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       )}
                     </>
                   )}
+
+                  {/* ── Transfer Ownership Modal ──────────────────────── */}
+                  {showTransferModal && (
+                    <div
+                      style={{
+                        position: "fixed",
+                        inset: 0,
+                        background: "rgba(0,0,0,0.7)",
+                        backdropFilter: "blur(6px)",
+                        zIndex: 9999,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: "1rem",
+                      }}
+                      onClick={(e) => { if (e.target === e.currentTarget) setShowTransferModal(false); }}
+                    >
+                      <div
+                        style={{
+                          background: "var(--bg-surface)",
+                          border: "1px solid var(--border-color)",
+                          borderRadius: "16px",
+                          padding: "1.75rem",
+                          width: "100%",
+                          maxWidth: "520px",
+                          maxHeight: "90vh",
+                          overflowY: "auto",
+                          boxShadow: "0 25px 60px rgba(0,0,0,0.5)",
+                        }}
+                      >
+                        {/* Modal Header */}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
+                          <div>
+                            <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 750, color: "var(--text-primary)" }}>
+                              Transferir Propriedade
+                            </h3>
+                            <p style={{ margin: "4px 0 0 0", fontSize: "0.82rem", color: "var(--text-muted)" }}>
+                              {selectedAdvertiser?.name}
+                            </p>
+                          </div>
+                          <button
+                            className="btn-icon"
+                            onClick={() => setShowTransferModal(false)}
+                            style={{ background: "var(--bg-primary)", border: "1px solid var(--border-color)", borderRadius: "8px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+
+                        {/* Current owner info */}
+                        {ownerUser && (
+                          <div style={{ background: "rgba(37, 211, 102, 0.06)", border: "1px solid rgba(37, 211, 102, 0.15)", borderRadius: "10px", padding: "0.75rem 1rem", marginBottom: "1.25rem", display: "flex", alignItems: "center", gap: "10px" }}>
+                            <UserCheck size={16} style={{ color: "var(--accent-primary)", flexShrink: 0 }} />
+                            <div>
+                              <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--text-muted)" }}>Proprietário atual</p>
+                              <p style={{ margin: 0, fontSize: "0.9rem", fontWeight: 700, color: "var(--text-primary)" }}>
+                                {ownerUser.name || ownerUser.email}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Search field */}
+                        <div style={{ display: "flex", gap: "8px", marginBottom: "1rem" }}>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="E-mail, telefone ou ID do usuário"
+                            value={transferSearch}
+                            onChange={(e) => setTransferSearch(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleSearchTransferUser(); }}}
+                            style={{ flex: 1, paddingLeft: "0.75rem" }}
+                          />
+                          <button
+                            className="btn btn-primary"
+                            style={{ width: "auto", padding: "0.5rem 1rem", margin: 0 }}
+                            onClick={handleSearchTransferUser}
+                            disabled={transferLoading || !transferSearch.trim()}
+                          >
+                            {transferLoading ? "..." : <Search size={15} />}
+                          </button>
+                        </div>
+
+                        {/* Search Results */}
+                        {transferResults.length > 0 && (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginBottom: "1rem" }}>
+                            <p style={{ margin: "0 0 0.5rem 0", fontSize: "0.78rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                              {transferResults.length} resultado(s) encontrado(s)
+                            </p>
+                            {transferResults.map((u: any) => (
+                              <div
+                                key={u.open_id}
+                                onClick={() => setTransferTarget(transferTarget?.open_id === u.open_id ? null : u)}
+                                style={{
+                                  background: transferTarget?.open_id === u.open_id ? "rgba(37, 211, 102, 0.08)" : "var(--bg-primary)",
+                                  border: `1px solid ${transferTarget?.open_id === u.open_id ? "rgba(37, 211, 102, 0.35)" : "var(--border-color)"}`,
+                                  borderRadius: "10px",
+                                  padding: "0.75rem 1rem",
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "10px",
+                                  transition: "all 0.15s",
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    width: "36px",
+                                    height: "36px",
+                                    borderRadius: "50%",
+                                    background: transferTarget?.open_id === u.open_id ? "rgba(37, 211, 102, 0.2)" : "rgba(156, 163, 175, 0.1)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    flexShrink: 0,
+                                    fontSize: "0.85rem",
+                                    fontWeight: 700,
+                                    color: transferTarget?.open_id === u.open_id ? "var(--accent-primary)" : "var(--text-muted)",
+                                  }}
+                                >
+                                  {(u.name || u.email || "?").charAt(0).toUpperCase()}
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <p style={{ margin: 0, fontSize: "0.9rem", fontWeight: 700, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                    {u.name || "(sem nome)"}
+                                  </p>
+                                  <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                    {u.email} {u.phone ? `• ${u.phone}` : ""}
+                                  </p>
+                                </div>
+                                <span
+                                  style={{
+                                    fontSize: "0.7rem",
+                                    fontWeight: 700,
+                                    textTransform: "uppercase",
+                                    padding: "2px 8px",
+                                    borderRadius: "20px",
+                                    background: u.tipo === "comercio" || u.tipo === "prestador" ? "rgba(37, 211, 102, 0.1)" : "rgba(156, 163, 175, 0.1)",
+                                    color: u.tipo === "comercio" || u.tipo === "prestador" ? "var(--accent-primary)" : "var(--text-muted)",
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  {u.tipo || "cliente"}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {!transferLoading && transferResults.length === 0 && transferSearch.trim() && (
+                          <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", textAlign: "center", padding: "1rem 0" }}>
+                            Nenhum usuário encontrado. Verifique o e-mail, telefone ou ID.
+                          </p>
+                        )}
+
+                        {/* Selected target confirmation */}
+                        {transferTarget && (
+                          <div style={{ marginTop: "1rem", background: "rgba(37, 211, 102, 0.06)", border: "1px solid rgba(37, 211, 102, 0.25)", borderRadius: "10px", padding: "1rem" }}>
+                            <p style={{ margin: "0 0 0.75rem 0", fontSize: "0.85rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                              Confirmar transferência da propriedade de <strong style={{ color: "var(--text-primary)" }}>{selectedAdvertiser?.name}</strong> para{" "}
+                              <strong style={{ color: "var(--accent-primary)" }}>{transferTarget.name || transferTarget.email}</strong>?
+                            </p>
+                            <p style={{ margin: "0 0 1rem 0", fontSize: "0.78rem", color: "var(--text-muted)" }}>
+                              O usuário poderá editar o perfil pelo Painel de Parceiros. O Admin mantém controle total.
+                            </p>
+                            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+                              <button
+                                className="btn btn-logout"
+                                style={{ width: "auto", margin: 0, padding: "0.45rem 1rem", fontSize: "0.85rem" }}
+                                onClick={() => setTransferTarget(null)}
+                              >
+                                Cancelar
+                              </button>
+                              <button
+                                className="btn btn-primary"
+                                style={{ width: "auto", margin: 0, padding: "0.45rem 1rem", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "6px" }}
+                                onClick={handleConfirmTransfer}
+                                disabled={transferLoading}
+                              >
+                                {transferLoading ? "Transferindo..." : <><ArrowRight size={14} /> Confirmar Transferência</>}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
 
                   {/* TAB 2: Received Reviews list */}
                   {!modalLoading && advertiserTab === "reviews" && (
