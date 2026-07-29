@@ -217,6 +217,7 @@ export const providers = pgTable(
     ),
     displayOrder: integer("display_order").notNull().default(0),
     destaque: boolean("destaque").default(false).notNull(),
+    invitedEmail: varchar("invited_email", { length: 320 }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },

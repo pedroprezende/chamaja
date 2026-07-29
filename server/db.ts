@@ -82,6 +82,38 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       target: users.openId,
       set: updateSet,
     });
+
+    // --- NEW: Check if there's any pending invite for this user's email ---
+    if (user.email) {
+      const pendingProviders = await db
+        .select()
+        .from(providers)
+        .where(eq(providers.invitedEmail, user.email));
+
+      if (pendingProviders.length > 0) {
+        let isCommerceOrProvider = false;
+        
+        for (const prov of pendingProviders) {
+          await db
+            .update(providers)
+            .set({ userId: user.openId, invitedEmail: null })
+            .where(eq(providers.id, prov.id));
+            
+          if (prov.businessType === "comercio" || prov.businessType === "prestador" || prov.categoryId === "comercios" || prov.category === "Comércios") {
+            isCommerceOrProvider = true;
+          }
+        }
+
+        // Se pelo menos um provider for comercio/prestador, atualiza o tipo do usuário
+        const newTipo = isCommerceOrProvider ? "comercio" : "prestador";
+        await db
+          .update(users)
+          .set({ tipo: newTipo })
+          .where(eq(users.openId, user.openId));
+          
+        console.info(`[Database] Auto-bound ${pendingProviders.length} provider(s) to new user ${user.email} (${user.openId})`);
+      }
+    }
   } catch (error) {
     console.error("[Database] Failed to upsert user:", error);
     throw error;
@@ -868,6 +900,7 @@ export async function searchUsersForTransfer(query: string) {
 export async function transferProviderOwnership(
   providerId: string,
   newUserId: string | null,
+  invitedEmail?: string,
 ): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -881,13 +914,17 @@ export async function transferProviderOwnership(
 
   if (providerRows.length === 0) throw new Error("Provider não encontrado.");
 
-  // 2. Update providers.userId
+  // 2. Update providers.userId and invitedEmail
   await db
     .update(providers)
-    .set({ userId: newUserId, updatedAt: new Date() })
+    .set({ 
+      userId: newUserId, 
+      invitedEmail: invitedEmail || null, 
+      updatedAt: new Date() 
+    })
     .where(eq(providers.id, providerId));
 
-  // 3. If assigning a new owner, update their tipo in users table
+  // 3. If assigning a new owner (existing user), update their tipo in users table
   if (newUserId) {
     const businessType = providerRows[0].businessType;
     const newTipo =

@@ -80,7 +80,68 @@ export default function ProfessionalDetailScreen() {
   const isDefaultCity = addressName === "Bragança Paulista - SP";
   const showDistance = coords !== null;
 
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
+  
+  // -- Transfer Ownership State --
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferSearch, setTransferSearch] = useState("");
+  const [transferResults, setTransferResults] = useState<any[]>([]);
+  const [transferTarget, setTransferTarget] = useState<any | null>(null);
+  const [transferLoading, setTransferLoading] = useState(false);
+  const [transferEmail, setTransferEmail] = useState("");
+
+  const transferOwnershipMutation = trpc.providers.transferOwnership.useMutation();
+
+  const handleSearchTransferUser = async () => {
+    if (!transferSearch.trim()) return;
+    setTransferLoading(true);
+    setTransferResults([]);
+    try {
+      const { data: results, error } = await supabase
+        .from("users")
+        .select("open_id, name, email, phone, tipo, role, created_at")
+        .or(
+          `open_id.eq.${transferSearch.trim()},email.ilike.%${transferSearch.trim()}%,phone.ilike.%${transferSearch.trim()}%,name.ilike.%${transferSearch.trim()}%`
+        )
+        .limit(10);
+      if (error) throw error;
+      setTransferResults(results || []);
+    } catch (err: any) {
+      console.error("Erro na busca de usuários:", err);
+      Alert.alert("Erro", `Erro ao buscar usuários: ${err.message}`);
+    } finally {
+      setTransferLoading(false);
+    }
+  };
+
+  const handleTransferOwnership = async () => {
+    if (!professional) return;
+    if (!transferTarget && !transferEmail.trim()) {
+      Alert.alert("Atenção", "Selecione um usuário ou informe um e-mail.");
+      return;
+    }
+
+    try {
+      setTransferLoading(true);
+      await transferOwnershipMutation.mutateAsync({
+        providerId: professional.id,
+        newUserId: transferTarget ? transferTarget.open_id : null,
+        emailInvite: !transferTarget && transferEmail.trim() ? transferEmail.trim() : undefined,
+      });
+      Alert.alert(
+        "Sucesso",
+        transferTarget
+          ? "Propriedade transferida com sucesso!"
+          : "Convite de propriedade enviado com sucesso!"
+      );
+      setShowTransferModal(false);
+      refetch();
+    } catch (err: any) {
+      Alert.alert("Erro", err.message || "Erro ao transferir propriedade.");
+    } finally {
+      setTransferLoading(false);
+    }
+  };
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const submitReview = trpc.providers.submitReview.useMutation();
 
@@ -570,6 +631,26 @@ export default function ProfessionalDetailScreen() {
                   </View>
                 ))}
               </View>
+            )}
+
+            {isAdmin && (
+              <Pressable
+                onPress={() => setShowTransferModal(true)}
+                style={{
+                  marginTop: 16,
+                  backgroundColor: colors.primary,
+                  paddingVertical: 12,
+                  paddingHorizontal: 24,
+                  borderRadius: 12,
+                  alignItems: "center",
+                  flexDirection: "row",
+                  justifyContent: "center",
+                  gap: 8,
+                }}
+              >
+                <MaterialIcons name="swap-horiz" size={20} color="#FFF" />
+                <Text style={{ color: "#FFF", fontWeight: "700" }}>Transferir Propriedade</Text>
+              </Pressable>
             )}
           </View>
         </View>
@@ -1336,6 +1417,158 @@ export default function ProfessionalDetailScreen() {
         </View>
       </Modal>
 
+      {/* Transfer Ownership Modal (Admins only) */}
+      <Modal
+        visible={showTransferModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowTransferModal(false)}
+      >
+        <View style={styles.modalOverlayBackground}>
+          <View style={[styles.reportModalContent, { backgroundColor: colors.surface, maxHeight: "80%" }]}>
+            <View style={styles.reportModalHeader}>
+              <Text style={[styles.reportModalTitle, { color: colors.foreground }]}>
+                Transferir Propriedade
+              </Text>
+              <Pressable onPress={() => setShowTransferModal(false)} style={styles.closeReportBtn}>
+                <MaterialIcons name="close" size={24} color={colors.foreground} />
+              </Pressable>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
+              <Text style={[styles.reportModalSubtitle, { color: colors.muted }]}>
+                Busque um usuário existente ou envie um convite por e-mail para transferir a propriedade de <Text style={{ fontWeight: "700" }}>{prof.name}</Text>.
+              </Text>
+
+              {/* Search User */}
+              <View style={{ marginTop: 16 }}>
+                <Text style={{ fontSize: 13, fontWeight: "600", color: colors.foreground, marginBottom: 8 }}>
+                  Buscar usuário existente:
+                </Text>
+                <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+                  <TextInput
+                    style={{
+                      flex: 1,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      borderRadius: 8,
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                      color: colors.foreground,
+                    }}
+                    placeholder="Nome, e-mail ou telefone"
+                    placeholderTextColor={colors.muted}
+                    value={transferSearch}
+                    onChangeText={setTransferSearch}
+                    onSubmitEditing={handleSearchTransferUser}
+                  />
+                  <Pressable
+                    onPress={handleSearchTransferUser}
+                    disabled={transferLoading || !transferSearch.trim()}
+                    style={{
+                      backgroundColor: colors.primary,
+                      padding: 12,
+                      borderRadius: 8,
+                      opacity: transferLoading || !transferSearch.trim() ? 0.6 : 1,
+                    }}
+                  >
+                    {transferLoading ? (
+                      <ActivityIndicator size="small" color="#FFF" />
+                    ) : (
+                      <MaterialIcons name="search" size={20} color="#FFF" />
+                    )}
+                  </Pressable>
+                </View>
+              </View>
+
+              {/* Search Results */}
+              {transferResults.length > 0 && (
+                <View style={{ marginTop: 16 }}>
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: colors.muted, marginBottom: 8 }}>
+                    RESULTADOS DA BUSCA:
+                  </Text>
+                  {transferResults.map((u) => {
+                    const isSelected = transferTarget?.open_id === u.open_id;
+                    return (
+                      <Pressable
+                        key={u.open_id}
+                        onPress={() => {
+                          setTransferTarget(isSelected ? null : u);
+                          if (!isSelected) setTransferEmail("");
+                        }}
+                        style={{
+                          borderWidth: 1,
+                          borderColor: isSelected ? colors.primary : colors.border,
+                          backgroundColor: isSelected ? colors.primary + "15" : "transparent",
+                          padding: 12,
+                          borderRadius: 8,
+                          marginBottom: 8,
+                        }}
+                      >
+                        <Text style={{ fontWeight: "700", color: colors.foreground }}>{u.name || "Sem Nome"}</Text>
+                        <Text style={{ fontSize: 13, color: colors.muted }}>{u.email}</Text>
+                        {u.phone && <Text style={{ fontSize: 12, color: colors.muted }}>{u.phone}</Text>}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              )}
+
+              {/* Email Invite (if not selected user) */}
+              <View style={{ marginTop: 24, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 16 }}>
+                <Text style={{ fontSize: 13, fontWeight: "600", color: colors.foreground, marginBottom: 8 }}>
+                  Ou convide um novo usuário:
+                </Text>
+                <TextInput
+                  style={{
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    borderRadius: 8,
+                    paddingHorizontal: 12,
+                    paddingVertical: 10,
+                    color: colors.foreground,
+                    backgroundColor: transferTarget ? colors.surface : "transparent",
+                    opacity: transferTarget ? 0.5 : 1,
+                  }}
+                  placeholder="E-mail do novo proprietário"
+                  placeholderTextColor={colors.muted}
+                  value={transferEmail}
+                  onChangeText={setTransferEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  editable={!transferTarget}
+                />
+                <Text style={{ fontSize: 11, color: colors.muted, marginTop: 4 }}>
+                  Um convite será gerado. Quando o usuário se cadastrar com este e-mail, a propriedade será vinculada.
+                </Text>
+              </View>
+            </ScrollView>
+
+            <View style={{ marginTop: 16, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 16 }}>
+              <Pressable
+                onPress={handleTransferOwnership}
+                disabled={transferLoading || (!transferTarget && !transferEmail.trim())}
+                style={{
+                  backgroundColor: colors.primary,
+                  paddingVertical: 14,
+                  borderRadius: 12,
+                  alignItems: "center",
+                  opacity: transferLoading || (!transferTarget && !transferEmail.trim()) ? 0.6 : 1,
+                }}
+              >
+                {transferLoading ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <Text style={{ color: "#FFF", fontWeight: "700" }}>
+                    Confirmar Transferência
+                  </Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Leave Review Modal */}
       <LeaveReviewModal
         visible={showReviewModal}
@@ -1353,8 +1586,6 @@ export default function ProfessionalDetailScreen() {
               providerId: prof.id,
               rating,
               comment,
-              userName,
-              userAvatar,
             });
 
             addReview({

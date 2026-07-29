@@ -124,7 +124,7 @@ export const adminDB = {
     email: string,
     password: string,
     name: string,
-    role: UserRole = "CONTRACTOR",
+    role: AdminRole = "CONTRACTOR",
   ): Promise<AdminAccount> => {
     await ensureAdminsLoaded();
     const existing = _admins.find((a) => a.email === email);

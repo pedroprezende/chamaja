@@ -609,7 +609,7 @@ export default function AdminProvidersScreen() {
       if (editingProvider) {
         await updateMutation.mutateAsync({
           id: editingProvider.id,
-          updates: providerData as any,
+          ...(providerData as any),
         });
       } else {
         await createMutation.mutateAsync(providerData as any);
@@ -643,7 +643,8 @@ export default function AdminProvidersScreen() {
   const handleToggle = async (p: any) => {
     await updateMutation.mutateAsync({
       id: p.id,
-      updates: { isActive: !p.isActive } as any,
+      name: p.name,
+      isActive: !p.isActive,
     });
     await loadData();
   };

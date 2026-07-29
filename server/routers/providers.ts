@@ -736,7 +736,7 @@ export const providersRouter = router({
       queryBuilder.orderBy(...orderByExprs);
       const results = await queryBuilder;
 
-      const mapped = results.map((r) => {
+      const mapped = results.map((r: any) => {
         let distanceStr = "";
         let distanceKm = (r as any).distanceKm;
         if (distanceKm !== undefined && distanceKm !== null) {
@@ -1442,7 +1442,7 @@ export const providersRouter = router({
     if (data.foundedYear !== undefined)
       data.foundedYear = data.foundedYear ? Number(data.foundedYear) : null;
 
-    await db.updateProvider(id, data);
+    await db.updateProvider(id, data as any);
   }),
 
   delete: adminWriteProcedure
@@ -1504,12 +1504,14 @@ export const providersRouter = router({
   /**
    * Transfer (or revoke) ownership of a provider profile.
    * Pass newUserId = null to remove the current owner.
+   * Pass emailInvite to invite a non-existing user via email.
    */
   transferOwnership: adminWriteProcedure
     .input(
       z.object({
         providerId: z.string().min(1),
         newUserId: z.string().nullable(),
+        emailInvite: z.string().email().optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
@@ -1531,12 +1533,14 @@ export const providersRouter = router({
       const previousUserId = provider.userId;
 
       // Perform the transfer
-      await db.transferProviderOwnership(input.providerId, input.newUserId);
+      await db.transferProviderOwnership(input.providerId, input.newUserId, input.emailInvite);
 
       // Log the action in admin_activity_logs via supabase (best-effort)
       const actionDetail = input.newUserId
         ? `Propriedade de "${provider.name}" (ID: ${input.providerId}) transferida de "${previousUserId ?? "nenhum"}" para "${input.newUserId}".`
-        : `Propriedade de "${provider.name}" (ID: ${input.providerId}) removida (anterior: "${previousUserId ?? "nenhum"}").`;
+        : input.emailInvite
+          ? `Convite de propriedade para "${provider.name}" enviado para o email "${input.emailInvite}".`
+          : `Propriedade de "${provider.name}" (ID: ${input.providerId}) removida (anterior: "${previousUserId ?? "nenhum"}").`;
 
       console.info(`[transferOwnership] admin=${ctx.user.openId} — ${actionDetail}`);
 
