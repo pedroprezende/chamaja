@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   View,
@@ -53,7 +53,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { AnimatedCard } from "@/components/ui/animated-card";
 import Animated, { FadeInDown, FadeInRight } from "react-native-reanimated";
 import AddressSelectorModal from "@/components/address-selector-modal";
-import { styles } from "./index.styles";
+import { createStyles } from "./index.styles";
 import {
   MOCK_PROVIDERS_BY_CAT,
   getMockProvidersForCategory,
@@ -131,6 +131,7 @@ const EMPTY_FORM = {
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function HomeScreen() {
   const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const { user } = useAuth();
   const { unreadCount } = useNotifications();

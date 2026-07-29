@@ -18,6 +18,7 @@ import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useLocation } from "@/lib/location-context";
 import { useColors } from "@/hooks/use-colors";
+import type { ThemeColorPalette } from "@/constants/theme";
 import { useFavorites } from "@/lib/favorites-context";
 import { ScreenContainer } from "@/components/screen-container";
 import SearchMap from "@/components/search-map";
@@ -87,6 +88,7 @@ const CATEGORY_ITEMS = [
 
 export default function SearchScreen() {
   const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const { coords, addressName, permissionGranted } = useLocation();
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -558,7 +560,7 @@ export default function SearchScreen() {
       <View style={styles.header}>
         <View style={styles.headerRow}>
           <Pressable onPress={() => router.back()} style={styles.headerBackBtn}>
-            <MaterialIcons name="arrow-back" size={24} color="#FFFFFF" />
+            <MaterialIcons name="arrow-back" size={24} color={colors.foreground} />
           </Pressable>
 
           <View style={styles.headerTitleContainer}>
@@ -616,12 +618,12 @@ export default function SearchScreen() {
               <MaterialIcons
                 name={isMapView ? "format-list-bulleted" : "map"}
                 size={20}
-                color={isMapView ? "#22C55E" : "#FFFFFF"}
+                color={isMapView ? colors.primary : colors.foreground}
               />
               <Text
                 style={[
                   styles.headerToggleText,
-                  isMapView && { color: "#22C55E" },
+                  isMapView && { color: colors.primary },
                 ]}
               >
                 {isMapView ? "Lista" : "Mapa"}
@@ -634,7 +636,7 @@ export default function SearchScreen() {
       {/* Barra de Pesquisa */}
       <View style={styles.searchSection}>
         <View style={styles.searchBox}>
-          <MaterialIcons name="search" size={20} color="#9CA3AF" />
+          <MaterialIcons name="search" size={20} color={colors.muted} />
           <TextInput
             style={styles.searchInput}
             placeholder={
@@ -1251,14 +1253,14 @@ export default function SearchScreen() {
             style={[
               styles.filterSheet,
               {
-                backgroundColor: "#080808",
-                borderColor: "#1C1C1E",
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
                 borderWidth: 1,
               },
             ]}
           >
             <View
-              style={[styles.modalHandle, { backgroundColor: "#1C1C1E" }]}
+              style={[styles.modalHandle, { backgroundColor: colors.border }]}
             />
 
             <View style={styles.filterModalHeader}>
@@ -1266,7 +1268,7 @@ export default function SearchScreen() {
                 onPress={() => setFilterModalVisible(false)}
                 style={styles.filterCloseBtn}
               >
-                <MaterialIcons name="close" size={24} color="#FFFFFF" />
+                <MaterialIcons name="close" size={24} color={colors.foreground} />
               </Pressable>
 
               <View style={styles.filterHeaderTitleContainer}>
@@ -2117,18 +2119,19 @@ export default function SearchScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColorPalette) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#080808",
+    backgroundColor: colors.surface,
   },
   header: {
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#1C1C1E",
-    backgroundColor: "#080808",
+    borderBottomColor: colors.border,
+    backgroundColor: colors.surface,
   },
   headerRow: {
     flexDirection: "row",
@@ -2141,9 +2144,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#111111",
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: "#1C1C1E",
+    borderColor: colors.border,
   },
   headerTitleContainer: {
     flex: 1,
@@ -2152,7 +2155,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#FFFFFF",
+    color: colors.foreground,
   },
   locationContainer: {
     flexDirection: "row",
@@ -2166,7 +2169,7 @@ const styles = StyleSheet.create({
   },
   subtitleCount: {
     fontSize: 11,
-    color: "#9CA3AF",
+    color: colors.muted,
     marginTop: 2,
   },
   headerRightRow: {
@@ -2177,15 +2180,15 @@ const styles = StyleSheet.create({
   headerFilterBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#111111",
+    backgroundColor: colors.background,
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#1C1C1E",
+    borderColor: colors.border,
   },
   headerFilterText: {
-    color: "#FFFFFF",
+    color: colors.foreground,
     fontSize: 12,
     fontWeight: "600",
     marginLeft: 4,
@@ -2193,15 +2196,15 @@ const styles = StyleSheet.create({
   headerToggleBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#111111",
+    backgroundColor: colors.background,
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#1C1C1E",
+    borderColor: colors.border,
   },
   headerToggleText: {
-    color: "#FFFFFF",
+    color: colors.foreground,
     fontSize: 12,
     fontWeight: "600",
     marginLeft: 4,
@@ -2209,37 +2212,37 @@ const styles = StyleSheet.create({
   searchSection: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "#080808",
+    backgroundColor: colors.surface,
   },
   searchBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#111111",
+    backgroundColor: colors.background,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
     gap: 8,
     borderWidth: 1,
-    borderColor: "#1C1C1E",
+    borderColor: colors.border,
   },
   searchInput: {
     flex: 1,
     fontSize: 14,
-    color: "#FFFFFF",
+    color: colors.foreground,
     padding: 0,
   },
   tabBarContainer: {
     paddingHorizontal: 16,
     paddingBottom: 10,
-    backgroundColor: "#080808",
+    backgroundColor: colors.surface,
   },
   tabBar: {
     flexDirection: "row",
-    backgroundColor: "#111111",
+    backgroundColor: colors.background,
     borderRadius: 10,
     padding: 3,
     borderWidth: 1,
-    borderColor: "#1C1C1E",
+    borderColor: colors.border,
   },
   tabButton: {
     flex: 1,
@@ -2256,16 +2259,16 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#9CA3AF",
+    color: colors.muted,
   },
   tabTextActive: {
     color: "#FFFFFF",
   },
   pillsWrapper: {
-    backgroundColor: "#080808",
+    backgroundColor: colors.surface,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#1C1C1E",
+    borderBottomColor: colors.border,
   },
   pillsScroll: {
     paddingHorizontal: 16,
@@ -2275,9 +2278,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: "#111111",
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: "#1C1C1E",
+    borderColor: colors.border,
   },
   pillButtonActive: {
     backgroundColor: "#22C55E",
@@ -2286,7 +2289,7 @@ const styles = StyleSheet.create({
   pillText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#D1D5DB",
+    color: colors.foreground,
   },
   pillTextActive: {
     color: "#FFFFFF",
@@ -2298,14 +2301,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: "#1F2937",
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: "#374151",
+    borderColor: colors.border,
   },
   pillTextMore: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: colors.foreground,
   },
   mainContent: {
     flex: 1,
@@ -2319,7 +2322,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 14,
-    color: "#9CA3AF",
+    color: colors.muted,
   },
   listContainer: {
     padding: 16,
@@ -2328,12 +2331,12 @@ const styles = StyleSheet.create({
   },
   providerCard: {
     flexDirection: "row",
-    backgroundColor: "#111111",
+    backgroundColor: colors.background,
     borderRadius: 16,
     padding: 12,
     gap: 12,
     borderWidth: 1,
-    borderColor: "#1C1C1E",
+    borderColor: colors.border,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -2347,7 +2350,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 12,
-    backgroundColor: "#1F2937",
+    backgroundColor: colors.border,
   },
   badgeTag: {
     position: "absolute",
@@ -2389,7 +2392,7 @@ const styles = StyleSheet.create({
   providerName: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#FFFFFF",
+    color: colors.foreground,
     maxWidth: "85%",
   },
   favBtn: {
@@ -2397,7 +2400,7 @@ const styles = StyleSheet.create({
   },
   providerCategory: {
     fontSize: 13,
-    color: "#9CA3AF",
+    color: colors.muted,
     marginTop: 2,
   },
   ratingSection: {
@@ -2408,21 +2411,21 @@ const styles = StyleSheet.create({
   ratingValue: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: colors.foreground,
     marginLeft: 4,
   },
   ratingCount: {
     fontSize: 11,
-    color: "#9CA3AF",
+    color: colors.muted,
     marginLeft: 2,
   },
   ratingDot: {
-    color: "#9CA3AF",
+    color: colors.muted,
     marginHorizontal: 6,
   },
   distanceText: {
     fontSize: 12,
-    color: "#D1D5DB",
+    color: colors.foreground,
   },
   statusRow: {
     flexDirection: "row",
@@ -2448,11 +2451,11 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#FFFFFF",
+    color: colors.foreground,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: "#9CA3AF",
+    color: colors.muted,
     textAlign: "center",
     paddingHorizontal: 30,
     lineHeight: 20,
@@ -2468,7 +2471,7 @@ const styles = StyleSheet.create({
   scanAreaButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#111111",
+    backgroundColor: colors.background,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 24,
@@ -2478,10 +2481,10 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
     borderWidth: 1,
-    borderColor: "#1C1C1E",
+    borderColor: colors.border,
   },
   scanAreaText: {
-    color: "#FFFFFF",
+    color: colors.foreground,
     fontSize: 13,
     fontWeight: "700",
   },
@@ -2492,7 +2495,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "#111111",
+    backgroundColor: colors.background,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
@@ -2501,7 +2504,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4.65,
     elevation: 8,
     borderWidth: 1,
-    borderColor: "#1C1C1E",
+    borderColor: colors.border,
     zIndex: 10,
   },
   detailCard: {
@@ -2509,7 +2512,7 @@ const styles = StyleSheet.create({
     bottom: 16,
     left: 16,
     right: 16,
-    backgroundColor: "#111111",
+    backgroundColor: colors.background,
     borderRadius: 16,
     padding: 16,
     shadowColor: "#000",
@@ -2518,7 +2521,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 10,
     borderWidth: 1,
-    borderColor: "#1C1C1E",
+    borderColor: colors.border,
     zIndex: 10,
   },
   cardCloseBtn: {
@@ -2536,7 +2539,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 12,
-    backgroundColor: "#1F2937",
+    backgroundColor: colors.border,
   },
   cardInfo: {
     flex: 1,
@@ -2548,12 +2551,12 @@ const styles = StyleSheet.create({
   cardName: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#FFFFFF",
+    color: colors.foreground,
     maxWidth: "80%",
   },
   cardSpecialty: {
     fontSize: 13,
-    color: "#9CA3AF",
+    color: colors.muted,
     marginTop: 1,
   },
   cardRatingRow: {
@@ -2564,21 +2567,21 @@ const styles = StyleSheet.create({
   cardRating: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: colors.foreground,
     marginLeft: 3,
   },
   cardReviews: {
     fontSize: 11,
-    color: "#9CA3AF",
+    color: colors.muted,
     marginLeft: 2,
   },
   cardDot: {
-    color: "#9CA3AF",
+    color: colors.muted,
     marginHorizontal: 4,
   },
   cardDistance: {
     fontSize: 12,
-    color: "#D1D5DB",
+    color: colors.foreground,
   },
   cardOpenStatus: {
     color: "#22C55E",
@@ -2605,14 +2608,14 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: "#080808",
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 20,
     paddingBottom: 40,
     maxHeight: Dimensions.get("window").height * 0.75,
     borderWidth: 1,
-    borderColor: "#1C1C1E",
+    borderColor: colors.border,
   },
   modalHeader: {
     flexDirection: "row",
@@ -2621,12 +2624,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#1C1C1E",
+    borderBottomColor: colors.border,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#FFFFFF",
+    color: colors.foreground,
   },
   modalCloseBtn: {
     padding: 4,
@@ -2640,13 +2643,13 @@ const styles = StyleSheet.create({
   },
   gridItem: {
     width: "30%",
-    backgroundColor: "#111111",
+    backgroundColor: colors.background,
     borderRadius: 16,
     paddingVertical: 16,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1.5,
-    borderColor: "#1C1C1E",
+    borderColor: colors.border,
     gap: 8,
   },
   gridItemActive: {
@@ -2657,14 +2660,14 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#080808",
+    backgroundColor: colors.surface,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#1C1C1E",
+    borderColor: colors.border,
   },
   gridItemLabel: {
-    color: "#D1D5DB",
+    color: colors.foreground,
     fontSize: 12,
     fontWeight: "700",
     textAlign: "center",
@@ -2689,7 +2692,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     borderBottomWidth: 1,
-    borderBottomColor: "#1C1C1E",
+    borderBottomColor: colors.border,
     paddingBottom: 16,
     marginBottom: 10,
   },
@@ -2697,11 +2700,11 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#111111",
+    backgroundColor: colors.background,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#1C1C1E",
+    borderColor: colors.border,
   },
   filterHeaderTitleContainer: {
     flex: 1,
@@ -2711,11 +2714,11 @@ const styles = StyleSheet.create({
   filterModalTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#FFFFFF",
+    color: colors.foreground,
   },
   filterModalSubtitle: {
     fontSize: 12,
-    color: "#9CA3AF",
+    color: colors.muted,
     marginTop: 2,
   },
   clearFiltersBtn: {
@@ -2735,7 +2738,7 @@ const styles = StyleSheet.create({
   filterSectionTitle: {
     fontSize: 15,
     fontWeight: "800",
-    color: "#FFFFFF",
+    color: colors.foreground,
     marginBottom: 12,
   },
   sortGrid: {
@@ -2746,14 +2749,14 @@ const styles = StyleSheet.create({
   },
   sortCard: {
     width: "48%",
-    backgroundColor: "#111111",
+    backgroundColor: colors.background,
     borderRadius: 16,
     paddingVertical: 14,
     paddingHorizontal: 12,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1.5,
-    borderColor: "#1C1C1E",
+    borderColor: colors.border,
     gap: 6,
   },
   sortCardActive: {
@@ -2761,13 +2764,13 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(34, 197, 94, 0.06)",
   },
   sortCardLabel: {
-    color: "#9CA3AF",
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "600",
     textAlign: "center",
   },
   sortCardLabelActive: {
-    color: "#FFFFFF",
+    color: colors.foreground,
     fontWeight: "700",
   },
   // Step Slider
@@ -2778,7 +2781,7 @@ const styles = StyleSheet.create({
   },
   sliderTrackWrapper: {
     height: 4,
-    backgroundColor: "#1C1C1E",
+    backgroundColor: colors.border,
     borderRadius: 2,
     position: "relative",
   },
@@ -2788,7 +2791,7 @@ const styles = StyleSheet.create({
     right: 0,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "#1C1C1E",
+    backgroundColor: colors.border,
   },
   sliderTrackActive: {
     position: "absolute",
@@ -2803,9 +2806,9 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: "#111111",
+    backgroundColor: colors.background,
     borderWidth: 2.5,
-    borderColor: "#374151",
+    borderColor: colors.border,
     transform: [{ translateX: -8 }],
   },
   sliderDotPassed: {
@@ -2840,7 +2843,7 @@ const styles = StyleSheet.create({
   },
   sliderStepLabel: {
     fontSize: 11,
-    color: "#9CA3AF",
+    color: colors.muted,
     fontWeight: "600",
   },
   sliderStepLabelActive: {
@@ -2861,9 +2864,9 @@ const styles = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: 27,
-    backgroundColor: "#111111",
+    backgroundColor: colors.background,
     borderWidth: 1.5,
-    borderColor: "#1C1C1E",
+    borderColor: colors.border,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 6,
@@ -2874,7 +2877,7 @@ const styles = StyleSheet.create({
   },
   categoryCircleLabel: {
     fontSize: 11,
-    color: "#9CA3AF",
+    color: colors.muted,
     fontWeight: "600",
     textAlign: "center",
   },
@@ -2885,11 +2888,11 @@ const styles = StyleSheet.create({
   // Segmented control
   segmentedContainer: {
     flexDirection: "row",
-    backgroundColor: "#111111",
+    backgroundColor: colors.background,
     borderRadius: 14,
     padding: 4,
     borderWidth: 1,
-    borderColor: "#1C1C1E",
+    borderColor: colors.border,
   },
   segmentedButton: {
     flex: 1,
@@ -2903,7 +2906,7 @@ const styles = StyleSheet.create({
   },
   segmentedText: {
     fontSize: 13,
-    color: "#9CA3AF",
+    color: colors.muted,
     fontWeight: "600",
   },
   segmentedTextActive: {
@@ -2920,16 +2923,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 12,
-    backgroundColor: "#111111",
+    backgroundColor: colors.background,
     borderWidth: 1.5,
-    borderColor: "#1C1C1E",
+    borderColor: colors.border,
   },
   ratingChipActive: {
     borderColor: "#22C55E",
     backgroundColor: "rgba(34, 197, 94, 0.08)",
   },
   ratingChipText: {
-    color: "#9CA3AF",
+    color: colors.muted,
     fontSize: 13,
     fontWeight: "600",
   },
@@ -2948,12 +2951,12 @@ const styles = StyleSheet.create({
     width: "48%",
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#111111",
+    backgroundColor: colors.background,
     borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 12,
     borderWidth: 1.5,
-    borderColor: "#1C1C1E",
+    borderColor: colors.border,
     gap: 8,
   },
   availabilityCardActive: {
@@ -2961,12 +2964,12 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(34, 197, 94, 0.08)",
   },
   availabilityCardLabel: {
-    color: "#9CA3AF",
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "600",
   },
   availabilityCardLabelActive: {
-    color: "#FFFFFF",
+    color: colors.foreground,
     fontWeight: "700",
   },
   // Price row
@@ -2977,20 +2980,20 @@ const styles = StyleSheet.create({
   },
   priceButton: {
     flex: 1,
-    backgroundColor: "#111111",
+    backgroundColor: colors.background,
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1.5,
-    borderColor: "#1C1C1E",
+    borderColor: colors.border,
   },
   priceButtonActive: {
     borderColor: "#22C55E",
     backgroundColor: "rgba(34, 197, 94, 0.08)",
   },
   priceButtonText: {
-    color: "#9CA3AF",
+    color: colors.muted,
     fontSize: 13,
     fontWeight: "700",
   },
@@ -3001,10 +3004,10 @@ const styles = StyleSheet.create({
   // Footer apply button
   filterFooter: {
     borderTopWidth: 1,
-    borderTopColor: "#1C1C1E",
+    borderTopColor: colors.border,
     paddingTop: 12,
     marginTop: 12,
-    backgroundColor: "#080808",
+    backgroundColor: colors.surface,
   },
   applyFilterBtn: {
     paddingVertical: 14,
@@ -3172,3 +3175,4 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 });
+}
