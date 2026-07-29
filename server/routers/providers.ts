@@ -1399,35 +1399,40 @@ export const providersRouter = router({
     const { id, ...data } = input;
     const dbInstance = await db.getDb();
     if (dbInstance) {
-      const existing = await dbInstance
-        .select()
-        .from(providers)
-        .where(eq(providers.id, id))
-        .limit(1);
-      if (existing.length > 0) {
-        const hasAddressChanged =
-          (data.address !== undefined &&
-            existing[0].address !== data.address) ||
-          (data.neighborhood !== undefined &&
-            existing[0].neighborhood !== data.neighborhood) ||
-          (data.city !== undefined && existing[0].city !== data.city);
+      try {
+        const existing = await dbInstance
+          .select()
+          .from(providers)
+          .where(eq(providers.id, id))
+          .limit(1);
+        if (existing.length > 0) {
+          const hasAddressChanged =
+            (data.address !== undefined &&
+              existing[0].address !== data.address) ||
+            (data.neighborhood !== undefined &&
+              existing[0].neighborhood !== data.neighborhood) ||
+            (data.city !== undefined && existing[0].city !== data.city);
 
-        if (
-          hasAddressChanged &&
-          (data.latitude === undefined || data.latitude === null)
-        ) {
-          const coords = await geocodeAddress(
-            data.address !== undefined ? data.address : existing[0].address,
-            data.neighborhood !== undefined
-              ? data.neighborhood
-              : existing[0].neighborhood,
-            data.city !== undefined ? data.city : existing[0].city,
-          );
-          if (coords) {
-            data.latitude = coords.latitude;
-            data.longitude = coords.longitude;
+          if (
+            hasAddressChanged &&
+            (data.latitude === undefined || data.latitude === null)
+          ) {
+            const coords = await geocodeAddress(
+              data.address !== undefined ? data.address : existing[0].address,
+              data.neighborhood !== undefined
+                ? data.neighborhood
+                : existing[0].neighborhood,
+              data.city !== undefined ? data.city : existing[0].city,
+            );
+            if (coords) {
+              data.latitude = coords.latitude;
+              data.longitude = coords.longitude;
+            }
           }
         }
+      } catch (selectErr: any) {
+        console.error("SELECT ERROR in update:", selectErr);
+        throw new Error(`Select query failed: ${selectErr.message || selectErr}`);
       }
     }
     if (data.popularServices !== undefined)
@@ -1442,7 +1447,12 @@ export const providersRouter = router({
     if (data.foundedYear !== undefined)
       data.foundedYear = data.foundedYear ? Number(data.foundedYear) : null;
 
-    await db.updateProvider(id, data as any);
+    try {
+      await db.updateProvider(id, data as any);
+    } catch (updateErr: any) {
+      console.error("UPDATE ERROR in update:", updateErr);
+      throw new Error(`Update query failed: ${updateErr.message || updateErr}`);
+    }
   }),
 
   delete: adminWriteProcedure
