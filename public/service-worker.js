@@ -1,7 +1,8 @@
-const CACHE_NAME = "chamaja-cache-v1";
+const CACHE_NAME = "chamaja-cache-v2";
 const ASSETS_TO_CACHE = [
-  "/",
-  "/index.html",
+  "/app",
+  "/app/",
+  "/app/index.html",
   "/manifest.json",
   "/favicon.png",
   // O Expo gera bundles JS/CSS que mudarão de nome (hashes).
@@ -80,9 +81,9 @@ self.addEventListener("fetch", (event) => {
           return networkResponse;
         })
         .catch(() => {
-          // Se a rede falhar e for uma navegação (html), tentamos retornar o index.html offline
+          // Se a rede falhar e for uma navegação (html), tentamos retornar o index.html do app offline
           if (event.request.mode === "navigate") {
-            return caches.match("/index.html");
+            return caches.match("/app/index.html");
           }
         });
 

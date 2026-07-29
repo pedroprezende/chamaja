@@ -14,10 +14,10 @@
       "sizes": "512x512"
     }
   ],
-  "start_url": "/?source=pwa",
+  "start_url": "/app",
   "background_color": "#F8F9FA",
   "display": "standalone",
-  "scope": "/",
+  "scope": "/app/",
   "theme_color": "#25D366",
   "orientation": "portrait",
   "lang": "pt-BR"
