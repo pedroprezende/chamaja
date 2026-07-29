@@ -14,7 +14,7 @@ import { getPrivacyPolicyHtml, getDeletionPolicyHtml, getTermsOfUseHtml } from "
 import * as db from "../db";
 import { getDb } from "../db";
 import { plans, planBenefits } from "../../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { createClient } from "@supabase/supabase-js";
 import { rateLimit } from "./rate-limit";
 import { COOKIE_NAME } from "../../shared/const.js";
@@ -157,6 +157,26 @@ async function startServer() {
       // Do not expose internal infrastructure details in production
       ...(process.env.NODE_ENV !== "production" && { database: !!process.env.DATABASE_URL }),
     });
+  });
+
+  app.get("/api/test-db", async (_req, res) => {
+    try {
+      const dbUrl = process.env.DATABASE_URL || "";
+      const maskedUrl = dbUrl.replace(/:([^:@]+)@/, ":***@");
+      const dbInstance = await getDb();
+      if (!dbInstance) {
+        return res.json({ status: "error", message: "Database not initialized", dbUrl: maskedUrl });
+      }
+      const queryResult = await dbInstance.execute(sql`SELECT column_name FROM information_schema.columns WHERE table_name='providers'`);
+      const columns = (queryResult as any).map((row: any) => row.column_name);
+      return res.json({
+        status: "ok",
+        databaseUrl: maskedUrl,
+        columns,
+      });
+    } catch (e: any) {
+      return res.json({ status: "error", error: e.message });
+    }
   });
 
   // Google OAuth initiation — proxies through server so Supabase only needs server URL
