@@ -308,7 +308,7 @@ export default function AdminProvidersScreen() {
 
   const utils = trpc.useUtils();
   const { data: dbProvidersData, isLoading: providersLoading } =
-    trpc.providers.list.useQuery();
+    trpc.providers.all.useQuery();
   const { services: localServices } = useAdminServices(false);
 
   const createMutation = trpc.providers.create.useMutation({
@@ -346,7 +346,7 @@ export default function AdminProvidersScreen() {
   >({});
 
   const loadData = useCallback(async () => {
-    await utils.providers.list.invalidate();
+    await utils.providers.all.invalidate();
   }, [utils]);
 
   useEffect(() => {
