@@ -457,6 +457,9 @@ async function startServer() {
   app.get("/favicon.png", (req, res) =>
     res.sendFile(path.resolve(webDistPath, "favicon.png")),
   );
+  app.get("/icon-512.png", (req, res) =>
+    res.sendFile(path.resolve(webDistPath, "icon-512.png")),
+  );
   app.get("/favicon.ico", (req, res) =>
     res.sendFile(path.resolve(webDistPath, "favicon.ico")),
   );

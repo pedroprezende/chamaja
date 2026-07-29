@@ -23,7 +23,7 @@ export default function Root({ children }: PropsWithChildren) {
         <meta name="theme-color" content="#25D366" />
 
         {/* Ícone para iPhone */}
-        <link rel="apple-touch-icon" href="/favicon.png" />
+        <link rel="apple-touch-icon" href="/icon-512.png" />
 
         {/* O manifest gerado pelo Expo ou customizado (se criado em public/manifest.json) */}
         <link rel="manifest" href="/manifest.json" />

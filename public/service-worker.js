@@ -1,10 +1,10 @@
-const CACHE_NAME = "chamaja-cache-v2";
+const CACHE_NAME = "chamaja-cache-v3";
 const ASSETS_TO_CACHE = [
   "/app",
   "/app/",
   "/app/index.html",
   "/manifest.json",
-  "/favicon.png",
+  "/icon-512.png",
   // O Expo gera bundles JS/CSS que mudarão de nome (hashes).
   // Portanto, usaremos uma estratégia Network First para navegação
   // e Cache First para assets conhecidos e imagens.
