@@ -436,8 +436,11 @@ export default function HomeScreen() {
               <View style={styles.ratingRow}>
                 <MaterialIcons name="star" size={14} color="#FBBF24" />
                 <Text style={[styles.ratingText, { color: colors.foreground }]}>
-                  {Number(item.rating || 5.0).toFixed(1)} (
-                  {item.ratingCount || 0})
+                  {item.ratingCount && Number(item.ratingCount) > 0 ? (
+                    `${Number(item.rating).toFixed(1)} (${item.ratingCount})`
+                  ) : (
+                    "Novo"
+                  )}
                 </Text>
               </View>
               <View

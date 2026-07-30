@@ -887,12 +887,18 @@ export default function SearchScreen() {
                     {/* Classificação */}
                     <View style={styles.cardRatingRow}>
                       <MaterialIcons name="star" size={16} color="#FBBF24" />
-                      <Text style={styles.cardRating}>
-                        {Number(selectedProvider.rating).toFixed(1)}
-                      </Text>
-                      <Text style={styles.cardReviews}>
-                        ({selectedProvider.ratingCount} avaliações)
-                      </Text>
+                      {selectedProvider.ratingCount && Number(selectedProvider.ratingCount) > 0 ? (
+                        <>
+                          <Text style={styles.cardRating}>
+                            {Number(selectedProvider.rating).toFixed(1)}
+                          </Text>
+                          <Text style={styles.cardReviews}>
+                            ({selectedProvider.ratingCount} avaliações)
+                          </Text>
+                        </>
+                      ) : (
+                        <Text style={styles.cardReviews}>Novo</Text>
+                      )}
                       {showDistance && selectedProvider.distanceStr ? (
                         <>
                           <Text style={styles.cardDot}>•</Text>
@@ -1075,12 +1081,18 @@ export default function SearchScreen() {
                     {/* Rating e Distância */}
                     <View style={styles.ratingSection}>
                       <MaterialIcons name="star" size={16} color="#FBBF24" />
-                      <Text style={styles.ratingValue}>
-                        {Number(item.rating).toFixed(1)}
-                      </Text>
-                      <Text style={styles.ratingCount}>
-                        ({item.ratingCount})
-                      </Text>
+                      {item.ratingCount && Number(item.ratingCount) > 0 ? (
+                        <>
+                          <Text style={styles.ratingValue}>
+                            {Number(item.rating).toFixed(1)}
+                          </Text>
+                          <Text style={styles.ratingCount}>
+                            ({item.ratingCount})
+                          </Text>
+                        </>
+                      ) : (
+                        <Text style={styles.ratingCount}>Novo</Text>
+                      )}
                       {showDistance && item.distanceStr ? (
                         <>
                           <Text style={styles.ratingDot}>•</Text>

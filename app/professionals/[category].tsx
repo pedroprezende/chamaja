@@ -158,10 +158,16 @@ function ProfessionalCard({
         <View style={styles.ratingRow}>
           <MaterialIcons name="star" size={14} color="#F59E0B" />
           <Text style={styles.rating}>
-            {item.rating.toFixed(1)}{" "}
-            <Text style={styles.reviewCount}>
-              ({item.reviewCount} avaliações)
-            </Text>
+            {item.reviewCount && Number(item.reviewCount) > 0 ? (
+              <>
+                {item.rating.toFixed(1)}{" "}
+                <Text style={styles.reviewCount}>
+                  ({item.reviewCount} avaliações)
+                </Text>
+              </>
+            ) : (
+              <Text style={styles.reviewCount}>Novo</Text>
+            )}
           </Text>
         </View>
         <View style={styles.locationRow}>

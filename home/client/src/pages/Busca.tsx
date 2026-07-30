@@ -20,6 +20,72 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
+function getDisplayCategory(categoryId?: string | null, categoryName?: string | null): string {
+  const catId = (categoryId || "").toLowerCase().trim();
+  const catName = (categoryName || "").toLowerCase().trim();
+
+  if (catName.includes("pintor") || catName.includes("eletricista") || catName.includes("encanador") || catName.includes("pedreiro")) {
+    return "Serviços Residenciais";
+  }
+  if (catName.includes("pet") || catName.includes("veterin")) {
+    return "Pets";
+  }
+  if (catName.includes("pizza") || catName.includes("burger") || catName.includes("hamburg") || catName.includes("restaurante") || catName.includes("bar") || catName.includes("lanchonete") || catName.includes("alimentacao") || catName.includes("alimentação") || catName.includes("comida")) {
+    return "Alimentação";
+  }
+  if (catName.includes("mercado") || catName.includes("loja") || catName.includes("compras") || catName.includes("supermercado")) {
+    return "Compras";
+  }
+  if (catName.includes("barbe") || catName.includes("cabelei") || catName.includes("unha") || catName.includes("esteti") || catName.includes("beleza")) {
+    return "Beleza";
+  }
+  if (catName.includes("mecanic") || catName.includes("oficina") || catName.includes("auto")) {
+    return "Automotivo";
+  }
+  if (catName.includes("advogad") || catName.includes("jurid")) {
+    return "Jurídico";
+  }
+  if (catName.includes("dentis") || catName.includes("clinica") || catName.includes("saude") || catName.includes("saúde") || catName.includes("médic") || catName.includes("medic")) {
+    return "Saúde";
+  }
+  if (catName.includes("academ") || catName.includes("fit") || catName.includes("treino") || catName.includes("personal")) {
+    return "Fitness";
+  }
+  if (catName.includes("hotel") || catName.includes("pousada") || catName.includes("hosped")) {
+    return "Hospedagem";
+  }
+
+  if (catId === "reformas-reparos" || catId === "servicos-domesticos") {
+    return "Serviços Residenciais";
+  }
+  if (catId === "pets") {
+    return "Pets";
+  }
+  if (catId === "beleza-estetica") {
+    return "Beleza";
+  }
+  if (catId === "automotivo") {
+    return "Automotivo";
+  }
+  if (catId === "saude") {
+    return "Saúde";
+  }
+  if (catId === "academias" || catId === "fitness") {
+    return "Fitness";
+  }
+  if (catId === "servicos-profissionais" || catId === "juridico") {
+    return "Jurídico";
+  }
+  if (catId === "hospedagem") {
+    return "Hospedagem";
+  }
+  if (catId === "comercios") {
+    return "Alimentação";
+  }
+
+  return "Serviços";
+}
+
 export default function Busca() {
   // Navigation & UI States
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -503,8 +569,12 @@ export default function Busca() {
             <span class="text-[#84cc16] text-[10px] font-black tracking-wider uppercase block">${p.category || 'Profissional'}</span>
             <div class="flex items-center gap-1 text-[#84cc16] text-xs">
               <span>⭐</span>
-              <span class="text-white font-bold">${Number(p.rating || 5.0).toFixed(1)}</span>
-              <span class="text-zinc-500">(${p.ratingCount || 10})</span>
+              ${p.ratingCount && Number(p.ratingCount) > 0 ? `
+                <span class="text-white font-bold">${Number(p.rating).toFixed(1)}</span>
+                <span class="text-zinc-500">(${p.ratingCount})</span>
+              ` : `
+                <span class="text-zinc-400 font-semibold">Novo</span>
+              `}
             </div>
             <span class="text-zinc-400 text-xs block">📍 ${p.city || 'Região local'}</span>
             <a href="/perfil/${p.id}" class="text-center font-bold text-xs text-white bg-[#84cc16] px-3 py-1.5 rounded-lg block mt-2 w-full transition hover:bg-[#84cc16]/90" style="text-decoration: none; color: white;">Ver Perfil</a>
@@ -976,9 +1046,9 @@ export default function Busca() {
                               <span className="text-primary font-bold">
                                 {provider.category || "Profissional"}
                               </span>
-                              <span className="text-zinc-600">|</span>
+                              <span className="text-zinc-650">|</span>
                               <span className="text-zinc-400">
-                                {provider.businessType === "comercio" ? "Comércio" : "Saúde e Bem-estar"}
+                                {getDisplayCategory(provider.categoryId, provider.category)}
                               </span>
                             </div>
 
@@ -992,8 +1062,14 @@ export default function Busca() {
                             <div className="flex items-center gap-3 pt-2 text-xs text-zinc-400">
                               <div className="flex items-center gap-1">
                                 <Star className="h-3.5 w-3.5 text-primary fill-current" />
-                                <span className="text-white font-extrabold">{Number(provider.rating || 5.0).toFixed(1)}</span>
-                                <span className="text-zinc-500">({provider.ratingCount || 12})</span>
+                                {provider.ratingCount && Number(provider.ratingCount) > 0 ? (
+                                  <>
+                                    <span className="text-white font-extrabold">{Number(provider.rating).toFixed(1)}</span>
+                                    <span className="text-zinc-500">({provider.ratingCount})</span>
+                                  </>
+                                ) : (
+                                  <span className="text-zinc-400 font-semibold">Novo</span>
+                                )}
                               </div>
                               <span className="text-zinc-700">•</span>
                               <div className="flex items-center gap-1">
