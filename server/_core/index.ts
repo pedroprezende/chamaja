@@ -468,12 +468,21 @@ async function startServer() {
   // Servir arquivos do Expo Web a partir da raiz para evitar que requisições retornem 404 e quebrem o app
   app.use("/_expo", express.static(path.resolve(webDistPath, "_expo")));
   app.use("/assets", express.static(path.resolve(webDistPath, "assets")));
-  app.get("/service-worker.js", (req, res) =>
-    res.sendFile(path.resolve(webDistPath, "service-worker.js")),
-  );
-  app.get("/manifest.json", (req, res) =>
-    res.sendFile(path.resolve(webDistPath, "manifest.json")),
-  );
+  app.get("/service-worker.js", (req, res) => {
+    // O Service Worker NUNCA deve ser cacheado pelo browser.
+    // Sem isso, o iOS pode servir um SW desatualizado por horas,
+    // mantendo estratégias de cache erradas que causam erros no Safari.
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    res.sendFile(path.resolve(webDistPath, "service-worker.js"));
+  });
+  app.get("/manifest.json", (req, res) => {
+    // O manifest também não deve ser cacheado agressivamente,
+    // para que mudanças de start_url, scope e ícones sejam detectadas.
+    res.setHeader("Cache-Control", "no-cache");
+    res.sendFile(path.resolve(webDistPath, "manifest.json"));
+  });
   app.get("/favicon.png", (req, res) =>
     res.sendFile(path.resolve(webDistPath, "favicon.png")),
   );

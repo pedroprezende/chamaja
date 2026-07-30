@@ -35,13 +35,16 @@ export default function Root({ children }: PropsWithChildren) {
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              // Registrar o Service Worker para suporte PWA offline
+              // Registrar o Service Worker com scope restrito a /app/
+              // IMPORTANTE: O scope deve ser '/app/' para evitar interceptar
+              // rotas do website institucional ('/') que podem ter redirects 301.
+              // O Safari rejeita respostas com redirect servidas pelo SW.
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/service-worker.js').then(function(registration) {
-                    console.log('ServiceWorker registrado com sucesso no escopo: ', registration.scope);
+                  navigator.serviceWorker.register('/service-worker.js', { scope: '/app/' }).then(function(registration) {
+                    console.log('[SW] Registrado com scope:', registration.scope);
                   }, function(err) {
-                    console.log('Falha no registro do ServiceWorker: ', err);
+                    console.warn('[SW] Falha no registro:', err);
                   });
                 });
               }
