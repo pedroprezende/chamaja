@@ -1126,7 +1126,7 @@ export default function Home() {
                           </h3>
 
                           <p className="text-zinc-300 text-[10px] md:text-xs line-clamp-1 max-w-lg font-medium leading-relaxed drop-shadow-md">
-                            {p.description || "Comércio ou prestador de serviço de alto destaque da região."}
+                            {p.description}
                           </p>
 
                           <div className="flex items-center gap-2 text-zinc-400 text-[10px] md:text-xs">
