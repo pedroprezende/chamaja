@@ -1001,7 +1001,7 @@ export default function Busca() {
                       {/* Cover Image Container */}
                       <div className="relative h-40 overflow-hidden bg-zinc-900">
                         <img
-                          src={provider.coverUri || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&q=80"}
+                          src={provider.coverUri || "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=500&q=80"}
                           alt={provider.name}
                           className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
                         />
@@ -1024,7 +1024,7 @@ export default function Busca() {
                           <div className="relative w-20 h-20 flex-shrink-0">
                             <div className="w-full h-full rounded-full border-2 border-primary overflow-hidden shadow-xl bg-zinc-900">
                               <img
-                                src={provider.avatarUri || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&q=80"}
+                                src={provider.avatarUri || `https://ui-avatars.com/api/?name=${encodeURIComponent(provider.name)}&background=25D366&color=fff&size=150`}
                                 alt={provider.name}
                                 className="w-full h-full object-cover"
                               />

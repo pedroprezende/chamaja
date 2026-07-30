@@ -454,29 +454,7 @@ export default function Perfil({ params }: { params: { id: string } }) {
       console.warn("Failed to parse provider services:", e);
     }
 
-    // Fallbacks if no services are parsed or array is empty
-    if (isComercio) {
-      return [
-        { id: "fallback-c1", name: "Super Combo Xama", price: 42.90, description: "Hambúrguer com queijo duplo, fritas e refrigerante 350ml." },
-        { id: "fallback-c2", name: "Batata Frita Especial", price: 24.90, description: "Porção de fritas sequinhas com cheddar cremoso e bacon crocante." },
-        { id: "fallback-c3", name: "Hambúrguer Gourmet", price: 29.95, description: "Carne grelhada de 180g, queijo cheddar, alface, tomate e molho especial." },
-        { id: "fallback-c4", name: "Milkshake Crocante", price: 16.00, description: "Milkshake artesanal de creme batido com pedaços de biscoito." },
-      ];
-    } else {
-      // Return a set of default service prices based on category
-      const cat = String(provider.category || "").toLowerCase();
-      if (cat.includes("saúde") || cat.includes("saude") || cat.includes("beleza") || cat.includes("estética")) {
-        return [
-          { id: "fallback-s1", name: "Massagem Terapêutica Completa", price: 120.00, description: "Atendimento de 1 hora focado no alívio de tensões musculares." },
-          { id: "fallback-s2", name: "Drenagem Linfática", price: 130.00, description: "Sessão de drenagem corporal completa com foco em bem-estar." },
-          { id: "fallback-s3", name: "Ventosaterapia + Liberação", price: 150.00, description: "Tratamento completo para recuperação muscular de atletas e dores." },
-        ];
-      }
-      return [
-        { id: "fallback-g1", name: "Visita Técnica e Orçamento", price: 50.00, description: "Avaliação do local para diagnóstico e orçamento detalhado." },
-        { id: "fallback-g2", name: "Serviço Geral (Hora)", price: 80.00, description: "Mão de obra por hora de serviço executado." },
-      ];
-    }
+    return [];
   })();
 
   // Parse working hours json
@@ -525,7 +503,7 @@ export default function Perfil({ params }: { params: { id: string } }) {
       {/* ── PROFILE COVER PHOTO ── */}
       <section className="relative h-64 md:h-80 w-full overflow-hidden bg-zinc-900 flex-shrink-0">
         <img
-          src={provider.coverUri || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&q=80"}
+          src={provider.coverUri || "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=1200&q=80"}
           alt={provider.name}
           className="w-full h-full object-cover opacity-75"
         />
@@ -549,7 +527,7 @@ export default function Perfil({ params }: { params: { id: string } }) {
           {/* Circular Avatar */}
           <div className="w-28 h-28 md:w-32 md:h-32 rounded-full border-4 border-zinc-950 overflow-hidden shadow-xl bg-zinc-950 -mt-14 md:-mt-20 flex-shrink-0">
             <img
-              src={provider.avatarUri || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&q=80"}
+              src={provider.avatarUri || `https://ui-avatars.com/api/?name=${encodeURIComponent(provider.name)}&background=25D366&color=fff&size=150`}
               alt={provider.name}
               className="w-full h-full object-cover"
             />
@@ -676,9 +654,9 @@ export default function Perfil({ params }: { params: { id: string } }) {
                 </div>
 
                 {/* Portfólio / Galeria de Fotos de Trabalhos Anteriores */}
-                <div className="border-t border-zinc-900/60 pt-6 space-y-4">
-                  <h3 className="font-bold text-white text-base">Fotos do Portfólio / Trabalhos</h3>
-                  {provider.gallery && provider.gallery.length > 0 ? (
+                {provider.gallery && provider.gallery.length > 0 && (
+                  <div className="border-t border-zinc-900/60 pt-6 space-y-4">
+                    <h3 className="font-bold text-white text-base">Fotos do Portfólio / Trabalhos</h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                       {provider.gallery.map((imgUrl: string, idx: number) => (
                         <div key={idx} className="aspect-square bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-900">
@@ -686,20 +664,8 @@ export default function Perfil({ params }: { params: { id: string } }) {
                         </div>
                       ))}
                     </div>
-                  ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                      {[
-                        "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400&q=80",
-                        "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=400&q=80",
-                        "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&q=80",
-                      ].map((imgUrl, idx) => (
-                        <div key={idx} className="aspect-square bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-900">
-                          <img src={imgUrl} className="w-full h-full object-cover hover:scale-105 transition duration-300" />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -727,7 +693,13 @@ export default function Perfil({ params }: { params: { id: string } }) {
                   </div>
 
                   {catalogItems.length === 0 ? (
-                    <p className="text-zinc-500 text-sm">Nenhum item disponível neste momento.</p>
+                    <div className="border border-dashed border-zinc-800 rounded-2xl p-8 text-center text-zinc-500 w-full">
+                      <ShoppingBag className="w-8 h-8 mx-auto mb-3 opacity-40 text-primary" />
+                      <p className="font-bold text-white text-sm">Catálogo em atualização</p>
+                      <p className="text-xs text-zinc-400 mt-1 max-w-xs mx-auto">
+                        Os itens e serviços ainda não foram cadastrados pelo proprietário. Entre em contato para mais informações!
+                      </p>
+                    </div>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {catalogItems.map((item) => {

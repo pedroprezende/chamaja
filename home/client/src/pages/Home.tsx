@@ -654,7 +654,7 @@ export default function Home() {
       const ownKeys = (plan.benefits || [])
         .map((b: any) => (b.key || "").trim())
         .filter((k: string) => k && !INHERIT_MARKER_RE.test((plan.benefits || []).find((b: any) => (b.key || "").trim() === k)?.name || ""));
-      accumulated = new Set([...accumulated, ...ownKeys]);
+      ownKeys.forEach((k: string) => accumulated.add(k));
       cumulative.push(new Set(accumulated));
     }
     return cumulative;
@@ -1285,30 +1285,8 @@ export default function Home() {
               </div>
             ) : (
               featuredProviders.map((p, idx) => {
-                const categoryImages: Record<string, string> = {
-                  "comercios": "https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&q=80",
-                  "beleza-estetica": "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=600&q=80",
-                  "saude": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=600&q=80",
-                  "reformas-reparos": "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=600&q=80",
-                  "servicos-domesticos": "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&q=80",
-                  "construcao": "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&q=80",
-                  "automotivo": "https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=600&q=80",
-                  "educacao": "https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?w=600&q=80"
-                };
-
-                const categoryLogos: Record<string, string> = {
-                  "comercios": "https://images.unsplash.com/photo-1590947132387-155cc02f3212?w=100&q=80",
-                  "beleza-estetica": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=100&q=80",
-                  "saude": "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100&q=80",
-                  "reformas-reparos": "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=100&q=80",
-                  "servicos-domesticos": "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=100&q=80",
-                  "construcao": "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=100&q=80",
-                  "automotivo": "https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=100&q=80",
-                  "educacao": "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=100&q=80"
-                };
-
-                const coverImage = p.coverUri || categoryImages[p.categoryId || ""] || "https://images.unsplash.com/photo-1521791136368-1a868270f63b?w=600&q=80";
-                const logoImage = p.avatarUri || categoryLogos[p.categoryId || ""] || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80";
+                const coverImage = p.coverUri || "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=600&q=80";
+                const logoImage = p.avatarUri || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=25D366&color=fff&size=100`;
                 const isVerified = p.isVerified === true;
                 const isPremium = p.benefitKeys?.includes("premium_badge") || p.benefitKeys?.includes("featured_search");
                 const statusLabel = p.onlineStatus === true ? "Aberto agora" : "Fechado";
