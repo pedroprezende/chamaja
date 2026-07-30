@@ -60,6 +60,17 @@ export default function MenuScreen() {
     );
   }, [professional]);
 
+  // Dynamic label based on subcategoryId / type
+  const menuLabel = useMemo(() => {
+    const sub = (professional?.subcategoryId || "").toLowerCase();
+    const foodSubs = new Set(["pizzaria", "restaurante", "hamburgueria", "lanchonete", "sushi", "churrascaria", "cafeteria", "padaria", "sorveteria", "bar", "buffet", "cantina", "food-truck", "doceria", "marmitaria"]);
+    if (foodSubs.has(sub)) return { title: "Cardápio", icon: "restaurant" };
+    if (professional?.categoryId === "beleza-estetica") return { title: "Serviços e Preços", icon: "content-cut" };
+    if (professional?.categoryId === "saude") return { title: "Especialidades", icon: "medical-services" };
+    if (professional?.categoryId === "academias" || sub === "academia") return { title: "Planos e Modalidades", icon: "fitness-center" };
+    if (professional?.categoryId === "comercios") return { title: "Catálogo de Produtos", icon: "inventory-2" };
+    return { title: "Serviços e Preços", icon: "assignment" };
+  }, [professional]);
   // Categorias de produtos dinâmicas
   const categories = useMemo(() => {
     const cats = new Set<string>();
@@ -176,7 +187,7 @@ export default function MenuScreen() {
             style={[styles.headerTitle, { color: colors.foreground }]}
             numberOfLines={1}
           >
-            {isRealCommerce ? "Cardápio" : "Serviços e Preços"}
+            {menuLabel.title}
           </Text>
           <Text
             style={[styles.headerSubtitle, { color: colors.muted }]}
@@ -273,7 +284,7 @@ export default function MenuScreen() {
                   ]}
                 >
                   <MaterialIcons
-                    name={isRealCommerce ? "restaurant" : "assignment"}
+                    name={menuLabel.icon as any}
                     size={28}
                     color={colors.muted}
                   />

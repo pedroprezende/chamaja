@@ -67,6 +67,163 @@ const parseJsonArray = (val: any): string[] => {
 const getAvatarUrl = (name: string) =>
   `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=25D366&color=fff&size=150`;
 
+// Subcategorias que possuem cardápio (restaurante/alimentação real)
+const FOOD_SUBCATEGORY_IDS = new Set([
+  "pizzaria", "restaurante", "hamburgueria", "lanchonete", "sushi",
+  "churrascaria", "cafeteria", "padaria", "sorveteria", "bar",
+  "buffet", "cantina", "food-truck", "doceria", "marmitaria",
+]);
+
+// Subcategorias que são lojas/catálogos (sem cardápio de alimentos)
+const CATALOG_SUBCATEGORY_IDS = new Set([
+  "loja-roupas", "loja-eletronicos", "loja-moveis", "loja-celular",
+  "farmacia", "mercado", "mercadinho", "supermercado", "pet-shop",
+  "tabacaria", "bazar", "material-construcao", "papelaria",
+  "livraria", "joalheria", "relojoaria", "otica", "sex-shop",
+  "loja-sporting", "oficina", "auto-pecas",
+]);
+
+type EstablishmentType = "food" | "catalog" | "service" | "academy" | "clinic" | "beauty" | "generic";
+
+function getEstablishmentType(
+  categoryId?: string | null,
+  subcategoryId?: string | null,
+): EstablishmentType {
+  const cat = (categoryId || "").toLowerCase();
+  const sub = (subcategoryId || "").toLowerCase();
+
+  // Academia / Fitness
+  if (cat === "academias" || cat === "fitness" || sub === "academia" || sub === "crossfit" || sub === "musculacao") {
+    return "academy";
+  }
+  // Saúde / Clínica
+  if (cat === "saude" || sub === "dentista" || sub === "clinica" || sub === "medico" || sub === "fisioterapeuta" || sub === "psicologo") {
+    return "clinic";
+  }
+  // Beleza
+  if (cat === "beleza-estetica") {
+    return "beauty";
+  }
+  // Comércios: verificar se é food ou catalog pelo subcategoryId
+  if (cat === "comercios") {
+    if (FOOD_SUBCATEGORY_IDS.has(sub)) return "food";
+    if (CATALOG_SUBCATEGORY_IDS.has(sub)) return "catalog";
+    // Fallback: se tiver hasCatalog mas não for food subcategory, é catalog
+    return "catalog";
+  }
+  // Serviços gerais (reformas, automotivo, domésticos, profissionais, etc.)
+  if (
+    cat === "reformas-reparos" ||
+    cat === "servicos-domesticos" ||
+    cat === "servicos-externos" ||
+    cat === "automotivo" ||
+    cat === "assistencia-tecnica" ||
+    cat === "servicos-profissionais" ||
+    cat === "logistica" ||
+    cat === "educacao" ||
+    cat === "eventos" ||
+    cat === "mobilidade"
+  ) {
+    return "service";
+  }
+  return "generic";
+}
+
+type EstablishmentConfig = {
+  moduleTitle: string;
+  moduleIcon: string;
+  emptyMessage: string;
+  emptySub: string;
+  ctaLabel: string;
+  ctaIcon: string;
+  aboutTitle: string;
+  productIcon: string;
+};
+
+function getEstablishmentConfig(type: EstablishmentType, hasWhatsApp: boolean): EstablishmentConfig {
+  switch (type) {
+    case "food":
+      return {
+        moduleTitle: "Destaques do Cardápio",
+        moduleIcon: "restaurant-menu",
+        emptyMessage: "Cardápio ainda não cadastrado",
+        emptySub: "Este estabelecimento ainda não adicionou seu cardápio. Entre em contato para saber o que está disponível.",
+        ctaLabel: "Ver Cardápio / Fazer Pedido",
+        ctaIcon: "restaurant",
+        aboutTitle: "Sobre o Restaurante",
+        productIcon: "restaurant",
+      };
+    case "catalog":
+      return {
+        moduleTitle: "Catálogo de Produtos",
+        moduleIcon: "inventory-2",
+        emptyMessage: "Catálogo em atualização",
+        emptySub: "Os produtos ainda não foram cadastrados. Em breve o catálogo completo estará disponível.",
+        ctaLabel: "Ver Catálogo",
+        ctaIcon: "store",
+        aboutTitle: "Sobre a Loja",
+        productIcon: "inventory-2",
+      };
+    case "beauty":
+      return {
+        moduleTitle: "Serviços e Tratamentos",
+        moduleIcon: "auto-awesome",
+        emptyMessage: "Serviços ainda não cadastrados",
+        emptySub: "Os serviços e preços serão adicionados em breve. Entre em contato para mais informações.",
+        ctaLabel: "Chamar no WhatsApp",
+        ctaIcon: "chat",
+        aboutTitle: "Sobre o Salão / Estúdio",
+        productIcon: "content-cut",
+      };
+    case "service":
+      return {
+        moduleTitle: "Serviços Oferecidos",
+        moduleIcon: "handyman",
+        emptyMessage: "Serviços ainda não cadastrados",
+        emptySub: "Os serviços e especialidades serão adicionados em breve. Entre em contato para um orçamento.",
+        ctaLabel: "Solicitar Orçamento",
+        ctaIcon: "chat",
+        aboutTitle: "Sobre o Prestador",
+        productIcon: "handyman",
+      };
+    case "academy":
+      return {
+        moduleTitle: "Planos e Modalidades",
+        moduleIcon: "fitness-center",
+        emptyMessage: "Planos ainda não cadastrados",
+        emptySub: "Os planos e modalidades serão adicionados em breve. Entre em contato para mais informações.",
+        ctaLabel: "Chamar no WhatsApp",
+        ctaIcon: "chat",
+        aboutTitle: "Sobre a Academia",
+        productIcon: "fitness-center",
+      };
+    case "clinic":
+      return {
+        moduleTitle: "Especialidades",
+        moduleIcon: "medical-services",
+        emptyMessage: "Especialidades ainda não cadastradas",
+        emptySub: "As especialidades e procedimentos serão adicionados em breve.",
+        ctaLabel: "Agendar Consulta",
+        ctaIcon: "event",
+        aboutTitle: "Sobre a Clínica",
+        productIcon: "medical-services",
+      };
+    default:
+      return {
+        moduleTitle: "Serviços e Informações",
+        moduleIcon: "info",
+        emptyMessage: "Conteúdo em breve",
+        emptySub: "Este estabelecimento ainda está configurando seu perfil. Em breve haverá mais informações.",
+        ctaLabel: hasWhatsApp ? "Chamar no WhatsApp" : "Ver Perfil",
+        ctaIcon: "chat",
+        aboutTitle: "Sobre o Estabelecimento",
+        productIcon: "store",
+      };
+  }
+}
+
+
+
 export default function ProfessionalDetailScreen() {
   const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -398,6 +555,24 @@ export default function ProfessionalDetailScreen() {
   // Type-narrowed alias to prevent TS closure warnings
   const prof = professional;
 
+  // Dynamic establishment type + config
+  const estType = getEstablishmentType(prof.categoryId, prof.subcategoryId);
+  const hasWhatsApp = !!(prof.phone || prof.whatsapp);
+  const estConfig = getEstablishmentConfig(estType, hasWhatsApp);
+
+  // Does this establishment have any product/service content loaded?
+  const rawProducts: any[] = (() => {
+    if (!prof.services) return [];
+    try {
+      const parsed = typeof prof.services === "string" ? JSON.parse(prof.services) : prof.services;
+      return Array.isArray(parsed) ? parsed : [];
+    } catch { return []; }
+  })();
+  const hasProducts = rawProducts.length > 0;
+
+  // Should the content module button go to the menu/catalog screen?
+  const contentGoesToMenu = estType === "food" || estType === "catalog" || estType === "beauty" || estType === "academy" || estType === "clinic";
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Floating Header */}
@@ -693,7 +868,7 @@ export default function ProfessionalDetailScreen() {
               style={[styles.metricValue, { color: colors.foreground }]}
               numberOfLines={1}
             >
-              {prof.responseTime || "Rápido"}
+              {prof.responseTime || "--"}
             </Text>
             <Text style={styles.metricLabel}>Tempo resp.</Text>
           </View>
@@ -727,120 +902,86 @@ export default function ProfessionalDetailScreen() {
           </View>
         )}
 
-        {/* Menu Highlights (for Commerce) */}
-        {isCommerce && prof.services && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeaderRow}>
-              <Text
-                style={[
-                  styles.sectionTitle,
-                  { color: colors.foreground, marginBottom: 0 },
-                ]}
-              >
-                Destaques do cardápio
+        {/* ── Módulo de Conteúdo Dinâmico ─────────────────────────────── */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flex: 1 }}>
+              <MaterialIcons name={estConfig.moduleIcon as any} size={18} color={colors.primary} />
+              <Text style={[styles.sectionTitle, { color: colors.foreground, marginBottom: 0 }]}>
+                {estConfig.moduleTitle}
               </Text>
-              <Pressable
-                onPress={() =>
-                  router.push(`/professional/${prof.id}/menu` as any)
-                }
-              >
-                <Text
-                  style={[styles.sectionHeaderLink, { color: colors.primary }]}
-                >
-                  Ver cardápio completo
+            </View>
+            {hasProducts && contentGoesToMenu && (
+              <Pressable onPress={() => router.push(`/professional/${prof.id}/menu` as any)}>
+                <Text style={[styles.sectionHeaderLink, { color: colors.primary }]}>
+                  Ver todos
                 </Text>
               </Pressable>
-            </View>
+            )}
+          </View>
+
+          {hasProducts ? (
             <View style={{ gap: 10, marginTop: 14 }}>
-              {(() => {
-                let products = [];
-                try {
-                  products =
-                    typeof prof.services === "string"
-                      ? JSON.parse(prof.services)
-                      : prof.services || [];
-                } catch (e) {
-                  products = [];
-                }
-                return products.slice(0, 3).map((prod: any) => (
-                  <Pressable
-                    key={prod.id}
-                    style={[
-                      styles.highlightProductCard,
-                      {
-                        backgroundColor: colors.surface,
-                        borderColor: colors.border,
-                      },
-                    ]}
-                    onPress={() =>
-                      router.push(`/professional/${prof.id}/menu` as any)
-                    }
-                  >
-                    {prod.imageUri ? (
-                      <Image
-                        source={{ uri: prod.imageUri }}
-                        style={styles.highlightProductImage}
-                      />
-                    ) : (
-                      <View
-                        style={[
-                          styles.highlightProductImage,
-                          {
-                            alignItems: "center",
-                            justifyContent: "center",
-                            backgroundColor: colors.border + "40",
-                          },
-                        ]}
-                      >
-                        <MaterialIcons
-                          name="restaurant"
-                          size={20}
-                          color={colors.muted}
-                        />
-                      </View>
-                    )}
-                    <View style={styles.highlightProductInfo}>
-                      <Text
-                        style={[
-                          styles.highlightProductName,
-                          { color: colors.foreground },
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {prod.name}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.highlightProductDesc,
-                          { color: colors.muted },
-                        ]}
-                        numberOfLines={2}
-                      >
+              {rawProducts.slice(0, 3).map((prod: any) => (
+                <Pressable
+                  key={prod.id || prod.name}
+                  style={[
+                    styles.highlightProductCard,
+                    { backgroundColor: colors.surface, borderColor: colors.border },
+                  ]}
+                  onPress={() => router.push(`/professional/${prof.id}/menu` as any)}
+                >
+                  {prod.imageUri ? (
+                    <Image source={{ uri: prod.imageUri }} style={styles.highlightProductImage} />
+                  ) : (
+                    <View
+                      style={[
+                        styles.highlightProductImage,
+                        { alignItems: "center", justifyContent: "center", backgroundColor: colors.border + "40" },
+                      ]}
+                    >
+                      <MaterialIcons name={estConfig.productIcon as any} size={20} color={colors.muted} />
+                    </View>
+                  )}
+                  <View style={styles.highlightProductInfo}>
+                    <Text style={[styles.highlightProductName, { color: colors.foreground }]} numberOfLines={1}>
+                      {prod.name}
+                    </Text>
+                    {!!prod.description && (
+                      <Text style={[styles.highlightProductDesc, { color: colors.muted }]} numberOfLines={2}>
                         {prod.description}
                       </Text>
-                      <Text
-                        style={[
-                          styles.highlightProductPrice,
-                          { color: colors.primary },
-                        ]}
-                      >
-                        R$ {Number(prod.price || 0).toFixed(2)}
+                    )}
+                    {(estType === "food" || estType === "catalog") && prod.price !== undefined && prod.price !== null && (
+                      <Text style={[styles.highlightProductPrice, { color: colors.primary }]}>
+                        R$ {Number(prod.price).toFixed(2)}
                       </Text>
-                    </View>
-                  </Pressable>
-                ));
-              })()}
+                    )}
+                  </View>
+                </Pressable>
+              ))}
             </View>
-          </View>
-        )}
+          ) : (
+            // Estado vazio elegante — sem dados fictícios
+            <View style={[styles.emptyModule, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <MaterialIcons name={estConfig.moduleIcon as any} size={36} color={colors.muted} />
+              <Text style={[styles.emptyModuleTitle, { color: colors.foreground }]}>
+                {estConfig.emptyMessage}
+              </Text>
+              <Text style={[styles.emptyModuleSub, { color: colors.muted }]}>
+                {estConfig.emptySub}
+              </Text>
+            </View>
+          )}
+        </View>
 
         {/* About Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-            Sobre o Prestador
+            {estConfig.aboutTitle}
           </Text>
           <Text style={[styles.description, { color: colors.muted }]}>
-            {prof.description || "Nenhuma descrição fornecida."}
+            {prof.description || "Nenhuma descrição adicionada ainda."}
           </Text>
 
           {parseJsonArray(prof.tags).length > 0 && (
@@ -1327,28 +1468,18 @@ export default function ProfessionalDetailScreen() {
               pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
             ]}
             onPress={
-              isCommerce
+              contentGoesToMenu && hasProducts
                 ? () => router.push(`/professional/${prof.id}/menu` as any)
                 : handleOpenWhatsApp
             }
           >
             <MaterialIcons
-              name={
-                isCommerce
-                  ? isRealCommerce
-                    ? "restaurant"
-                    : "assignment"
-                  : "chat"
-              }
+              name={estConfig.ctaIcon as any}
               size={22}
               color="#FFFFFF"
             />
             <Text style={styles.whatsappButtonText}>
-              {isCommerce
-                ? isRealCommerce
-                  ? "Ver cardápio / Fazer pedido"
-                  : "Ver serviços e preços"
-                : "Chamar no WhatsApp"}
+              {contentGoesToMenu && hasProducts ? estConfig.ctaLabel : "Chamar no WhatsApp"}
             </Text>
           </Pressable>
         </View>
@@ -2504,5 +2635,26 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     marginTop: 2,
+  },
+  // Empty module state (elegant placeholder instead of fake data)
+  emptyModule: {
+    marginTop: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderStyle: "dashed" as const,
+    padding: 24,
+    alignItems: "center",
+    gap: 10,
+  },
+  emptyModuleTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  emptyModuleSub: {
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: "center",
+    maxWidth: 280,
   },
 });

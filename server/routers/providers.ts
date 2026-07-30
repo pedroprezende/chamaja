@@ -16,7 +16,7 @@ import {
   whatsappClicks,
 } from "../../drizzle/schema";
 import { eq, or, ilike, and, gte, lte, ne, desc, asc, sql, count } from "drizzle-orm";
-import { getReviewsByProfessional as getMockReviewsByProfessional } from "../../data/mock";
+
 import { geocodeAddress } from "../geocoding";
 import { getProvidersBenefitsMap } from "../../lib/plan-benefits";
 
@@ -1164,14 +1164,8 @@ export const providersRouter = router({
 
   getReviews: publicProcedure.input(z.string()).query(async ({ input }) => {
     const dbReviews = await db.getReviewsByProfessional(input);
-    let mockReviews: any[] = [];
-    try {
-      mockReviews = getMockReviewsByProfessional(input);
-    } catch (err) {
-      console.warn("[tRPC] Failed to fetch mock reviews:", err);
-    }
 
-    const formattedDb = dbReviews.map((r) => ({
+    return dbReviews.map((r) => ({
       id: r.id,
       professionalId: r.professionalId,
       userName: r.userName,
@@ -1183,8 +1177,6 @@ export const providersRouter = router({
           ? r.createdAt.toISOString().split("T")[0]
           : String(r.createdAt),
     }));
-
-    return [...formattedDb, ...mockReviews];
   }),
 
   submitReview: protectedProcedure
