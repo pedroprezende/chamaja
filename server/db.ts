@@ -905,14 +905,16 @@ export async function transferProviderOwnership(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // 1. Fetch the provider to know its businessType
+  // 1. Fetch the provider to know its businessType and current userId
   const providerRows = await db
-    .select({ businessType: providers.businessType })
+    .select({ businessType: providers.businessType, currentUserId: providers.userId })
     .from(providers)
     .where(eq(providers.id, providerId))
     .limit(1);
 
   if (providerRows.length === 0) throw new Error("Provider não encontrado.");
+
+  const previousUserId = providerRows[0].currentUserId;
 
   // 2. Update providers.userId and invitedEmail
   await db
@@ -936,5 +938,21 @@ export async function transferProviderOwnership(
       .update(users)
       .set({ tipo: newTipo, updatedAt: new Date() })
       .where(eq(users.openId, newUserId));
+  }
+
+  // 4. If previous owner exists and is different from new owner, check if they still own any other providers
+  if (previousUserId && previousUserId !== newUserId) {
+    const otherProviders = await db
+      .select({ id: providers.id })
+      .from(providers)
+      .where(eq(providers.userId, previousUserId))
+      .limit(1);
+
+    if (otherProviders.length === 0) {
+      await db
+        .update(users)
+        .set({ tipo: "cliente", updatedAt: new Date() })
+        .where(eq(users.openId, previousUserId));
+    }
   }
 }

@@ -249,23 +249,21 @@ export default function ProfessionalDetailScreen() {
 
   const transferOwnershipMutation = trpc.providers.transferOwnership.useMutation();
 
+  const searchUsersMutation = trpc.providers.searchUsersForTransfer.useQuery(
+    { query: transferSearch.trim() },
+    { enabled: false }
+  );
+
   const handleSearchTransferUser = async () => {
     if (!transferSearch.trim()) return;
     setTransferLoading(true);
     setTransferResults([]);
     try {
-      const { data: results, error } = await supabase
-        .from("users")
-        .select("open_id, name, email, phone, tipo, role, created_at")
-        .or(
-          `open_id.eq.${transferSearch.trim()},email.ilike.%${transferSearch.trim()}%,phone.ilike.%${transferSearch.trim()}%,name.ilike.%${transferSearch.trim()}%`
-        )
-        .limit(10);
-      if (error) throw error;
-      setTransferResults(results || []);
+      const res = await searchUsersMutation.refetch();
+      setTransferResults(res.data || []);
     } catch (err: any) {
       console.error("Erro na busca de usuários:", err);
-      Alert.alert("Erro", `Erro ao buscar usuários: ${err.message}`);
+      Alert.alert("Erro", `Erro ao buscar usuários: ${err.message || err}`);
     } finally {
       setTransferLoading(false);
     }
@@ -1619,12 +1617,13 @@ export default function ProfessionalDetailScreen() {
                     RESULTADOS DA BUSCA:
                   </Text>
                   {transferResults.map((u) => {
-                    const isSelected = transferTarget?.open_id === u.open_id;
+                    const openId = u.openId || u.open_id;
+                    const isSelected = (transferTarget?.openId || transferTarget?.open_id) === openId;
                     return (
                       <Pressable
-                        key={u.open_id}
+                        key={openId}
                         onPress={() => {
-                          setTransferTarget(isSelected ? null : u);
+                          setTransferTarget(isSelected ? null : { ...u, open_id: openId, openId });
                           if (!isSelected) setTransferEmail("");
                         }}
                         style={{
