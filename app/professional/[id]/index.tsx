@@ -567,6 +567,16 @@ export default function ProfessionalDetailScreen() {
     return calculateRealTimeStatus(parsedHours);
   }, [parsedHours]);
 
+  const socialLinks = useMemo(() => {
+    if (!prof.socialLinks) return {};
+    if (typeof prof.socialLinks === "object") return prof.socialLinks;
+    try {
+      return JSON.parse(prof.socialLinks);
+    } catch {
+      return {};
+    }
+  }, [prof.socialLinks]);
+
   // Dynamic establishment type + config
   const estType = getEstablishmentType(prof.categoryId, prof.subcategoryId);
   const hasWhatsApp = !!(prof.phone || prof.whatsapp);
@@ -1010,6 +1020,67 @@ export default function ProfessionalDetailScreen() {
             </View>
           )}
         </View>
+
+        {/* Redes Sociais */}
+        {Object.keys(socialLinks).length > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+              Redes Sociais
+            </Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 10 }}>
+              {[
+                { key: "instagram", label: "Instagram", icon: "camera-alt", color: "#E4405F" },
+                { key: "facebook", label: "Facebook", icon: "facebook", color: "#1877F2" },
+                { key: "youtube", label: "YouTube", icon: "play-circle-outline", color: "#FF0000" },
+                { key: "tiktok", label: "TikTok", icon: "music-note", color: "#000000" },
+                { key: "website", label: "Site", icon: "language", color: "#2563EB" },
+                { key: "linkedin", label: "LinkedIn", icon: "work", color: "#0A66C2" },
+                { key: "telegram", label: "Telegram", icon: "send", color: "#26A5E4" },
+                { key: "whatsapp_channel", label: "WhatsApp", icon: "chat", color: "#25D366" },
+              ]
+                .filter((n) => socialLinks[n.key])
+                .map((network) => {
+                  const url = socialLinks[network.key];
+                  const fullUrl = url.startsWith("http") ? url : `https://${url}`;
+                  return (
+                    <Pressable
+                      key={network.key}
+                      onPress={() => Linking.openURL(fullUrl)}
+                      style={({ pressed }) => [
+                        {
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 6,
+                          paddingHorizontal: 12,
+                          paddingVertical: 8,
+                          borderRadius: 12,
+                          backgroundColor: colors.surface,
+                          borderWidth: 1,
+                          borderColor: colors.border,
+                        },
+                        pressed && { opacity: 0.7 },
+                      ]}
+                    >
+                      <MaterialIcons
+                        name={network.icon as any}
+                        size={16}
+                        color={network.color}
+                      />
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          fontWeight: "700",
+                          color: colors.foreground,
+                        }}
+                      >
+                        {network.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+            </View>
+          </View>
+        )}
 
         {/* Gallery */}
         {prof.gallery &&
