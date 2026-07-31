@@ -1000,14 +1000,10 @@ export default function Perfil({ params }: { params: { id: string } }) {
             {/* REDES SOCIAIS CARD (Abaixo do Horário de Funcionamento) */}
             {(() => {
               const SOCIAL_NETWORKS_CONFIG = [
-                { key: "instagram", label: "Instagram", icon: "camera-alt", color: "#E4405F", bg: "bg-[#E4405F]/15 text-[#E4405F] border-[#E4405F]/40 hover:bg-[#E4405F]/25" },
-                { key: "facebook", label: "Facebook", icon: "facebook", color: "#1877F2", bg: "bg-[#1877F2]/15 text-[#1877F2] border-[#1877F2]/40 hover:bg-[#1877F2]/25" },
-                { key: "youtube", label: "YouTube", icon: "play-circle", color: "#FF0000", bg: "bg-[#FF0000]/15 text-[#FF0000] border-[#FF0000]/40 hover:bg-[#FF0000]/25" },
-                { key: "tiktok", label: "TikTok", icon: "music_note", color: "#FFFFFF", bg: "bg-zinc-800 text-white border-zinc-700 hover:bg-zinc-700" },
-                { key: "website", label: "Website", icon: "language", color: "#2563EB", bg: "bg-[#2563EB]/15 text-[#2563EB] border-[#2563EB]/40 hover:bg-[#2563EB]/25" },
-                { key: "linkedin", label: "LinkedIn", icon: "work", color: "#0A66C2", bg: "bg-[#0A66C2]/15 text-[#0A66C2] border-[#0A66C2]/40 hover:bg-[#0A66C2]/25" },
-                { key: "telegram", label: "Telegram", icon: "send", color: "#26A5E4", bg: "bg-[#26A5E4]/15 text-[#26A5E4] border-[#26A5E4]/40 hover:bg-[#26A5E4]/25" },
-                { key: "whatsapp_channel", label: "WhatsApp", icon: "chat", color: "#25D366", bg: "bg-[#25D366]/15 text-[#25D366] border-[#25D366]/40 hover:bg-[#25D366]/25" },
+                { key: "instagram", label: "Instagram", file: "instagram.png" },
+                { key: "facebook", label: "Facebook", file: "facebook.png" },
+                { key: "youtube", label: "YouTube", file: "youtube.png" },
+                { key: "tiktok", label: "TikTok", file: "tiktok.png" },
               ];
 
               const activeNetworks = SOCIAL_NETWORKS_CONFIG.filter(
@@ -1019,12 +1015,9 @@ export default function Perfil({ params }: { params: { id: string } }) {
               return (
                 <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 shadow-xl space-y-4">
                   <div className="flex items-center gap-3 pb-3 border-b border-zinc-900">
-                    <div className="p-2.5 bg-zinc-900 rounded-xl text-primary border border-zinc-850">
-                      <Share2 className="w-4 h-4" />
-                    </div>
                     <h3 className="font-bold text-white text-sm">Redes Sociais</h3>
                   </div>
-                  <div className="flex flex-wrap items-center gap-3 pt-1">
+                  <div className="flex flex-wrap items-center gap-4 pt-1">
                     {activeNetworks.map((network) => {
                       const rawUrl = String(socialLinks[network.key]).trim();
                       const fullUrl = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
@@ -1035,11 +1028,13 @@ export default function Perfil({ params }: { params: { id: string } }) {
                           target="_blank"
                           rel="noopener noreferrer"
                           title={network.label}
-                          className={`w-11 h-11 rounded-2xl border transition-all duration-200 flex items-center justify-center ${network.bg} hover:scale-105 active:scale-95`}
+                          className="w-9 h-9 rounded-xl bg-transparent transition-transform duration-200 hover:scale-110 active:scale-95 flex items-center justify-center overflow-hidden"
                         >
-                          <span className="material-icons text-xl leading-none">
-                            {network.icon}
-                          </span>
+                          <img
+                            src={`/socials/${network.file}`}
+                            alt={network.label}
+                            className="w-9 h-9 object-contain"
+                          />
                         </a>
                       );
                     })}

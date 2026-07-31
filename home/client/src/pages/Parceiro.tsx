@@ -2866,7 +2866,7 @@ export default function Parceiro() {
                                         {srv.name}
                                       </h3>
                                       <span className="text-sm font-black text-primary font-mono bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-lg">
-                                        R$ {srv.price.toFixed(2)}
+                                        R$ {Number(srv.price || 0).toFixed(2)}
                                       </span>
                                     </div>
                                     <p className="text-xs text-muted-foreground leading-relaxed max-w-2xl">
@@ -2973,7 +2973,7 @@ export default function Parceiro() {
                                   <div className="space-y-1">
                                     <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Valor pago</span>
                                     <span className="text-sm font-bold text-primary">
-                                      R$ {business.lockedPrice.toFixed(2).replace(".", ",")}
+                                      R$ {Number(business.lockedPrice || 0).toFixed(2).replace(".", ",")}
                                     </span>
                                   </div>
                                 )}

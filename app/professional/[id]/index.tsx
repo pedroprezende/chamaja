@@ -26,7 +26,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/lib/auth-context";
 import { addReview } from "@/data/mock";
 import { useLocation } from "@/lib/location-context";
-import { SOCIAL_NETWORKS } from "@/constants/app";
+import { SOCIAL_NETWORKS, SOCIAL_PNG_ASSETS } from "@/constants/app";
 import { supabase } from "@/lib/supabase";
 import {
   calculateHaversineDistance,
@@ -1275,19 +1275,47 @@ export default function ProfessionalDetailScreen() {
         {/* Social Media Links */}
         {(() => {
           const activeNetworks = [
-            { key: "instagram", label: "Instagram", icon: "camera-alt", color: "#E4405F" },
-            { key: "facebook", label: "Facebook", icon: "facebook", color: "#1877F2" },
-            { key: "youtube", label: "YouTube", icon: "play-circle-outline", color: "#FF0000" },
-            { key: "tiktok", label: "TikTok", icon: "music-note", color: "#000000" },
-            { key: "website", label: "Website", icon: "language", color: "#2563EB" },
-            { key: "linkedin", label: "LinkedIn", icon: "work", color: "#0A66C2" },
-            { key: "telegram", label: "Telegram", icon: "send", color: "#26A5E4" },
-            { key: "whatsapp_channel", label: "WhatsApp", icon: "chat", color: "#25D366" },
+            { key: "instagram", label: "Instagram" },
+            { key: "facebook", label: "Facebook" },
+            { key: "youtube", label: "YouTube" },
+            { key: "tiktok", label: "TikTok" },
           ].filter(
-            (n) => socialLinks[n.key] && String(socialLinks[n.key]).trim() !== ""
+            (n) =>
+              socialLinks[n.key] &&
+              String(socialLinks[n.key]).trim() !== "" &&
+              SOCIAL_PNG_ASSETS[n.key]
           );
 
           if (activeNetworks.length === 0) return null;
+
+          const handleOpenSocial = async (networkKey: string, rawUrl: string) => {
+            if (!rawUrl) return;
+            const trimmed = rawUrl.trim();
+            const fullUrl = trimmed.startsWith("http") ? trimmed : `https://${trimmed}`;
+
+            let nativeScheme = "";
+            if (networkKey === "instagram") {
+              const match = fullUrl.match(/(?:instagram\.com\/)([^/?#]+)/);
+              if (match && match[1]) nativeScheme = `instagram://user?username=${match[1]}`;
+            } else if (networkKey === "facebook") {
+              const match = fullUrl.match(/(?:facebook\.com\/)([^/?#]+)/);
+              if (match && match[1]) nativeScheme = `fb://page/${match[1]}`;
+            } else if (networkKey === "youtube") {
+              const match = fullUrl.match(/(?:youtube\.com\/(?:@|channel\/|user\/)?)([^/?#]+)/);
+              if (match && match[1]) nativeScheme = `vnd.youtube://${match[1]}`;
+            }
+
+            if (nativeScheme) {
+              try {
+                const canOpen = await Linking.canOpenURL(nativeScheme);
+                if (canOpen) {
+                  await Linking.openURL(nativeScheme);
+                  return;
+                }
+              } catch (_) {}
+            }
+            Linking.openURL(fullUrl).catch(() => {});
+          };
 
           return (
             <View
@@ -1297,11 +1325,6 @@ export default function ProfessionalDetailScreen() {
               ]}
             >
               <View style={[styles.infoItem, { paddingBottom: 10 }]}>
-                <View
-                  style={[styles.infoIconWrap, { backgroundColor: colors.primary + "12" }]}
-                >
-                  <MaterialIcons name="share" size={20} color={colors.primary} />
-                </View>
                 <View style={styles.infoContent}>
                   <Text style={[styles.infoLabel, { color: colors.foreground, fontWeight: "700" }]}>
                     Redes Sociais
@@ -1311,9 +1334,8 @@ export default function ProfessionalDetailScreen() {
               <View
                 style={{
                   flexDirection: "row",
-                  flexWrap: "wrap",
                   alignItems: "center",
-                  gap: 12,
+                  gap: 16,
                   paddingHorizontal: 16,
                   paddingBottom: 16,
                   paddingTop: 4,
@@ -1321,29 +1343,27 @@ export default function ProfessionalDetailScreen() {
               >
                 {activeNetworks.map((network) => {
                   const rawUrl = String(socialLinks[network.key]).trim();
-                  const fullUrl = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
                   return (
                     <Pressable
                       key={network.key}
-                      onPress={() => Linking.openURL(fullUrl).catch(() => { })}
+                      onPress={() => handleOpenSocial(network.key, rawUrl)}
                       style={({ pressed }) => [
                         {
-                          width: 44,
-                          height: 44,
-                          borderRadius: 14,
+                          width: 36,
+                          height: 36,
+                          borderRadius: 8,
                           alignItems: "center",
                           justifyContent: "center",
-                          backgroundColor: network.color + "18",
-                          borderWidth: 1,
-                          borderColor: network.color + "40",
+                          backgroundColor: "transparent",
+                          overflow: "hidden",
                         },
-                        pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] },
+                        pressed && { opacity: 0.75, transform: [{ scale: 0.93 }] },
                       ]}
                     >
-                      <MaterialIcons
-                        name={network.icon as any}
-                        size={20}
-                        color={network.color}
+                      <Image
+                        source={SOCIAL_PNG_ASSETS[network.key]}
+                        style={{ width: 36, height: 36 }}
+                        contentFit="contain"
                       />
                     </Pressable>
                   );

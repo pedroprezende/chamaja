@@ -22,7 +22,7 @@ import {
   PLANS,
   type ProviderService,
 } from "@/lib/provider-context";
-import { SOCIAL_NETWORKS } from "@/constants/app";
+import { SOCIAL_NETWORKS, SOCIAL_PNG_ASSETS } from "@/constants/app";
 
 export default function ProviderDashboard() {
   const router = useRouter();
@@ -1541,18 +1541,10 @@ export default function ProviderDashboard() {
               {SOCIAL_NETWORKS.map((network) => (
                 <View key={network.key} style={{ marginBottom: 10 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                    <View
-                      style={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: 12,
-                        backgroundColor: network.color + "18",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <MaterialIcons name={network.icon} size={14} color={network.color} />
-                    </View>
+                    <Image
+                      source={SOCIAL_PNG_ASSETS[network.key]}
+                      style={{ width: 20, height: 20, resizeMode: "contain" }}
+                    />
                     <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151" }}>
                       {network.label}
                     </Text>

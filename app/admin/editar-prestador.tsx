@@ -20,7 +20,7 @@ import { trpc } from "@/lib/trpc";
 import { storage } from "@/lib/storage";
 import * as ImagePicker from "expo-image-picker";
 import { useAdminServices } from "@/hooks/use-admin-services";
-import { SOCIAL_NETWORKS } from "@/constants/app";
+import { SOCIAL_NETWORKS, SOCIAL_PNG_ASSETS } from "@/constants/app";
 // Removed mock import
 
 export default function EditarPrestador() {
@@ -1106,18 +1106,10 @@ export default function EditarPrestador() {
           {SOCIAL_NETWORKS.map((network) => (
             <View key={network.key} style={{ marginBottom: 12 }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                <View
-                  style={{
-                    width: 22,
-                    height: 22,
-                    borderRadius: 11,
-                    backgroundColor: network.color + "18",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <MaterialIcons name={network.icon} size={13} color={network.color} />
-                </View>
+                <Image
+                  source={SOCIAL_PNG_ASSETS[network.key]}
+                  style={{ width: 20, height: 20, resizeMode: "contain" }}
+                />
                 <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151" }}>
                   {network.label}
                 </Text>

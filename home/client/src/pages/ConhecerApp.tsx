@@ -573,20 +573,25 @@ export default function ConhecerApp() {
 
             <div>
               <h3 className="font-semibold mb-4">Siga-nos</h3>
-              <div className="flex gap-4">
+              <div className="flex items-center gap-4">
                 <a
                   href="https://instagram.com/xamaja.app"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary hover:text-primary/80 transition"
+                  title="Instagram"
+                  className="w-9 h-9 rounded-xl bg-transparent transition-transform duration-200 hover:scale-110 active:scale-95 flex items-center justify-center overflow-hidden"
                 >
-                  Instagram
+                  <img
+                    src="/socials/instagram.png"
+                    alt="Instagram"
+                    className="w-9 h-9 object-contain"
+                  />
                 </a>
                 <a
                   href="https://wa.me/5511973909447"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary hover:text-primary/80 transition"
+                  className="text-primary hover:text-primary/80 transition text-sm font-semibold"
                 >
                   WhatsApp
                 </a>
