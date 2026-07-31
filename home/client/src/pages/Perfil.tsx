@@ -994,6 +994,7 @@ export default function Perfil({ params }: { params: { id: string } }) {
                     </div>
                   );
                 })}
+              </div>
             </div>
 
             {/* REDES SOCIAIS CARD (Abaixo do Horário de Funcionamento) */}
