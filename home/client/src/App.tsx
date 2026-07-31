@@ -20,6 +20,9 @@ function Router() {
       <Route path={"/cadastro"} component={Home} />
       <Route path={"/busca"} component={Busca} />
       <Route path={"/perfil/:id"} component={Perfil} />
+      <Route path={"/prestador/:id"} component={Perfil} />
+      <Route path={"/professional/:id"} component={Perfil} />
+      <Route path={"/comercio/:id"} component={Perfil} />
       <Route path={"/parceiros"} component={Parceiro} />
       <Route path={"/parceiros/dashboard"} component={Parceiro} />
       <Route path={"/parceiro"} component={Parceiro} />

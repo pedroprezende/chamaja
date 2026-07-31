@@ -1021,67 +1021,6 @@ export default function ProfessionalDetailScreen() {
           )}
         </View>
 
-        {/* Redes Sociais */}
-        {Object.keys(socialLinks).length > 0 && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-              Redes Sociais
-            </Text>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 10 }}>
-              {[
-                { key: "instagram", label: "Instagram", icon: "camera-alt", color: "#E4405F" },
-                { key: "facebook", label: "Facebook", icon: "facebook", color: "#1877F2" },
-                { key: "youtube", label: "YouTube", icon: "play-circle-outline", color: "#FF0000" },
-                { key: "tiktok", label: "TikTok", icon: "music-note", color: "#000000" },
-                { key: "website", label: "Site", icon: "language", color: "#2563EB" },
-                { key: "linkedin", label: "LinkedIn", icon: "work", color: "#0A66C2" },
-                { key: "telegram", label: "Telegram", icon: "send", color: "#26A5E4" },
-                { key: "whatsapp_channel", label: "WhatsApp", icon: "chat", color: "#25D366" },
-              ]
-                .filter((n) => socialLinks[n.key])
-                .map((network) => {
-                  const url = socialLinks[network.key];
-                  const fullUrl = url.startsWith("http") ? url : `https://${url}`;
-                  return (
-                    <Pressable
-                      key={network.key}
-                      onPress={() => Linking.openURL(fullUrl)}
-                      style={({ pressed }) => [
-                        {
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: 6,
-                          paddingHorizontal: 12,
-                          paddingVertical: 8,
-                          borderRadius: 12,
-                          backgroundColor: colors.surface,
-                          borderWidth: 1,
-                          borderColor: colors.border,
-                        },
-                        pressed && { opacity: 0.7 },
-                      ]}
-                    >
-                      <MaterialIcons
-                        name={network.icon as any}
-                        size={16}
-                        color={network.color}
-                      />
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          fontWeight: "700",
-                          color: colors.foreground,
-                        }}
-                      >
-                        {network.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-            </View>
-          </View>
-        )}
-
         {/* Gallery */}
         {prof.gallery &&
           Array.isArray(prof.gallery) &&
@@ -1334,65 +1273,85 @@ export default function ProfessionalDetailScreen() {
         </View>
 
         {/* Social Media Links */}
-        {prof.socialLinks && Object.keys(prof.socialLinks).length > 0 && (
-          <View
-            style={[
-              styles.infoList,
-              { backgroundColor: colors.surface, borderColor: colors.border, marginTop: 12 },
-            ]}
-          >
-            <View style={[styles.infoItem, { paddingBottom: 12 }]}>
-              <View
-                style={[styles.infoIconWrap, { backgroundColor: colors.primary + "12" }]}
-              >
-                <MaterialIcons name="share" size={20} color={colors.primary} />
-              </View>
-              <View style={styles.infoContent}>
-                <Text style={[styles.infoLabel, { color: colors.foreground }]}>
-                  Redes Sociais
-                </Text>
-              </View>
-            </View>
+        {(() => {
+          const activeNetworks = [
+            { key: "instagram", label: "Instagram", icon: "camera-alt", color: "#E4405F" },
+            { key: "facebook", label: "Facebook", icon: "facebook", color: "#1877F2" },
+            { key: "youtube", label: "YouTube", icon: "play-circle-outline", color: "#FF0000" },
+            { key: "tiktok", label: "TikTok", icon: "music-note", color: "#000000" },
+            { key: "website", label: "Website", icon: "language", color: "#2563EB" },
+            { key: "linkedin", label: "LinkedIn", icon: "work", color: "#0A66C2" },
+            { key: "telegram", label: "Telegram", icon: "send", color: "#26A5E4" },
+            { key: "whatsapp_channel", label: "WhatsApp", icon: "chat", color: "#25D366" },
+          ].filter(
+            (n) => socialLinks[n.key] && String(socialLinks[n.key]).trim() !== ""
+          );
+
+          if (activeNetworks.length === 0) return null;
+
+          return (
             <View
-              style={{
-                flexDirection: "row",
-                flexWrap: "wrap",
-                gap: 12,
-                paddingHorizontal: 16,
-                paddingBottom: 16,
-              }}
+              style={[
+                styles.infoList,
+                { backgroundColor: colors.surface, borderColor: colors.border, marginTop: 12 },
+              ]}
             >
-              {SOCIAL_NETWORKS.filter(
-                (n) => prof.socialLinks?.[n.key],
-              ).map((network) => {
-                const url = prof.socialLinks![network.key];
-                const fullUrl = url.startsWith("http") ? url : `https://${url}`;
-                return (
-                  <Pressable
-                    key={network.key}
-                    style={({ pressed }) => ({
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 6,
-                      paddingHorizontal: 14,
-                      paddingVertical: 10,
-                      borderRadius: 12,
-                      backgroundColor: pressed ? network.color + "20" : colors.background,
-                      borderWidth: 1,
-                      borderColor: colors.border,
-                    })}
-                    onPress={() => Linking.openURL(fullUrl).catch(() => { })}
-                  >
-                    <MaterialIcons name={network.icon} size={18} color={network.color} />
-                    <Text style={{ fontSize: 13, fontWeight: "600", color: colors.foreground }}>
-                      {network.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+              <View style={[styles.infoItem, { paddingBottom: 10 }]}>
+                <View
+                  style={[styles.infoIconWrap, { backgroundColor: colors.primary + "12" }]}
+                >
+                  <MaterialIcons name="share" size={20} color={colors.primary} />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={[styles.infoLabel, { color: colors.foreground, fontWeight: "700" }]}>
+                    Redes Sociais
+                  </Text>
+                </View>
+              </View>
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  gap: 12,
+                  paddingHorizontal: 16,
+                  paddingBottom: 16,
+                  paddingTop: 4,
+                }}
+              >
+                {activeNetworks.map((network) => {
+                  const rawUrl = String(socialLinks[network.key]).trim();
+                  const fullUrl = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
+                  return (
+                    <Pressable
+                      key={network.key}
+                      onPress={() => Linking.openURL(fullUrl).catch(() => { })}
+                      style={({ pressed }) => [
+                        {
+                          width: 44,
+                          height: 44,
+                          borderRadius: 14,
+                          alignItems: "center",
+                          justifyContent: "center",
+                          backgroundColor: network.color + "18",
+                          borderWidth: 1,
+                          borderColor: network.color + "40",
+                        },
+                        pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] },
+                      ]}
+                    >
+                      <MaterialIcons
+                        name={network.icon as any}
+                        size={20}
+                        color={network.color}
+                      />
+                    </Pressable>
+                  );
+                })}
+              </View>
             </View>
-          </View>
-        )}
+          );
+        })()}
 
         {/* Reviews Section */}
         <View style={styles.section}>

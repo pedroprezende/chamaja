@@ -464,11 +464,8 @@ export default function Perfil({ params }: { params: { id: string } }) {
   })();
 
   // Parse working hours and calculate real-time status
-  const parsedHours = parseWorkingHours(provider.workingHours);
-  const realTimeStatus = calculateRealTimeStatus(parsedHours);
-
   const socialLinks = (() => {
-    if (!provider.socialLinks) return {};
+    if (!provider?.socialLinks) return {};
     if (typeof provider.socialLinks === "object") return provider.socialLinks;
     try {
       return JSON.parse(provider.socialLinks);
@@ -476,6 +473,86 @@ export default function Perfil({ params }: { params: { id: string } }) {
       return {};
     }
   })();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#050505] text-white font-sans flex flex-col">
+        <header className="z-50 bg-[#050505]/75 backdrop-blur-xl border-b border-zinc-900/60 sticky top-0">
+          <div className="container mx-auto px-4 lg:px-8 h-20 flex items-center justify-between">
+            <button
+              onClick={() => window.location.href = "/busca"}
+              className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Voltar para Busca</span>
+            </button>
+            <img
+              src="/assets/images/logo-xamaja.png"
+              alt="XamaJá"
+              className="h-8 w-auto object-contain cursor-pointer"
+              onClick={() => window.location.href = "/"}
+            />
+            <div className="w-9 h-9 bg-zinc-900 rounded-xl animate-pulse" />
+          </div>
+        </header>
+
+        <section className="relative h-64 md:h-80 w-full bg-zinc-900 animate-pulse flex-shrink-0" />
+
+        <section className="container mx-auto px-4 lg:px-8 relative -mt-20 z-10 flex-shrink-0">
+          <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
+            <div className="w-28 h-28 md:w-32 md:h-32 rounded-full border-4 border-zinc-950 bg-zinc-900 animate-pulse -mt-14 md:-mt-20 flex-shrink-0" />
+            <div className="flex-1 space-y-3 w-full">
+              <div className="h-8 bg-zinc-900 rounded-xl w-3/4 animate-pulse mx-auto md:mx-0" />
+              <div className="h-4 bg-zinc-900/80 rounded-lg w-1/3 animate-pulse mx-auto md:mx-0" />
+              <div className="h-5 bg-zinc-900/60 rounded-lg w-1/2 animate-pulse mx-auto md:mx-0" />
+            </div>
+          </div>
+        </section>
+
+        <main className="container mx-auto px-4 lg:px-8 py-8 flex-1 pb-28">
+          <div className="grid lg:grid-cols-12 gap-8 items-start">
+            <div className="lg:col-span-8 space-y-6">
+              <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 md:p-8 space-y-4">
+                <div className="h-6 bg-zinc-900 rounded-lg w-1/4 animate-pulse" />
+                <div className="h-20 bg-zinc-900/60 rounded-xl w-full animate-pulse" />
+              </div>
+            </div>
+            <div className="lg:col-span-4 space-y-6">
+              <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 space-y-4">
+                <div className="h-6 bg-zinc-900 rounded-lg w-1/2 animate-pulse" />
+                <div className="h-32 bg-zinc-900/60 rounded-xl w-full animate-pulse" />
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (!provider) {
+    return (
+      <div className="min-h-screen bg-[#050505] text-white font-sans flex flex-col items-center justify-center p-6">
+        <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-8 max-w-md w-full text-center space-y-4 shadow-2xl">
+          <div className="w-16 h-16 bg-zinc-900 text-zinc-500 rounded-2xl flex items-center justify-center mx-auto border border-zinc-800">
+            <Sparkles className="w-8 h-8 text-primary" />
+          </div>
+          <h2 className="text-xl font-bold text-white">Perfil não encontrado</h2>
+          <p className="text-xs text-zinc-400 leading-relaxed">
+            O estabelecimento ou prestador procurado não foi localizado ou pode ter sido removido.
+          </p>
+          <Button
+            onClick={() => window.location.href = "/busca"}
+            className="w-full bg-primary text-primary-foreground font-black h-11 rounded-xl hover:bg-primary/90 transition"
+          >
+            Voltar para Busca
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const parsedHours = parseWorkingHours(provider.workingHours);
+  const realTimeStatus = calculateRealTimeStatus(parsedHours);
 
   return (
     <div className="min-h-screen bg-[#050505] text-white selection:bg-primary/30 selection:text-white font-sans flex flex-col">
@@ -661,47 +738,6 @@ export default function Perfil({ params }: { params: { id: string } }) {
                     )}
                   </div>
                 </div>
-
-                {/* Redes Sociais */}
-                {Object.keys(socialLinks).length > 0 && (
-                  <div className="border-t border-zinc-900/60 pt-6 space-y-4">
-                    <h3 className="font-bold text-white text-base">Redes Sociais</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {[
-                        { key: "instagram", label: "Instagram", icon: "camera-alt", color: "#E4405F" },
-                        { key: "facebook", label: "Facebook", icon: "facebook", color: "#1877F2" },
-                        { key: "youtube", label: "YouTube", icon: "play-circle", color: "#FF0000" },
-                        { key: "tiktok", label: "TikTok", icon: "music_note", color: "#000000" },
-                        { key: "website", label: "Site", icon: "language", color: "#2563EB" },
-                        { key: "linkedin", label: "LinkedIn", icon: "work", color: "#0A66C2" },
-                        { key: "telegram", label: "Telegram", icon: "send", color: "#26A5E4" },
-                        { key: "whatsapp_channel", label: "WhatsApp", icon: "chat", color: "#25D366" },
-                      ]
-                        .filter((n) => socialLinks[n.key])
-                        .map((network) => {
-                          const url = socialLinks[network.key];
-                          const fullUrl = url.startsWith("http") ? url : `https://${url}`;
-                          return (
-                            <a
-                              key={network.key}
-                              href={fullUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-850 hover:border-zinc-700 transition-colors text-xs font-bold text-zinc-300 hover:text-white"
-                            >
-                              <span
-                                className="material-icons text-base"
-                                style={{ color: network.color }}
-                              >
-                                {network.icon}
-                              </span>
-                              {network.label}
-                            </a>
-                          );
-                        })}
-                    </div>
-                  </div>
-                )}
 
                 {/* Portfólio / Galeria de Fotos de Trabalhos Anteriores */}
                 {provider.gallery && provider.gallery.length > 0 && (
@@ -958,8 +994,58 @@ export default function Perfil({ params }: { params: { id: string } }) {
                     </div>
                   );
                 })}
-              </div>
             </div>
+
+            {/* REDES SOCIAIS CARD (Abaixo do Horário de Funcionamento) */}
+            {(() => {
+              const SOCIAL_NETWORKS_CONFIG = [
+                { key: "instagram", label: "Instagram", icon: "camera-alt", color: "#E4405F", bg: "bg-[#E4405F]/15 text-[#E4405F] border-[#E4405F]/40 hover:bg-[#E4405F]/25" },
+                { key: "facebook", label: "Facebook", icon: "facebook", color: "#1877F2", bg: "bg-[#1877F2]/15 text-[#1877F2] border-[#1877F2]/40 hover:bg-[#1877F2]/25" },
+                { key: "youtube", label: "YouTube", icon: "play-circle", color: "#FF0000", bg: "bg-[#FF0000]/15 text-[#FF0000] border-[#FF0000]/40 hover:bg-[#FF0000]/25" },
+                { key: "tiktok", label: "TikTok", icon: "music_note", color: "#FFFFFF", bg: "bg-zinc-800 text-white border-zinc-700 hover:bg-zinc-700" },
+                { key: "website", label: "Website", icon: "language", color: "#2563EB", bg: "bg-[#2563EB]/15 text-[#2563EB] border-[#2563EB]/40 hover:bg-[#2563EB]/25" },
+                { key: "linkedin", label: "LinkedIn", icon: "work", color: "#0A66C2", bg: "bg-[#0A66C2]/15 text-[#0A66C2] border-[#0A66C2]/40 hover:bg-[#0A66C2]/25" },
+                { key: "telegram", label: "Telegram", icon: "send", color: "#26A5E4", bg: "bg-[#26A5E4]/15 text-[#26A5E4] border-[#26A5E4]/40 hover:bg-[#26A5E4]/25" },
+                { key: "whatsapp_channel", label: "WhatsApp", icon: "chat", color: "#25D366", bg: "bg-[#25D366]/15 text-[#25D366] border-[#25D366]/40 hover:bg-[#25D366]/25" },
+              ];
+
+              const activeNetworks = SOCIAL_NETWORKS_CONFIG.filter(
+                (n) => socialLinks[n.key] && String(socialLinks[n.key]).trim() !== ""
+              );
+
+              if (activeNetworks.length === 0) return null;
+
+              return (
+                <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 shadow-xl space-y-4">
+                  <div className="flex items-center gap-3 pb-3 border-b border-zinc-900">
+                    <div className="p-2.5 bg-zinc-900 rounded-xl text-primary border border-zinc-850">
+                      <Share2 className="w-4 h-4" />
+                    </div>
+                    <h3 className="font-bold text-white text-sm">Redes Sociais</h3>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3 pt-1">
+                    {activeNetworks.map((network) => {
+                      const rawUrl = String(socialLinks[network.key]).trim();
+                      const fullUrl = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
+                      return (
+                        <a
+                          key={network.key}
+                          href={fullUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={network.label}
+                          className={`w-11 h-11 rounded-2xl border transition-all duration-200 flex items-center justify-center ${network.bg} hover:scale-105 active:scale-95`}
+                        >
+                          <span className="material-icons text-xl leading-none">
+                            {network.icon}
+                          </span>
+                        </a>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
 
 
 
