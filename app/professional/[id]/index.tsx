@@ -35,6 +35,12 @@ import {
   formatDrivingTimePtBr,
   formatDistanceWithPreposition,
 } from "@/lib/location-utils";
+import {
+  parseWorkingHours,
+  calculateRealTimeStatus,
+  formatDaySchedule,
+  DAYS_CONFIG,
+} from "@/lib/working-hours";
 
 const DEFAULT_COVER =
   "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800&q=80";
@@ -54,7 +60,7 @@ const parseJsonArray = (val: any): string[] => {
   try {
     const parsed = JSON.parse(val);
     if (Array.isArray(parsed)) return parsed;
-  } catch {}
+  } catch { }
   if (typeof val === "string") {
     return val
       .split(",")
@@ -238,7 +244,7 @@ export default function ProfessionalDetailScreen() {
   const showDistance = coords !== null;
 
   const { user, isAdmin } = useAuth();
-  
+
   // -- Transfer Ownership State --
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [transferSearch, setTransferSearch] = useState("");
@@ -552,6 +558,14 @@ export default function ProfessionalDetailScreen() {
 
   // Type-narrowed alias to prevent TS closure warnings
   const prof = professional;
+
+  const parsedHours = useMemo(() => {
+    return parseWorkingHours(prof.workingHours);
+  }, [prof.workingHours]);
+
+  const realTimeStatus = useMemo(() => {
+    return calculateRealTimeStatus(parsedHours);
+  }, [parsedHours]);
 
   // Dynamic establishment type + config
   const estType = getEstablishmentType(prof.categoryId, prof.subcategoryId);
@@ -1072,9 +1086,9 @@ export default function ProfessionalDetailScreen() {
                 prof.latitude && prof.longitude
                   ? `${prof.latitude},${prof.longitude}`
                   : (
-                      prof.address ||
-                      `${prof.neighborhood || ""}, ${prof.city || ""}`
-                    ).trim();
+                    prof.address ||
+                    `${prof.neighborhood || ""}, ${prof.city || ""}`
+                  ).trim();
 
               if (locationQuery) {
                 if (prof.address && prof.address.startsWith("http")) {
@@ -1170,81 +1184,80 @@ export default function ProfessionalDetailScreen() {
           </Pressable>
 
           {/* Horário de Atendimento */}
-          <View style={[styles.infoItem, { paddingTop: 16 }]}>
+          <View style={[styles.infoItem, { paddingTop: 16, alignItems: "flex-start" }]}>
             <View
-              style={[styles.infoIconWrap, { backgroundColor: "#7C3AED12" }]}
+              style={[styles.infoIconWrap, { backgroundColor: "#7C3AED12", marginTop: 2 }]}
             >
               <MaterialIcons name="access-time" size={20} color="#7C3AED" />
             </View>
-            <View style={styles.infoContent}>
-              <Text style={[styles.infoLabel, { color: colors.foreground }]}>
-                Horário de atendimento
-              </Text>
-              {(() => {
-                let weekdayHours = "";
-                let satHours = "";
-                let sunHours = "";
-                let isJson = false;
-                let parsedObj: any = null;
-                if (prof.workingHours) {
-                  try {
-                    parsedObj = JSON.parse(prof.workingHours);
-                    if (
-                      parsedObj &&
-                      (parsedObj.weekday ||
-                        parsedObj.saturday ||
-                        parsedObj.sunday)
-                    ) {
-                      weekdayHours = parsedObj.weekday || "";
-                      satHours = parsedObj.saturday || "";
-                      sunHours = parsedObj.sunday || "";
-                      isJson = true;
-                    }
-                  } catch {
-                    weekdayHours = prof.workingHours;
-                  }
-                }
+            <View style={[styles.infoContent, { flex: 1 }]}>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                <Text style={[styles.infoLabel, { color: colors.foreground }]}>
+                  Horário de Funcionamento
+                </Text>
+                <View style={{
+                  paddingHorizontal: 8,
+                  paddingVertical: 3,
+                  borderRadius: 12,
+                  backgroundColor: realTimeStatus.isOpen ? "rgba(16, 185, 129, 0.15)" : "rgba(239, 68, 68, 0.15)",
+                }}>
+                  <Text style={{
+                    fontSize: 10,
+                    fontWeight: "800",
+                    color: realTimeStatus.isOpen ? "#10B981" : "#EF4444"
+                  }}>
+                    {realTimeStatus.badge}
+                  </Text>
+                </View>
+              </View>
 
-                if (isJson) {
+              <Text style={{ fontSize: 11, color: colors.muted, marginTop: 2, marginBottom: 8, fontWeight: "600" }}>
+                {realTimeStatus.detailMessage}
+              </Text>
+
+              <View style={{ gap: 4, width: "100%" }}>
+                {DAYS_CONFIG.map(({ key, label }) => {
+                  const daySched = parsedHours[key];
+                  const formatted = formatDaySchedule(daySched);
+                  const todayIndex = new Date().getDay();
+                  const dayKeysOrder: typeof key[] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+                  const isToday = dayKeysOrder[todayIndex] === key;
+
                   return (
-                    <View style={{ gap: 2, marginTop: 2 }}>
-                      {!!weekdayHours && (
-                        <Text style={styles.hoursText}>
-                          Segunda a Sexta:{" "}
-                          <Text style={styles.hoursValueText}>
-                            {weekdayHours}
-                          </Text>
-                        </Text>
-                      )}
-                      {!!satHours && (
-                        <Text style={styles.hoursText}>
-                          Sábado:{" "}
-                          <Text style={styles.hoursValueText}>{satHours}</Text>
-                        </Text>
-                      )}
-                      {!!sunHours && (
-                        <Text style={styles.hoursText}>
-                          Domingo:{" "}
-                          <Text style={styles.hoursValueText}>{sunHours}</Text>
-                        </Text>
-                      )}
+                    <View
+                      key={key}
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        paddingVertical: 3,
+                        paddingHorizontal: isToday ? 8 : 0,
+                        backgroundColor: isToday ? colors.primary + "15" : "transparent",
+                        borderRadius: isToday ? 8 : 0,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          fontWeight: isToday ? "800" : "500",
+                          color: isToday ? colors.foreground : colors.muted,
+                        }}
+                      >
+                        {isToday ? `• ${label}` : label}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          fontWeight: daySched.active ? "700" : "400",
+                          color: daySched.active ? colors.foreground : colors.muted,
+                        }}
+                      >
+                        {formatted}
+                      </Text>
                     </View>
                   );
-                } else if (prof.workingHours) {
-                  return (
-                    <Text
-                      style={[styles.infoValue, { color: colors.foreground }]}
-                    >
-                      {prof.workingHours}
-                    </Text>
-                  );
-                }
-                return (
-                  <Text style={[styles.infoValue, { color: colors.muted }]}>
-                    Consultar disponibilidade via WhatsApp
-                  </Text>
-                );
-              })()}
+                })}
+              </View>
             </View>
           </View>
         </View>
@@ -1297,7 +1310,7 @@ export default function ProfessionalDetailScreen() {
                       borderWidth: 1,
                       borderColor: colors.border,
                     })}
-                    onPress={() => Linking.openURL(fullUrl).catch(() => {})}
+                    onPress={() => Linking.openURL(fullUrl).catch(() => { })}
                   >
                     <MaterialIcons name={network.icon} size={18} color={network.color} />
                     <Text style={{ fontSize: 13, fontWeight: "600", color: colors.foreground }}>

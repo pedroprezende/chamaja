@@ -20,6 +20,12 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import {
+  parseWorkingHours,
+  calculateRealTimeStatus,
+  formatDaySchedule,
+  DAYS_CONFIG,
+} from "../../../../lib/working-hours";
 
 export default function Perfil({ params }: { params: { id: string } }) {
   const providerId = params.id;
@@ -457,15 +463,9 @@ export default function Perfil({ params }: { params: { id: string } }) {
     return [];
   })();
 
-  // Parse working hours json
-  let hours: any = { weekdays: "08:00 - 18:00", weekends: "08:00 - 12:00" };
-  if (provider.workingHours) {
-    try {
-      hours = typeof provider.workingHours === "string" ? JSON.parse(provider.workingHours) : provider.workingHours;
-    } catch (e) {
-      console.warn("Error parsing hours:", e);
-    }
-  }
+  // Parse working hours and calculate real-time status
+  const parsedHours = parseWorkingHours(provider.workingHours);
+  const realTimeStatus = calculateRealTimeStatus(parsedHours);
 
   return (
     <div className="min-h-screen bg-[#050505] text-white selection:bg-primary/30 selection:text-white font-sans flex flex-col">
@@ -567,12 +567,11 @@ export default function Perfil({ params }: { params: { id: string } }) {
                 <MapPin className="h-4 w-4 text-primary" />
                 <span>{provider.neighborhood ? `${provider.neighborhood}, ` : ""}{provider.city || "Região local"}</span>
               </div>
-              {provider.onlineStatus && (
-                <div className="flex items-center gap-1.5 text-emerald-400 font-bold">
-                  <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                  <span>Aberto agora</span>
-                </div>
-              )}
+              <div className={`flex items-center gap-1.5 font-bold ${realTimeStatus.isOpen ? "text-emerald-400" : "text-red-400"}`}>
+                <span className={`w-2 h-2 rounded-full ${realTimeStatus.isOpen ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`}></span>
+                <span>{realTimeStatus.badge}</span>
+                <span className="text-zinc-500 text-xs font-normal">({realTimeStatus.detailMessage})</span>
+              </div>
             </div>
           </div>
         </div>
@@ -863,26 +862,51 @@ export default function Perfil({ params }: { params: { id: string } }) {
 
           {/* Right Column: Business info sidebar */}
           <div className="lg:col-span-4 space-y-6">
-            <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 shadow-xl space-y-6">
-              <div className="flex items-center gap-3 pb-4 border-b border-zinc-900">
-                <div className="p-3 bg-zinc-900 rounded-xl text-primary border border-zinc-850">
-                  <Clock className="w-5 h-5" />
+            <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 shadow-xl space-y-5">
+              <div className="flex items-center justify-between pb-4 border-b border-zinc-900 gap-2">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-zinc-900 rounded-xl text-primary border border-zinc-850">
+                    <Clock className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white text-sm">Horário de Funcionamento</h3>
+                    <p className="text-xs text-zinc-500">{realTimeStatus.detailMessage}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-bold text-white text-sm">Horário de Funcionamento</h3>
-                  <p className="text-xs text-zinc-500">Dias e horários de atendimento</p>
-                </div>
+                <span className={`px-2.5 py-1 rounded-full text-[11px] font-extrabold whitespace-nowrap ${
+                  realTimeStatus.isOpen
+                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                    : "bg-red-500/10 text-red-400 border border-red-500/20"
+                }`}>
+                  {realTimeStatus.isOpen ? "🟢 Aberto agora" : "🔴 Fechado agora"}
+                </span>
               </div>
 
-              <div className="space-y-2.5 text-xs">
-                <div className="flex justify-between border-b border-zinc-900/40 pb-2">
-                  <span className="text-zinc-500 font-semibold">Segunda a Sexta</span>
-                  <span className="text-zinc-300 font-extrabold">{hours.weekdays || "08:00 - 18:00"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-zinc-500 font-semibold">Sábado e Domingo</span>
-                  <span className="text-zinc-300 font-extrabold">{hours.weekends || "08:00 - 12:00"}</span>
-                </div>
+              <div className="space-y-2 text-xs">
+                {DAYS_CONFIG.map(({ key, label }) => {
+                  const daySched = parsedHours[key];
+                  const formatted = formatDaySchedule(daySched);
+                  const todayIndex = new Date().getDay(); // 0 is Sunday, 1 is Monday...
+                  const dayKeysOrder: typeof key[] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+                  const isToday = dayKeysOrder[todayIndex] === key;
+
+                  return (
+                    <div
+                      key={key}
+                      className={`flex justify-between items-center py-1.5 border-b border-zinc-900/40 last:border-b-0 ${
+                        isToday ? "font-bold text-white bg-zinc-900/50 px-2.5 py-2 rounded-xl -mx-2 border-primary/20 border" : "text-zinc-400"
+                      }`}
+                    >
+                      <span className="flex items-center gap-1.5 font-semibold">
+                        {isToday && <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></span>}
+                        <span>{label}</span>
+                      </span>
+                      <span className={daySched.active ? "text-zinc-200 font-extrabold" : "text-zinc-500 font-normal"}>
+                        {formatted}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

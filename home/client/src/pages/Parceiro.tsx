@@ -34,6 +34,14 @@ import {
   Settings,
   Gift,
 } from "lucide-react";
+import {
+  parseWorkingHours,
+  WorkingHoursMap,
+  DEFAULT_WORKING_HOURS,
+  DAYS_CONFIG,
+  DayKey,
+  formatDaySchedule,
+} from "../../../../lib/working-hours";
 
 interface Service {
   id: string;
@@ -134,8 +142,10 @@ export default function Parceiro() {
 
   // Dashboard active tab
   const [activeTab, setActiveTab] = useState<
-    "dados" | "localizacao" | "fotos" | "servicos" | "assinatura"
+    "perfil" | "dados" | "horarios" | "localizacao" | "fotos" | "servicos" | "estatisticas" | "favoritos" | "minhas-avaliacoes" | "indicacoes" | "assinatura" | "configuracoes"
   >("dados");
+
+  const [busWorkingHours, setBusWorkingHours] = useState<WorkingHoursMap>(DEFAULT_WORKING_HOURS);
 
   // Profile Form States
   const [busName, setBusName] = useState("");
@@ -374,6 +384,7 @@ export default function Parceiro() {
           setBusCoverUri(result.business.coverUri || "");
           setBusGallery(result.business.gallery || []);
           setServicesList(result.business.services || []);
+          setBusWorkingHours(parseWorkingHours(result.business.workingHours));
 
           const links = result.business.socialLinks || {};
           setSocialInstagram(links.instagram || "");
@@ -562,6 +573,7 @@ export default function Parceiro() {
               coverUri: busCoverUri || null,
               gallery: busGallery,
               services: servicesList,
+              workingHours: busWorkingHours,
               socialLinks: {
                 instagram: socialInstagram || "",
                 facebook: socialFacebook || "",
@@ -1742,6 +1754,7 @@ export default function Parceiro() {
                       : [
                           { id: "perfil", label: "Meu Perfil", icon: User },
                           { id: "dados", label: "Meu Negócio", icon: Store },
+                          { id: "horarios", label: "Horário de Funcionamento", icon: Clock },
                           { id: "localizacao", label: "Endereço & Localização", icon: MapPin },
                           { id: "fotos", label: "Fotos & Galeria", icon: ImageIcon },
                           { id: "servicos", label: "Meus Serviços", icon: Wrench },
@@ -1820,6 +1833,211 @@ export default function Parceiro() {
                               </Button>
                             </div>
                           )}
+                        </div>
+                      )}
+
+                      {/* HORARIO DE FUNCIONAMENTO PANEL */}
+                      {activeTab === "horarios" && (
+                        <div className="space-y-6">
+                          <div className="pb-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div>
+                              <h2 className="text-xl font-black text-white flex items-center gap-2">
+                                <Clock className="w-5 h-5 text-primary" />
+                                <span>Horário de Funcionamento</span>
+                              </h2>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Configure individualmente os dias e horários de atendimento do seu estabelecimento.
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              onClick={() => {
+                                const mon = busWorkingHours.monday;
+                                setBusWorkingHours(prev => ({
+                                  ...prev,
+                                  tuesday: { ...mon },
+                                  wednesday: { ...mon },
+                                  thursday: { ...mon },
+                                  friday: { ...mon },
+                                }));
+                                toast.success("Horário de Segunda-feira copiado para Terça a Sexta!");
+                              }}
+                              className="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 text-xs font-bold h-9 px-3 rounded-xl flex items-center gap-1.5"
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                              <span>Copiar Seg. para Seg-Sex</span>
+                            </Button>
+                          </div>
+
+                          <div className="space-y-4">
+                            {DAYS_CONFIG.map(({ key, label }) => {
+                              const daySched = busWorkingHours[key] || DEFAULT_WORKING_HOURS[key];
+                              const TIME_OPTIONS = [
+                                "05:00", "05:30", "06:00", "06:30", "07:00", "07:30", "08:00", "08:30",
+                                "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30",
+                                "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
+                                "17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00", "20:30",
+                                "21:00", "21:30", "22:00", "22:30", "23:00", "23:30", "00:00", "00:30",
+                                "01:00", "01:30", "02:00", "02:30", "03:00", "03:30", "04:00", "04:30"
+                              ];
+
+                              const updateDay = (patch: Partial<typeof daySched>) => {
+                                setBusWorkingHours(prev => ({
+                                  ...prev,
+                                  [key]: { ...prev[key], ...patch }
+                                }));
+                              };
+
+                              return (
+                                <div
+                                  key={key}
+                                  className={`bg-[#0b0b0d] border rounded-2xl p-5 space-y-4 transition-all ${
+                                    daySched.active
+                                      ? "border-zinc-800"
+                                      : "border-zinc-900 opacity-60 bg-zinc-950/40"
+                                  }`}
+                                >
+                                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div className="flex items-center gap-3">
+                                      <span className="font-bold text-white text-sm min-w-[120px]">{label}</span>
+                                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
+                                        !daySched.active
+                                          ? "bg-red-500/10 text-red-400 border border-red-500/20"
+                                          : daySched.is24h
+                                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                                          : "bg-primary/10 text-primary border border-primary/20"
+                                      }`}>
+                                        {formatDaySchedule(daySched)}
+                                      </span>
+                                    </div>
+
+                                    {/* Day Status Buttons */}
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => updateDay({ active: !daySched.active })}
+                                        className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
+                                          daySched.active
+                                            ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
+                                            : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300"
+                                        }`}
+                                      >
+                                        {daySched.active ? "Aberto" : "Fechado"}
+                                      </button>
+                                      {daySched.active && (
+                                        <button
+                                          type="button"
+                                          onClick={() => updateDay({ is24h: !daySched.is24h })}
+                                          className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
+                                            daySched.is24h
+                                              ? "bg-primary/15 border-primary/40 text-primary"
+                                              : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300"
+                                          }`}
+                                        >
+                                          24h
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Time Controls */}
+                                  {daySched.active && !daySched.is24h && (
+                                    <div className="pt-3 border-t border-zinc-900/80 space-y-4">
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="space-y-1">
+                                          <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Abertura</label>
+                                          <select
+                                            value={daySched.openTime}
+                                            onChange={(e) => updateDay({ openTime: e.target.value })}
+                                            className="w-full bg-zinc-950 border border-zinc-800 text-white rounded-xl px-3 py-2.5 text-xs font-bold focus:border-primary focus:outline-none"
+                                          >
+                                            {TIME_OPTIONS.map((t) => (
+                                              <option key={t} value={t}>{t}</option>
+                                            ))}
+                                          </select>
+                                        </div>
+
+                                        <div className="space-y-1">
+                                          <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Fechamento</label>
+                                          <select
+                                            value={daySched.closeTime}
+                                            onChange={(e) => updateDay({ closeTime: e.target.value })}
+                                            className="w-full bg-zinc-950 border border-zinc-800 text-white rounded-xl px-3 py-2.5 text-xs font-bold focus:border-primary focus:outline-none"
+                                          >
+                                            {TIME_OPTIONS.map((t) => (
+                                              <option key={t} value={t}>{t}</option>
+                                            ))}
+                                          </select>
+                                        </div>
+                                      </div>
+
+                                      {/* Lunch Break Section */}
+                                      <div className="bg-zinc-950/60 border border-zinc-900 rounded-xl p-3 space-y-3">
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-xs font-bold text-zinc-300">Intervalo de Almoço (opcional)</span>
+                                          <button
+                                            type="button"
+                                            onClick={() => updateDay({ hasLunch: !daySched.hasLunch })}
+                                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition ${
+                                              daySched.hasLunch
+                                                ? "bg-primary/10 border-primary/30 text-primary"
+                                                : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300"
+                                            }`}
+                                          >
+                                            {daySched.hasLunch ? "Com Intervalo" : "Sem Intervalo"}
+                                          </button>
+                                        </div>
+
+                                        {daySched.hasLunch && (
+                                          <div className="grid grid-cols-2 gap-4 pt-2 border-t border-zinc-900/60">
+                                            <div className="space-y-1">
+                                              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Início Almoço</label>
+                                              <select
+                                                value={daySched.lunchStart || "12:00"}
+                                                onChange={(e) => updateDay({ lunchStart: e.target.value })}
+                                                className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-3 py-2 text-xs font-bold focus:border-primary focus:outline-none"
+                                              >
+                                                {TIME_OPTIONS.map((t) => (
+                                                  <option key={t} value={t}>{t}</option>
+                                                ))}
+                                              </select>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Fim Almoço</label>
+                                              <select
+                                                value={daySched.lunchEnd || "13:00"}
+                                                onChange={(e) => updateDay({ lunchEnd: e.target.value })}
+                                                className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-3 py-2 text-xs font-bold focus:border-primary focus:outline-none"
+                                              >
+                                                {TIME_OPTIONS.map((t) => (
+                                                  <option key={t} value={t}>{t}</option>
+                                                ))}
+                                              </select>
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          <div className="pt-4 border-t border-border flex justify-end">
+                            <Button
+                              onClick={() => saveProfile()}
+                              disabled={isLoading}
+                              className="bg-primary text-primary-foreground font-black hover:bg-primary/90 h-11 px-8 rounded-xl flex items-center justify-center gap-2"
+                            >
+                              {isLoading ? (
+                                <span className="loader-btn w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></span>
+                              ) : (
+                                "Salvar Horários de Funcionamento"
+                              )}
+                            </Button>
+                          </div>
                         </div>
                       )}
 

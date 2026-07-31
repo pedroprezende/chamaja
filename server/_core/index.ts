@@ -1370,6 +1370,11 @@ async function startServer() {
                 if (typeof businessProfile.socialLinks === "object") return businessProfile.socialLinks;
                 try { return JSON.parse(businessProfile.socialLinks); } catch { return {}; }
               })(),
+              workingHours: (() => {
+                if (!businessProfile.workingHours) return null;
+                if (typeof businessProfile.workingHours === "object") return businessProfile.workingHours;
+                try { return JSON.parse(businessProfile.workingHours); } catch { return businessProfile.workingHours; }
+              })(),
               // ── Dados do Plano (sempre vindos do banco, nunca hardcoded) ──
               planId: businessProfile.planId || null,
               planName: planName,
@@ -1700,6 +1705,7 @@ async function startServer() {
         gallery,
         services, // Array de serviços
         socialLinks, // Record<string, string>
+        workingHours, // Object or string
       } = req.body;
 
       if (!name) {
@@ -1771,6 +1777,10 @@ async function startServer() {
 
       if (socialLinks !== undefined) {
         updates.socialLinks = typeof socialLinks === "object" ? JSON.stringify(socialLinks) : socialLinks;
+      }
+
+      if (workingHours !== undefined) {
+        updates.workingHours = typeof workingHours === "object" ? JSON.stringify(workingHours) : workingHours;
       }
 
       await db.updateProvider(businessProfile.id, updates);
