@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Modal,
   TextInput,
+  useWindowDimensions,
 } from "react-native";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -243,6 +244,8 @@ export default function ProfessionalDetailScreen() {
   const { coords, addressName, permissionGranted } = useLocation();
   const isDefaultCity = addressName === "Bragança Paulista - SP";
   const showDistance = coords !== null;
+  const { width: windowWidth } = useWindowDimensions();
+  const isWide = Platform.OS === 'web' && windowWidth >= 900;
 
   const { user, isAdmin } = useAuth();
 
@@ -645,24 +648,33 @@ export default function ProfessionalDetailScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Floating Header */}
-      <View style={[styles.floatingHeader, { paddingTop: insets.top + 8 }]}>
+      {/* ═══ HEADER BAR ═══ */}
+      <View style={[styles.headerBar, { paddingTop: insets.top + 4 }]}>
         <Pressable
-          style={({ pressed }) => [
-            styles.floatingBackBtn,
-            pressed && { opacity: 0.6 },
-          ]}
+          style={({ pressed }) => [styles.headerBackBtn, pressed && { opacity: 0.7 }]}
           onPress={() => router.back()}
         >
-          <MaterialIcons name="arrow-back" size={22} color="#FFF" />
+          <MaterialIcons name="arrow-back" size={18} color="#D1D5DB" />
+          <Text style={styles.headerBackText}>Voltar para Busca</Text>
         </Pressable>
         <View style={{ flex: 1 }} />
         <Pressable
-          style={({ pressed }) => [
-            styles.floatingBackBtn,
-            { marginRight: 8 },
-            pressed && { opacity: 0.6 },
-          ]}
+          style={({ pressed }) => [styles.headerActionBtn, pressed && { opacity: 0.7 }]}
+          onPress={handleOpenReportModal}
+        >
+          <MaterialIcons name="report" size={18} color="#9CA3AF" />
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.headerActionBtn, pressed && { opacity: 0.7 }]}
+          onPress={() =>
+            Share.share({ message: `Confira ${prof.name} no app XamaJá!` })
+          }
+        >
+          <MaterialIcons name="share" size={18} color="#9CA3AF" />
+          <Text style={styles.headerActionText}>Compartilhar</Text>
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.headerActionBtn, pressed && { opacity: 0.7 }]}
           onPress={() =>
             toggleFavorite({
               id: prof.id,
@@ -686,631 +698,932 @@ export default function ProfessionalDetailScreen() {
         >
           <MaterialIcons
             name={favored ? "favorite" : "favorite-border"}
-            size={22}
-            color={favored ? "#EF4444" : "#FFF"}
+            size={18}
+            color={favored ? "#EF4444" : "#9CA3AF"}
           />
-        </Pressable>
-        <Pressable
-          style={({ pressed }) => [
-            styles.floatingBackBtn,
-            { marginRight: 8 },
-            pressed && { opacity: 0.6 },
-          ]}
-          onPress={handleOpenReportModal}
-        >
-          <MaterialIcons name="report" size={22} color="#FFF" />
-        </Pressable>
-        <Pressable
-          style={({ pressed }) => [
-            styles.floatingBackBtn,
-            pressed && { opacity: 0.6 },
-          ]}
-          onPress={() =>
-            Share.share({
-              message: `Confira ${prof.name} no app XamaJá!`,
-            })
-          }
-        >
-          <MaterialIcons name="share" size={22} color="#FFF" />
+          <Text style={styles.headerActionText}>Favoritar</Text>
         </Pressable>
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 160 }}
+        contentContainerStyle={{ paddingBottom: 140 }}
       >
-        {/* Banner Superior (Capa) */}
-        <View style={styles.coverContainer}>
-          <Image
-            source={{ uri: prof.coverUri || DEFAULT_COVER }}
-            style={styles.coverImage}
-            contentFit="cover"
-            transition={200}
-          />
-          <LinearGradient
-            colors={["rgba(0,0,0,0.5)", "transparent", "rgba(0,0,0,0.7)"]}
-            style={StyleSheet.absoluteFillObject}
-          />
+        {/* ═══ HERO SECTION ═══ */}
+        <View style={styles.heroSection}>
+          <View style={[styles.heroRow, isWide && { flexDirection: "row", alignItems: "flex-start", gap: 24 }]}>
+            <View style={[styles.heroMainBlock, isWide && { flex: 1 }]}>
+              <View style={styles.heroAvatarRow}>
+                <View style={styles.heroAvatarWrap}>
+                  <Image
+                    source={{ uri: prof.avatarUri || getAvatarUrl(prof.name) }}
+                    style={styles.heroAvatar}
+                  />
+                  {prof.isVerified && (
+                    <View style={styles.heroVerifiedBadge}>
+                      <MaterialIcons name="verified" size={22} color="#25D366" />
+                    </View>
+                  )}
+                </View>
+                <View style={styles.heroInfoBlock}>
+                  <View style={styles.heroNameRow}>
+                    <Text style={styles.heroName} numberOfLines={2}>
+                      {prof.name}
+                    </Text>
+                    {prof.isVerified && (
+                      <View style={styles.heroVerifiedPill}>
+                        <MaterialIcons name="check-circle" size={11} color="#25D366" />
+                        <Text style={styles.heroVerifiedPillText}>VERIFICADO</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={styles.heroCategory}>
+                    {prof.subcategoryName || prof.category}
+                  </Text>
+                  <View style={styles.heroStatsRow}>
+                    <MaterialIcons name="star" size={15} color="#F59E0B" />
+                    <Text style={styles.heroStatBold}>
+                      {Number(prof.rating || 0).toFixed(1)}
+                    </Text>
+                    <Text style={styles.heroStatMuted}>
+                      ({prof.ratingCount || 0} avaliações)
+                    </Text>
+                    <Text style={styles.heroDot}>•</Text>
+                    <MaterialIcons name="location-on" size={13} color="#9CA3AF" />
+                    <Text style={styles.heroStatMuted} numberOfLines={1}>
+                      {prof.neighborhood
+                        ? `${prof.neighborhood}, `
+                        : ""}
+                      {prof.city || "Bragança Paulista"}
+                    </Text>
+                  </View>
+                  {(distanceInfo || prof.responseTime) && (
+                    <View style={styles.heroStatsRow}>
+                      {distanceInfo && (
+                        <>
+                          <MaterialIcons name="near-me" size={13} color="#9CA3AF" />
+                          <Text style={styles.heroStatMuted}>
+                            {distanceInfo.distanceText} de você
+                          </Text>
+                        </>
+                      )}
+                      {distanceInfo && prof.responseTime && (
+                        <Text style={styles.heroDot}>•</Text>
+                      )}
+                      {prof.responseTime && (
+                        <>
+                          <MaterialIcons name="speed" size={13} color="#9CA3AF" />
+                          <Text style={styles.heroStatMuted}>Responde rápido</Text>
+                        </>
+                      )}
+                    </View>
+                  )}
+                </View>
+              </View>
+            </View>
 
-          {/* Badges Overlays */}
-          <View style={styles.badgeOverlayContainer}>
+            {/* Status Card */}
+            <View
+              style={[
+                styles.heroStatusCard,
+                {
+                  backgroundColor: realTimeStatus.isOpen
+                    ? "rgba(16,185,129,0.06)"
+                    : "rgba(239,68,68,0.06)",
+                  borderColor: realTimeStatus.isOpen
+                    ? "rgba(16,185,129,0.25)"
+                    : "rgba(239,68,68,0.25)",
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.heroStatusTitle,
+                  { color: realTimeStatus.isOpen ? "#10B981" : "#EF4444" },
+                ]}
+              >
+                {realTimeStatus.badge}
+              </Text>
+              <Text style={styles.heroStatusDetail}>
+                {realTimeStatus.detailMessage}
+              </Text>
+              <View style={styles.heroStatusLinkRow}>
+                <MaterialIcons name="event" size={14} color="#D1D5DB" />
+                <Text style={styles.heroStatusLinkText}>Ver horário completo</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Info Pills */}
+          <View style={styles.heroPillsRow}>
             {prof.onlineStatus && (
-              <View style={[styles.overlayBadge, styles.onlineBadge]}>
-                <View style={styles.onlineDot} />
-                <Text style={styles.onlineText}>Online agora</Text>
+              <View
+                style={[
+                  styles.heroPill,
+                  { backgroundColor: "rgba(16,185,129,0.12)" },
+                ]}
+              >
+                <View
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: 3,
+                    backgroundColor: "#4ADE80",
+                  }}
+                />
+                <Text style={[styles.heroPillText, { color: "#4ADE80" }]}>
+                  Online agora
+                </Text>
               </View>
             )}
             {prof.topBadge && (
-              <View style={[styles.overlayBadge, styles.topBadge]}>
-                <MaterialIcons name="emoji-events" size={13} color="#FFF" />
-                <Text style={styles.topBadgeText}>{prof.topBadge}</Text>
+              <View
+                style={[
+                  styles.heroPill,
+                  { backgroundColor: "rgba(217,119,6,0.12)" },
+                ]}
+              >
+                <MaterialIcons name="emoji-events" size={13} color="#FBBF24" />
+                <Text style={[styles.heroPillText, { color: "#FBBF24" }]}>
+                  {prof.topBadge}
+                </Text>
               </View>
             )}
             {prof.responseTime && (
-              <View style={[styles.overlayBadge, styles.responseBadge]}>
-                <MaterialIcons name="speed" size={13} color="#FFF" />
-                <Text style={styles.responseBadgeText}>Responde rápido</Text>
-              </View>
-            )}
-          </View>
-        </View>
-
-        {/* Profile Card Overlay */}
-        <View
-          style={[
-            styles.profileCard,
-            { backgroundColor: colors.surface, borderColor: colors.border },
-          ]}
-        >
-          {/* Avatar floating */}
-          <View style={styles.avatarContainer}>
-            <Image
-              source={{ uri: prof.avatarUri || getAvatarUrl(prof.name) }}
-              style={[styles.avatar, { borderColor: colors.surface }]}
-            />
-            {prof.isVerified && (
-              <View style={styles.verifiedIconWrap}>
-                <MaterialIcons name="verified" size={20} color="#15803D" />
+              <View style={styles.heroPill}>
+                <MaterialIcons name="chat" size={13} color="#A78BFA" />
+                <Text style={styles.heroPillText}>Responde em poucos minutos</Text>
               </View>
             )}
           </View>
 
-          {/* Professional Details */}
-          <View style={styles.detailsContainer}>
-            <View style={styles.titleRow}>
-              <Text style={[styles.name, { color: colors.foreground }]}>
-                {prof.name}
-              </Text>
+          {/* Commerce Tags */}
+          {isCommerce && parseJsonArray(prof.tags).length > 0 && (
+            <View style={styles.heroPillsRow}>
+              {parseJsonArray(prof.tags).map((tag: string, idx: number) => (
+                <View key={idx} style={styles.heroPill}>
+                  <MaterialIcons
+                    name={
+                      tag.toLowerCase().includes("delivery")
+                        ? "motorcycle"
+                        : tag.toLowerCase().includes("retirada")
+                          ? "store"
+                          : "check"
+                    }
+                    size={13}
+                    color="#25D366"
+                  />
+                  <Text style={styles.heroPillText}>{tag}</Text>
+                </View>
+              ))}
             </View>
+          )}
 
-            {prof.isVerified && (
-              <View style={styles.verifiedRow}>
-                <MaterialIcons name="check" size={12} color="#15803D" />
-                <Text style={styles.verifiedText}>Prestador Verificado</Text>
-              </View>
-            )}
-
-            <Text style={[styles.categoryText, { color: colors.primary }]}>
-              {prof.subcategoryName || prof.category}
-            </Text>
-
-            <View style={[styles.locationContainer, { marginTop: 8, gap: 4 }]}>
-              <Text
-                style={{
-                  fontSize: 14,
-                  color: colors.foreground,
-                  textAlign: "center",
-                }}
-              >
-                📍 Bairro:{" "}
-                <Text style={{ fontWeight: "700" }}>
-                  {prof.neighborhood || "Não informado"}
-                </Text>
-              </Text>
-              <Text
-                style={{
-                  fontSize: 14,
-                  color: colors.foreground,
-                  textAlign: "center",
-                }}
-              >
-                📍 Cidade:{" "}
-                <Text style={{ fontWeight: "700" }}>
-                  {prof.city || "Não informada"}
-                </Text>
-              </Text>
-              {distanceInfo ? (
-                <Text
-                  style={{
-                    fontSize: 14,
-                    color: "#15803D",
-                    fontWeight: "700",
-                    textAlign: "center",
-                  }}
-                >
-                  🚗 Distância até você: {distanceInfo.distanceText}
-                </Text>
-              ) : (
-                <Text
-                  style={{
-                    fontSize: 13,
-                    color: colors.muted,
-                    fontStyle: "italic",
-                    textAlign: "center",
-                  }}
-                >
-                  🚗 Distância até você: Indisponível (defina seu endereço)
-                </Text>
-              )}
-            </View>
-
-            {isCommerce && parseJsonArray(prof.tags).length > 0 && (
-              <View style={styles.commerceTagsRow}>
-                {parseJsonArray(prof.tags).map((tag, idx) => (
-                  <View
-                    key={idx}
-                    style={[
-                      styles.commerceTagBadge,
-                      { backgroundColor: colors.primary + "15" },
-                    ]}
-                  >
-                    <MaterialIcons
-                      name={
-                        tag.toLowerCase().includes("delivery")
-                          ? "motorcycle"
-                          : tag.toLowerCase().includes("retirada")
-                            ? "store"
-                            : "check"
-                      }
-                      size={13}
-                      color={colors.primary}
-                    />
-                    <Text
-                      style={[
-                        styles.commerceTagText,
-                        { color: colors.primary },
-                      ]}
-                    >
-                      {tag}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            )}
-
-            {isAdmin && (
-              <Pressable
-                onPress={() => setShowTransferModal(true)}
-                style={{
-                  marginTop: 16,
-                  backgroundColor: colors.primary,
-                  paddingVertical: 12,
-                  paddingHorizontal: 24,
-                  borderRadius: 12,
-                  alignItems: "center",
-                  flexDirection: "row",
-                  justifyContent: "center",
-                  gap: 8,
-                }}
-              >
-                <MaterialIcons name="swap-horiz" size={20} color="#FFF" />
-                <Text style={{ color: "#FFF", fontWeight: "700" }}>Transferir Propriedade</Text>
-              </Pressable>
-            )}
-          </View>
-        </View>
-
-        {/* Metric Grid (3 Columns) */}
-        <View
-          style={[
-            styles.metricGrid,
-            { backgroundColor: colors.surface, borderColor: colors.border },
-          ]}
-        >
-          {/* Col 1: Rating */}
-          <View style={styles.metricItem}>
-            <MaterialIcons name="star" size={22} color="#F59E0B" />
-            <Text style={[styles.metricValue, { color: colors.foreground }]}>
-              {Number(prof.rating || 0).toFixed(1)}
-            </Text>
-            <Text style={styles.metricLabel}>
-              {prof.ratingCount || 0} avaliações
-            </Text>
-          </View>
-
-          <View style={styles.metricDivider} />
-
-          {/* Col 2: Founded Year */}
-          <View style={styles.metricItem}>
-            <MaterialIcons name="event" size={22} color="#15803D" />
-            <Text style={[styles.metricValue, { color: colors.foreground }]}>
-              {prof.foundedYear ? `Desde ${prof.foundedYear}` : "--"}
-            </Text>
-            <Text style={styles.metricLabel}>Ano início</Text>
-          </View>
-
-          <View style={styles.metricDivider} />
-
-          {/* Col 3: Response Time */}
-          <View style={styles.metricItem}>
-            <MaterialIcons name="speed" size={22} color="#7C3AED" />
-            <Text
-              style={[styles.metricValue, { color: colors.foreground }]}
-              numberOfLines={1}
+          {/* Admin Transfer */}
+          {isAdmin && (
+            <Pressable
+              onPress={() => setShowTransferModal(true)}
+              style={styles.adminTransferBtn}
             >
-              {prof.responseTime || "--"}
-            </Text>
-            <Text style={styles.metricLabel}>Tempo resp.</Text>
-          </View>
+              <MaterialIcons name="swap-horiz" size={18} color="#FFF" />
+              <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 13 }}>
+                Transferir Propriedade
+              </Text>
+            </Pressable>
+          )}
         </View>
 
-        {/* Popular Services Section */}
-        {parseJsonArray(prof.popularServices).length > 0 && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-              Serviços Mais Procurados
+        {/* ═══ TAB NAVIGATION ═══ */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabStripContent}
+          style={[styles.tabStrip, { borderBottomColor: colors.border }]}
+        >
+          <View
+            style={[
+              styles.tab,
+              styles.tabActive,
+              { borderBottomColor: colors.primary },
+            ]}
+          >
+            <MaterialIcons name="info-outline" size={15} color={colors.primary} />
+            <Text style={[styles.tabText, { color: colors.primary }]}>
+              Sobre & Serviços
             </Text>
-            <View style={styles.chipsContainer}>
-              {parseJsonArray(prof.popularServices).map((service, index) => (
+          </View>
+          <Pressable
+            style={styles.tab}
+            onPress={() => {
+              if (contentGoesToMenu && hasProducts)
+                router.push(`/professional/${prof.id}/menu` as any);
+            }}
+          >
+            <MaterialIcons name="sell" size={15} color={colors.muted} />
+            <Text style={[styles.tabText, { color: colors.muted }]}>
+              Serviços e Preços
+            </Text>
+          </Pressable>
+          <Pressable style={styles.tab}>
+            <MaterialIcons name="star-outline" size={15} color={colors.muted} />
+            <Text style={[styles.tabText, { color: colors.muted }]}>
+              Avaliações ({reviews.length})
+            </Text>
+          </Pressable>
+          <Pressable
+            style={styles.tab}
+            onPress={() => {
+              const gl = parseJsonArray(prof.gallery);
+              if (gl.length > 0) setSelectedImage(gl[0]);
+            }}
+          >
+            <MaterialIcons name="photo-library" size={15} color={colors.muted} />
+            <Text style={[styles.tabText, { color: colors.muted }]}>Fotos</Text>
+          </Pressable>
+        </ScrollView>
+
+        {/* ═══ CONTENT AREA ═══ */}
+        <View
+          style={[styles.contentArea, isWide && styles.contentAreaWide]}
+        >
+          {/* ── Main Column ── */}
+          <View style={[styles.mainCol, isWide && styles.mainColWide]}>
+            {/* Gallery Card */}
+            {(() => {
+              const gl = parseJsonArray(prof.gallery);
+              if (gl.length === 0) return null;
+              const maxVis = 5;
+              const visible = gl.slice(0, maxVis);
+              const remaining = Math.max(0, gl.length - maxVis);
+              return (
                 <View
-                  key={index}
                   style={[
-                    styles.chip,
+                    styles.card,
                     {
-                      backgroundColor: colors.primary + "12",
-                      borderColor: colors.primary + "30",
+                      backgroundColor: colors.surface,
+                      borderColor: colors.border,
                     },
                   ]}
                 >
-                  <MaterialIcons name="bolt" size={13} color={colors.primary} />
-                  <Text style={[styles.chipText, { color: colors.primary }]}>
-                    {service}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* ── Módulo de Conteúdo Dinâmico ─────────────────────────────── */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flex: 1 }}>
-              <MaterialIcons name={estConfig.moduleIcon as any} size={18} color={colors.primary} />
-              <Text style={[styles.sectionTitle, { color: colors.foreground, marginBottom: 0 }]}>
-                {estConfig.moduleTitle}
-              </Text>
-            </View>
-            {hasProducts && contentGoesToMenu && (
-              <Pressable onPress={() => router.push(`/professional/${prof.id}/menu` as any)}>
-                <Text style={[styles.sectionHeaderLink, { color: colors.primary }]}>
-                  Ver todos
-                </Text>
-              </Pressable>
-            )}
-          </View>
-
-          {hasProducts ? (
-            <View style={{ gap: 10, marginTop: 14 }}>
-              {rawProducts.slice(0, 3).map((prod: any) => (
-                <Pressable
-                  key={prod.id || prod.name}
-                  style={[
-                    styles.highlightProductCard,
-                    { backgroundColor: colors.surface, borderColor: colors.border },
-                  ]}
-                  onPress={() => router.push(`/professional/${prof.id}/menu` as any)}
-                >
-                  {prod.imageUri ? (
-                    <Image source={{ uri: prod.imageUri }} style={styles.highlightProductImage} />
-                  ) : (
-                    <View
-                      style={[
-                        styles.highlightProductImage,
-                        { alignItems: "center", justifyContent: "center", backgroundColor: colors.border + "40" },
-                      ]}
-                    >
-                      <MaterialIcons name={estConfig.productIcon as any} size={20} color={colors.muted} />
+                  <View style={styles.cardHeaderRow}>
+                    <View style={styles.cardTitleRow}>
+                      <MaterialIcons
+                        name="photo-camera"
+                        size={18}
+                        color={colors.primary}
+                      />
+                      <Text
+                        style={[styles.cardTitle, { color: colors.foreground }]}
+                      >
+                        Fotos do Trabalho
+                      </Text>
                     </View>
-                  )}
-                  <View style={styles.highlightProductInfo}>
-                    <Text style={[styles.highlightProductName, { color: colors.foreground }]} numberOfLines={1}>
-                      {prod.name}
-                    </Text>
-                    {!!prod.description && (
-                      <Text style={[styles.highlightProductDesc, { color: colors.muted }]} numberOfLines={2}>
-                        {prod.description}
+                    <Pressable
+                      style={styles.cardLinkBtn}
+                      onPress={() => setSelectedImage(gl[0])}
+                    >
+                      <Text
+                        style={[
+                          styles.cardLinkText,
+                          { color: colors.primary },
+                        ]}
+                      >
+                        Ver todas as fotos
                       </Text>
-                    )}
-                    {(estType === "food" || estType === "catalog") && prod.price !== undefined && prod.price !== null && (
-                      <Text style={[styles.highlightProductPrice, { color: colors.primary }]}>
-                        R$ {Number(prod.price).toFixed(2)}
-                      </Text>
+                      <MaterialIcons
+                        name="arrow-forward"
+                        size={14}
+                        color={colors.primary}
+                      />
+                    </Pressable>
+                  </View>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ gap: 10, paddingTop: 14 }}
+                  >
+                    {visible.map((uri: string, idx: number) => {
+                      const isLast =
+                        idx === visible.length - 1 && remaining > 0;
+                      return (
+                        <Pressable
+                          key={idx}
+                          onPress={() => setSelectedImage(uri)}
+                          style={({ pressed }) => [
+                            styles.galleryThumb,
+                            { borderColor: colors.border },
+                            pressed && {
+                              opacity: 0.85,
+                              transform: [{ scale: 0.97 }],
+                            },
+                          ]}
+                        >
+                          <Image
+                            source={{ uri }}
+                            style={styles.galleryThumbImg}
+                          />
+                          {isLast && (
+                            <View style={styles.galleryOverlay}>
+                              <Text style={styles.galleryOverlayCount}>
+                                +{remaining}
+                              </Text>
+                              <Text style={styles.galleryOverlaySub}>
+                                Ver todas
+                              </Text>
+                            </View>
+                          )}
+                        </Pressable>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              );
+            })()}
+
+            {/* About Card */}
+            <View
+              style={[
+                styles.card,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <View style={styles.cardTitleRow}>
+                <MaterialIcons
+                  name="person"
+                  size={18}
+                  color={colors.primary}
+                />
+                <Text style={[styles.cardTitle, { color: colors.foreground }]}>
+                  {estConfig.aboutTitle}
+                </Text>
+              </View>
+              <Text style={[styles.cardDesc, { color: colors.muted }]}>
+                {prof.description || "Nenhuma descrição adicionada ainda."}
+              </Text>
+
+              {parseJsonArray(prof.popularServices).length > 0 && (
+                <View style={{ marginTop: 18 }}>
+                  <Text
+                    style={[
+                      styles.cardSubTitle,
+                      { color: colors.foreground },
+                    ]}
+                  >
+                    Especialidades
+                  </Text>
+                  <View style={styles.chipsRow}>
+                    {parseJsonArray(prof.popularServices).map(
+                      (s: string, i: number) => (
+                        <View
+                          key={i}
+                          style={[
+                            styles.chipPill,
+                            {
+                              backgroundColor: colors.primary + "12",
+                              borderColor: colors.primary + "30",
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.chipPillText,
+                              { color: colors.foreground },
+                            ]}
+                          >
+                            {s}
+                          </Text>
+                        </View>
+                      ),
                     )}
                   </View>
-                </Pressable>
-              ))}
-            </View>
-          ) : (
-            // Estado vazio elegante — sem dados fictícios
-            <View style={[styles.emptyModule, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <MaterialIcons name={estConfig.moduleIcon as any} size={36} color={colors.muted} />
-              <Text style={[styles.emptyModuleTitle, { color: colors.foreground }]}>
-                {estConfig.emptyMessage}
-              </Text>
-              <Text style={[styles.emptyModuleSub, { color: colors.muted }]}>
-                {estConfig.emptySub}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {/* About Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-            {estConfig.aboutTitle}
-          </Text>
-          <Text style={[styles.description, { color: colors.muted }]}>
-            {prof.description || "Nenhuma descrição adicionada ainda."}
-          </Text>
-
-          {parseJsonArray(prof.tags).length > 0 && (
-            <View style={[styles.chipsContainer, { marginTop: 12 }]}>
-              {parseJsonArray(prof.tags).map((tag, index) => (
-                <View
-                  key={index}
-                  style={[styles.tagChip, { backgroundColor: "#F1F5F9" }]}
-                >
-                  <MaterialIcons name="check" size={12} color="#64748B" />
-                  <Text style={styles.tagChipText}>{tag}</Text>
                 </View>
-              ))}
-            </View>
-          )}
-        </View>
+              )}
 
-        {/* Gallery */}
-        {(() => {
-          const galleryList = parseJsonArray(prof.gallery);
-          if (galleryList.length === 0) return null;
+              {!isCommerce && parseJsonArray(prof.tags).length > 0 && (
+                <View style={{ marginTop: 12 }}>
+                  <View style={styles.chipsRow}>
+                    {parseJsonArray(prof.tags).map(
+                      (tag: string, i: number) => (
+                        <View
+                          key={i}
+                          style={[
+                            styles.chipPill,
+                            {
+                              backgroundColor: colors.border + "60",
+                              borderColor: colors.border,
+                            },
+                          ]}
+                        >
+                          <MaterialIcons
+                            name="check"
+                            size={11}
+                            color={colors.muted}
+                          />
+                          <Text
+                            style={[
+                              styles.chipPillText,
+                              { color: colors.muted },
+                            ]}
+                          >
+                            {tag}
+                          </Text>
+                        </View>
+                      ),
+                    )}
+                  </View>
+                </View>
+              )}
 
-          return (
-            <View style={styles.section}>
-              <View style={styles.sectionHeaderRow}>
+              <View style={{ marginTop: 18 }}>
                 <Text
+                  style={[styles.cardSubTitle, { color: colors.foreground }]}
+                >
+                  Atende
+                </Text>
+                <View style={styles.attendRow}>
+                  <View style={styles.attendItem}>
+                    <MaterialIcons name="home" size={15} color={colors.muted} />
+                    <Text
+                      style={[styles.attendText, { color: colors.muted }]}
+                    >
+                      Em domicílio
+                    </Text>
+                  </View>
+                  <View style={styles.attendItem}>
+                    <MaterialIcons
+                      name="store"
+                      size={15}
+                      color={colors.muted}
+                    />
+                    <Text
+                      style={[styles.attendText, { color: colors.muted }]}
+                    >
+                      No estabelecimento
+                    </Text>
+                  </View>
+                  <View style={styles.attendItem}>
+                    <MaterialIcons
+                      name="language"
+                      size={15}
+                      color={colors.muted}
+                    />
+                    <Text
+                      style={[styles.attendText, { color: colors.muted }]}
+                    >
+                      Atendimento online
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            {/* Dynamic Content Module */}
+            <View
+              style={[
+                styles.card,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <View style={styles.cardHeaderRow}>
+                <View style={styles.cardTitleRow}>
+                  <MaterialIcons
+                    name={estConfig.moduleIcon as any}
+                    size={18}
+                    color={colors.primary}
+                  />
+                  <Text
+                    style={[styles.cardTitle, { color: colors.foreground }]}
+                  >
+                    {estConfig.moduleTitle}
+                  </Text>
+                </View>
+                {hasProducts && contentGoesToMenu && (
+                  <Pressable
+                    onPress={() =>
+                      router.push(
+                        `/professional/${prof.id}/menu` as any,
+                      )
+                    }
+                  >
+                    <Text
+                      style={[
+                        styles.cardLinkText,
+                        { color: colors.primary },
+                      ]}
+                    >
+                      Ver todos
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
+              {hasProducts ? (
+                <View style={{ gap: 10, marginTop: 14 }}>
+                  {rawProducts.slice(0, 3).map((prod: any) => (
+                    <Pressable
+                      key={prod.id || prod.name}
+                      style={[
+                        styles.productRow,
+                        {
+                          backgroundColor: colors.background,
+                          borderColor: colors.border,
+                        },
+                      ]}
+                      onPress={() =>
+                        router.push(
+                          `/professional/${prof.id}/menu` as any,
+                        )
+                      }
+                    >
+                      {prod.imageUri ? (
+                        <Image
+                          source={{ uri: prod.imageUri }}
+                          style={styles.productImg}
+                        />
+                      ) : (
+                        <View
+                          style={[
+                            styles.productImg,
+                            {
+                              alignItems: "center",
+                              justifyContent: "center",
+                              backgroundColor: colors.border + "40",
+                            },
+                          ]}
+                        >
+                          <MaterialIcons
+                            name={estConfig.productIcon as any}
+                            size={20}
+                            color={colors.muted}
+                          />
+                        </View>
+                      )}
+                      <View style={styles.productInfo}>
+                        <Text
+                          style={[
+                            styles.productName,
+                            { color: colors.foreground },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {prod.name}
+                        </Text>
+                        {!!prod.description && (
+                          <Text
+                            style={[
+                              styles.productDescText,
+                              { color: colors.muted },
+                            ]}
+                            numberOfLines={2}
+                          >
+                            {prod.description}
+                          </Text>
+                        )}
+                        {(estType === "food" || estType === "catalog") &&
+                          prod.price !== undefined &&
+                          prod.price !== null && (
+                            <Text
+                              style={[
+                                styles.productPrice,
+                                { color: colors.primary },
+                              ]}
+                            >
+                              R$ {Number(prod.price).toFixed(2)}
+                            </Text>
+                          )}
+                      </View>
+                    </Pressable>
+                  ))}
+                </View>
+              ) : (
+                <View
                   style={[
-                    styles.sectionTitle,
-                    { color: colors.foreground, marginBottom: 0 },
+                    styles.emptyModule,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                    },
                   ]}
                 >
-                  Galeria de Fotos
-                </Text>
+                  <MaterialIcons
+                    name={estConfig.moduleIcon as any}
+                    size={36}
+                    color={colors.muted}
+                  />
+                  <Text
+                    style={[
+                      styles.emptyModuleTitle,
+                      { color: colors.foreground },
+                    ]}
+                  >
+                    {estConfig.emptyMessage}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.emptyModuleSub,
+                      { color: colors.muted },
+                    ]}
+                  >
+                    {estConfig.emptySub}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Reviews Card */}
+            <View
+              style={[
+                styles.card,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <View style={styles.cardHeaderRow}>
+                <View style={styles.cardTitleRow}>
+                  <MaterialIcons name="star" size={18} color="#F59E0B" />
+                  <Text
+                    style={[styles.cardTitle, { color: colors.foreground }]}
+                  >
+                    Avaliações dos Clientes
+                  </Text>
+                  <View style={styles.ratingInlineBadge}>
+                    <Text style={styles.ratingInlineValue}>
+                      {Number(prof.rating || 0).toFixed(1)}
+                    </Text>
+                    <View style={{ flexDirection: "row", gap: 1 }}>
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <MaterialIcons
+                          key={s}
+                          name="star"
+                          size={10}
+                          color={
+                            s <= Math.round(Number(prof.rating || 0))
+                              ? "#F59E0B"
+                              : "#4B5563"
+                          }
+                        />
+                      ))}
+                    </View>
+                    <Text style={styles.ratingInlineCount}>
+                      ({prof.ratingCount || 0} avaliações)
+                    </Text>
+                  </View>
+                </View>
                 <Pressable
-                  onPress={() => setSelectedImage(galleryList[0] || null)}
+                  style={styles.cardLinkBtn}
+                  onPress={() => setShowReviewModal(true)}
                 >
                   <Text
                     style={[
-                      styles.sectionHeaderLink,
+                      styles.cardLinkText,
                       { color: colors.primary },
                     ]}
                   >
-                    Ver todas ({galleryList.length})
+                    Escrever avaliação
                   </Text>
+                  <MaterialIcons
+                    name="arrow-forward"
+                    size={14}
+                    color={colors.primary}
+                  />
                 </Pressable>
               </View>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{
-                  gap: 12,
-                  paddingRight: 20,
-                  paddingTop: 10,
-                }}
-              >
-                {galleryList.map((uri: string, idx: number) => (
-                  <Pressable
-                    key={idx}
-                    onPress={() => setSelectedImage(uri)}
-                    style={({ pressed }) => [
-                      styles.galleryImageWrapper,
-                      { borderColor: colors.border, borderWidth: 1 },
-                      pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
+
+              {reviews && reviews.length > 0 ? (
+                <View style={{ gap: 12, marginTop: 14 }}>
+                  {reviews.slice(0, 5).map((rev: any) => (
+                    <View
+                      key={rev.id}
+                      style={[
+                        styles.reviewCard,
+                        {
+                          backgroundColor: colors.background,
+                          borderColor: colors.border,
+                        },
+                      ]}
+                    >
+                      <View style={styles.reviewHeader}>
+                        <View
+                          style={[
+                            styles.reviewAvatarCircle,
+                            { backgroundColor: colors.primary },
+                          ]}
+                        >
+                          <Text style={styles.reviewAvatarLetter}>
+                            {(rev.userName || "U").charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                        <View style={{ flex: 1, gap: 2 }}>
+                          <Text
+                            style={[
+                              styles.reviewUserName,
+                              { color: colors.foreground },
+                            ]}
+                          >
+                            {rev.userName}
+                          </Text>
+                          <Text
+                            style={{ fontSize: 11, color: colors.muted }}
+                          >
+                            {rev.createdAt}
+                          </Text>
+                        </View>
+                        <View style={styles.reviewStarsRow}>
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <MaterialIcons
+                              key={s}
+                              name="star"
+                              size={13}
+                              color={
+                                s <= Number(rev.rating)
+                                  ? "#F59E0B"
+                                  : "#4B5563"
+                              }
+                            />
+                          ))}
+                        </View>
+                      </View>
+                      {!!rev.comment && (
+                        <Text
+                          style={[
+                            styles.reviewComment,
+                            { color: colors.muted },
+                          ]}
+                        >
+                          {rev.comment}
+                        </Text>
+                      )}
+                    </View>
+                  ))}
+                  {reviews.length > 5 && (
+                    <Pressable
+                      style={styles.viewAllBtn}
+                      onPress={() =>
+                        router.push(`/reviews/${id}` as any)
+                      }
+                    >
+                      <Text
+                        style={[
+                          styles.viewAllBtnText,
+                          { color: colors.primary },
+                        ]}
+                      >
+                        Ver todas as {reviews.length} avaliações
+                      </Text>
+                      <MaterialIcons
+                        name="arrow-forward"
+                        size={16}
+                        color={colors.primary}
+                      />
+                    </Pressable>
+                  )}
+                </View>
+              ) : (
+                <View style={styles.emptyReviews}>
+                  <MaterialIcons
+                    name="rate-review"
+                    size={32}
+                    color={colors.muted}
+                  />
+                  <Text
+                    style={[
+                      styles.emptyReviewsText,
+                      { color: colors.muted },
                     ]}
                   >
-                    <Image source={{ uri }} style={styles.galleryImage} />
-                  </Pressable>
-                ))}
-              </ScrollView>
+                    Nenhuma avaliação ainda. Seja o primeiro a avaliar!
+                  </Text>
+                </View>
+              )}
             </View>
-          );
-        })()}
+          </View>
 
-        {/* Bloco de Localização, Contato e Horários */}
-        <View
-          style={[
-            styles.infoList,
-            { backgroundColor: colors.surface, borderColor: colors.border },
-          ]}
-        >
-          {/* Endereço */}
-          <Pressable
-            style={[
-              styles.infoItem,
-              {
-                borderBottomWidth: 1,
-                borderBottomColor: colors.border,
-                paddingBottom: 16,
-              },
-            ]}
-            onPress={async () => {
-              const locationQuery =
-                prof.latitude && prof.longitude
-                  ? `${prof.latitude},${prof.longitude}`
-                  : (
-                    prof.address ||
-                    `${prof.neighborhood || ""}, ${prof.city || ""}`
-                  ).trim();
-
-              if (locationQuery) {
-                if (prof.address && prof.address.startsWith("http")) {
-                  Linking.openURL(prof.address);
-                } else {
-                  const encodedQuery = encodeURIComponent(locationQuery);
-                  const url = Platform.select({
-                    ios: `http://maps.apple.com/?q=${encodedQuery}`,
-                    android: `geo:0,0?q=${encodedQuery}`,
-                    web: `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`,
-                  });
-
-                  try {
-                    if (url) {
-                      await Linking.openURL(url);
-                    } else {
-                      Linking.openURL(
-                        `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`,
-                      );
-                    }
-                  } catch (err) {
-                    Linking.openURL(
-                      `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`,
-                    );
-                  }
-                }
-              }
-            }}
-          >
+          {/* ── Sidebar Column ── */}
+          <View style={[styles.sideCol, isWide && styles.sideColWide]}>
+            {/* Hours Card */}
             <View
               style={[
-                styles.infoIconWrap,
-                { backgroundColor: colors.primary + "12" },
+                styles.card,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                },
               ]}
             >
-              <MaterialIcons
-                name="location-on"
-                size={20}
-                color={colors.primary}
-              />
-            </View>
-            <View style={styles.infoContent}>
-              <Text style={[styles.infoLabel, { color: colors.foreground }]}>
-                Endereço
-              </Text>
-              <Text style={[styles.infoValue, { color: colors.foreground }]}>
-                {prof.address ||
-                  `${prof.neighborhood || ""}, ${prof.city || ""}`}
-              </Text>
-              <Text style={styles.mapLinkText}>Toque para ver no mapa</Text>
-            </View>
-            <MaterialIcons name="open-in-new" size={16} color={colors.muted} />
-          </Pressable>
-
-          {/* Contato */}
-          <Pressable
-            style={[
-              styles.infoItem,
-              {
-                borderBottomWidth: 1,
-                borderBottomColor: colors.border,
-                paddingVertical: 16,
-              },
-            ]}
-            onPress={handleOpenWhatsApp}
-          >
-            <View
-              style={[styles.infoIconWrap, { backgroundColor: "#25D36615" }]}
-            >
-              <MaterialIcons name="chat" size={20} color="#25D366" />
-            </View>
-            <View style={styles.infoContent}>
-              <Text style={[styles.infoLabel, { color: colors.foreground }]}>
-                Contato
-              </Text>
-              <Text
-                style={[
-                  styles.infoValue,
-                  { color: colors.foreground, fontWeight: "600" },
-                ]}
-              >
-                {prof.phone || prof.whatsapp || "Chamar no WhatsApp"}
-              </Text>
-              <Text style={styles.whatsappSubText}>
-                Clique para abrir conversa
-              </Text>
-            </View>
-            <MaterialIcons
-              name="chevron-right"
-              size={20}
-              color={colors.muted}
-            />
-          </Pressable>
-
-          {/* Horário de Atendimento */}
-          <View style={[styles.infoItem, { paddingTop: 16, alignItems: "flex-start" }]}>
-            <View
-              style={[styles.infoIconWrap, { backgroundColor: "#7C3AED12", marginTop: 2 }]}
-            >
-              <MaterialIcons name="access-time" size={20} color="#7C3AED" />
-            </View>
-            <View style={[styles.infoContent, { flex: 1 }]}>
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-                <Text style={[styles.infoLabel, { color: colors.foreground }]}>
-                  Horário de Funcionamento
-                </Text>
-                <View style={{
-                  paddingHorizontal: 8,
-                  paddingVertical: 3,
-                  borderRadius: 12,
-                  backgroundColor: realTimeStatus.isOpen ? "rgba(16, 185, 129, 0.15)" : "rgba(239, 68, 68, 0.15)",
-                }}>
-                  <Text style={{
-                    fontSize: 10,
-                    fontWeight: "800",
-                    color: realTimeStatus.isOpen ? "#10B981" : "#EF4444"
-                  }}>
+              <View style={styles.cardHeaderRow}>
+                <View style={styles.cardTitleRow}>
+                  <MaterialIcons
+                    name="access-time"
+                    size={18}
+                    color={colors.primary}
+                  />
+                  <Text
+                    style={[styles.cardTitle, { color: colors.foreground }]}
+                  >
+                    Horário de Funcionamento
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.statusPill,
+                    {
+                      backgroundColor: realTimeStatus.isOpen
+                        ? "rgba(16,185,129,0.15)"
+                        : "rgba(239,68,68,0.15)",
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.statusDot,
+                      {
+                        backgroundColor: realTimeStatus.isOpen
+                          ? "#10B981"
+                          : "#EF4444",
+                      },
+                    ]}
+                  />
+                  <Text
+                    style={{
+                      fontSize: 10,
+                      fontWeight: "800",
+                      color: realTimeStatus.isOpen ? "#10B981" : "#EF4444",
+                    }}
+                  >
                     {realTimeStatus.badge}
                   </Text>
                 </View>
               </View>
-
-              <Text style={{ fontSize: 11, color: colors.muted, marginTop: 2, marginBottom: 8, fontWeight: "600" }}>
-                {realTimeStatus.detailMessage}
-              </Text>
-
-              <View style={{ gap: 4, width: "100%" }}>
+              <View style={{ gap: 6, marginTop: 14 }}>
                 {DAYS_CONFIG.map(({ key, label }) => {
                   const daySched = parsedHours[key];
                   const formatted = formatDaySchedule(daySched);
                   const todayIndex = new Date().getDay();
-                  const dayKeysOrder: typeof key[] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+                  const dayKeysOrder: typeof key[] = [
+                    "sunday",
+                    "monday",
+                    "tuesday",
+                    "wednesday",
+                    "thursday",
+                    "friday",
+                    "saturday",
+                  ];
                   const isToday = dayKeysOrder[todayIndex] === key;
-
                   return (
                     <View
                       key={key}
-                      style={{
-                        flexDirection: "row",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        paddingVertical: 3,
-                        paddingHorizontal: isToday ? 8 : 0,
-                        backgroundColor: isToday ? colors.primary + "15" : "transparent",
-                        borderRadius: isToday ? 8 : 0,
-                      }}
+                      style={[
+                        styles.hoursRow,
+                        isToday && {
+                          backgroundColor: colors.primary + "10",
+                          borderRadius: 8,
+                          paddingHorizontal: 10,
+                        },
+                      ]}
                     >
-                      <Text
+                      <View
                         style={{
-                          fontSize: 12,
-                          fontWeight: isToday ? "800" : "500",
-                          color: isToday ? colors.foreground : colors.muted,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 6,
                         }}
                       >
-                        {isToday ? `• ${label}` : label}
-                      </Text>
+                        {isToday && (
+                          <View
+                            style={[
+                              styles.statusDot,
+                              { backgroundColor: colors.primary },
+                            ]}
+                          />
+                        )}
+                        <Text
+                          style={[
+                            styles.hoursDayLabel,
+                            {
+                              color: isToday
+                                ? colors.foreground
+                                : colors.muted,
+                              fontWeight: isToday ? "800" : "500",
+                            },
+                          ]}
+                        >
+                          {label}
+                        </Text>
+                      </View>
                       <Text
                         style={{
-                          fontSize: 12,
+                          fontSize: 13,
                           fontWeight: daySched.active ? "700" : "400",
-                          color: daySched.active ? colors.foreground : colors.muted,
+                          color: daySched.active
+                            ? colors.foreground
+                            : colors.muted,
                         }}
                       >
                         {formatted}
@@ -1320,212 +1633,359 @@ export default function ProfessionalDetailScreen() {
                 })}
               </View>
             </View>
-          </View>
-        </View>
 
-        {/* Social Media Links */}
-        {(() => {
-          const activeNetworks = [
-            { key: "instagram", label: "Instagram" },
-            { key: "facebook", label: "Facebook" },
-            { key: "youtube", label: "YouTube" },
-            { key: "tiktok", label: "TikTok" },
-          ].filter(
-            (n) =>
-              socialLinks[n.key] &&
-              String(socialLinks[n.key]).trim() !== "" &&
-              SOCIAL_PNG_ASSETS[n.key]
-          );
-
-          if (activeNetworks.length === 0) return null;
-
-          const handleOpenSocial = async (networkKey: string, rawUrl: string) => {
-            if (!rawUrl) return;
-            const trimmed = rawUrl.trim();
-            const fullUrl = trimmed.startsWith("http") ? trimmed : `https://${trimmed}`;
-
-            let nativeScheme = "";
-            if (networkKey === "instagram") {
-              const match = fullUrl.match(/(?:instagram\.com\/)([^/?#]+)/);
-              if (match && match[1]) nativeScheme = `instagram://user?username=${match[1]}`;
-            } else if (networkKey === "facebook") {
-              const match = fullUrl.match(/(?:facebook\.com\/)([^/?#]+)/);
-              if (match && match[1]) nativeScheme = `fb://page/${match[1]}`;
-            } else if (networkKey === "youtube") {
-              const match = fullUrl.match(/(?:youtube\.com\/(?:@|channel\/|user\/)?)([^/?#]+)/);
-              if (match && match[1]) nativeScheme = `vnd.youtube://${match[1]}`;
-            }
-
-            if (nativeScheme) {
-              try {
-                const canOpen = await Linking.canOpenURL(nativeScheme);
-                if (canOpen) {
-                  await Linking.openURL(nativeScheme);
-                  return;
-                }
-              } catch (_) { }
-            }
-            Linking.openURL(fullUrl).catch(() => { });
-          };
-
-          return (
+            {/* Trust Card */}
             <View
               style={[
-                styles.infoList,
-                { backgroundColor: colors.surface, borderColor: colors.border, marginTop: 12 },
+                styles.card,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                },
               ]}
             >
-              <View style={[styles.infoItem, { paddingBottom: 10 }]}>
-                <View style={styles.infoContent}>
-                  <Text style={[styles.infoLabel, { color: colors.foreground, fontWeight: "700" }]}>
-                    Redes Sociais
-                  </Text>
-                </View>
+              <View style={styles.cardTitleRow}>
+                <MaterialIcons
+                  name="verified-user"
+                  size={18}
+                  color={colors.primary}
+                />
+                <Text style={[styles.cardTitle, { color: colors.foreground }]}>
+                  Profissional de Confiança
+                </Text>
               </View>
+              <View style={styles.trustGrid}>
+                {prof.isVerified && (
+                  <View style={styles.trustItem}>
+                    <View
+                      style={[
+                        styles.trustIconBg,
+                        { backgroundColor: "rgba(37,211,102,0.1)" },
+                      ]}
+                    >
+                      <MaterialIcons
+                        name="check-circle"
+                        size={24}
+                        color="#25D366"
+                      />
+                    </View>
+                    <Text
+                      style={[
+                        styles.trustLabel,
+                        { color: colors.foreground },
+                      ]}
+                    >
+                      Perfil{"\n"}verificado
+                    </Text>
+                  </View>
+                )}
+                {(prof.phone || prof.whatsapp) && (
+                  <View style={styles.trustItem}>
+                    <View
+                      style={[
+                        styles.trustIconBg,
+                        { backgroundColor: "rgba(37,211,102,0.1)" },
+                      ]}
+                    >
+                      <MaterialIcons name="chat" size={24} color="#25D366" />
+                    </View>
+                    <Text
+                      style={[
+                        styles.trustLabel,
+                        { color: colors.foreground },
+                      ]}
+                    >
+                      WhatsApp{"\n"}confirmado
+                    </Text>
+                  </View>
+                )}
+                {(prof.address || prof.latitude) && (
+                  <View style={styles.trustItem}>
+                    <View
+                      style={[
+                        styles.trustIconBg,
+                        { backgroundColor: "rgba(37,211,102,0.1)" },
+                      ]}
+                    >
+                      <MaterialIcons
+                        name="location-on"
+                        size={24}
+                        color="#25D366"
+                      />
+                    </View>
+                    <Text
+                      style={[
+                        styles.trustLabel,
+                        { color: colors.foreground },
+                      ]}
+                    >
+                      Endereço{"\n"}confirmado
+                    </Text>
+                  </View>
+                )}
+                {prof.foundedYear && (
+                  <View style={styles.trustItem}>
+                    <View
+                      style={[
+                        styles.trustIconBg,
+                        { backgroundColor: "rgba(37,211,102,0.1)" },
+                      ]}
+                    >
+                      <MaterialIcons
+                        name="event"
+                        size={24}
+                        color="#25D366"
+                      />
+                    </View>
+                    <Text
+                      style={[
+                        styles.trustLabel,
+                        { color: colors.foreground },
+                      ]}
+                    >
+                      Atua desde{"\n"}
+                      {prof.foundedYear}
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Social Media */}
+              {(() => {
+                const activeNetworks = [
+                  { key: "instagram", label: "Instagram" },
+                  { key: "facebook", label: "Facebook" },
+                  { key: "youtube", label: "YouTube" },
+                  { key: "tiktok", label: "TikTok" },
+                ].filter(
+                  (n) =>
+                    socialLinks[n.key] &&
+                    String(socialLinks[n.key]).trim() !== "" &&
+                    SOCIAL_PNG_ASSETS[n.key],
+                );
+                if (activeNetworks.length === 0) return null;
+
+                const handleOpenSocial = async (
+                  networkKey: string,
+                  rawUrl: string,
+                ) => {
+                  if (!rawUrl) return;
+                  const trimmed = rawUrl.trim();
+                  const fullUrl = trimmed.startsWith("http")
+                    ? trimmed
+                    : `https://${trimmed}`;
+                  let nativeScheme = "";
+                  if (networkKey === "instagram") {
+                    const match = fullUrl.match(
+                      /(?:instagram\.com\/)([^/?#]+)/,
+                    );
+                    if (match && match[1])
+                      nativeScheme = `instagram://user?username=${match[1]}`;
+                  } else if (networkKey === "facebook") {
+                    const match = fullUrl.match(
+                      /(?:facebook\.com\/)([^/?#]+)/,
+                    );
+                    if (match && match[1])
+                      nativeScheme = `fb://page/${match[1]}`;
+                  } else if (networkKey === "youtube") {
+                    const match = fullUrl.match(
+                      /(?:youtube\.com\/(?:@|channel\/|user\/)?)([^/?#]+)/,
+                    );
+                    if (match && match[1])
+                      nativeScheme = `vnd.youtube://${match[1]}`;
+                  }
+                  if (nativeScheme) {
+                    try {
+                      const canOpen =
+                        await Linking.canOpenURL(nativeScheme);
+                      if (canOpen) {
+                        await Linking.openURL(nativeScheme);
+                        return;
+                      }
+                    } catch (_) {}
+                  }
+                  Linking.openURL(fullUrl).catch(() => {});
+                };
+
+                return (
+                  <View style={styles.socialSection}>
+                    <Text
+                      style={[
+                        styles.socialLabel,
+                        { color: colors.foreground },
+                      ]}
+                    >
+                      Redes Sociais
+                    </Text>
+                    <View style={styles.socialIconsRow}>
+                      {activeNetworks.map((network) => (
+                        <Pressable
+                          key={network.key}
+                          onPress={() =>
+                            handleOpenSocial(
+                              network.key,
+                              String(socialLinks[network.key]).trim(),
+                            )
+                          }
+                          style={({ pressed }) => [
+                            styles.socialIconBtn,
+                            pressed && {
+                              opacity: 0.75,
+                              transform: [{ scale: 0.93 }],
+                            },
+                          ]}
+                        >
+                          <Image
+                            source={SOCIAL_PNG_ASSETS[network.key]}
+                            style={{ width: 36, height: 36 }}
+                            contentFit="contain"
+                          />
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                );
+              })()}
+            </View>
+
+            {/* WhatsApp CTA Card */}
+            <View
+              style={[
+                styles.ctaCard,
+                {
+                  backgroundColor: colors.primary + "08",
+                  borderColor: colors.primary + "30",
+                },
+              ]}
+            >
+              <MaterialIcons name="chat" size={28} color={colors.primary} />
+              <Text style={[styles.ctaTitle, { color: colors.foreground }]}>
+                Fale direto com o profissional!
+              </Text>
+              <Text style={[styles.ctaSub, { color: colors.muted }]}>
+                Combine detalhes, solicite orçamentos ou faça pedidos de
+                forma 100% gratuita via WhatsApp.
+              </Text>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.ctaBtn,
+                  { backgroundColor: colors.primary },
+                  pressed && {
+                    opacity: 0.9,
+                    transform: [{ scale: 0.98 }],
+                  },
+                ]}
+                onPress={handleOpenWhatsApp}
+              >
+                <MaterialIcons name="chat" size={20} color="#FFF" />
+                <Text style={styles.ctaBtnText}>Chamar no WhatsApp</Text>
+              </Pressable>
+            </View>
+
+            {/* Location Card */}
+            <Pressable
+              style={[
+                styles.card,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                },
+              ]}
+              onPress={async () => {
+                const locationQuery =
+                  prof.latitude && prof.longitude
+                    ? `${prof.latitude},${prof.longitude}`
+                    : (
+                        prof.address ||
+                        `${prof.neighborhood || ""}, ${prof.city || ""}`
+                      ).trim();
+                if (locationQuery) {
+                  if (
+                    prof.address &&
+                    prof.address.startsWith("http")
+                  ) {
+                    Linking.openURL(prof.address);
+                  } else {
+                    const encodedQuery =
+                      encodeURIComponent(locationQuery);
+                    const url = Platform.select({
+                      ios: `http://maps.apple.com/?q=${encodedQuery}`,
+                      android: `geo:0,0?q=${encodedQuery}`,
+                      web: `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`,
+                    });
+                    try {
+                      if (url) await Linking.openURL(url);
+                      else
+                        Linking.openURL(
+                          `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`,
+                        );
+                    } catch {
+                      Linking.openURL(
+                        `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`,
+                      );
+                    }
+                  }
+                }
+              }}
+            >
+              <View style={styles.cardTitleRow}>
+                <MaterialIcons
+                  name="location-on"
+                  size={18}
+                  color={colors.primary}
+                />
+                <Text
+                  style={[styles.cardTitle, { color: colors.foreground }]}
+                >
+                  Localização
+                </Text>
+              </View>
+              <Text
+                style={[
+                  styles.locationAddr,
+                  { color: colors.foreground },
+                ]}
+              >
+                {prof.address ||
+                  `${prof.neighborhood || ""}, ${prof.city || ""}`}
+              </Text>
               <View
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
-                  gap: 16,
-                  paddingHorizontal: 16,
-                  paddingBottom: 16,
-                  paddingTop: 4,
+                  gap: 4,
+                  marginTop: 6,
                 }}
               >
-                {activeNetworks.map((network) => {
-                  const rawUrl = String(socialLinks[network.key]).trim();
-                  return (
-                    <Pressable
-                      key={network.key}
-                      onPress={() => handleOpenSocial(network.key, rawUrl)}
-                      style={({ pressed }) => [
-                        {
-                          width: 36,
-                          height: 36,
-                          borderRadius: 8,
-                          alignItems: "center",
-                          justifyContent: "center",
-                          backgroundColor: "transparent",
-                          overflow: "hidden",
-                        },
-                        pressed && { opacity: 0.75, transform: [{ scale: 0.93 }] },
-                      ]}
-                    >
-                      <Image
-                        source={SOCIAL_PNG_ASSETS[network.key]}
-                        style={{ width: 36, height: 36 }}
-                        contentFit="contain"
-                      />
-                    </Pressable>
-                  );
-                })}
+                <MaterialIcons
+                  name="open-in-new"
+                  size={13}
+                  color="#2563EB"
+                />
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: "#2563EB",
+                    fontWeight: "600",
+                  }}
+                >
+                  Abrir no mapa
+                </Text>
               </View>
-            </View>
-          );
-        })()}
-
-        {/* Reviews Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <Text
-              style={[
-                styles.sectionTitle,
-                { color: colors.foreground, marginBottom: 0 },
-              ]}
-            >
-              Avaliações e Comentários
-            </Text>
-            <Pressable onPress={() => setShowReviewModal(true)}>
-              <Text
-                style={[styles.sectionHeaderLink, { color: colors.primary }]}
-              >
-                Escrever avaliação
-              </Text>
+              {distanceInfo && (
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: "#10B981",
+                    fontWeight: "700",
+                    marginTop: 8,
+                  }}
+                >
+                  📍 {distanceInfo.distanceText} de você
+                </Text>
+              )}
             </Pressable>
           </View>
-
-          {reviews && reviews.length > 0 ? (
-            <View style={{ gap: 16, marginTop: 14 }}>
-              {reviews.slice(0, 5).map((rev: any) => (
-                <View
-                  key={rev.id}
-                  style={[
-                    styles.reviewCard,
-                    {
-                      backgroundColor: colors.surface,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                >
-                  <View style={styles.reviewHeader}>
-                    <Image
-                      source={{
-                        uri:
-                          rev.userAvatar ||
-                          `https://ui-avatars.com/api/?name=${encodeURIComponent(rev.userName)}`,
-                      }}
-                      style={styles.reviewAvatar}
-                    />
-                    <View style={styles.reviewUserMeta}>
-                      <Text
-                        style={[
-                          styles.reviewUserName,
-                          { color: colors.foreground },
-                        ]}
-                      >
-                        {rev.userName}
-                      </Text>
-                      <Text style={styles.reviewDate}>{rev.createdAt}</Text>
-                    </View>
-                    <View style={styles.reviewStars}>
-                      <MaterialIcons name="star" size={14} color="#F59E0B" />
-                      <Text style={styles.reviewRatingText}>
-                        {Number(rev.rating).toFixed(1)}
-                      </Text>
-                    </View>
-                  </View>
-                  {!!rev.comment && (
-                    <Text
-                      style={[styles.reviewComment, { color: colors.muted }]}
-                    >
-                      {rev.comment}
-                    </Text>
-                  )}
-                </View>
-              ))}
-              {reviews.length > 5 && (
-                <Pressable
-                  style={styles.viewAllReviewsBtn}
-                  onPress={() => router.push(`/reviews/${id}` as any)}
-                >
-                  <Text
-                    style={[
-                      styles.viewAllReviewsText,
-                      { color: colors.primary },
-                    ]}
-                  >
-                    Ver todas as {reviews.length} avaliações
-                  </Text>
-                  <MaterialIcons
-                    name="arrow-forward"
-                    size={16}
-                    color={colors.primary}
-                  />
-                </Pressable>
-              )}
-            </View>
-          ) : (
-            <View style={styles.emptyReviews}>
-              <MaterialIcons
-                name="rate-review"
-                size={32}
-                color={colors.muted}
-              />
-              <Text style={[styles.emptyReviewsText, { color: colors.muted }]}>
-                Nenhuma avaliação ainda. Seja o primeiro a avaliar!
-              </Text>
-            </View>
-          )}
         </View>
 
         {/* Report Link */}
@@ -1537,14 +1997,16 @@ export default function ProfessionalDetailScreen() {
           onPress={handleOpenReportModal}
         >
           <MaterialIcons name="outlined-flag" size={18} color="#EF4444" />
-          <Text style={styles.reportBtnText}>Denunciar este prestador</Text>
+          <Text style={styles.reportBtnText}>
+            Denunciar este prestador
+          </Text>
         </Pressable>
       </ScrollView>
 
-      {/* Footer / Call to Action */}
+      {/* ═══ BOTTOM STICKY BAR ═══ */}
       <View
         style={[
-          styles.footer,
+          styles.bottomBar,
           {
             backgroundColor: colors.surface,
             borderTopColor: colors.border,
@@ -1552,52 +2014,146 @@ export default function ProfessionalDetailScreen() {
           },
         ]}
       >
-        <View style={styles.footerRow}>
+        <View style={styles.bottomBarTop}>
+          <Image
+            source={{ uri: prof.avatarUri || getAvatarUrl(prof.name) }}
+            style={styles.bottomBarAvatar}
+          />
+          <View style={{ flex: 1, gap: 2, marginRight: 8 }}>
+            <Text
+              style={[
+                styles.bottomBarName,
+                { color: colors.foreground },
+              ]}
+              numberOfLines={1}
+            >
+              {prof.name}
+            </Text>
+            <Text
+              style={{ fontSize: 11, color: colors.muted }}
+              numberOfLines={1}
+            >
+              {prof.subcategoryName || prof.category}
+            </Text>
+          </View>
+          <View style={styles.bottomBarStats}>
+            <View style={styles.bottomBarStatItem}>
+              <MaterialIcons name="star" size={13} color="#F59E0B" />
+              <Text
+                style={{
+                  fontSize: 12,
+                  fontWeight: "700",
+                  color: colors.foreground,
+                }}
+              >
+                {Number(prof.rating || 0).toFixed(1)}
+              </Text>
+            </View>
+            {distanceInfo && (
+              <View style={styles.bottomBarStatItem}>
+                <MaterialIcons
+                  name="location-on"
+                  size={12}
+                  color="#9CA3AF"
+                />
+                <Text style={{ fontSize: 11, color: colors.muted }}>
+                  {distanceInfo.distanceText}
+                </Text>
+              </View>
+            )}
+            <View style={styles.bottomBarStatItem}>
+              <View
+                style={[
+                  styles.statusDot,
+                  {
+                    backgroundColor: realTimeStatus.isOpen
+                      ? "#10B981"
+                      : "#EF4444",
+                  },
+                ]}
+              />
+              <Text
+                style={{
+                  fontSize: 11,
+                  color: realTimeStatus.isOpen ? "#10B981" : "#EF4444",
+                  fontWeight: "600",
+                }}
+              >
+                {realTimeStatus.badge}
+              </Text>
+            </View>
+          </View>
+        </View>
+        <View style={styles.bottomBarBtns}>
           <Pressable
             style={({ pressed }) => [
-              styles.reviewButton,
-              {
-                borderColor: colors.primary,
-                backgroundColor: colors.primary + "10",
-              },
+              styles.bottomBtnOutline,
+              { borderColor: colors.primary },
               pressed && { opacity: 0.85 },
             ]}
-            onPress={() => setShowReviewModal(true)}
+            onPress={() => {
+              if (contentGoesToMenu && hasProducts)
+                router.push(`/professional/${prof.id}/menu` as any);
+              else setShowReviewModal(true);
+            }}
           >
             <MaterialIcons
-              name="star-outline"
-              size={20}
+              name={
+                contentGoesToMenu && hasProducts
+                  ? "menu-book"
+                  : "star-outline"
+              }
+              size={18}
               color={colors.primary}
             />
-            <Text style={[styles.reviewButtonText, { color: colors.primary }]}>
-              Avaliar
+            <Text
+              style={{
+                fontSize: 13,
+                fontWeight: "700",
+                color: colors.primary,
+              }}
+            >
+              {contentGoesToMenu && hasProducts ? "Ver Serviços" : "Avaliar"}
             </Text>
           </Pressable>
           <Pressable
             style={({ pressed }) => [
-              styles.whatsappButton,
+              styles.bottomBtnPrimary,
               { backgroundColor: colors.primary },
-              pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
+              pressed && {
+                opacity: 0.9,
+                transform: [{ scale: 0.98 }],
+              },
             ]}
             onPress={
               contentGoesToMenu && hasProducts
-                ? () => router.push(`/professional/${prof.id}/menu` as any)
+                ? () =>
+                    router.push(
+                      `/professional/${prof.id}/menu` as any,
+                    )
                 : handleOpenWhatsApp
             }
           >
             <MaterialIcons
-              name={estConfig.ctaIcon as any}
-              size={22}
-              color="#FFFFFF"
+              name={
+                contentGoesToMenu && hasProducts
+                  ? "shopping-cart"
+                  : "chat"
+              }
+              size={20}
+              color="#FFF"
             />
-            <Text style={styles.whatsappButtonText}>
-              {contentGoesToMenu && hasProducts ? estConfig.ctaLabel : "Chamar no WhatsApp"}
+            <Text style={styles.bottomBtnPrimaryText}>
+              {contentGoesToMenu && hasProducts
+                ? estConfig.ctaLabel
+                : "Solicitar Orçamento"}
             </Text>
           </Pressable>
         </View>
       </View>
 
-      {/* Image Viewer Modal */}
+
+            {/* Image Viewer Modal */}
       <Modal
         visible={!!selectedImage}
         transparent={true}
@@ -2044,543 +2600,615 @@ export default function ProfessionalDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+
+  /* ── Skeleton / Loading (kept from original) ── */
   floatingHeader: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
+    top: 0, left: 0, right: 0, zIndex: 10,
+    flexDirection: "row", alignItems: "center",
+    paddingHorizontal: 16, paddingVertical: 12,
+  },
+  floatingBackBtn: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    alignItems: "center", justifyContent: "center",
+  },
+  coverContainer: { width: "100%", height: 220, position: "relative" },
+  profileCard: {
+    marginHorizontal: 16, marginTop: -35, padding: 16, borderRadius: 24,
+    borderWidth: 1, alignItems: "center",
+  },
+  avatarContainer: { position: "relative", marginTop: -55 },
+  avatar: {
+    width: 84, height: 84, borderRadius: 42, borderWidth: 4,
+    backgroundColor: "#E5E7EB",
+  },
+  detailsContainer: { alignItems: "center", marginTop: 10, gap: 4, width: "100%" },
+  metricGrid: {
+    flexDirection: "row", marginHorizontal: 16, marginTop: 16,
+    paddingVertical: 14, borderRadius: 20, borderWidth: 1,
+  },
+  metricDivider: {
+    width: 1, height: "80%", backgroundColor: "#E2E8F0", alignSelf: "center",
+  },
+  section: { paddingHorizontal: 20, paddingTop: 24 },
+
+  /* ── Not Found ── */
+  notFoundHeader: {
+    flexDirection: "row", alignItems: "center",
+    paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1,
+  },
+  backBtn: {
+    width: 42, height: 42, borderRadius: 21,
+    alignItems: "center", justifyContent: "center",
+  },
+  notFound: {
+    flex: 1, alignItems: "center", justifyContent: "center", paddingBottom: 100,
+  },
+  notFoundText: { fontSize: 20, fontWeight: "800", marginTop: 16 },
+
+  /* ═══ HEADER BAR ═══ */
+  headerBar: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingBottom: 10,
+    backgroundColor: "#111827",
+    zIndex: 10,
   },
-  floatingBackBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  coverContainer: {
-    width: "100%",
-    height: 220,
-    position: "relative",
-  },
-  coverImage: {
-    width: "100%",
-    height: "100%",
-  },
-  badgeOverlayContainer: {
-    position: "absolute",
-    bottom: 48,
-    left: 16,
+  headerBackBtn: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    zIndex: 2,
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 8,
+    paddingRight: 12,
   },
-  overlayBadge: {
+  headerBackText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#D1D5DB",
+  },
+  headerActionBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
+    paddingVertical: 8,
     paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
   },
-  onlineBadge: {
-    backgroundColor: "#16A34A",
+  headerActionText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#9CA3AF",
   },
-  onlineDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#4ADE80",
+
+  /* ═══ HERO ═══ */
+  heroSection: {
+    backgroundColor: "#111827",
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 24,
+    gap: 16,
   },
-  onlineText: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#FFFFFF",
+  heroRow: { gap: 16 },
+  heroMainBlock: {},
+  heroAvatarRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 16,
   },
-  topBadge: {
-    backgroundColor: "#D97706",
+  heroAvatarWrap: { position: "relative" },
+  heroAvatar: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    borderWidth: 3,
+    borderColor: "#25D366",
+    backgroundColor: "#1F2937",
   },
-  topBadgeText: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#FFFFFF",
-  },
-  responseBadge: {
-    backgroundColor: "#2563EB",
-  },
-  responseBadgeText: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#FFFFFF",
-  },
-  profileCard: {
-    marginHorizontal: 16,
-    marginTop: -35,
-    padding: 16,
-    borderRadius: 24,
-    borderWidth: 1,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
-    alignItems: "center",
-  },
-  avatarContainer: {
-    position: "relative",
-    marginTop: -55,
-  },
-  avatar: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    borderWidth: 4,
-    backgroundColor: "#E5E7EB",
-  },
-  verifiedIconWrap: {
+  heroVerifiedBadge: {
     position: "absolute",
     bottom: 0,
     right: 0,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 10,
+    backgroundColor: "#111827",
+    borderRadius: 12,
+    padding: 1,
   },
-  detailsContainer: {
+  heroInfoBlock: { flex: 1, gap: 6, paddingTop: 4 },
+  heroNameRow: {
+    flexDirection: "row",
     alignItems: "center",
-    marginTop: 10,
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  heroName: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#FFFFFF",
+  },
+  heroVerifiedPill: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
+    backgroundColor: "rgba(37,211,102,0.15)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  heroVerifiedPillText: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: "#25D366",
+    letterSpacing: 0.5,
+  },
+  heroCategory: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#9CA3AF",
+  },
+  heroStatsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 5,
+    marginTop: 2,
+  },
+  heroStatBold: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#FFFFFF",
+  },
+  heroStatMuted: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#9CA3AF",
+  },
+  heroDot: {
+    fontSize: 10,
+    color: "#4B5563",
+    marginHorizontal: 2,
+  },
+  heroStatusCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 16,
+    gap: 6,
+    alignItems: "center",
+    minWidth: 180,
+  },
+  heroStatusTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  heroStatusDetail: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: "#9CA3AF",
+    textAlign: "center",
+  },
+  heroStatusLinkRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 4,
+  },
+  heroStatusLinkText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#D1D5DB",
+  },
+  heroPillsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  heroPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+  },
+  heroPillText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#D1D5DB",
+  },
+  adminTransferBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#25D366",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignSelf: "flex-start",
+  },
+
+  /* ═══ TAB STRIP ═══ */
+  tabStrip: {
+    borderBottomWidth: 1,
+  },
+  tabStripContent: {
+    paddingHorizontal: 16,
+    gap: 0,
+  },
+  tab: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent",
+  },
+  tabActive: {
+    borderBottomWidth: 2,
+  },
+  tabText: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+
+  /* ═══ CONTENT AREA ═══ */
+  contentArea: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    gap: 16,
+  },
+  contentAreaWide: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 20,
+    maxWidth: 1200,
+    alignSelf: "center",
     width: "100%",
   },
-  titleRow: {
+  mainCol: { gap: 16, width: "100%" },
+  mainColWide: { flex: 3 },
+  sideCol: { gap: 16, width: "100%" },
+  sideColWide: { flex: 2 },
+
+  /* ═══ CARDS ═══ */
+  card: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 20,
+  },
+  cardHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  cardTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+    flex: 1,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  cardLinkBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  cardLinkText: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  cardDesc: {
+    fontSize: 14,
+    lineHeight: 22,
+    marginTop: 12,
+  },
+  cardSubTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    marginBottom: 10,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+
+  /* ── Gallery ── */
+  galleryThumb: {
+    borderRadius: 14,
+    overflow: "hidden",
+    borderWidth: 1,
+    position: "relative",
+  },
+  galleryThumbImg: {
+    width: 160,
+    height: 110,
+    backgroundColor: "#1F2937",
+  },
+  galleryOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 14,
+  },
+  galleryOverlayCount: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#FFFFFF",
+  },
+  galleryOverlaySub: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#D1D5DB",
+    marginTop: 2,
+  },
+
+  /* ── Chips ── */
+  chipsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  chipPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  chipPillText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+
+  /* ── Attend ── */
+  attendRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 16,
+  },
+  attendItem: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
   },
-  name: {
-    fontSize: 21,
-    fontWeight: "800",
-    textAlign: "center",
+  attendText: {
+    fontSize: 13,
+    fontWeight: "500",
   },
-  verifiedRow: {
+
+  /* ── Products ── */
+  productRow: {
+    flexDirection: "row",
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 12,
+    gap: 12,
+    alignItems: "center",
+  },
+  productImg: {
+    width: 64,
+    height: 64,
+    borderRadius: 10,
+  },
+  productInfo: { flex: 1, gap: 2 },
+  productName: { fontSize: 14, fontWeight: "700" },
+  productDescText: { fontSize: 11, lineHeight: 15 },
+  productPrice: { fontSize: 13, fontWeight: "700", marginTop: 2 },
+
+  /* ── Empty Module ── */
+  emptyModule: {
+    marginTop: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderStyle: "dashed" as const,
+    padding: 24,
+    alignItems: "center",
+    gap: 10,
+  },
+  emptyModuleTitle: { fontSize: 15, fontWeight: "700", textAlign: "center" },
+  emptyModuleSub: {
+    fontSize: 13, lineHeight: 19, textAlign: "center", maxWidth: 280,
+  },
+
+  /* ── Rating Inline ── */
+  ratingInlineBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 3,
-    backgroundColor: "#DCFCE7",
+    gap: 4,
+    backgroundColor: "rgba(245,158,11,0.08)",
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
+    paddingVertical: 3,
+    borderRadius: 8,
   },
-  verifiedText: {
+  ratingInlineValue: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#F59E0B",
+  },
+  ratingInlineCount: {
     fontSize: 11,
-    fontWeight: "700",
-    color: "#15803D",
-  },
-  categoryText: {
-    fontSize: 13,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  locationRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    flexWrap: "wrap",
-    gap: 4,
-    marginTop: 4,
-  },
-  locationContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 4,
-    gap: 2,
-  },
-  locationText: {
-    fontSize: 13,
     fontWeight: "500",
-    color: "#64748B",
+    color: "#9CA3AF",
   },
-  distanceGreenText: {
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  metricGrid: {
-    flexDirection: "row",
-    marginHorizontal: 16,
-    marginTop: 16,
-    paddingVertical: 14,
-    borderRadius: 20,
-    borderWidth: 1,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  metricItem: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 3,
-    paddingHorizontal: 4,
-  },
-  metricValue: {
-    fontSize: 14,
-    fontWeight: "800",
-    textAlign: "center",
-  },
-  metricLabel: {
-    fontSize: 10,
-    fontWeight: "600",
-    color: "#64748B",
-    textAlign: "center",
-  },
-  metricDivider: {
-    width: 1,
-    height: "80%",
-    backgroundColor: "#E2E8F0",
-    alignSelf: "center",
-  },
-  section: {
-    paddingHorizontal: 20,
-    paddingTop: 24,
-  },
-  sectionHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  sectionHeaderLink: {
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "800",
-    marginBottom: 10,
-  },
-  description: {
-    fontSize: 14,
-    lineHeight: 22,
-  },
-  chipsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 8,
-  },
-  chip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  chipText: {
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  tagChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-  },
-  tagChipText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#475569",
-  },
-  galleryImageWrapper: {
-    borderRadius: 16,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  galleryImage: {
-    width: 200,
-    height: 125,
-    backgroundColor: "#F3F4F6",
-  },
-  infoList: {
-    marginHorizontal: 16,
-    borderRadius: 20,
-    marginTop: 20,
-    borderWidth: 1,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  infoItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-  },
-  infoIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  infoContent: {
-    flex: 1,
-    gap: 2,
-  },
-  infoLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#64748B",
-    textTransform: "uppercase",
-  },
-  infoValue: {
-    fontSize: 14,
-    lineHeight: 18,
-    fontWeight: "600",
-  },
-  mapLinkText: {
-    fontSize: 12,
-    color: "#2563EB",
-    fontWeight: "600",
-    marginTop: 2,
-  },
-  whatsappSubText: {
-    fontSize: 12,
-    color: "#16A34A",
-    fontWeight: "600",
-    marginTop: 2,
-  },
-  hoursText: {
-    fontSize: 13,
-    color: "#475569",
-    fontWeight: "500",
-  },
-  hoursValueText: {
-    fontWeight: "700",
-    color: "#1E293B",
-  },
+
+  /* ── Reviews ── */
   reviewCard: {
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 1,
     padding: 14,
-    gap: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.02,
-    shadowRadius: 4,
-    elevation: 1,
+    gap: 10,
   },
   reviewHeader: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
   },
-  reviewAvatar: {
+  reviewAvatarCircle: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#E5E7EB",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  reviewUserMeta: {
-    flex: 1,
-    gap: 2,
+  reviewAvatarLetter: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#FFFFFF",
   },
-  reviewUserName: {
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  reviewDate: {
-    fontSize: 10,
-    color: "#64748B",
-  },
-  reviewStars: {
+  reviewUserName: { fontSize: 13, fontWeight: "700" },
+  reviewStarsRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 3,
-    backgroundColor: "#FEF3C7",
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 8,
+    gap: 2,
   },
-  reviewRatingText: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#D97706",
+  reviewComment: { fontSize: 13, lineHeight: 19 },
+  emptyReviews: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 24,
+    gap: 8,
+    marginTop: 10,
   },
-  reviewComment: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  viewAllReviewsBtn: {
+  emptyReviewsText: { fontSize: 13, fontWeight: "500", textAlign: "center" },
+  viewAllBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
     paddingVertical: 10,
   },
-  viewAllReviewsText: {
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  emptyReviews: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 20,
-    gap: 6,
-  },
-  emptyReviewsText: {
-    fontSize: 13,
-    fontWeight: "500",
-    textAlign: "center",
-  },
-  footer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 8,
-  },
-  footerRow: {
+  viewAllBtnText: { fontSize: 13, fontWeight: "700" },
+
+  /* ── Hours ── */
+  hoursRow: {
     flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 5,
+  },
+  hoursDayLabel: { fontSize: 13 },
+
+  /* ── Status ── */
+  statusPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+
+  /* ── Trust ── */
+  trustGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 12,
+    marginTop: 16,
+    justifyContent: "space-between",
   },
-  reviewButton: {
-    width: 60,
-    height: 56,
-    borderRadius: 16,
+  trustItem: {
+    alignItems: "center",
+    gap: 8,
+    width: "22%",
+    minWidth: 70,
+  },
+  trustIconBg: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    gap: 2,
   },
-  reviewButtonText: {
-    fontSize: 10,
+  trustLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    textAlign: "center",
+    lineHeight: 15,
+  },
+
+  /* ── Social ── */
+  socialSection: {
+    marginTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.06)",
+    paddingTop: 16,
+  },
+  socialLabel: {
+    fontSize: 13,
     fontWeight: "700",
+    marginBottom: 12,
   },
-  whatsappButton: {
-    flex: 1,
+  socialIconsRow: {
     flexDirection: "row",
+    gap: 14,
+  },
+  socialIconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  /* ── CTA ── */
+  ctaCard: {
+    borderWidth: 1,
     borderRadius: 16,
-    height: 56,
+    padding: 24,
+    alignItems: "center",
     gap: 10,
   },
-  whatsappButtonText: {
+  ctaTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+  ctaSub: {
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: "center",
+    maxWidth: 300,
+  },
+  ctaBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    width: "100%",
+    paddingVertical: 16,
+    borderRadius: 14,
+    marginTop: 6,
+  },
+  ctaBtnText: {
     fontSize: 16,
     fontWeight: "700",
     color: "#FFFFFF",
   },
-  notFoundHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  backBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
-  },
-  notFound: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingBottom: 100,
-  },
-  notFoundText: {
-    fontSize: 20,
-    fontWeight: "800",
-    marginTop: 16,
-  },
-  modalBackground: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.95)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalOverlay: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  modalContent: {
-    width: "100%",
-    height: "80%",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  closeModalBtn: {
-    position: "absolute",
-    top: 50,
-    right: 25,
-    zIndex: 10,
-    padding: 10,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    borderRadius: 25,
-  },
-  fullImage: {
-    width: "100%",
-    height: "100%",
-  },
-  modalLeftBtn: {
-    position: "absolute",
-    left: 20,
-    zIndex: 10,
-    padding: 10,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    borderRadius: 25,
-  },
-  modalRightBtn: {
-    position: "absolute",
-    right: 20,
-    zIndex: 10,
-    padding: 10,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    borderRadius: 25,
-  },
-  imageCounter: {
-    position: "absolute",
-    bottom: 20,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
-  },
-  imageCounterText: {
-    color: "#FFF",
+
+  /* ── Location ── */
+  locationAddr: {
     fontSize: 14,
     fontWeight: "600",
+    lineHeight: 20,
+    marginTop: 10,
   },
+
+  /* ── Report ── */
   reportBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -2594,180 +3222,142 @@ const styles = StyleSheet.create({
     borderColor: "rgba(239, 68, 68, 0.2)",
     backgroundColor: "rgba(239, 68, 68, 0.05)",
   },
-  reportBtnText: {
-    color: "#EF4444",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  modalOverlayBackground: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end",
-  },
-  reportModalContent: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 40,
-    maxHeight: "85%",
-  },
-  reportModalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  reportModalTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-  },
-  closeReportBtn: {
-    padding: 4,
-  },
-  reportModalSubtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  reasonOption: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 10,
-    gap: 12,
-  },
-  radioButton: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 2,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  radioButtonInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  reasonLabelText: {
-    fontSize: 14,
-  },
-  detailsLabelText: {
-    fontSize: 14,
-    fontWeight: "700",
-    marginBottom: 8,
-  },
-  detailsInput: {
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 12,
-    height: 90,
-    textAlignVertical: "top",
-    fontSize: 14,
-  },
-  reportModalFooter: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 20,
+  reportBtnText: { color: "#EF4444", fontSize: 14, fontWeight: "700" },
+
+  /* ═══ BOTTOM BAR ═══ */
+  bottomBar: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
     borderTopWidth: 1,
-    paddingTop: 16,
+    paddingHorizontal: 16,
+    paddingTop: 12,
   },
-  reportModalCancelBtn: {
-    flex: 1,
-    borderRadius: 12,
-    borderWidth: 1,
-    height: 48,
+  bottomBarTop: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    gap: 10,
+    marginBottom: 12,
   },
-  reportCancelBtnText: {
+  bottomBarAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#E5E7EB",
+  },
+  bottomBarName: {
     fontSize: 14,
     fontWeight: "700",
   },
-  reportModalSubmitBtn: {
-    flex: 2,
-    borderRadius: 12,
-    height: 48,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  reportSubmitBtnText: {
-    color: "#FFF",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  commerceTagsRow: {
+  bottomBarStats: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    gap: 8,
-    marginTop: 10,
-    width: "100%",
-  },
-  commerceTagBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-  },
-  commerceTagText: {
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  highlightProductCard: {
-    flexDirection: "row",
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 12,
-    gap: 12,
-    alignItems: "center",
-  },
-  highlightProductImage: {
-    width: 64,
-    height: 64,
-    borderRadius: 10,
-  },
-  highlightProductInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  highlightProductName: {
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  highlightProductDesc: {
-    fontSize: 11,
-    lineHeight: 15,
-  },
-  highlightProductPrice: {
-    fontSize: 13,
-    fontWeight: "700",
-    marginTop: 2,
-  },
-  // Empty module state (elegant placeholder instead of fake data)
-  emptyModule: {
-    marginTop: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderStyle: "dashed" as const,
-    padding: 24,
     alignItems: "center",
     gap: 10,
   },
-  emptyModuleTitle: {
+  bottomBarStatItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+  },
+  bottomBarBtns: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  bottomBtnOutline: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    height: 50,
+    borderRadius: 14,
+    borderWidth: 1.5,
+  },
+  bottomBtnPrimary: {
+    flex: 2,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    height: 50,
+    borderRadius: 14,
+  },
+  bottomBtnPrimaryText: {
     fontSize: 15,
     fontWeight: "700",
-    textAlign: "center",
+    color: "#FFFFFF",
   },
-  emptyModuleSub: {
-    fontSize: 13,
-    lineHeight: 19,
-    textAlign: "center",
-    maxWidth: 280,
+
+  /* ═══ MODALS (kept from original) ═══ */
+  modalBackground: {
+    flex: 1, backgroundColor: "rgba(0,0,0,0.95)",
+    justifyContent: "center", alignItems: "center",
   },
+  modalOverlay: { ...StyleSheet.absoluteFillObject },
+  modalContent: {
+    width: "100%", height: "80%",
+    justifyContent: "center", alignItems: "center",
+  },
+  closeModalBtn: {
+    position: "absolute", top: 50, right: 25, zIndex: 10,
+    padding: 10, backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 25,
+  },
+  fullImage: { width: "100%", height: "100%" },
+  modalLeftBtn: {
+    position: "absolute", left: 20, zIndex: 10, padding: 10,
+    backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 25,
+  },
+  modalRightBtn: {
+    position: "absolute", right: 20, zIndex: 10, padding: 10,
+    backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 25,
+  },
+  imageCounter: {
+    position: "absolute", bottom: 20, backgroundColor: "rgba(0,0,0,0.6)",
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 15,
+  },
+  imageCounterText: { color: "#FFF", fontSize: 14, fontWeight: "600" },
+  modalOverlayBackground: {
+    flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end",
+  },
+  reportModalContent: {
+    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40, maxHeight: "85%",
+  },
+  reportModalHeader: {
+    flexDirection: "row", justifyContent: "space-between",
+    alignItems: "center", marginBottom: 16,
+  },
+  reportModalTitle: { fontSize: 18, fontWeight: "800" },
+  closeReportBtn: { padding: 4 },
+  reportModalSubtitle: { fontSize: 14, lineHeight: 20, marginBottom: 16 },
+  reasonOption: {
+    flexDirection: "row", alignItems: "center", padding: 14,
+    borderRadius: 12, borderWidth: 1, marginBottom: 10, gap: 12,
+  },
+  radioButton: {
+    width: 18, height: 18, borderRadius: 9, borderWidth: 2,
+    alignItems: "center", justifyContent: "center",
+  },
+  radioButtonInner: { width: 10, height: 10, borderRadius: 5 },
+  reasonLabelText: { fontSize: 14 },
+  detailsLabelText: { fontSize: 14, fontWeight: "700", marginBottom: 8 },
+  detailsInput: {
+    borderRadius: 12, borderWidth: 1, padding: 12, height: 90,
+    textAlignVertical: "top", fontSize: 14,
+  },
+  reportModalFooter: {
+    flexDirection: "row", gap: 12, marginTop: 20,
+    borderTopWidth: 1, paddingTop: 16,
+  },
+  reportModalCancelBtn: {
+    flex: 1, borderRadius: 12, borderWidth: 1, height: 48,
+    alignItems: "center", justifyContent: "center",
+  },
+  reportCancelBtnText: { fontSize: 14, fontWeight: "700" },
+  reportModalSubmitBtn: {
+    flex: 2, borderRadius: 12, height: 48,
+    alignItems: "center", justifyContent: "center",
+  },
+  reportSubmitBtnText: { color: "#FFF", fontSize: 14, fontWeight: "700" },
 });
