@@ -77,11 +77,17 @@ function RootLayoutNav() {
     const inAuthGroup = segments[0] === "auth";
     const path = segments.join("/");
 
-    if (!isSignedIn && !inAuthGroup) {
+    // Rotas públicas que visitantes/não-autenticados podem navegar livremente no PWA
+    const isPublicRoute =
+      segments[0] === "professional" ||
+      segments[0] === "professionals" ||
+      segments[0] === "categories" ||
+      segments[0] === "reviews" ||
+      segments[0] === "(tabs)" ||
+      segments.length === 0;
+
+    if (!isSignedIn && !inAuthGroup && !isPublicRoute) {
       if (path !== "oauth/callback" && path !== "") {
-        hasNavigated.current = true;
-        router.replace("/auth/login" as any);
-      } else if (path === "") {
         hasNavigated.current = true;
         router.replace("/auth/login" as any);
       }

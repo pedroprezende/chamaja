@@ -478,21 +478,55 @@ export default function ProfessionalDetailScreen() {
 
   if (loading) {
     return (
-      <View
-        style={[
-          styles.container,
-          {
-            paddingTop: insets.top,
-            backgroundColor: colors.background,
-            alignItems: "center",
-            justifyContent: "center",
-          },
-        ]}
-      >
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={{ color: colors.muted, marginTop: 12, fontWeight: "600" }}>
-          Carregando perfil...
-        </Text>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        {/* Floating Header Skeleton */}
+        <View style={[styles.floatingHeader, { paddingTop: insets.top + 8 }]}>
+          <View style={[styles.floatingBackBtn, { backgroundColor: colors.border }]} />
+          <View style={{ flex: 1 }} />
+          <View style={[styles.floatingBackBtn, { backgroundColor: colors.border, marginRight: 8 }]} />
+          <View style={[styles.floatingBackBtn, { backgroundColor: colors.border }]} />
+        </View>
+
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 160 }}>
+          {/* Capa Skeleton */}
+          <View style={[styles.coverContainer, { backgroundColor: colors.border + "60" }]} />
+
+          {/* Profile Card Overlay Skeleton */}
+          <View style={[styles.profileCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={styles.avatarContainer}>
+              <View style={[styles.avatar, { backgroundColor: colors.border + "80", borderColor: colors.surface }]} />
+            </View>
+
+            <View style={styles.detailsContainer}>
+              <View style={{ width: 180, height: 22, backgroundColor: colors.border, borderRadius: 6, marginBottom: 8, alignSelf: "center" }} />
+              <View style={{ width: 130, height: 16, backgroundColor: colors.border + "80", borderRadius: 4, marginBottom: 12, alignSelf: "center" }} />
+              <View style={{ width: 220, height: 14, backgroundColor: colors.border + "50", borderRadius: 4, alignSelf: "center" }} />
+            </View>
+          </View>
+
+          {/* Metrics Grid Skeleton */}
+          <View style={[styles.metricGrid, { backgroundColor: colors.surface, borderColor: colors.border, height: 70 }]}>
+            <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+              <View style={{ width: 40, height: 16, backgroundColor: colors.border, borderRadius: 4 }} />
+            </View>
+            <View style={styles.metricDivider} />
+            <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+              <View style={{ width: 50, height: 16, backgroundColor: colors.border, borderRadius: 4 }} />
+            </View>
+            <View style={styles.metricDivider} />
+            <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+              <View style={{ width: 60, height: 16, backgroundColor: colors.border, borderRadius: 4 }} />
+            </View>
+          </View>
+
+          {/* Body Section Skeleton */}
+          <View style={[styles.section, { marginTop: 24 }]}>
+            <View style={{ width: 140, height: 18, backgroundColor: colors.border, borderRadius: 4, marginBottom: 12 }} />
+            <View style={{ width: "100%", height: 14, backgroundColor: colors.border + "60", borderRadius: 4, marginBottom: 6 }} />
+            <View style={{ width: "90%", height: 14, backgroundColor: colors.border + "60", borderRadius: 4, marginBottom: 6 }} />
+            <View style={{ width: "60%", height: 14, backgroundColor: colors.border + "60", borderRadius: 4 }} />
+          </View>
+        </ScrollView>
       </View>
     );
   }
@@ -1312,9 +1346,9 @@ export default function ProfessionalDetailScreen() {
                   await Linking.openURL(nativeScheme);
                   return;
                 }
-              } catch (_) {}
+              } catch (_) { }
             }
-            Linking.openURL(fullUrl).catch(() => {});
+            Linking.openURL(fullUrl).catch(() => { });
           };
 
           return (
