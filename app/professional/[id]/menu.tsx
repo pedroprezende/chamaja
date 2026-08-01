@@ -18,6 +18,7 @@ import * as Haptics from "expo-haptics";
 import { trpc } from "@/lib/trpc";
 import { useColors } from "@/hooks/use-colors";
 import { useCart, CartProduct } from "@/lib/cart-context";
+import { getMockProviderById } from "@/app/(tabs)/home-mock-data";
 
 export default function MenuScreen() {
   const colors = useColors();
@@ -28,13 +29,25 @@ export default function MenuScreen() {
   const { items: cartItems, cartTotal, cartCount, addToCart } = useCart();
   const [selectedCategory, setSelectedCategory] = useState<string>("Tudo");
 
+  const isIdValid = !!id && id !== "[id]" && id !== "undefined";
+  const isMock = typeof id === "string" && id.startsWith("mock-");
+
   // Busca detalhes do comércio
-  const { data: professional, isLoading } = trpc.providers.getById.useQuery(
+  const { data: dbProfessional, isLoading: loadingQuery, isFetching } = trpc.providers.getById.useQuery(
     id as string,
     {
-      enabled: !!id,
+      enabled: isIdValid && !isMock,
     },
   );
+
+  const professional = useMemo(() => {
+    if (isMock && typeof id === "string") {
+      return getMockProviderById(id);
+    }
+    return dbProfessional;
+  }, [isMock, id, dbProfessional]);
+
+  const isLoading = !isIdValid || (!isMock && (loadingQuery || (!professional && isFetching)));
 
   // Parse dos produtos
   const products = useMemo(() => {

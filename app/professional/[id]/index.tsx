@@ -28,6 +28,7 @@ import { addReview } from "@/data/mock";
 import { useLocation } from "@/lib/location-context";
 import { SOCIAL_NETWORKS, SOCIAL_PNG_ASSETS } from "@/constants/app";
 import { supabase } from "@/lib/supabase";
+import { getMockProviderById } from "@/app/(tabs)/home-mock-data";
 import {
   calculateHaversineDistance,
   formatDistancePtBr,
@@ -45,11 +46,11 @@ import {
 const DEFAULT_COVER =
   "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800&q=80";
 
-function getWhatsAppUrl(phone: string, name: string) {
-  const cleaned = phone.replace(/\D/g, "");
+function getWhatsAppUrl(phone: any, name: any) {
+  const cleaned = String(phone || "").replace(/\D/g, "");
   const number = cleaned.startsWith("55") ? cleaned : `55${cleaned}`;
   const message = encodeURIComponent(
-    `Olá ${name}, encontrei seu perfil no XamaJá e gostaria de solicitar um orçamento.`,
+    `Olá ${String(name || "")}, encontrei seu perfil no XamaJá e gostaria de solicitar um orçamento.`,
   );
   return `https://wa.me/${number}?text=${message}`;
 }
@@ -317,13 +318,26 @@ export default function ProfessionalDetailScreen() {
   >("perfil_falso");
   const [reportDetails, setReportDetails] = useState("");
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const isIdValid = !!id && id !== "[id]" && id !== "undefined";
+  const isMock = typeof id === "string" && id.startsWith("mock-");
+
   const {
-    data: professional,
-    isLoading: loading,
+    data: dbProfessional,
+    isLoading: loadingQuery,
+    isFetching,
     refetch,
   } = trpc.providers.getById.useQuery(id as string, {
-    enabled: !!id,
+    enabled: isIdValid && !isMock,
   });
+
+  const professional = useMemo(() => {
+    if (isMock && typeof id === "string") {
+      return getMockProviderById(id);
+    }
+    return dbProfessional;
+  }, [isMock, id, dbProfessional]);
+
+  const loading = !isIdValid || (!isMock && (loadingQuery || (!professional && isFetching)));
 
   const isCommerce = useMemo(() => {
     if (!professional) return false;
@@ -344,7 +358,7 @@ export default function ProfessionalDetailScreen() {
     );
   }, [professional]);
 
-  const galleryImages = professional?.gallery || [];
+  const galleryImages = useMemo(() => parseJsonArray(professional?.gallery), [professional?.gallery]);
   const currentImageIndex = selectedImage
     ? galleryImages.indexOf(selectedImage)
     : -1;
@@ -1056,9 +1070,11 @@ export default function ProfessionalDetailScreen() {
         </View>
 
         {/* Gallery */}
-        {prof.gallery &&
-          Array.isArray(prof.gallery) &&
-          prof.gallery.length > 0 && (
+        {(() => {
+          const galleryList = parseJsonArray(prof.gallery);
+          if (galleryList.length === 0) return null;
+
+          return (
             <View style={styles.section}>
               <View style={styles.sectionHeaderRow}>
                 <Text
@@ -1070,7 +1086,7 @@ export default function ProfessionalDetailScreen() {
                   Galeria de Fotos
                 </Text>
                 <Pressable
-                  onPress={() => setSelectedImage(prof.gallery?.[0] || null)}
+                  onPress={() => setSelectedImage(galleryList[0] || null)}
                 >
                   <Text
                     style={[
@@ -1078,7 +1094,7 @@ export default function ProfessionalDetailScreen() {
                       { color: colors.primary },
                     ]}
                   >
-                    Ver todas ({prof.gallery.length})
+                    Ver todas ({galleryList.length})
                   </Text>
                 </Pressable>
               </View>
@@ -1091,7 +1107,7 @@ export default function ProfessionalDetailScreen() {
                   paddingTop: 10,
                 }}
               >
-                {prof.gallery.map((uri: string, idx: number) => (
+                {galleryList.map((uri: string, idx: number) => (
                   <Pressable
                     key={idx}
                     onPress={() => setSelectedImage(uri)}
@@ -1106,7 +1122,8 @@ export default function ProfessionalDetailScreen() {
                 ))}
               </ScrollView>
             </View>
-          )}
+          );
+        })()}
 
         {/* Bloco de Localização, Contato e Horários */}
         <View

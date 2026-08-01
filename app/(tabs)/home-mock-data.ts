@@ -168,3 +168,44 @@ export const MOCK_PROVIDERS_BY_CAT: Record<string, any[]> = {
 export function getMockProvidersForCategory(categoryId: string): any[] {
   return MOCK_PROVIDERS_BY_CAT[categoryId] || [];
 }
+
+export function getMockProviderById(id: string): any | null {
+  for (const catList of Object.values(MOCK_PROVIDERS_BY_CAT)) {
+    const found = catList.find((p) => p.id === id);
+    if (found) {
+      return {
+        ...found,
+        phone: "(11) 99999-8888",
+        whatsapp: "(11) 99999-8888",
+        description: `Profissional de excelência em ${found.subcategoryName || found.category}. Atendimento rápido, orçamento sem compromisso e garantia de serviço com os melhores materiais do mercado.`,
+        neighborhood: "Centro",
+        city: "Bragança Paulista",
+        address: "Atendimento em toda a região de Bragança Paulista - SP",
+        isVerified: true,
+        onlineStatus: true,
+        responseTime: "Respondendo em ~15 min",
+        clientsServed: 140,
+        foundedYear: 2019,
+        topBadge: "Destaque",
+        popularServices: ["Orçamento Grátis", "Atendimento Residencial", "Garantia de Serviço"],
+        tags: ["Aceita Cartão", "Atendimento Rápido", "Garantia"],
+        gallery: [
+          found.coverUri || found.avatarUri,
+          "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&q=80",
+          "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=600&q=80",
+        ],
+        workingHours: JSON.stringify({
+          monday: { active: true, openTime: "08:00", closeTime: "18:00" },
+          tuesday: { active: true, openTime: "08:00", closeTime: "18:00" },
+          wednesday: { active: true, openTime: "08:00", closeTime: "18:00" },
+          thursday: { active: true, openTime: "08:00", closeTime: "18:00" },
+          friday: { active: true, openTime: "08:00", closeTime: "18:00" },
+          saturday: { active: true, openTime: "08:00", closeTime: "14:00" },
+          sunday: { active: false, openTime: "08:00", closeTime: "12:00" },
+        }),
+      };
+    }
+  }
+  return null;
+}
+
