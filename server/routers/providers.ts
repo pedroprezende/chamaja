@@ -14,6 +14,7 @@ import {
   reviews,
   serviceViews,
   whatsappClicks,
+  users,
 } from "../../drizzle/schema";
 import { eq, or, ilike, and, gte, lte, ne, desc, asc, sql, count } from "drizzle-orm";
 
@@ -1502,6 +1503,54 @@ export const providersRouter = router({
       const results = await db.searchUsersForTransfer(input.query);
       return results;
     }),
+
+  getPublicStats: publicProcedure.query(async () => {
+    const dbInstance = await db.getDb();
+    if (!dbInstance) {
+      return {
+        comerciosCount: 0,
+        prestadoresCount: 0,
+        usersCount: 0,
+        reviewsCount: 0,
+        ratingAverage: 5.0,
+      };
+    }
+
+    const [comerciosCountRes] = await dbInstance
+      .select({ value: count() })
+      .from(providers)
+      .where(and(eq(providers.isActive, true), eq(providers.categoryId, "comercios")));
+
+    const [prestadoresCountRes] = await dbInstance
+      .select({ value: count() })
+      .from(providers)
+      .where(and(eq(providers.isActive, true), ne(providers.categoryId, "comercios")));
+
+    const [usersCountRes] = await dbInstance
+      .select({ value: count() })
+      .from(users);
+
+    const [reviewsCountRes] = await dbInstance
+      .select({ value: count() })
+      .from(reviews);
+
+    const ratingAvgRes = await dbInstance
+      .select({
+        avgRating: sql<number>`AVG(${providers.rating})`,
+      })
+      .from(providers)
+      .where(eq(providers.isActive, true));
+
+    const avgRating = Number(ratingAvgRes[0]?.avgRating || 0);
+
+    return {
+      comerciosCount: comerciosCountRes?.value || 0,
+      prestadoresCount: prestadoresCountRes?.value || 0,
+      usersCount: usersCountRes?.value || 0,
+      reviewsCount: reviewsCountRes?.value || 0,
+      ratingAverage: avgRating > 0 ? Number(avgRating.toFixed(1)) : 5.0,
+    };
+  }),
 
   /**
    * Transfer (or revoke) ownership of a provider profile.

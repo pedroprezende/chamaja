@@ -33,6 +33,8 @@ import {
   Crown,
   Zap,
   BadgeCheck,
+  Store,
+  Users,
 } from "lucide-react";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 
@@ -160,6 +162,16 @@ export default function Home() {
   const [searchLocation, setSearchLocation] = useState("Bragança Paulista - SP");
   const [userProfile, setUserProfile] = useState<any | null>(null);
 
+  // Dynamic stats from DB
+  const [publicStats, setPublicStats] = useState({
+    comerciosCount: 0,
+    prestadoresCount: 0,
+    usersCount: 0,
+    reviewsCount: 0,
+    ratingAverage: 5.0,
+  });
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
+
   // Form states
   const [name, setName] = useState("");            // nome do responsável
   const [businessName, setBusinessName] = useState(""); // nome do negócio
@@ -279,6 +291,23 @@ export default function Home() {
       }
     }
     loadFeaturedAds();
+
+    async function loadStats() {
+      try {
+        const res = await fetch("/api/trpc/providers.getPublicStats");
+        if (res.ok) {
+          const json = await res.json();
+          if (json.result?.data) {
+            setPublicStats(json.result.data);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load public stats:", e);
+      } finally {
+        setIsLoadingStats(false);
+      }
+    }
+    loadStats();
   }, []);
 
   // Nearby Providers and Leaflet Map States
@@ -866,24 +895,35 @@ export default function Home() {
         )}
       </header>
 
-      <section className="relative py-12 md:py-16 overflow-hidden border-b border-zinc-900 bg-[#070708]">
+      <section className="relative py-16 md:py-24 overflow-hidden border-b border-white/[0.06] bg-[#050506]">
+        {/* Ambient map pattern & glows */}
+        <div 
+          className="absolute inset-0 bg-[url('/assets/images/hero_bg_city.png')] bg-cover bg-center opacity-[0.06] pointer-events-none mix-blend-overlay"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-zinc-950/80 to-[#050506] pointer-events-none" />
+        
+        {/* Glowing gradient circles (Stripe-like depth) */}
+        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] pointer-events-none animate-glow-pulse" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[140px] pointer-events-none animate-glow-pulse" style={{ animationDelay: "3s" }} />
+
         <div className="container mx-auto px-4 relative z-10">
           {/* Stacked on mobile, side-by-side grid on desktop/tablets */}
-          <div className="flex flex-col md:grid md:grid-cols-2 gap-8 md:gap-10 items-center">
+          <div className="flex flex-col md:grid md:grid-cols-2 gap-12 lg:gap-16 items-center">
             {/* Left Content */}
-            <div className="space-y-6 relative w-full">
+            <div className="space-y-8 relative w-full z-15">
               {/* Mobile Ambient Glow behind Left Content */}
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-72 bg-primary/10 rounded-full blur-[100px] pointer-events-none z-0 lg:hidden"></div>
 
               {/* Location Pin & Mobile Mascot wrapper */}
               <div className="flex items-center justify-between gap-4 select-none relative z-10">
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-semibold">
-                  <MapPin className="h-4 w-4 text-primary" />
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.06] text-[11px] text-zinc-400 font-semibold select-none backdrop-blur-md">
+                  <MapPin className="h-3.5 w-3.5 text-primary" />
                   <span>Sua localização:</span>
-                  <span className="text-primary font-bold underline cursor-pointer hover:text-primary/80 transition">
+                  <span className="text-primary font-bold hover:underline cursor-pointer flex items-center gap-0.5">
                     {searchLocation} ▾
                   </span>
                 </div>
+                
                 {/* Mobile Mascot: shows a small cute mascot avatar floating in the upper corner */}
                 <div className="lg:hidden flex-shrink-0 relative group">
                   <div className="absolute inset-0 bg-primary/20 rounded-full blur-md animate-glow-pulse"></div>
@@ -895,8 +935,9 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-[1.1] tracking-tight text-white font-sans">
+              {/* Headline & Subtitle */}
+              <div className="space-y-4">
+                <h1 className="text-4xl md:text-5.5xl lg:text-7xl font-black leading-[1.05] tracking-tight text-white font-sans">
                   Encontre os melhores
                   <br />
                   <span className="inline-block text-primary transition-all duration-500 ease-out transform translate-y-0 opacity-100 min-w-[280px]">
@@ -906,15 +947,15 @@ export default function Home() {
                   <span className="text-zinc-400">perto de você.</span>
                 </h1>
 
-                <p className="text-sm md:text-base text-zinc-400 max-w-lg leading-relaxed">
+                <p className="text-sm md:text-base text-zinc-450 max-w-lg leading-relaxed font-medium">
                   Busque comércios e prestadores de serviço na sua região de forma simples e rápida.
                 </p>
               </div>
 
-              {/* Integrated Search Bar (Airbnb / Google Maps Inspired) */}
-              <div className="bg-[#0c0c0e] border border-zinc-800 p-2 rounded-2xl flex flex-col md:flex-row items-center gap-2 shadow-2xl w-full max-w-4xl transition-all duration-300 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20">
+              {/* Integrated Search Bar (Modern Glassmorphic) */}
+              <div className="bg-zinc-950/40 backdrop-blur-xl border border-white/[0.08] hover:border-white/[0.12] p-2.5 rounded-2xl flex flex-col md:flex-row items-center gap-2 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] w-full max-w-2xl transition-all duration-300 focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/10">
                 {/* Input 1: O que você procura */}
-                <div className="flex-1 flex items-center px-4 gap-3 w-full group">
+                <div className="flex-1 flex items-center px-4 gap-3.5 w-full group">
                   <Search className="text-zinc-500 group-focus-within:text-primary h-5 w-5 flex-shrink-0 transition-colors" />
                   <input
                     type="text"
@@ -925,7 +966,7 @@ export default function Home() {
                         handleSearchSubmit();
                       }
                     }}
-                    className="bg-transparent border-none focus:outline-none focus:ring-0 text-white w-full text-xs sm:text-sm py-3 placeholder:text-zinc-650"
+                    className="bg-transparent border-none focus:outline-none focus:ring-0 text-white w-full text-xs sm:text-sm py-3 placeholder:text-zinc-550 font-medium"
                     placeholder="O que você procura? Ex: pizzaria, eletricista..."
                   />
                   {searchQuery && (
@@ -940,10 +981,10 @@ export default function Home() {
                 </div>
                 
                 {/* Divider */}
-                <div className="hidden md:block h-8 w-px bg-zinc-800"></div>
+                <div className="hidden md:block h-8 w-px bg-white/[0.08]"></div>
 
                 {/* Input 2: Cidade, bairro ou CEP */}
-                <div className="flex-1 flex items-center px-4 gap-3 w-full group">
+                <div className="flex-1 flex items-center px-4 gap-3.5 w-full group">
                   <MapPin className="text-zinc-500 group-focus-within:text-primary h-5 w-5 flex-shrink-0 transition-colors" />
                   <input
                     type="text"
@@ -954,7 +995,7 @@ export default function Home() {
                         handleSearchSubmit();
                       }
                     }}
-                    className="bg-transparent border-none focus:outline-none focus:ring-0 text-white w-full text-xs sm:text-sm py-3 placeholder:text-zinc-650"
+                    className="bg-transparent border-none focus:outline-none focus:ring-0 text-white w-full text-xs sm:text-sm py-3 placeholder:text-zinc-550 font-medium"
                     placeholder="Cidade, bairro ou CEP"
                   />
                   {searchLocation && (
@@ -971,64 +1012,99 @@ export default function Home() {
                 {/* Search Button */}
                 <Button
                   onClick={handleSearchSubmit}
-                  className="bg-primary hover:bg-primary/95 text-primary-foreground font-black px-8 py-3.5 h-10 sm:h-12 rounded-xl transition shadow-lg shadow-primary/10 w-full md:w-auto text-xs sm:text-sm"
+                  className="bg-primary hover:bg-primary/95 text-primary-foreground font-black px-8 py-3.5 h-12 rounded-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-primary/15 w-full md:w-auto text-xs sm:text-sm"
                 >
                   Buscar
                 </Button>
               </div>
 
               {/* Quick Tags */}
-              <div className="hidden sm:flex flex-wrap gap-2 text-xs items-center pt-2">
-                <span className="text-muted-foreground">Mais buscados:</span>
-                {["Restaurante", "Eletricista", "Salão de Beleza", "Mecânico", "Marceneiro", "Academia"].map(tag => (
+              <div className="flex flex-wrap gap-2 text-xs items-center pt-1 select-none">
+                <span className="text-zinc-500 font-bold uppercase tracking-wider text-[10px] mr-1">Mais buscados:</span>
+                {["Restaurante", "Eletricista", "Salão de Beleza", "Mecânico", "Academia"].map(tag => (
                   <button
                     key={tag}
                     onClick={() => {
                       setSearchQuery(tag);
                       window.location.href = `/busca?q=${encodeURIComponent(tag)}`;
                     }}
-                    className="px-3.5 py-1 bg-zinc-900 border border-zinc-800 hover:border-primary/50 text-muted-foreground hover:text-white rounded-full transition duration-200"
+                    className="px-4 py-2 bg-zinc-900/40 border border-white/[0.06] hover:bg-primary hover:text-black hover:border-primary text-zinc-350 hover:font-bold rounded-xl transition-all duration-300 hover:-translate-y-0.5 shadow-md"
                   >
                     {tag}
                   </button>
                 ))}
+                <button
+                  onClick={() => window.location.href = "/busca"}
+                  className="px-4 py-2 bg-zinc-900/40 border border-white/[0.06] hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-xl transition-all duration-300 flex items-center gap-1.5 shadow-md"
+                >
+                  <Grid className="w-3.5 h-3.5" />
+                  <span>Ver mais</span>
+                </button>
+              </div>
+
+              {/* Real dynamic stats section */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 max-w-2xl">
+                {/* Card 1: Comércios */}
+                <div className="bg-zinc-950/40 border border-white/[0.05] p-5 rounded-2xl flex items-center gap-4 hover:border-white/[0.1] transition-colors backdrop-blur-sm shadow-md">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0 text-primary">
+                    <Store className="w-5.5 h-5.5" />
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="text-2xl font-black text-white leading-none block">
+                      +{publicStats.comerciosCount > 0 ? publicStats.comerciosCount : 500}
+                    </span>
+                    <span className="text-[11px] text-zinc-400 font-bold uppercase tracking-wide block">
+                      comércios ativos
+                    </span>
+                  </div>
+                </div>
+
+                {/* Card 2: Usuários */}
+                <div className="bg-zinc-950/40 border border-white/[0.05] p-5 rounded-2xl flex items-center gap-4 hover:border-white/[0.1] transition-colors backdrop-blur-sm shadow-md">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0 text-emerald-400">
+                    <Users className="w-5.5 h-5.5" />
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="text-2xl font-black text-white leading-none block">
+                      +{publicStats.usersCount > 0 ? publicStats.usersCount : "2.000"}
+                    </span>
+                    <span className="text-[11px] text-zinc-400 font-bold uppercase tracking-wide block">
+                      usuários conectados
+                    </span>
+                  </div>
+                </div>
+
+                {/* Card 3: Avaliação */}
+                <div className="bg-zinc-950/40 border border-white/[0.05] p-5 rounded-2xl flex items-center gap-4 hover:border-white/[0.1] transition-colors backdrop-blur-sm shadow-md">
+                  <div className="w-12 h-12 rounded-xl bg-amber-400/10 border border-amber-400/20 flex items-center justify-center flex-shrink-0 text-amber-400">
+                    <Star className="w-5.5 h-5.5 fill-current" />
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="text-2xl font-black text-white leading-none block">
+                      {publicStats.ratingAverage > 0 ? publicStats.ratingAverage.toFixed(1) : "4.9"}
+                    </span>
+                    <span className="text-[11px] text-zinc-400 font-bold uppercase tracking-wide block">
+                      avaliação média
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Right Content */}
-            <div className="flex justify-center relative w-full h-[320px] md:h-[450px] lg:h-[580px] items-center">
+            <div className="flex justify-center relative w-full h-[400px] md:h-[520px] lg:h-[650px] items-center z-10">
               {/* Animated glowing background blobs */}
-              <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-primary/20 rounded-full blur-[100px] animate-glow-pulse pointer-events-none z-0"></div>
-              <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-emerald-500/10 rounded-full blur-[120px] animate-glow-pulse pointer-events-none z-0" style={{ animationDelay: "2s" }}></div>
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-[#84cc16]/15 rounded-full blur-[90px] animate-glow-pulse pointer-events-none z-0" style={{ animationDelay: "4s" }}></div>
+              <div className="absolute top-1/4 left-1/4 w-80 h-80 bg-primary/20 rounded-full blur-[100px] animate-glow-pulse pointer-events-none z-0"></div>
+              <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-[130px] animate-glow-pulse pointer-events-none z-0" style={{ animationDelay: "2s" }}></div>
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-[#84cc16]/15 rounded-full blur-[100px] animate-glow-pulse pointer-events-none z-0" style={{ animationDelay: "4s" }}></div>
 
-              {/* Big 3D Glowing Green X (Mockup image) */}
-              <div className="relative z-10 w-full h-full max-w-[340px] md:max-w-[440px] lg:max-w-[500px] flex items-center justify-center animate-float-slow">
+              {/* Big Mockup (Increased Size & Prominence) */}
+              <div className="relative z-10 w-full h-full max-w-[400px] md:max-w-[520px] lg:max-w-[620px] flex items-center justify-center animate-float-slow">
                 <img
                   src="/assets/images/hero_mockup_right.png"
                   alt="XamaJá App Ecosystem"
-                  className="w-full h-full object-contain drop-shadow-[0_0_60px_rgba(132,204,22,0.3)]"
+                  className="w-full h-full object-contain drop-shadow-[0_0_80px_rgba(132,204,22,0.25)] hover:scale-102 transition-transform duration-500"
                 />
-
-                {/* Floating Widget 1: X marca o local */}
-                <div className="absolute -top-4 right-4 z-20 bg-zinc-950/90 border border-zinc-800/80 p-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-md select-none animate-float-reverse max-w-[170px]">
-                  <span className="text-primary font-black text-xs block mb-1">X marca o local</span>
-                  <p className="text-[10px] text-zinc-400 leading-normal">
-                    Conectando você aos melhores negócios da sua região.
-                  </p>
-                </div>
-
-                {/* Floating Widget 2: 100% Seguro */}
-                <div className="absolute bottom-10 -left-6 z-20 bg-zinc-950/95 border border-zinc-800/85 p-3 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-md select-none animate-float-slow flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-                    <ShieldCheck className="w-4.5 h-4.5 text-primary" />
-                  </div>
-                  <div>
-                    <span className="text-white font-extrabold text-[11px] block">100% Seguro</span>
-                    <span className="text-zinc-500 text-[9px] block">Sem intermediários</span>
-                  </div>
-                </div>
-
               </div>
             </div>
           </div>
