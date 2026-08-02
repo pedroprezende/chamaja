@@ -648,33 +648,17 @@ export default function ProfessionalDetailScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* ═══ HEADER BAR ═══ */}
-      <View style={[styles.headerBar, { paddingTop: insets.top + 4 }]}>
+      {/* ═══ FLOATING HEADER (over cover) ═══ */}
+      <View style={[styles.floatingHeader, { paddingTop: insets.top + 8 }]}>
         <Pressable
-          style={({ pressed }) => [styles.headerBackBtn, pressed && { opacity: 0.7 }]}
+          style={({ pressed }) => [styles.floatingBackBtn, pressed && { opacity: 0.7 }]}
           onPress={() => router.back()}
         >
-          <MaterialIcons name="arrow-back" size={18} color="#D1D5DB" />
-          <Text style={styles.headerBackText}>Voltar para Busca</Text>
+          <MaterialIcons name="arrow-back" size={20} color="#FFF" />
         </Pressable>
         <View style={{ flex: 1 }} />
         <Pressable
-          style={({ pressed }) => [styles.headerActionBtn, pressed && { opacity: 0.7 }]}
-          onPress={handleOpenReportModal}
-        >
-          <MaterialIcons name="report" size={18} color="#9CA3AF" />
-        </Pressable>
-        <Pressable
-          style={({ pressed }) => [styles.headerActionBtn, pressed && { opacity: 0.7 }]}
-          onPress={() =>
-            Share.share({ message: `Confira ${prof.name} no app XamaJá!` })
-          }
-        >
-          <MaterialIcons name="share" size={18} color="#9CA3AF" />
-          <Text style={styles.headerActionText}>Compartilhar</Text>
-        </Pressable>
-        <Pressable
-          style={({ pressed }) => [styles.headerActionBtn, pressed && { opacity: 0.7 }]}
+          style={({ pressed }) => [styles.floatingBackBtn, pressed && { opacity: 0.7 }]}
           onPress={() =>
             toggleFavorite({
               id: prof.id,
@@ -698,10 +682,23 @@ export default function ProfessionalDetailScreen() {
         >
           <MaterialIcons
             name={favored ? "favorite" : "favorite-border"}
-            size={18}
-            color={favored ? "#EF4444" : "#9CA3AF"}
+            size={19}
+            color={favored ? "#EF4444" : "#FFF"}
           />
-          <Text style={styles.headerActionText}>Favoritar</Text>
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.floatingBackBtn, pressed && { opacity: 0.7 }]}
+          onPress={handleOpenReportModal}
+        >
+          <MaterialIcons name="report" size={19} color="#FFF" />
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.floatingBackBtn, pressed && { opacity: 0.7 }]}
+          onPress={() =>
+            Share.share({ message: `Confira ${prof.name} no app XamaJá!` })
+          }
+        >
+          <MaterialIcons name="share" size={19} color="#FFF" />
         </Pressable>
       </View>
 
@@ -709,208 +706,221 @@ export default function ProfessionalDetailScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 140 }}
       >
-        {/* ═══ COVER BANNER ═══ */}
+        {/* ═══ COVER ═══ */}
         <Pressable
           onPress={() => setSelectedImage(prof.coverUri || DEFAULT_COVER)}
           style={({ pressed }) => [
-            styles.coverBanner,
-            isWide && styles.coverBannerWide,
-            pressed && { opacity: 0.92 },
+            styles.coverContainer,
+            isWide && styles.coverContainerWide,
+            pressed && { opacity: 0.95 },
           ]}
         >
           <Image
             source={{ uri: prof.coverUri || DEFAULT_COVER }}
-            style={styles.coverBannerImage}
+            style={styles.coverImage}
             contentFit="cover"
           />
           <LinearGradient
-            colors={["transparent", "rgba(17,24,39,0.95)"]}
-            style={styles.coverBannerGradient}
+            colors={["transparent", "rgba(0,0,0,0.55)"]}
+            style={styles.coverGradientBottom}
           />
         </Pressable>
 
-        {/* ═══ HERO SECTION ═══ */}
-        <View style={styles.heroSection}>
-          <View style={[styles.heroRow, isWide && { flexDirection: "row", alignItems: "flex-start", gap: 24 }]}>
-            <View style={[styles.heroMainBlock, isWide && { flex: 1 }]}>
-              <View style={styles.heroAvatarRow}>
-                <View style={styles.heroAvatarWrap}>
-                  <Image
-                    source={{ uri: prof.avatarUri || getAvatarUrl(prof.name) }}
-                    style={styles.heroAvatar}
-                  />
-                  {prof.isVerified && (
-                    <View style={styles.heroVerifiedBadge}>
-                      <MaterialIcons name="verified" size={22} color="#25D366" />
-                    </View>
-                  )}
-                </View>
-                <View style={styles.heroInfoBlock}>
-                  <View style={styles.heroNameRow}>
-                    <Text style={styles.heroName} numberOfLines={2}>
-                      {prof.name}
-                    </Text>
-                    {prof.isVerified && (
-                      <View style={styles.heroVerifiedPill}>
-                        <MaterialIcons name="check-circle" size={11} color="#25D366" />
-                        <Text style={styles.heroVerifiedPillText}>VERIFICADO</Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text style={styles.heroCategory}>
-                    {prof.subcategoryName || prof.category}
-                  </Text>
-                  <View style={styles.heroStatsRow}>
-                    <MaterialIcons name="star" size={15} color="#F59E0B" />
-                    <Text style={styles.heroStatBold}>
-                      {Number(prof.rating || 0).toFixed(1)}
-                    </Text>
-                    <Text style={styles.heroStatMuted}>
-                      ({prof.ratingCount || 0} avaliações)
-                    </Text>
-                    <Text style={styles.heroDot}>•</Text>
-                    <MaterialIcons name="location-on" size={13} color="#9CA3AF" />
-                    <Text style={styles.heroStatMuted} numberOfLines={1}>
-                      {prof.neighborhood
-                        ? `${prof.neighborhood}, `
-                        : ""}
-                      {prof.city || "Bragança Paulista"}
-                    </Text>
-                  </View>
-                  {(distanceInfo || prof.responseTime) && (
-                    <View style={styles.heroStatsRow}>
-                      {distanceInfo && (
-                        <>
-                          <MaterialIcons name="near-me" size={13} color="#9CA3AF" />
-                          <Text style={styles.heroStatMuted}>
-                            {distanceInfo.distanceText} de você
-                          </Text>
-                        </>
-                      )}
-                      {distanceInfo && prof.responseTime && (
-                        <Text style={styles.heroDot}>•</Text>
-                      )}
-                      {prof.responseTime && (
-                        <>
-                          <MaterialIcons name="speed" size={13} color="#9CA3AF" />
-                          <Text style={styles.heroStatMuted}>Responde rápido</Text>
-                        </>
-                      )}
-                    </View>
-                  )}
-                </View>
-              </View>
-            </View>
-
-            {/* Status Card */}
-            <View
-              style={[
-                styles.heroStatusCard,
-                {
-                  backgroundColor: realTimeStatus.isOpen
-                    ? "rgba(16,185,129,0.06)"
-                    : "rgba(239,68,68,0.06)",
-                  borderColor: realTimeStatus.isOpen
-                    ? "rgba(16,185,129,0.25)"
-                    : "rgba(239,68,68,0.25)",
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.heroStatusTitle,
-                  { color: realTimeStatus.isOpen ? "#10B981" : "#EF4444" },
-                ]}
-              >
-                {realTimeStatus.badge}
-              </Text>
-              <Text style={styles.heroStatusDetail}>
-                {realTimeStatus.detailMessage}
-              </Text>
-              <View style={styles.heroStatusLinkRow}>
-                <MaterialIcons name="event" size={14} color="#D1D5DB" />
-                <Text style={styles.heroStatusLinkText}>Ver horário completo</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Info Pills */}
-          <View style={styles.heroPillsRow}>
-            {prof.onlineStatus && (
-              <View
-                style={[
-                  styles.heroPill,
-                  { backgroundColor: "rgba(16,185,129,0.12)" },
-                ]}
-              >
-                <View
-                  style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: 3,
-                    backgroundColor: "#4ADE80",
-                  }}
-                />
-                <Text style={[styles.heroPillText, { color: "#4ADE80" }]}>
-                  Online agora
-                </Text>
-              </View>
-            )}
-            {prof.topBadge && (
-              <View
-                style={[
-                  styles.heroPill,
-                  { backgroundColor: "rgba(217,119,6,0.12)" },
-                ]}
-              >
-                <MaterialIcons name="emoji-events" size={13} color="#FBBF24" />
-                <Text style={[styles.heroPillText, { color: "#FBBF24" }]}>
-                  {prof.topBadge}
-                </Text>
-              </View>
-            )}
-            {prof.responseTime && (
-              <View style={styles.heroPill}>
-                <MaterialIcons name="chat" size={13} color="#A78BFA" />
-                <Text style={styles.heroPillText}>Responde em poucos minutos</Text>
-              </View>
-            )}
-          </View>
-
-          {/* Commerce Tags */}
-          {isCommerce && parseJsonArray(prof.tags).length > 0 && (
-            <View style={styles.heroPillsRow}>
-              {parseJsonArray(prof.tags).map((tag: string, idx: number) => (
-                <View key={idx} style={styles.heroPill}>
-                  <MaterialIcons
-                    name={
-                      tag.toLowerCase().includes("delivery")
-                        ? "motorcycle"
-                        : tag.toLowerCase().includes("retirada")
-                          ? "store"
-                          : "check"
-                    }
-                    size={13}
-                    color="#25D366"
-                  />
-                  <Text style={styles.heroPillText}>{tag}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-
-          {/* Admin Transfer */}
-          {isAdmin && (
+        {/* ═══ PROFILE CARD (sobreposto à capa) ═══ */}
+        <View
+          style={[
+            styles.profileCard,
+            isWide && styles.profileCardWide,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+        >
+          <View style={styles.avatarContainer}>
             <Pressable
-              onPress={() => setShowTransferModal(true)}
-              style={styles.adminTransferBtn}
+              onPress={() =>
+                setSelectedImage(prof.avatarUri || getAvatarUrl(prof.name))
+              }
             >
-              <MaterialIcons name="swap-horiz" size={18} color="#FFF" />
-              <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 13 }}>
-                Transferir Propriedade
-              </Text>
+              <Image
+                source={{ uri: prof.avatarUri || getAvatarUrl(prof.name) }}
+                style={[
+                  styles.avatar,
+                  { borderColor: colors.surface, backgroundColor: colors.border + "60" },
+                ]}
+              />
             </Pressable>
-          )}
+            {prof.isVerified && (
+              <View style={styles.heroVerifiedBadge}>
+                <MaterialIcons name="verified" size={22} color="#25D366" />
+              </View>
+            )}
+          </View>
+
+          <View style={styles.detailsContainer}>
+            <Text
+              style={[styles.heroName, { color: colors.foreground, textAlign: "center" }]}
+              numberOfLines={2}
+            >
+              {prof.name}
+            </Text>
+            {prof.isVerified && (
+              <View style={styles.heroVerifiedPill}>
+                <MaterialIcons name="check-circle" size={11} color="#25D366" />
+                <Text style={styles.heroVerifiedPillText}>VERIFICADO</Text>
+              </View>
+            )}
+            <Text style={[styles.profileCategory, { color: colors.primary }]}>
+              {prof.subcategoryName || prof.category}
+            </Text>
+
+            <View style={styles.profileLocationRows}>
+              {!!prof.neighborhood && (
+                <View style={styles.locationRow}>
+                  <MaterialIcons name="location-on" size={15} color="#EF4444" />
+                  <Text style={[styles.locationRowText, { color: colors.foreground }]}>
+                    Bairro:{" "}
+                    <Text style={styles.locationRowValue}>{prof.neighborhood}</Text>
+                  </Text>
+                </View>
+              )}
+              <View style={styles.locationRow}>
+                <MaterialIcons name="location-on" size={15} color="#EF4444" />
+                <Text style={[styles.locationRowText, { color: colors.foreground }]}>
+                  Cidade:{" "}
+                  <Text style={styles.locationRowValue}>
+                    {prof.city || "Bragança Paulista"}
+                  </Text>
+                </Text>
+              </View>
+              {distanceInfo && (
+                <View style={styles.locationRow}>
+                  <MaterialIcons name="directions-car" size={15} color="#F59E0B" />
+                  <Text style={styles.distanceRowText}>
+                    Distância até você: {distanceInfo.distanceText}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Info Pills */}
+            {(prof.onlineStatus || prof.topBadge || prof.responseTime) && (
+              <View style={[styles.heroPillsRow, { justifyContent: "center", marginTop: 6 }]}>
+                {prof.onlineStatus && (
+                  <View
+                    style={[
+                      styles.heroPill,
+                      { backgroundColor: "rgba(16,185,129,0.12)" },
+                    ]}
+                  >
+                    <View
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: 3,
+                        backgroundColor: "#4ADE80",
+                      }}
+                    />
+                    <Text style={[styles.heroPillText, { color: "#4ADE80" }]}>
+                      Online agora
+                    </Text>
+                  </View>
+                )}
+                {prof.topBadge && (
+                  <View
+                    style={[
+                      styles.heroPill,
+                      { backgroundColor: "rgba(217,119,6,0.12)" },
+                    ]}
+                  >
+                    <MaterialIcons name="emoji-events" size={13} color="#FBBF24" />
+                    <Text style={[styles.heroPillText, { color: "#FBBF24" }]}>
+                      {prof.topBadge}
+                    </Text>
+                  </View>
+                )}
+                {prof.responseTime && (
+                  <View style={styles.heroPill}>
+                    <MaterialIcons name="chat" size={13} color="#A78BFA" />
+                    <Text style={styles.heroPillText}>Responde em poucos minutos</Text>
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* Commerce Tags */}
+            {isCommerce && parseJsonArray(prof.tags).length > 0 && (
+              <View style={[styles.heroPillsRow, { justifyContent: "center", marginTop: 6 }]}>
+                {parseJsonArray(prof.tags).map((tag: string, idx: number) => (
+                  <View key={idx} style={styles.heroPill}>
+                    <MaterialIcons
+                      name={
+                        tag.toLowerCase().includes("delivery")
+                          ? "motorcycle"
+                          : tag.toLowerCase().includes("retirada")
+                            ? "store"
+                            : "check"
+                      }
+                      size={13}
+                      color="#25D366"
+                    />
+                    <Text style={styles.heroPillText}>{tag}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Admin Transfer */}
+            {isAdmin && (
+              <Pressable
+                onPress={() => setShowTransferModal(true)}
+                style={[
+                  styles.adminTransferBtn,
+                  { alignSelf: "stretch", justifyContent: "center", marginTop: 16 },
+                ]}
+              >
+                <MaterialIcons name="swap-horiz" size={18} color="#FFF" />
+                <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 13 }}>
+                  Transferir Propriedade
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+
+        {/* ═══ METRIC GRID ═══ */}
+        <View
+          style={[
+            styles.metricGrid,
+            isWide && styles.metricGridWide,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+        >
+          <View style={styles.metricItem}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <MaterialIcons name="star" size={15} color="#F59E0B" />
+              <Text style={[styles.metricValue, { color: colors.foreground }]}>
+                {Number(prof.rating || 0).toFixed(1)}
+              </Text>
+            </View>
+            <Text style={[styles.metricLabel, { color: colors.muted }]}>
+              {prof.ratingCount || 0} avaliações
+            </Text>
+          </View>
+          <View style={[styles.metricDivider, { backgroundColor: colors.border }]} />
+          <View style={styles.metricItem}>
+            <MaterialIcons name="event" size={15} color="#A78BFA" />
+            <Text style={[styles.metricValue, { color: colors.foreground }]}>
+              {prof.foundedYear ? `Desde ${prof.foundedYear}` : "—"}
+            </Text>
+            <Text style={[styles.metricLabel, { color: colors.muted }]}>Ano início</Text>
+          </View>
+          <View style={[styles.metricDivider, { backgroundColor: colors.border }]} />
+          <View style={styles.metricItem}>
+            <MaterialIcons name="speed" size={15} color="#A78BFA" />
+            <Text style={[styles.metricValue, { color: colors.foreground }]}>
+              {prof.responseTime ? "Rápido" : "—"}
+            </Text>
+            <Text style={[styles.metricLabel, { color: colors.muted }]}>Tempo resp.</Text>
+          </View>
         </View>
 
         {/* ═══ TAB NAVIGATION ═══ */}
@@ -2146,7 +2156,7 @@ export default function ProfessionalDetailScreen() {
               },
             ]}
             onPress={
-              contentGoesToMenu && hasProducts
+              contentGoesToMenu
                 ? () =>
                     router.push(
                       `/professional/${prof.id}/menu` as any,
@@ -2155,18 +2165,12 @@ export default function ProfessionalDetailScreen() {
             }
           >
             <MaterialIcons
-              name={
-                contentGoesToMenu && hasProducts
-                  ? "shopping-cart"
-                  : "chat"
-              }
+              name={estConfig.ctaIcon as any}
               size={20}
               color="#FFF"
             />
             <Text style={styles.bottomBtnPrimaryText}>
-              {contentGoesToMenu && hasProducts
-                ? estConfig.ctaLabel
-                : "Solicitar Orçamento"}
+              {estConfig.ctaLabel}
             </Text>
           </Pressable>
         </View>
@@ -2625,7 +2629,7 @@ const styles = StyleSheet.create({
   floatingHeader: {
     position: "absolute",
     top: 0, left: 0, right: 0, zIndex: 10,
-    flexDirection: "row", alignItems: "center",
+    flexDirection: "row", alignItems: "center", gap: 10,
     paddingHorizontal: 16, paddingVertical: 12,
   },
   floatingBackBtn: {
@@ -2633,7 +2637,10 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.5)",
     alignItems: "center", justifyContent: "center",
   },
-  coverContainer: { width: "100%", height: 220, position: "relative" },
+  coverContainer: {
+    width: "100%", height: 220, position: "relative",
+    overflow: "hidden", backgroundColor: "#1F2937",
+  },
   profileCard: {
     marginHorizontal: 16, marginTop: -35, padding: 16, borderRadius: 24,
     borderWidth: 1, alignItems: "center",
@@ -2667,56 +2674,10 @@ const styles = StyleSheet.create({
   },
   notFoundText: { fontSize: 20, fontWeight: "800", marginTop: 16 },
 
-  /* ═══ HEADER BAR ═══ */
-  headerBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-    backgroundColor: "#111827",
-    zIndex: 10,
-  },
-  headerBackBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingVertical: 8,
-    paddingRight: 12,
-  },
-  headerBackText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#D1D5DB",
-  },
-  headerActionBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-  },
-  headerActionText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#9CA3AF",
-  },
-
-  /* ═══ COVER BANNER ═══ */
-  coverBanner: {
-    width: "100%",
-    height: 200,
-    position: "relative",
-    overflow: "hidden",
-    backgroundColor: "#1F2937",
-  },
-  coverBannerWide: {
-    height: 320,
-  },
-  coverBannerImage: {
-    width: "100%",
-    height: "100%",
-  },
-  coverBannerGradient: {
+  /* ═══ COVER ═══ */
+  coverContainerWide: { height: 320 },
+  coverImage: { width: "100%", height: "100%" },
+  coverGradientBottom: {
     position: "absolute",
     left: 0,
     right: 0,
@@ -2724,30 +2685,53 @@ const styles = StyleSheet.create({
     height: 90,
   },
 
-  /* ═══ HERO ═══ */
-  heroSection: {
-    backgroundColor: "#111827",
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 24,
-    gap: 16,
+  /* ═══ PROFILE CARD ═══ */
+  profileCardWide: {
+    maxWidth: 640,
+    alignSelf: "center",
+    width: "100%",
   },
-  heroRow: { gap: 16 },
-  heroMainBlock: {},
-  heroAvatarRow: {
+  profileCategory: {
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+    textAlign: "center",
+  },
+  profileLocationRows: {
+    alignItems: "center",
+    gap: 6,
+    marginTop: 8,
+  },
+  locationRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 16,
+    alignItems: "center",
+    gap: 6,
   },
-  heroAvatarWrap: { position: "relative" },
-  heroAvatar: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    borderWidth: 3,
-    borderColor: "#25D366",
-    backgroundColor: "#1F2937",
+  locationRowText: {
+    fontSize: 13,
+    fontWeight: "500",
   },
+  locationRowValue: {
+    fontWeight: "800",
+  },
+  distanceRowText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#4ADE80",
+  },
+
+  /* ═══ METRIC GRID ═══ */
+  metricGridWide: {
+    maxWidth: 640,
+    alignSelf: "center",
+    width: "100%",
+  },
+  metricItem: { flex: 1, alignItems: "center", gap: 4 },
+  metricValue: { fontSize: 14, fontWeight: "800" },
+  metricLabel: { fontSize: 11, fontWeight: "600" },
+
+  /* ═══ HERO (nome/avatar reaproveitados no Profile Card) ═══ */
   heroVerifiedBadge: {
     position: "absolute",
     bottom: 0,
@@ -2755,13 +2739,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#111827",
     borderRadius: 12,
     padding: 1,
-  },
-  heroInfoBlock: { flex: 1, gap: 6, paddingTop: 4 },
-  heroNameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: 8,
   },
   heroName: {
     fontSize: 22,
@@ -2782,62 +2759,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#25D366",
     letterSpacing: 0.5,
-  },
-  heroCategory: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#9CA3AF",
-  },
-  heroStatsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: 5,
-    marginTop: 2,
-  },
-  heroStatBold: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: "#FFFFFF",
-  },
-  heroStatMuted: {
-    fontSize: 13,
-    fontWeight: "500",
-    color: "#9CA3AF",
-  },
-  heroDot: {
-    fontSize: 10,
-    color: "#4B5563",
-    marginHorizontal: 2,
-  },
-  heroStatusCard: {
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 16,
-    gap: 6,
-    alignItems: "center",
-    minWidth: 180,
-  },
-  heroStatusTitle: {
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  heroStatusDetail: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: "#9CA3AF",
-    textAlign: "center",
-  },
-  heroStatusLinkRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginTop: 4,
-  },
-  heroStatusLinkText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#D1D5DB",
   },
   heroPillsRow: {
     flexDirection: "row",
