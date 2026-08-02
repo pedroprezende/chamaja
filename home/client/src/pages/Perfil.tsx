@@ -60,34 +60,7 @@ const parseJsonArray = (val: any): string[] => {
   return [];
 };
 
-const getMockGallery = (category: string) => {
-  const cat = (category || "").toLowerCase();
-  if (cat.includes("hamburg") || cat.includes("pizza") || cat.includes("comercios") || cat.includes("alimenta")) {
-    return [
-      "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&q=80",
-      "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=500&q=80",
-      "https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?w=500&q=80",
-      "https://images.unsplash.com/photo-1550547660-d9450f859349?w=500&q=80",
-      "https://images.unsplash.com/photo-1571066811602-71683a3f680d?w=500&q=80"
-    ];
-  }
-  if (cat.includes("beleza") || cat.includes("esteti") || cat.includes("massagem") || cat.includes("salao")) {
-    return [
-      "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=500&q=80",
-      "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=500&q=80",
-      "https://images.unsplash.com/photo-1605497746444-ac9dbd324ce8?w=500&q=80",
-      "https://images.unsplash.com/photo-1595425970377-c9703cf48b6d?w=500&q=80",
-      "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?w=500&q=80"
-    ];
-  }
-  return [
-    "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=500&q=80",
-    "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=500&q=80",
-    "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=500&q=80",
-    "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500&q=80",
-    "https://images.unsplash.com/photo-1507136566006-cfc505b114fc?w=500&q=80"
-  ];
-};
+
 
 export default function Perfil({ params }: { params: { id: string } }) {
   const providerId = params.id;
@@ -542,30 +515,11 @@ export default function Perfil({ params }: { params: { id: string } }) {
   const parsedHours = parseWorkingHours(provider.workingHours);
   const realTimeStatus = calculateRealTimeStatus(parsedHours);
 
-  // Gallery List & mock fallbacks
-  const galleryList = parseJsonArray(provider.gallery).length > 0 
-    ? parseJsonArray(provider.gallery) 
-    : getMockGallery(provider.category);
+  // Gallery List
+  const galleryList = parseJsonArray(provider.gallery);
 
-  // Review List fallback for visual correctness
-  const reviewsToDisplay = reviewsList.length > 0 ? reviewsList : [
-    {
-      id: "rev-1",
-      userName: "Maria Silva",
-      userAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=50&q=80",
-      rating: 5,
-      comment: "Excelente profissional! Ambiente agradável e atendimento impecável. Super recomendo!",
-      createdAt: "Há 2 semanas",
-    },
-    {
-      id: "rev-2",
-      userName: "João Oliveira",
-      userAvatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=50&q=80",
-      rating: 5,
-      comment: "Massagem incrível, me ajudou muito com minhas dores nas costas. Voltarei sempre!",
-      createdAt: "Há 1 mês",
-    }
-  ];
+  // Review List
+  const reviewsToDisplay = reviewsList;
 
   // Specialties parser
   const specialties = (() => {
@@ -590,20 +544,13 @@ export default function Perfil({ params }: { params: { id: string } }) {
         return provider.popularServices.split(",").map((s: string) => s.trim()).filter(Boolean);
       }
     }
-    // Static fallbacks as visual illustration
-    return ["Massagem Relaxante", "Massagem Aromática", "Liberação Miofascial", "Ventoterapia", "Drenagem Linfática"];
+    return [];
   })();
 
   // Mock distance for stable layout (using first char of ID to make it realistic & persistent per provider)
   const mockDistance = (() => {
     const code = provider.id.charCodeAt(0) || 1;
     return `${((code % 5) * 0.4 + 0.5).toFixed(1)} km de você`;
-  })();
-
-  // Mock monthly views
-  const mockViews = (() => {
-    const code = provider.id.charCodeAt(0) || 1;
-    return (code % 3) * 64 + 112;
   })();
 
   return (
@@ -642,11 +589,15 @@ export default function Perfil({ params }: { params: { id: string } }) {
 
       {/* ── PROFILE COVER PHOTO ── */}
       <section className="relative h-64 md:h-96 w-full overflow-hidden bg-zinc-950 flex-shrink-0">
-        <img
-          src={provider.coverUri || "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=1600&q=80"}
-          alt={provider.name}
-          className="w-full h-full object-cover"
-        />
+        {provider.coverUri ? (
+          <img
+            src={provider.coverUri}
+            alt={provider.name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-zinc-900 to-zinc-950 flex items-center justify-center border-b border-white/[0.04]" />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/20 to-black/25" />
 
         {/* Floating actions */}
@@ -713,22 +664,25 @@ export default function Perfil({ params }: { params: { id: string } }) {
                   <Compass className="h-3.5 w-3.5 text-zinc-400" />
                   <span>{mockDistance}</span>
                 </div>
-                <span className="text-zinc-800">•</span>
-                <div className="flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5 text-zinc-400" />
-                  <span>Responde rápido</span>
-                </div>
+                {provider.responseTime && (
+                  <>
+                    <span className="text-zinc-800">•</span>
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-3.5 w-3.5 text-zinc-400" />
+                      <span>Responde em {provider.responseTime}</span>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Badges line */}
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 pt-2">
-                <span className="flex items-center gap-1 px-3 py-1 bg-zinc-900 border border-white/[0.06] text-zinc-300 text-[10px] font-bold rounded-lg">
-                  <Eye className="w-3.5 h-3.5 text-zinc-400" /> {mockViews} visualizações este mês
-                </span>
-                <span className="flex items-center gap-1 px-3 py-1 bg-zinc-900 border border-white/[0.06] text-zinc-300 text-[10px] font-bold rounded-lg">
-                  <MessageCircle className="w-3.5 h-3.5 text-zinc-400" /> Responde em poucos minutos
-                </span>
-              </div>
+              {provider.responseTime && (
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 pt-2">
+                  <span className="flex items-center gap-1 px-3 py-1 bg-zinc-900 border border-white/[0.06] text-zinc-300 text-[10px] font-bold rounded-lg">
+                    <MessageCircle className="w-3.5 h-3.5 text-zinc-400" /> Responde em {provider.responseTime}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -788,16 +742,18 @@ export default function Perfil({ params }: { params: { id: string } }) {
           >
             <Star className="w-4 h-4" /> AVALIAÇÕES ({reviewsList.length})
           </button>
-          <button
-            onClick={() => setActiveTab("photos")}
-            className={`py-3 px-5 text-xs font-bold rounded-xl flex items-center gap-2 transition duration-200 shrink-0 ${
-              activeTab === "photos"
-                ? "border border-[#25D366] bg-[#25D366]/5 text-[#25D366] font-black"
-                : "border border-transparent text-zinc-400 hover:text-white"
-            }`}
-          >
-            <Camera className="w-4 h-4" /> FOTOS
-          </button>
+          {galleryList.length > 0 && (
+            <button
+              onClick={() => setActiveTab("photos")}
+              className={`py-3 px-5 text-xs font-bold rounded-xl flex items-center gap-2 transition duration-200 shrink-0 ${
+                activeTab === "photos"
+                  ? "border border-[#25D366] bg-[#25D366]/5 text-[#25D366] font-black"
+                  : "border border-transparent text-zinc-400 hover:text-white"
+              }`}
+            >
+              <Camera className="w-4 h-4" /> FOTOS
+            </button>
+          )}
         </div>
       </section>
 
@@ -812,51 +768,53 @@ export default function Perfil({ params }: { params: { id: string } }) {
             {activeTab === "about" && (
               <>
                 {/* Fotos do Trabalho Card */}
-                <div className="bg-zinc-950 border border-white/[0.08] rounded-[28px] p-6 md:p-8 space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="font-extrabold text-sm text-white flex items-center gap-2">
-                      <Camera className="w-4.5 h-4.5 text-primary" /> Fotos do Trabalho
-                    </h3>
-                    <button
-                      onClick={() => setActiveTab("photos")}
-                      className="text-xs font-bold text-zinc-400 hover:text-white transition"
-                    >
-                      Ver todas as fotos →
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5 pt-1">
-                    {galleryList.slice(0, 4).map((imgUrl, idx) => (
-                      <div
-                        key={idx}
-                        onClick={() => setSelectedImage(imgUrl)}
-                        className="aspect-[4/3] bg-zinc-900 rounded-xl overflow-hidden border border-white/[0.05] cursor-pointer group"
-                      >
-                        <img
-                          src={imgUrl}
-                          className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                        />
-                      </div>
-                    ))}
-
-                    {/* 5th Card as Blur Overlay */}
-                    {galleryList.length >= 5 && (
-                      <div
+                {galleryList.length > 0 && (
+                  <div className="bg-zinc-950 border border-white/[0.08] rounded-[28px] p-6 md:p-8 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="font-extrabold text-sm text-white flex items-center gap-2">
+                        <Camera className="w-4.5 h-4.5 text-primary" /> Fotos do Trabalho
+                      </h3>
+                      <button
                         onClick={() => setActiveTab("photos")}
-                        className="aspect-[4/3] bg-zinc-900 rounded-xl overflow-hidden border border-white/[0.05] relative cursor-pointer group"
+                        className="text-xs font-bold text-zinc-450 hover:text-white transition"
                       >
-                        <img
-                          src={galleryList[4]}
-                          className="w-full h-full object-cover group-hover:scale-105 transition duration-300 filter blur-xs"
-                        />
-                        <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-center p-2">
-                          <span className="text-white font-black text-sm">+{galleryList.length - 4}</span>
-                          <span className="text-[10px] text-zinc-350 font-bold uppercase tracking-wider mt-0.5">Ver todas</span>
+                        Ver todas as fotos →
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5 pt-1">
+                      {galleryList.slice(0, 4).map((imgUrl, idx) => (
+                        <div
+                          key={idx}
+                          onClick={() => setSelectedImage(imgUrl)}
+                          className="aspect-[4/3] bg-zinc-900 rounded-xl overflow-hidden border border-white/[0.05] cursor-pointer group"
+                        >
+                          <img
+                            src={imgUrl}
+                            className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                          />
                         </div>
-                      </div>
-                    )}
+                      ))}
+
+                      {/* 5th Card as Blur Overlay */}
+                      {galleryList.length >= 5 && (
+                        <div
+                          onClick={() => setActiveTab("photos")}
+                          className="aspect-[4/3] bg-zinc-900 rounded-xl overflow-hidden border border-white/[0.05] relative cursor-pointer group"
+                        >
+                          <img
+                            src={galleryList[4]}
+                            className="w-full h-full object-cover group-hover:scale-105 transition duration-300 filter blur-xs"
+                          />
+                          <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-center p-2">
+                            <span className="text-white font-black text-sm">+{galleryList.length - 4}</span>
+                            <span className="text-[10px] text-zinc-350 font-bold uppercase tracking-wider mt-0.5">Ver todas</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Sobre o Profissional Card */}
                 <div className="bg-zinc-950 border border-white/[0.08] rounded-[28px] p-6 md:p-8 space-y-6">
@@ -870,16 +828,18 @@ export default function Perfil({ params }: { params: { id: string } }) {
                   </div>
 
                   {/* Especialidades */}
-                  <div className="border-t border-white/[0.06] pt-5 space-y-3">
-                    <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Especialidades</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {specialties.map((spec: string, idx: number) => (
-                        <span key={idx} className="px-3.5 py-1.5 bg-[#0a0a0c] text-zinc-300 border border-white/[0.06] rounded-xl text-xs font-semibold">
-                          {spec}
-                        </span>
-                      ))}
+                  {specialties.length > 0 && (
+                    <div className="border-t border-white/[0.06] pt-5 space-y-3">
+                      <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Especialidades</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {specialties.map((spec: string, idx: number) => (
+                          <span key={idx} className="px-3.5 py-1.5 bg-[#0a0a0c] text-zinc-300 border border-white/[0.06] rounded-xl text-xs font-semibold">
+                            {spec}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Atendimento */}
                   <div className="border-t border-white/[0.06] pt-5 space-y-3">
@@ -921,46 +881,58 @@ export default function Perfil({ params }: { params: { id: string } }) {
                           <Star key={s} className="w-3.5 h-3.5 text-amber-400 fill-current" />
                         ))}
                       </div>
-                      <span className="text-zinc-500 font-normal">({reviewsList.length || 2} avaliações)</span>
+                      <span className="text-zinc-500 font-normal">({reviewsList.length} avaliações)</span>
                     </div>
-                    <button
-                      onClick={() => setActiveTab("reviews")}
-                      className="text-xs font-bold text-zinc-400 hover:text-white transition"
-                    >
-                      Ver todas as avaliações →
-                    </button>
+                    {reviewsToDisplay.length > 0 && (
+                      <button
+                        onClick={() => setActiveTab("reviews")}
+                        className="text-xs font-bold text-zinc-450 hover:text-white transition"
+                      >
+                        Ver todas as avaliações →
+                      </button>
+                    )}
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {reviewsToDisplay.slice(0, 2).map((rev) => (
-                      <div key={rev.id} className="bg-[#0a0a0c] border border-white/[0.06] p-5 rounded-2xl flex gap-4">
-                        <div className="w-9 h-9 rounded-full bg-zinc-900 overflow-hidden flex-shrink-0 border border-white/[0.08]">
-                          <img
-                            src={rev.userAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(rev.userName)}`}
-                            alt={rev.userName}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="flex-1 space-y-1.5">
-                          <div className="flex items-center justify-between flex-wrap gap-2">
-                            <h4 className="font-bold text-white text-xs">{rev.userName}</h4>
-                            <span className="text-zinc-500 text-[10px]">{rev.createdAt}</span>
+                  {reviewsToDisplay.length === 0 ? (
+                    <div className="border border-dashed border-white/10 rounded-2xl p-8 text-center text-zinc-550 w-full">
+                      <Star className="w-8 h-8 mx-auto mb-3 opacity-40 text-primary" />
+                      <p className="font-bold text-white text-sm">Nenhuma avaliação ainda</p>
+                      <p className="text-xs text-zinc-450 mt-1 max-w-xs mx-auto">
+                        Este parceiro ainda não recebeu avaliações.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {reviewsToDisplay.slice(0, 2).map((rev) => (
+                        <div key={rev.id} className="bg-[#0a0a0c] border border-white/[0.06] p-5 rounded-2xl flex gap-4">
+                          <div className="w-9 h-9 rounded-full bg-zinc-900 overflow-hidden flex-shrink-0 border border-white/[0.08]">
+                            <img
+                              src={rev.userAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(rev.userName)}`}
+                              alt={rev.userName}
+                              className="w-full h-full object-cover"
+                            />
                           </div>
-                          <div className="flex items-center gap-0.5">
-                            {[1, 2, 3, 4, 5].map((s: number) => (
-                              <Star
-                                key={s}
-                                className={`w-3 h-3 ${
-                                  s <= rev.rating ? "text-amber-400 fill-current" : "text-zinc-800"
-                                }`}
-                              />
-                            ))}
+                          <div className="flex-1 space-y-1.5">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <h4 className="font-bold text-white text-xs">{rev.userName}</h4>
+                              <span className="text-zinc-500 text-[10px]">{rev.createdAt}</span>
+                            </div>
+                            <div className="flex items-center gap-0.5">
+                              {[1, 2, 3, 4, 5].map((s: number) => (
+                                <Star
+                                  key={s}
+                                  className={`w-3 h-3 ${
+                                    s <= rev.rating ? "text-amber-400 fill-current" : "text-zinc-800"
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <p className="text-zinc-400 text-xs leading-normal">{rev.comment}</p>
                           </div>
-                          <p className="text-zinc-400 text-xs leading-normal">{rev.comment}</p>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </>
             )}
@@ -1122,36 +1094,47 @@ export default function Perfil({ params }: { params: { id: string } }) {
                 {/* Reviews List */}
                 <div className="bg-zinc-950 border border-white/[0.08] rounded-[28px] p-6 md:p-9 space-y-6">
                   <h3 className="font-extrabold text-lg text-white">Opiniões de Clientes</h3>
-                  <div className="divide-y divide-white/[0.06] space-y-6">
-                    {reviewsToDisplay.map((rev: any) => (
-                      <div key={rev.id} className="pt-6 first:pt-0 flex gap-4">
-                        <div className="w-10 h-10 rounded-full bg-zinc-900 overflow-hidden flex-shrink-0 border border-white/[0.08]">
-                          <img
-                            src={rev.userAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(rev.userName)}`}
-                            alt={rev.userName}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="flex-1 space-y-1.5">
-                          <div className="flex items-center justify-between flex-wrap gap-2">
-                            <h4 className="font-bold text-white text-sm">{rev.userName}</h4>
-                            <span className="text-zinc-550 text-xs">{rev.createdAt}</span>
+                  
+                  {reviewsToDisplay.length === 0 ? (
+                    <div className="border border-dashed border-white/10 rounded-2xl p-8 text-center text-zinc-550 w-full">
+                      <Star className="w-8 h-8 mx-auto mb-3 opacity-40 text-primary" />
+                      <p className="font-bold text-white text-sm">Nenhuma avaliação ainda</p>
+                      <p className="text-xs text-zinc-450 mt-1 max-w-xs mx-auto">
+                        Seja o primeiro a avaliar e compartilhe sua experiência com outros usuários!
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-white/[0.06] space-y-6">
+                      {reviewsToDisplay.map((rev: any) => (
+                        <div key={rev.id} className="pt-6 first:pt-0 flex gap-4">
+                          <div className="w-10 h-10 rounded-full bg-zinc-900 overflow-hidden flex-shrink-0 border border-white/[0.08]">
+                            <img
+                              src={rev.userAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(rev.userName)}`}
+                              alt={rev.userName}
+                              className="w-full h-full object-cover"
+                            />
                           </div>
-                          <div className="flex items-center gap-0.5">
-                            {[1, 2, 3, 4, 5].map((s) => (
-                              <Star
-                                key={s}
-                                className={`w-3.5 h-3.5 ${
-                                  s <= rev.rating ? "text-amber-400 fill-current" : "text-zinc-800"
-                                }`}
-                              />
-                            ))}
+                          <div className="flex-1 space-y-1.5">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <h4 className="font-bold text-white text-sm">{rev.userName}</h4>
+                              <span className="text-zinc-550 text-xs">{rev.createdAt}</span>
+                            </div>
+                            <div className="flex items-center gap-0.5">
+                              {[1, 2, 3, 4, 5].map((s) => (
+                                <Star
+                                  key={s}
+                                  className={`w-3.5 h-3.5 ${
+                                    s <= rev.rating ? "text-amber-400 fill-current" : "text-zinc-800"
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <p className="text-zinc-400 text-sm leading-relaxed">{rev.comment}</p>
                           </div>
-                          <p className="text-zinc-400 text-xs leading-relaxed">{rev.comment}</p>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}

@@ -708,18 +708,26 @@ export default function ProfessionalDetailScreen() {
       >
         {/* ═══ COVER ═══ */}
         <Pressable
-          onPress={() => setSelectedImage(prof.coverUri || DEFAULT_COVER)}
+          onPress={() => prof.coverUri && setSelectedImage(prof.coverUri)}
+          disabled={!prof.coverUri}
           style={({ pressed }) => [
             styles.coverContainer,
             isWide && styles.coverContainerWide,
-            pressed && { opacity: 0.95 },
+            pressed && prof.coverUri && { opacity: 0.95 },
           ]}
         >
-          <Image
-            source={{ uri: prof.coverUri || DEFAULT_COVER }}
-            style={styles.coverImage}
-            contentFit="cover"
-          />
+          {prof.coverUri ? (
+            <Image
+              source={{ uri: prof.coverUri }}
+              style={styles.coverImage}
+              contentFit="cover"
+            />
+          ) : (
+            <LinearGradient
+              colors={["#18181b", "#09090b"]}
+              style={styles.coverImage}
+            />
+          )}
           <LinearGradient
             colors={["transparent", "rgba(0,0,0,0.55)"]}
             style={styles.coverGradientBottom}
@@ -840,7 +848,7 @@ export default function ProfessionalDetailScreen() {
                 {prof.responseTime && (
                   <View style={styles.heroPill}>
                     <MaterialIcons name="chat" size={13} color="#A78BFA" />
-                    <Text style={styles.heroPillText}>Responde em poucos minutos</Text>
+                    <Text style={styles.heroPillText}>Responde em {prof.responseTime}</Text>
                   </View>
                 )}
               </View>
