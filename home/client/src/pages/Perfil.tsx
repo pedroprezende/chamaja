@@ -424,8 +424,8 @@ export default function Perfil({ params }: { params: { id: string } }) {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center justify-center gap-4">
-        <div className="w-12 h-12 border-4 border-zinc-800 border-t-primary rounded-full animate-spin"></div>
-        <span className="text-zinc-500 font-semibold text-sm">Carregando perfil do parceiro...</span>
+        <div className="w-11 h-11 border-[3px] border-zinc-800 border-t-primary rounded-full animate-spin"></div>
+        <span className="text-zinc-500 font-semibold text-sm tracking-wide">Carregando perfil...</span>
       </div>
     );
   }
@@ -557,14 +557,14 @@ export default function Perfil({ params }: { params: { id: string } }) {
   return (
     <div className="min-h-screen bg-[#050505] text-white selection:bg-primary/30 selection:text-white font-sans flex flex-col">
       {/* ── HEADER ── */}
-      <header className="z-50 bg-[#050505]/75 backdrop-blur-xl border-b border-zinc-900/60 sticky top-0">
-        <div className="container mx-auto px-4 lg:px-8 h-20 flex items-center justify-between">
+      <header className="z-50 bg-[#050505]/80 backdrop-blur-xl border-b border-white/[0.06] sticky top-0">
+        <div className="container mx-auto px-4 lg:px-8 h-[72px] flex items-center justify-between gap-4">
           <button
             onClick={() => window.location.href = "/busca"}
-            className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition"
+            className="flex items-center gap-2 text-sm font-semibold text-zinc-400 hover:text-white transition"
           >
             <ArrowLeft className="h-4 w-4" />
-            <span>Voltar para Busca</span>
+            <span className="hidden sm:inline">Voltar para Busca</span>
           </button>
 
           <img
@@ -576,31 +576,32 @@ export default function Perfil({ params }: { params: { id: string } }) {
 
           <button
             onClick={toggleFavorite}
-            className={`p-2 rounded-xl border ${
+            className={`flex items-center gap-2 px-3 h-10 rounded-full border text-xs font-bold transition ${
               isFavorite
-                ? "bg-primary/5 border-primary text-primary"
-                : "border-zinc-800 text-zinc-400 hover:text-white"
-            } transition`}
+                ? "bg-primary/10 border-primary text-primary"
+                : "border-white/10 text-zinc-400 hover:text-white hover:border-white/20"
+            }`}
           >
-            <Heart className={`h-4.5 w-4.5 ${isFavorite ? "fill-current" : ""}`} />
+            <Heart className={`h-4 w-4 ${isFavorite ? "fill-current" : ""}`} />
+            <span className="hidden sm:inline">{isFavorite ? "Favoritado" : "Favoritar"}</span>
           </button>
         </div>
       </header>
 
       {/* ── PROFILE COVER PHOTO ── */}
-      <section className="relative h-64 md:h-80 w-full overflow-hidden bg-zinc-900 flex-shrink-0">
+      <section className="relative h-72 md:h-[26rem] w-full overflow-hidden bg-zinc-950 flex-shrink-0">
         <img
-          src={provider.coverUri || "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=1200&q=80"}
+          src={provider.coverUri || "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=1600&q=80"}
           alt={provider.name}
-          className="w-full h-full object-cover opacity-75"
+          className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-black/45"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/15 to-black/20" />
 
         {/* Floating actions */}
         <div className="absolute top-6 right-6 flex gap-3">
           <button
             onClick={handleShare}
-            className="p-3 bg-black/60 backdrop-blur-md border border-white/10 hover:bg-zinc-900 text-white rounded-full transition"
+            className="p-3 bg-black/50 backdrop-blur-md border border-white/15 hover:bg-black/70 hover:border-white/25 text-white rounded-full transition"
             title="Compartilhar Perfil"
           >
             <Share2 className="h-4.5 w-4.5" />
@@ -609,84 +610,101 @@ export default function Perfil({ params }: { params: { id: string } }) {
       </section>
 
       {/* ── PROFILE INFO CARD (Overlapping) ── */}
-      <section className="container mx-auto px-4 lg:px-8 relative -mt-20 z-10 flex-shrink-0">
-        <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
+      <section className="container mx-auto px-4 lg:px-8 relative -mt-20 md:-mt-24 z-10 flex-shrink-0">
+        <div className="bg-zinc-950 border border-white/[0.08] rounded-[28px] p-6 md:p-9 shadow-2xl shadow-black/50 flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-9">
           {/* Circular Avatar */}
-          <div className="w-28 h-28 md:w-32 md:h-32 rounded-full border-4 border-zinc-950 overflow-hidden shadow-xl bg-zinc-950 -mt-14 md:-mt-20 flex-shrink-0">
-            <img
-              src={provider.avatarUri || `https://ui-avatars.com/api/?name=${encodeURIComponent(provider.name)}&background=25D366&color=fff&size=150`}
-              alt={provider.name}
-              className="w-full h-full object-cover"
-            />
+          <div className="relative flex-shrink-0 -mt-14 md:-mt-20">
+            <div className="w-28 h-28 md:w-36 md:h-36 rounded-full border-[5px] border-zinc-950 overflow-hidden shadow-xl bg-zinc-900">
+              <img
+                src={provider.avatarUri || `https://ui-avatars.com/api/?name=${encodeURIComponent(provider.name)}&background=25D366&color=fff&size=150`}
+                alt={provider.name}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            {provider.isVerified && (
+              <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center border-[3px] border-zinc-950">
+                <CheckCircle2 className="w-4 h-4 text-white" />
+              </div>
+            )}
           </div>
 
           {/* Info Details */}
-          <div className="flex-1 text-center md:text-left space-y-4">
-            <div className="space-y-1.5">
-              <div className="flex flex-col md:flex-row md:items-center gap-2 justify-center md:justify-start">
-                <h1 className="text-3xl font-black text-white leading-tight">{provider.name}</h1>
-                <div className="flex items-center gap-2 justify-center">
-                  {(provider.benefitKeys?.includes("premium_badge") || provider.benefitKeys?.includes("featured_search")) && (
-                    <span className="px-2.5 py-0.5 bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-wider rounded">
-                      Parceiro
-                    </span>
-                  )}
-                  {provider.isVerified && (
-                    <span className="px-2.5 py-0.5 bg-emerald-500 text-white text-[10px] font-black uppercase tracking-wider rounded">
-                      ✓ Verificado
-                    </span>
-                  )}
-                </div>
+          <div className="flex-1 text-center md:text-left space-y-4 w-full">
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2.5 justify-center md:justify-start">
+                <h1 className="text-2xl md:text-3xl font-black text-white leading-tight">{provider.name}</h1>
+                {(provider.benefitKeys?.includes("premium_badge") || provider.benefitKeys?.includes("featured_search")) && (
+                  <span className="px-2.5 py-1 bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-wider rounded-full">
+                    Parceiro
+                  </span>
+                )}
+                {provider.isVerified && (
+                  <span className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[10px] font-black uppercase tracking-wider rounded-full">
+                    <CheckCircle2 className="w-3 h-3" /> Verificado
+                  </span>
+                )}
               </div>
-              <p className="text-zinc-500 font-bold uppercase tracking-wider text-xs">
+              <span className="inline-block px-3 py-1 bg-primary/10 text-primary text-[11px] font-bold uppercase tracking-wider rounded-full">
                 {provider.category || "Profissional Local"}
-              </p>
+              </span>
             </div>
 
             {/* Ratings & Location Grid */}
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-6 gap-y-2 text-sm text-zinc-400">
-              <div className="flex items-center gap-1">
-                <Star className="h-4.5 w-4.5 text-primary fill-current" />
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-5 gap-y-2 text-sm text-zinc-400">
+              <div className="flex items-center gap-1.5">
+                <Star className="h-4 w-4 text-amber-400 fill-current" />
                 <span className="text-white font-extrabold">{Number(provider.rating || 5.0).toFixed(1)}</span>
-                <span className="text-zinc-650">({provider.ratingCount || 10} avaliações)</span>
+                <span className="text-zinc-500">({provider.ratingCount || 10} avaliações)</span>
               </div>
-              <div className="flex items-center gap-1.5 text-zinc-400">
+              <span className="hidden sm:inline text-zinc-700">•</span>
+              <div className="flex items-center gap-1.5">
                 <MapPin className="h-4 w-4 text-primary" />
                 <span>{provider.neighborhood ? `${provider.neighborhood}, ` : ""}{provider.city || "Região local"}</span>
               </div>
+              <span className="hidden sm:inline text-zinc-700">•</span>
               <div className={`flex items-center gap-1.5 font-bold ${realTimeStatus.isOpen ? "text-emerald-400" : "text-red-400"}`}>
-                <span className={`w-2 h-2 rounded-full ${realTimeStatus.isOpen ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`}></span>
+                <span className={`w-1.5 h-1.5 rounded-full ${realTimeStatus.isOpen ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`}></span>
                 <span>{realTimeStatus.badge}</span>
                 <span className="text-zinc-500 text-xs font-normal">({realTimeStatus.detailMessage})</span>
               </div>
+            </div>
+
+            {/* Desktop quick action */}
+            <div className="hidden md:flex items-center gap-3 pt-1">
+              <Button
+                onClick={handleContactWhatsApp}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-black px-6 h-11 rounded-xl shadow-lg shadow-primary/10 flex items-center gap-2"
+              >
+                <Phone className="w-4 h-4" /> Chamar no WhatsApp
+              </Button>
             </div>
           </div>
         </div>
       </section>
 
       {/* ── PROFILE TABS SELECTOR ── */}
-      <section className="container mx-auto px-4 lg:px-8 mt-8 flex-shrink-0">
-        <div className="flex bg-zinc-950 border border-zinc-900 rounded-2xl p-1 max-w-md">
+      <section className="container mx-auto px-4 lg:px-8 mt-8 sticky top-[72px] z-40 bg-[#050505]/90 backdrop-blur-xl pb-2 flex-shrink-0">
+        <div className="flex bg-zinc-950 border border-white/[0.08] rounded-2xl p-1.5 max-w-md gap-1">
           <button
             onClick={() => setActiveTab("about")}
-            className={`flex-1 py-3 text-xs font-bold rounded-xl transition ${
-              activeTab === "about" ? "bg-primary text-primary-foreground font-black" : "text-zinc-400 hover:text-white"
+            className={`flex-1 py-3 text-[11px] sm:text-xs font-bold rounded-xl transition ${
+              activeTab === "about" ? "bg-primary text-primary-foreground font-black shadow-md shadow-primary/20" : "text-zinc-400 hover:text-white"
             }`}
           >
             SOBRE & SERVIÇOS
           </button>
           <button
             onClick={() => setActiveTab("catalog")}
-            className={`flex-1 py-3 text-xs font-bold rounded-xl transition ${
-              activeTab === "catalog" ? "bg-primary text-primary-foreground font-black" : "text-zinc-400 hover:text-white"
+            className={`flex-1 py-3 text-[11px] sm:text-xs font-bold rounded-xl transition ${
+              activeTab === "catalog" ? "bg-primary text-primary-foreground font-black shadow-md shadow-primary/20" : "text-zinc-400 hover:text-white"
             }`}
           >
             {isComercio ? "CARDÁPIO" : "SERVIÇOS E PREÇOS"}
           </button>
           <button
             onClick={() => setActiveTab("reviews")}
-            className={`flex-1 py-3 text-xs font-bold rounded-xl transition ${
-              activeTab === "reviews" ? "bg-primary text-primary-foreground font-black" : "text-zinc-400 hover:text-white"
+            className={`flex-1 py-3 text-[11px] sm:text-xs font-bold rounded-xl transition ${
+              activeTab === "reviews" ? "bg-primary text-primary-foreground font-black shadow-md shadow-primary/20" : "text-zinc-400 hover:text-white"
             }`}
           >
             AVALIAÇÕES ({reviewsList.length})
@@ -701,7 +719,7 @@ export default function Perfil({ params }: { params: { id: string } }) {
           <div className="lg:col-span-8 space-y-8">
             {/* ABOUT TAB */}
             {activeTab === "about" && (
-              <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 md:p-8 space-y-6">
+              <div className="bg-zinc-950 border border-white/[0.08] rounded-[28px] p-6 md:p-9 space-y-7">
                 <div className="space-y-3">
                   <h2 className="text-xl font-black text-white flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-primary" />
@@ -713,7 +731,7 @@ export default function Perfil({ params }: { params: { id: string } }) {
                 </div>
 
                 {/* Popular Services list */}
-                <div className="border-t border-zinc-900/60 pt-6 space-y-4">
+                <div className="border-t border-white/[0.06] pt-6 space-y-4">
                   <h3 className="font-bold text-white text-base">Especialidades</h3>
                   <div className="flex flex-wrap gap-2">
                     {provider.services ? (
@@ -724,7 +742,7 @@ export default function Perfil({ params }: { params: { id: string } }) {
                             return parsed.map((s, idx) => {
                               const serviceName = typeof s === "object" && s !== null ? s.name || s.title || JSON.stringify(s) : String(s);
                               return (
-                                <span key={idx} className="px-3.5 py-1.5 bg-zinc-900 text-zinc-300 border border-zinc-850 rounded-xl text-xs font-semibold">
+                                <span key={idx} className="px-3.5 py-1.5 bg-zinc-900 text-zinc-300 border border-white/[0.06] rounded-xl text-xs font-semibold">
                                   {serviceName}
                                 </span>
                               );
@@ -741,11 +759,11 @@ export default function Perfil({ params }: { params: { id: string } }) {
 
                 {/* Portfólio / Galeria de Fotos de Trabalhos Anteriores */}
                 {provider.gallery && provider.gallery.length > 0 && (
-                  <div className="border-t border-zinc-900/60 pt-6 space-y-4">
+                  <div className="border-t border-white/[0.06] pt-6 space-y-4">
                     <h3 className="font-bold text-white text-base">Fotos do Portfólio / Trabalhos</h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                       {provider.gallery.map((imgUrl: string, idx: number) => (
-                        <div key={idx} className="aspect-square bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-900">
+                        <div key={idx} className="aspect-square bg-zinc-900 rounded-2xl overflow-hidden border border-white/[0.06]">
                           <img src={imgUrl} className="w-full h-full object-cover hover:scale-105 transition duration-300" />
                         </div>
                       ))}
@@ -757,7 +775,7 @@ export default function Perfil({ params }: { params: { id: string } }) {
 
             {/* CATALOG / PRODUCTS / SERVICES TAB */}
             {activeTab === "catalog" && (
-              <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 md:p-8 space-y-8">
+              <div className="bg-zinc-950 border border-white/[0.08] rounded-[28px] p-6 md:p-9 space-y-8">
                 <div className="space-y-6">
                   <div className="space-y-1">
                     <h2 className="text-xl font-black text-white flex items-center gap-2">
@@ -779,7 +797,7 @@ export default function Perfil({ params }: { params: { id: string } }) {
                   </div>
 
                   {catalogItems.length === 0 ? (
-                    <div className="border border-dashed border-zinc-800 rounded-2xl p-8 text-center text-zinc-500 w-full">
+                    <div className="border border-dashed border-white/10 rounded-2xl p-8 text-center text-zinc-500 w-full">
                       <ShoppingBag className="w-8 h-8 mx-auto mb-3 opacity-40 text-primary" />
                       <p className="font-bold text-white text-sm">Catálogo em atualização</p>
                       <p className="text-xs text-zinc-400 mt-1 max-w-xs mx-auto">
@@ -791,17 +809,17 @@ export default function Perfil({ params }: { params: { id: string } }) {
                       {catalogItems.map((item) => {
                         const qty = selectedItems[item.id] || 0;
                         return (
-                          <div key={item.id} className="bg-[#050505] border border-zinc-900 p-5 rounded-2xl flex flex-col justify-between gap-4">
+                          <div key={item.id} className="bg-[#0a0a0b] border border-white/[0.07] hover:border-white/[0.14] p-5 rounded-2xl flex flex-col justify-between gap-4 transition-colors">
                             <div className="space-y-1">
                               <h4 className="font-extrabold text-white text-sm">{item.name}</h4>
                               <p className="text-zinc-500 text-xs leading-normal line-clamp-2">{item.description}</p>
-                              <span className="text-primary text-xs font-extrabold block pt-1">
+                              <span className="text-primary text-sm font-extrabold block pt-1">
                                 R$ {Number(item.price).toFixed(2)}
                               </span>
                             </div>
-                            <div className="flex items-center justify-between pt-2 border-t border-zinc-900/60 mt-auto">
+                            <div className="flex items-center justify-between pt-3 border-t border-white/[0.06] mt-auto">
                               {qty > 0 ? (
-                                <div className="flex items-center bg-zinc-900 rounded-xl border border-zinc-800 p-0.5 w-full justify-between">
+                                <div className="flex items-center bg-zinc-900 rounded-xl border border-white/[0.08] p-0.5 w-full justify-between">
                                   <button
                                     type="button"
                                     onClick={() => setSelectedItems(prev => ({ ...prev, [item.id]: Math.max(0, qty - 1) }))}
@@ -821,7 +839,7 @@ export default function Perfil({ params }: { params: { id: string } }) {
                               ) : (
                                 <Button
                                   onClick={() => setSelectedItems(prev => ({ ...prev, [item.id]: 1 }))}
-                                  className="w-full bg-zinc-900 hover:bg-primary border border-zinc-850 hover:border-primary text-zinc-300 hover:text-primary-foreground font-extrabold text-[11px] rounded-xl h-8 py-1 px-3 transition-all"
+                                  className="w-full bg-zinc-900 hover:bg-primary border border-white/[0.08] hover:border-primary text-zinc-300 hover:text-primary-foreground font-extrabold text-[11px] rounded-xl h-9 py-1 px-3 transition-all"
                                 >
                                   Selecionar
                                 </Button>
@@ -840,7 +858,7 @@ export default function Perfil({ params }: { params: { id: string } }) {
             {activeTab === "reviews" && (
               <div className="space-y-6">
                 {!userProfile ? (
-                  <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 md:p-8 text-center space-y-4">
+                  <div className="bg-zinc-950 border border-white/[0.08] rounded-[28px] p-6 md:p-9 text-center space-y-4">
                     <h3 className="font-extrabold text-lg text-white">Escrever uma Avaliação</h3>
                     <p className="text-sm text-zinc-400 max-w-md mx-auto">
                       Para avaliar ou comentar, você deve obrigatoriamente estar logado com sua conta do Google ou e-mail do XamaJá.
@@ -855,7 +873,7 @@ export default function Perfil({ params }: { params: { id: string } }) {
                     </Button>
                   </div>
                 ) : (
-                  <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 md:p-8 space-y-5">
+                  <div className="bg-zinc-950 border border-white/[0.08] rounded-[28px] p-6 md:p-9 space-y-5">
                     <h3 className="font-extrabold text-lg text-white">Escrever uma Avaliação</h3>
                     <form onSubmit={handleSubmitReview} className="space-y-4">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -865,7 +883,7 @@ export default function Perfil({ params }: { params: { id: string } }) {
                             type="text"
                             disabled
                             value={`${userProfile.name} (Sua Conta)`}
-                            className="bg-[#0c0c0e]/50 border-zinc-900 text-zinc-400 rounded-xl cursor-not-allowed opacity-80"
+                            className="bg-[#0c0c0e]/50 border-white/[0.08] text-zinc-400 rounded-xl cursor-not-allowed opacity-80"
                           />
                         </div>
                         <div className="flex flex-col gap-2">
@@ -880,7 +898,7 @@ export default function Perfil({ params }: { params: { id: string } }) {
                               >
                                 <Star
                                   className={`w-6 h-6 ${
-                                    star <= rating ? "text-primary fill-current" : "text-zinc-700"
+                                    star <= rating ? "text-amber-400 fill-current" : "text-zinc-700"
                                   }`}
                                 />
                               </button>
@@ -895,7 +913,7 @@ export default function Perfil({ params }: { params: { id: string } }) {
                           placeholder="Escreva como foi sua experiência com este parceiro..."
                           value={comment}
                           onChange={(e) => setComment(e.target.value)}
-                          className="bg-[#0c0c0e] border-zinc-900 text-white rounded-xl focus:border-primary focus-visible:ring-0 resize-none"
+                          className="bg-[#0c0c0e] border-white/[0.08] text-white rounded-xl focus:border-primary focus-visible:ring-0 resize-none"
                         />
                       </div>
                       <Button
@@ -910,12 +928,12 @@ export default function Perfil({ params }: { params: { id: string } }) {
                 )}
 
                 {/* Reviews List */}
-                <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 md:p-8 space-y-6">
+                <div className="bg-zinc-950 border border-white/[0.08] rounded-[28px] p-6 md:p-9 space-y-6">
                   <h3 className="font-extrabold text-lg text-white">Opiniões de Clientes</h3>
-                  <div className="divide-y divide-zinc-900/80 space-y-6">
+                  <div className="divide-y divide-white/[0.06] space-y-6">
                     {reviewsList.map((rev) => (
                       <div key={rev.id} className="pt-6 first:pt-0 flex gap-4">
-                        <div className="w-10 h-10 rounded-full bg-zinc-900 overflow-hidden flex-shrink-0 border border-zinc-800">
+                        <div className="w-10 h-10 rounded-full bg-zinc-900 overflow-hidden flex-shrink-0 border border-white/[0.08]">
                           <img
                             src={rev.userAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(rev.userName)}`}
                             alt={rev.userName}
@@ -932,7 +950,7 @@ export default function Perfil({ params }: { params: { id: string } }) {
                               <Star
                                 key={s}
                                 className={`w-3.5 h-3.5 ${
-                                  s <= rev.rating ? "text-primary fill-current" : "text-zinc-800"
+                                  s <= rev.rating ? "text-amber-400 fill-current" : "text-zinc-800"
                                 }`}
                               />
                             ))}
@@ -949,10 +967,10 @@ export default function Perfil({ params }: { params: { id: string } }) {
 
           {/* Right Column: Business info sidebar */}
           <div className="lg:col-span-4 space-y-6">
-            <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 shadow-xl space-y-5">
-              <div className="flex items-center justify-between pb-4 border-b border-zinc-900 gap-2">
+            <div className="bg-zinc-950 border border-white/[0.08] rounded-[28px] p-6 shadow-xl space-y-5">
+              <div className="flex items-center justify-between pb-4 border-b border-white/[0.06] gap-2">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-zinc-900 rounded-xl text-primary border border-zinc-850">
+                  <div className="p-3 bg-zinc-900 rounded-xl text-primary border border-white/[0.06]">
                     <Clock className="w-5 h-5" />
                   </div>
                   <div>
@@ -969,7 +987,7 @@ export default function Perfil({ params }: { params: { id: string } }) {
                 </span>
               </div>
 
-              <div className="space-y-2 text-xs">
+              <div className="space-y-1.5 text-xs">
                 {DAYS_CONFIG.map(({ key, label }) => {
                   const daySched = parsedHours[key];
                   const formatted = formatDaySchedule(daySched);
@@ -980,8 +998,8 @@ export default function Perfil({ params }: { params: { id: string } }) {
                   return (
                     <div
                       key={key}
-                      className={`flex justify-between items-center py-1.5 border-b border-zinc-900/40 last:border-b-0 ${
-                        isToday ? "font-bold text-white bg-zinc-900/50 px-2.5 py-2 rounded-xl -mx-2 border-primary/20 border" : "text-zinc-400"
+                      className={`flex justify-between items-center py-1.5 border-b border-white/[0.04] last:border-b-0 ${
+                        isToday ? "font-bold text-white bg-zinc-900/60 px-2.5 py-2 rounded-xl -mx-2 border-primary/20 border" : "text-zinc-400"
                       }`}
                     >
                       <span className="flex items-center gap-1.5 font-semibold">
@@ -1013,8 +1031,8 @@ export default function Perfil({ params }: { params: { id: string } }) {
               if (activeNetworks.length === 0) return null;
 
               return (
-                <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 shadow-xl space-y-4">
-                  <div className="flex items-center gap-3 pb-3 border-b border-zinc-900">
+                <div className="bg-zinc-950 border border-white/[0.08] rounded-[28px] p-6 shadow-xl space-y-4">
+                  <div className="flex items-center gap-3 pb-3 border-b border-white/[0.06]">
                     <h3 className="font-bold text-white text-sm">Redes Sociais</h3>
                   </div>
                   <div className="flex flex-wrap items-center gap-4 pt-1">
@@ -1043,12 +1061,10 @@ export default function Perfil({ params }: { params: { id: string } }) {
               );
             })()}
 
-
-
             {isComercio && provider.deliveryTime && (
-              <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 shadow-xl space-y-4">
+              <div className="bg-zinc-950 border border-white/[0.08] rounded-[28px] p-6 shadow-xl space-y-4">
                 <div className="flex items-center gap-3 pb-2">
-                  <div className="p-3 bg-zinc-900 rounded-xl text-primary border border-zinc-850">
+                  <div className="p-3 bg-zinc-900 rounded-xl text-primary border border-white/[0.06]">
                     <UtensilsCrossed className="w-5 h-5" />
                   </div>
                   <div>
@@ -1064,7 +1080,7 @@ export default function Perfil({ params }: { params: { id: string } }) {
             )}
 
             {/* Direct Contact WhatsApp Banner */}
-            <div className="bg-gradient-to-br from-primary/10 to-emerald-500/5 border border-primary/25 rounded-3xl p-6 shadow-xl text-center space-y-4">
+            <div className="bg-gradient-to-br from-primary/10 to-emerald-500/5 border border-primary/25 rounded-[28px] p-6 shadow-xl text-center space-y-4">
               <h4 className="font-extrabold text-white text-base leading-tight">Fale direto com o Parceiro!</h4>
               <p className="text-zinc-400 text-xs leading-relaxed">Combine detalhes, solicite orçamentos ou faça pedidos de forma 100% gratuita via WhatsApp.</p>
               <button
@@ -1080,7 +1096,7 @@ export default function Perfil({ params }: { params: { id: string } }) {
       </main>
 
       {/* Sticky Bottom WhatsApp Mobile Button */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#050505]/80 backdrop-blur-md border-t border-zinc-900 z-40 lg:hidden flex-shrink-0">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#050505]/85 backdrop-blur-md border-t border-white/[0.08] z-40 lg:hidden flex-shrink-0">
         <button
           onClick={handleContactWhatsApp}
           className="w-full py-4 bg-primary text-primary-foreground font-black rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-primary/15 text-sm"
