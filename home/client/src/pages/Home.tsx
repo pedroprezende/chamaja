@@ -896,9 +896,9 @@ export default function Home() {
       </header>
 
       <section className="relative py-16 md:py-24 overflow-hidden border-b border-white/[0.06] bg-[#050506]">
-        {/* Ambient map pattern & glows */}
+        {/* Ambient mockup background */}
         <div 
-          className="absolute inset-0 bg-[url('/assets/images/hero_bg_city.png')] bg-cover bg-center opacity-[0.06] pointer-events-none mix-blend-overlay"
+          className="absolute inset-0 bg-[url('/assets/images/fundo_hero_mockup.png')] bg-cover bg-center opacity-[0.4] pointer-events-none"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-zinc-950/80 to-[#050506] pointer-events-none" />
         
