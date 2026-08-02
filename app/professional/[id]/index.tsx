@@ -709,6 +709,26 @@ export default function ProfessionalDetailScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 140 }}
       >
+        {/* ═══ COVER BANNER ═══ */}
+        <Pressable
+          onPress={() => setSelectedImage(prof.coverUri || DEFAULT_COVER)}
+          style={({ pressed }) => [
+            styles.coverBanner,
+            isWide && styles.coverBannerWide,
+            pressed && { opacity: 0.92 },
+          ]}
+        >
+          <Image
+            source={{ uri: prof.coverUri || DEFAULT_COVER }}
+            style={styles.coverBannerImage}
+            contentFit="cover"
+          />
+          <LinearGradient
+            colors={["transparent", "rgba(17,24,39,0.95)"]}
+            style={styles.coverBannerGradient}
+          />
+        </Pressable>
+
         {/* ═══ HERO SECTION ═══ */}
         <View style={styles.heroSection}>
           <View style={[styles.heroRow, isWide && { flexDirection: "row", alignItems: "flex-start", gap: 24 }]}>
@@ -2679,6 +2699,29 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     color: "#9CA3AF",
+  },
+
+  /* ═══ COVER BANNER ═══ */
+  coverBanner: {
+    width: "100%",
+    height: 200,
+    position: "relative",
+    overflow: "hidden",
+    backgroundColor: "#1F2937",
+  },
+  coverBannerWide: {
+    height: 320,
+  },
+  coverBannerImage: {
+    width: "100%",
+    height: "100%",
+  },
+  coverBannerGradient: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 90,
   },
 
   /* ═══ HERO ═══ */
