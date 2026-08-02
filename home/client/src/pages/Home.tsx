@@ -895,16 +895,63 @@ export default function Home() {
         )}
       </header>
 
-      <section className="relative py-16 md:py-24 overflow-hidden border-b border-white/[0.06] bg-[#050506]">
+        <section className="relative py-16 md:py-24 overflow-hidden border-b border-white/[0.06] bg-[#050506]">
+        {/* Custom Premium 3D & Floating Animations block */}
+        <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes float-y-1 {
+            0%, 100% { transform: translateY(0px) rotate(-3deg); }
+            50% { transform: translateY(-12px) rotate(-2deg); }
+          }
+          @keyframes float-y-2 {
+            0%, 100% { transform: translateY(0px) rotate(4deg); }
+            50% { transform: translateY(-18px) rotate(5deg); }
+          }
+          @keyframes float-y-3 {
+            0%, 100% { transform: translateY(0px) rotate(-5deg); }
+            50% { transform: translateY(-10px) rotate(-3deg); }
+          }
+          @keyframes float-y-4 {
+            0%, 100% { transform: translateY(0px) rotate(3deg); }
+            50% { transform: translateY(-15px) rotate(2deg); }
+          }
+          @keyframes float-mascote {
+            0%, 100% { transform: translateY(0px) scale(1) rotate(0deg); }
+            50% { transform: translateY(-8px) scale(1.03) rotate(3deg); }
+          }
+          @keyframes float-phone {
+            0%, 100% { transform: translateY(0px) rotateX(10deg) rotateY(-18deg) rotateZ(-2deg); }
+            50% { transform: translateY(-16px) rotateX(7deg) rotateY(-22deg) rotateZ(0deg); }
+          }
+          @keyframes pulse-connection {
+            0%, 100% { stroke-dashoffset: 100; opacity: 0.25; }
+            50% { stroke-dashoffset: 0; opacity: 0.85; }
+          }
+          .animate-float-card-1 { animation: float-y-1 6s ease-in-out infinite; }
+          .animate-float-card-2 { animation: float-y-2 8s ease-in-out infinite; }
+          .animate-float-card-3 { animation: float-y-3 7s ease-in-out infinite; }
+          .animate-float-card-4 { animation: float-y-4 9s ease-in-out infinite; }
+          .animate-float-mascote-scene { animation: float-mascote 5.5s ease-in-out infinite; }
+          .animate-float-phone-scene { animation: float-phone 7.5s ease-in-out infinite; }
+          .animate-pulse-connection {
+            stroke-dasharray: 10 15;
+            animation: pulse-connection 15s linear infinite;
+          }
+          .perspective-1000 {
+            perspective: 1200px;
+          }
+          .transform-style-3d {
+            transform-style: preserve-3d;
+          }
+        `}} />
+
         {/* Ambient map pattern & glows */}
         <div 
-          className="absolute inset-0 bg-[url('/assets/images/hero_bg_city.png')] bg-cover bg-center opacity-[0.06] pointer-events-none mix-blend-overlay"
+          className="absolute inset-0 bg-[url('/assets/images/fundo_hero_mockup.png')] bg-cover bg-center opacity-[0.25] pointer-events-none mix-blend-overlay"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-zinc-950/80 to-[#050506] pointer-events-none" />
         
         {/* Glowing gradient circles (Stripe-like depth) */}
         <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] pointer-events-none animate-glow-pulse" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[140px] pointer-events-none animate-glow-pulse" style={{ animationDelay: "3s" }} />
 
         <div className="container mx-auto px-4 relative z-10">
           {/* Stacked on mobile, side-by-side grid on desktop/tablets */}
@@ -928,7 +975,7 @@ export default function Home() {
                 <div className="lg:hidden flex-shrink-0 relative group">
                   <div className="absolute inset-0 bg-primary/20 rounded-full blur-md animate-glow-pulse"></div>
                   <img
-                    src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/mascote-parrot-WdeTpQk76sVEPj2emyYAPr.webp"
+                    src="/assets/images/mascote-xara.png"
                     alt="Xará"
                     className="w-10 h-10 object-contain relative z-10 drop-shadow-md animate-float-slow"
                   />
@@ -1092,29 +1139,104 @@ export default function Home() {
             </div>
 
             {/* Right Content */}
-            <div className="flex justify-center relative w-full h-[400px] md:h-[520px] lg:h-[650px] items-center z-10">
+            <div className="flex justify-center relative w-full h-[550px] md:h-[650px] lg:h-[750px] items-center z-10 perspective-1000 transform-style-3d select-none">
               {/* Animated glowing background blobs */}
               <div className="absolute top-1/4 left-1/4 w-80 h-80 bg-primary/20 rounded-full blur-[100px] animate-glow-pulse pointer-events-none z-0"></div>
               <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-[130px] animate-glow-pulse pointer-events-none z-0" style={{ animationDelay: "2s" }}></div>
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-[#84cc16]/15 rounded-full blur-[100px] animate-glow-pulse pointer-events-none z-0" style={{ animationDelay: "4s" }}></div>
+              
+              {/* SVG connection lines for 3D depth map */}
+              <svg className="absolute inset-0 w-full h-full pointer-events-none z-0 opacity-30 animate-pulse" xmlns="http://www.w3.org/2000/svg">
+                <line x1="20%" y1="30%" x2="50%" y2="25%" stroke="#84cc16" strokeWidth="1.5" className="animate-pulse-connection" />
+                <line x1="50%" y1="25%" x2="80%" y2="40%" stroke="#10b981" strokeWidth="1.5" className="animate-pulse-connection" />
+                <line x1="80%" y1="40%" x2="65%" y2="75%" stroke="#84cc16" strokeWidth="1.5" className="animate-pulse-connection" />
+                <line x1="65%" y1="75%" x2="30%" y2="65%" stroke="#10b981" strokeWidth="1.5" className="animate-pulse-connection" />
+                <line x1="30%" y1="65%" x2="20%" y2="30%" stroke="#84cc16" strokeWidth="1.5" className="animate-pulse-connection" />
+                
+                <circle cx="20%" cy="30%" r="5" fill="#84cc16" />
+                <circle cx="50%" cy="25%" r="6" fill="#10b981" />
+                <circle cx="80%" cy="40%" r="5" fill="#84cc16" />
+                <circle cx="65%" cy="75%" r="7" fill="#10b981" />
+                <circle cx="30%" cy="65%" r="5" fill="#84cc16" />
+              </svg>
 
-              {/* Background Mockup (fundo_hero_mockup.png) directly behind the main phone */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 scale-105 opacity-80">
-                <img
-                  src="/assets/images/fundo_hero_mockup.png"
-                  alt="Background Mockup"
-                  className="w-full h-full object-contain"
-                />
-              </div>
-
-              {/* Big Mockup (Increased Size & Prominence) */}
-              <div className="relative z-10 w-full h-full max-w-[400px] md:max-w-[520px] lg:max-w-[620px] flex items-center justify-center animate-float-slow">
+              {/* Central Phone Mockup (Inclined in 3D Perspective) */}
+              <div className="relative z-10 w-[240px] md:w-[295px] lg:w-[350px] aspect-[9/18.5] flex items-center justify-center animate-float-phone-scene transform-style-3d">
                 <img
                   src="/assets/images/hero_mockup_right.png"
                   alt="XamaJá App Ecosystem"
-                  className="w-full h-full object-contain drop-shadow-[0_0_80px_rgba(132,204,22,0.25)] hover:scale-102 transition-transform duration-500"
+                  className="w-full h-full object-contain drop-shadow-[0_25px_60px_rgba(132,204,22,0.25)]"
                 />
               </div>
+
+              {/* Floating Mascot (Xará) */}
+              <div className="absolute bottom-[10%] left-[8%] md:left-[15%] lg:left-[18%] z-20 w-20 h-20 md:w-24 md:h-24 animate-float-mascote-scene select-none">
+                <img
+                  src="/assets/images/mascote-xara.png"
+                  alt="Mascote Xará"
+                  className="w-full h-full object-contain filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.4)]"
+                />
+              </div>
+
+              {/* Card 1: Pizzaria Japá (Top Right) */}
+              <div className="absolute top-[8%] right-[-5%] md:right-[5%] z-30 animate-float-card-1 bg-zinc-950/75 backdrop-blur-md border border-white/[0.08] p-3 rounded-2xl flex items-center gap-3 shadow-[0_20px_40px_rgba(0,0,0,0.5)] min-w-[170px] select-none hover:border-primary/40 transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                  <Utensils className="w-5 h-5" />
+                </div>
+                <div className="text-left">
+                  <span className="text-white font-extrabold text-[11px] block">Pizzaria Japá</span>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <Star className="w-3 h-3 text-amber-400 fill-current" />
+                    <span className="text-white font-black text-[10px]">4.9</span>
+                    <span className="text-zinc-500 text-[9px] font-bold uppercase ml-1">Comércio</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 2: Silva Elétrica (Middle Left) */}
+              <div className="absolute top-[38%] left-[-8%] md:left-[2%] z-30 animate-float-card-2 bg-zinc-950/75 backdrop-blur-md border border-white/[0.08] p-3 rounded-2xl flex items-center gap-3 shadow-[0_20px_40px_rgba(0,0,0,0.5)] min-w-[170px] select-none hover:border-emerald-400/40 transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                  <Wrench className="w-5 h-5" />
+                </div>
+                <div className="text-left">
+                  <span className="text-white font-extrabold text-[11px] block">Silva Elétrica</span>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <Star className="w-3 h-3 text-amber-400 fill-current" />
+                    <span className="text-white font-black text-[10px]">4.8</span>
+                    <span className="text-emerald-400 text-[8px] font-black uppercase tracking-wider ml-1 bg-emerald-500/10 px-1 py-0.5 rounded">VERIFICADO</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 3: Linda's Beauty (Bottom Right) */}
+              <div className="absolute bottom-[20%] right-[-5%] md:right-[5%] z-30 animate-float-card-3 bg-zinc-950/75 backdrop-blur-md border border-white/[0.08] p-3 rounded-2xl flex items-center gap-3 shadow-[0_20px_40px_rgba(0,0,0,0.5)] min-w-[170px] select-none hover:border-amber-400/40 transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-amber-400/10 border border-amber-400/20 flex items-center justify-center text-amber-400">
+                  <Scissors className="w-5 h-5" />
+                </div>
+                <div className="text-left">
+                  <span className="text-white font-extrabold text-[11px] block">Linda's Beauty</span>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <Star className="w-3 h-3 text-amber-400 fill-current" />
+                    <span className="text-white font-black text-[10px]">4.7</span>
+                    <span className="text-zinc-500 text-[9px] font-bold uppercase ml-1">Serviço</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 4: Auto Prime (Top Left) */}
+              <div className="absolute top-[18%] left-[2%] md:left-[15%] z-20 animate-float-card-4 bg-zinc-950/75 backdrop-blur-md border border-white/[0.08] p-3 rounded-2xl flex items-center gap-3 shadow-[0_20px_40px_rgba(0,0,0,0.5)] min-w-[170px] select-none hover:border-primary/40 transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                  <Car className="w-5 h-5" />
+                </div>
+                <div className="text-left">
+                  <span className="text-white font-extrabold text-[11px] block">Auto Prime</span>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <Star className="w-3 h-3 text-amber-400 fill-current" />
+                    <span className="text-white font-black text-[10px]">4.9</span>
+                    <span className="text-zinc-500 text-[9px] font-bold uppercase ml-1">Mecânico</span>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
