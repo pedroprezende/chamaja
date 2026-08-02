@@ -896,9 +896,9 @@ export default function Home() {
       </header>
 
       <section className="relative py-16 md:py-24 overflow-hidden border-b border-white/[0.06] bg-[#050506]">
-        {/* Ambient mockup background */}
+        {/* Ambient map pattern & glows */}
         <div 
-          className="absolute inset-0 bg-[url('/assets/images/fundo_hero_mockup.png')] bg-cover bg-center opacity-[0.4] pointer-events-none"
+          className="absolute inset-0 bg-[url('/assets/images/hero_bg_city.png')] bg-cover bg-center opacity-[0.06] pointer-events-none mix-blend-overlay"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-zinc-950/80 to-[#050506] pointer-events-none" />
         
@@ -1097,6 +1097,15 @@ export default function Home() {
               <div className="absolute top-1/4 left-1/4 w-80 h-80 bg-primary/20 rounded-full blur-[100px] animate-glow-pulse pointer-events-none z-0"></div>
               <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-[130px] animate-glow-pulse pointer-events-none z-0" style={{ animationDelay: "2s" }}></div>
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-[#84cc16]/15 rounded-full blur-[100px] animate-glow-pulse pointer-events-none z-0" style={{ animationDelay: "4s" }}></div>
+
+              {/* Background Mockup (fundo_hero_mockup.png) directly behind the main phone */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 scale-105 opacity-80">
+                <img
+                  src="/assets/images/fundo_hero_mockup.png"
+                  alt="Background Mockup"
+                  className="w-full h-full object-contain"
+                />
+              </div>
 
               {/* Big Mockup (Increased Size & Prominence) */}
               <div className="relative z-10 w-full h-full max-w-[400px] md:max-w-[520px] lg:max-w-[620px] flex items-center justify-center animate-float-slow">
