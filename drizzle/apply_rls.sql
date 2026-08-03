@@ -23,6 +23,9 @@ ALTER TABLE public.system_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.app_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pagamentos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.utm_links ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.plans ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.plan_price_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.plan_benefits ENABLE ROW LEVEL SECURITY;
 
 
 
@@ -71,6 +74,24 @@ CREATE POLICY "Public read regions" ON public.regions FOR SELECT USING (true);
 CREATE POLICY "Admin write regions" ON public.regions FOR INSERT WITH CHECK (public.is_admin());
 CREATE POLICY "Admin update regions" ON public.regions FOR UPDATE USING (public.is_admin());
 CREATE POLICY "Admin delete regions" ON public.regions FOR DELETE USING (public.is_admin());
+
+-- plans
+CREATE POLICY "Public read plans" ON public.plans FOR SELECT USING (true);
+CREATE POLICY "Admin write plans" ON public.plans FOR INSERT WITH CHECK (public.is_admin());
+CREATE POLICY "Admin update plans" ON public.plans FOR UPDATE USING (public.is_admin());
+CREATE POLICY "Admin delete plans" ON public.plans FOR DELETE USING (public.is_admin());
+
+-- plan_price_history
+CREATE POLICY "Public read plan_price_history" ON public.plan_price_history FOR SELECT USING (true);
+CREATE POLICY "Admin write plan_price_history" ON public.plan_price_history FOR INSERT WITH CHECK (public.is_admin());
+CREATE POLICY "Admin update plan_price_history" ON public.plan_price_history FOR UPDATE USING (public.is_admin());
+CREATE POLICY "Admin delete plan_price_history" ON public.plan_price_history FOR DELETE USING (public.is_admin());
+
+-- plan_benefits
+CREATE POLICY "Public read plan_benefits" ON public.plan_benefits FOR SELECT USING (true);
+CREATE POLICY "Admin write plan_benefits" ON public.plan_benefits FOR INSERT WITH CHECK (public.is_admin());
+CREATE POLICY "Admin update plan_benefits" ON public.plan_benefits FOR UPDATE USING (public.is_admin());
+CREATE POLICY "Admin delete plan_benefits" ON public.plan_benefits FOR DELETE USING (public.is_admin());
 
 -- 6. Tabelas Sensíveis (Somente Backend ou Admin têm acesso a leitura/escrita)
 -- Como o backend se conecta via connection_string (Postgres role), ele ignora o RLS.
