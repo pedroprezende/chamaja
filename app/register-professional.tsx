@@ -15,12 +15,11 @@ import { useState } from "react";
 import * as ImagePicker from "expo-image-picker";
 
 import { ScreenContainer } from "@/components/screen-container";
-import { createProfessional, subcategoriesByCategory } from "@/data/mock";
+import { createProfessional } from "@/data/mock";
+import { BUSINESS_TYPES, CATEGORIES_BY_TYPE, ALL_CATEGORIES } from "@/lib/constants/categories";
 
 import { useProvider } from "@/lib/provider-context";
 import { useAuth } from "@/lib/auth-context";
-
-const allSpecialties = Object.values(subcategoriesByCategory).flat();
 
 export default function RegisterProfessionalScreen() {
   const router = useRouter();
@@ -106,9 +105,9 @@ export default function RegisterProfessionalScreen() {
     setLoading(true);
     try {
       // Concatenar categorias para o mock/legacy DB
-      const categoryNames = allSpecialties
+      const categoryNames = ALL_CATEGORIES
         .filter((c) => selectedIds.includes(c.id))
-        .map((c) => c.name.replace("\n", " "))
+        .map((c) => c.label)
         .join(", ");
 
       let finalAvatar = formData.avatar;
@@ -164,11 +163,11 @@ export default function RegisterProfessionalScreen() {
 
   const selectedCategoriesText =
     selectedIds.length > 0
-      ? allSpecialties
+      ? ALL_CATEGORIES
           .filter((c) => selectedIds.includes(c.id))
-          .map((c) => c.name.replace("\n", " "))
+          .map((c) => c.label)
           .join(", ")
-      : "Selecione suas especialidades";
+      : "Selecione suas categorias";
 
   const toggleCategory = (id: string) => {
     setSelectedSpecialties((prev) => ({
@@ -260,7 +259,7 @@ export default function RegisterProfessionalScreen() {
 
               {showCategoryPicker && (
                 <View style={styles.categoryList}>
-                  {allSpecialties.map((cat) => {
+                  {(CATEGORIES_BY_TYPE[formData.businessType] || []).map((cat) => {
                     const isSelected = !!selectedSpecialties[cat.id];
                     return (
                       <Pressable
@@ -293,7 +292,7 @@ export default function RegisterProfessionalScreen() {
                               },
                             ]}
                           >
-                            {cat.name.replace("\n", " ")}
+                            {cat.label}
                           </Text>
                           {isSelected && (
                             <MaterialIcons
@@ -313,34 +312,30 @@ export default function RegisterProfessionalScreen() {
             {/* Tipo de Negócio */}
             <View style={styles.fieldGroup}>
               <Text style={styles.label}>Tipo de Negócio</Text>
-              <View style={styles.businessTypeContainer}>
-                {[
-                  { id: "servicos", label: "Serviços", icon: "build" },
-                  {
-                    id: "alimentacao",
-                    label: "Alimentação",
-                    icon: "restaurant",
-                  },
-                  { id: "produtos", label: "Produtos", icon: "shopping-bag" },
-                ].map((type) => {
+              <View style={[styles.businessTypeContainer, { flexWrap: "wrap" }]}>
+                {BUSINESS_TYPES.map((type) => {
                   const isSelected = formData.businessType === type.id;
                   return (
                     <Pressable
                       key={type.id}
                       style={[
                         styles.typeButton,
+                        { flexBasis: "48%", flexGrow: 1, marginBottom: 8 },
                         isSelected && styles.typeButtonSelected,
                       ]}
-                      onPress={() =>
-                        setFormData({
-                          ...formData,
-                          businessType: type.id,
-                          deliveryTime:
-                            type.id === "alimentacao"
-                              ? formData.deliveryTime || "30-45 min"
-                              : null,
-                        })
-                      }
+                      onPress={() => {
+                        if (formData.businessType !== type.id) {
+                          setFormData({
+                            ...formData,
+                            businessType: type.id,
+                            deliveryTime:
+                              type.id === "alimentacao"
+                                ? formData.deliveryTime || "30-45 min"
+                                : null,
+                          });
+                          setSelectedSpecialties({}); // Reset categories when type changes
+                        }
+                      }}
                     >
                       <MaterialIcons
                         name={type.icon as any}

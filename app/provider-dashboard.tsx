@@ -17,6 +17,8 @@ import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
+import { trpc } from "@/lib/trpc";
+import { BUSINESS_TYPES, CATEGORIES_BY_TYPE } from "@/lib/constants/categories";
 import {
   useProvider,
   PLANS,
@@ -89,6 +91,7 @@ export default function ProviderDashboard() {
   const [sundayEnd, setSundayEnd] = useState("14:00");
 
   const [useCustomHours, setUseCustomHours] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
 
   // Time Picker Modal states
   const [pickerVisible, setPickerVisible] = useState(false);
@@ -1049,50 +1052,59 @@ export default function ProviderDashboard() {
                 />
               </View>
 
-              <Text style={styles.fieldLabel}>Categoria</Text>
-              <View style={styles.fieldBox}>
-                <MaterialIcons name="label" size={18} color="#9CA3AF" />
-                <TextInput
-                  style={styles.fieldInput}
-                  placeholder="Ex: Eletricista, Restaurante"
-                  placeholderTextColor="#9CA3AF"
-                  value={profileForm.category}
-                  onChangeText={(t) =>
-                    setProfileForm({ ...profileForm, category: t })
+              <Text style={styles.fieldLabel}>Categoria (Selecione primeiro o Tipo)</Text>
+              <Pressable
+                style={styles.fieldBox}
+                onPress={() => {
+                  if (profileForm.businessType) {
+                    setShowCategoryModal(true);
+                  } else {
+                    Alert.alert("Atenção", "Selecione o tipo de negócio primeiro.");
                   }
-                />
-              </View>
+                }}
+              >
+                <MaterialIcons name="label" size={18} color="#9CA3AF" />
+                <Text
+                  style={[
+                    styles.fieldInput,
+                    {
+                      color: profileForm.category ? "#111827" : "#9CA3AF",
+                      paddingTop: Platform.OS === "ios" ? 0 : 2,
+                      lineHeight: 22,
+                    },
+                  ]}
+                >
+                  {profileForm.category || "Selecionar categoria"}
+                </Text>
+                <MaterialIcons name="chevron-right" size={20} color="#9CA3AF" />
+              </Pressable>
 
               {/* Tipo de Negócio */}
               <Text style={styles.fieldLabel}>Tipo de Negócio</Text>
-              <View style={styles.businessTypeContainer}>
-                {[
-                  { id: "servicos", label: "Serviços", icon: "build" },
-                  {
-                    id: "alimentacao",
-                    label: "Alimentação",
-                    icon: "restaurant",
-                  },
-                  { id: "produtos", label: "Produtos", icon: "shopping-bag" },
-                ].map((type) => {
+              <View style={[styles.businessTypeContainer, { flexWrap: "wrap" }]}>
+                {BUSINESS_TYPES.map((type) => {
                   const isSelected = profileForm.businessType === type.id;
                   return (
                     <Pressable
                       key={type.id}
                       style={[
                         styles.typeButton,
+                        { flexBasis: "48%", flexGrow: 1, marginBottom: 8 },
                         isSelected && styles.typeButtonSelected,
                       ]}
-                      onPress={() =>
-                        setProfileForm({
-                          ...profileForm,
-                          businessType: type.id,
-                          deliveryTime:
-                            type.id === "alimentacao"
-                              ? profileForm.deliveryTime || "30-45 min"
-                              : "",
-                        })
-                      }
+                      onPress={() => {
+                        if (profileForm.businessType !== type.id) {
+                          setProfileForm({
+                            ...profileForm,
+                            businessType: type.id,
+                            category: "", 
+                            deliveryTime:
+                              type.id === "alimentacao"
+                                ? profileForm.deliveryTime || "30-45 min"
+                                : "",
+                          });
+                        }
+                      }}
                     >
                       <MaterialIcons
                         name={type.icon as any}
@@ -1647,6 +1659,82 @@ export default function ProviderDashboard() {
             >
               <Text style={styles.pickerCloseBtnText}>Fechar</Text>
             </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal Selecionar Categoria */}
+      <Modal
+        visible={showCategoryModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCategoryModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Selecionar Categoria</Text>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.modalCloseBtn,
+                  pressed && { opacity: 0.6 },
+                ]}
+                onPress={() => setShowCategoryModal(false)}
+              >
+                <MaterialIcons name="close" size={22} color="#6B7280" />
+              </Pressable>
+            </View>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 40 }}
+            >
+              {profileForm.businessType &&
+                CATEGORIES_BY_TYPE[profileForm.businessType]?.map((cat) => (
+                  <Pressable
+                    key={cat.id}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      paddingVertical: 16,
+                      borderBottomWidth: 1,
+                      borderBottomColor: "#F3F4F6",
+                    }}
+                    onPress={() => {
+                      setProfileForm({ ...profileForm, category: cat.label });
+                      setShowCategoryModal(false);
+                    }}
+                  >
+                    <MaterialIcons
+                      name={cat.icon as any}
+                      size={20}
+                      color={
+                        profileForm.category === cat.label
+                          ? "#25D366"
+                          : "#6B7280"
+                      }
+                    />
+                    <Text
+                      style={{
+                        flex: 1,
+                        marginLeft: 12,
+                        fontSize: 16,
+                        color:
+                          profileForm.category === cat.label
+                            ? "#111827"
+                            : "#4B5563",
+                        fontWeight:
+                          profileForm.category === cat.label ? "600" : "400",
+                      }}
+                    >
+                      {cat.label}
+                    </Text>
+                    {profileForm.category === cat.label && (
+                      <MaterialIcons name="check" size={20} color="#25D366" />
+                    )}
+                  </Pressable>
+                ))}
+            </ScrollView>
           </View>
         </View>
       </Modal>

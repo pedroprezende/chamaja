@@ -812,7 +812,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const getUserType = (openId: string) => {
     const provider = providersList.find((p) => p.user_id === openId);
     if (!provider) return "cliente";
-    return provider.category_id === "comercios" ? "comércio" : "prestador";
+    return provider.business_type === "comercios" || provider.category_id === "comercios" ? "comércio" : "prestador";
   };
 
   // Helper: Get user phone
@@ -1351,6 +1351,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             ? new Date(editPlanStartedAt).toISOString()
             : null,
           has_catalog: editHasCatalog,
+          category_id: editBusinessType === "comercios" ? "comercios" : selectedAdvertiser.category_id,
           business_type: editBusinessType,
           delivery_time:
             editBusinessType === "alimentacao" ? editDeliveryTime : null,
@@ -1980,9 +1981,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // Filter providers from comércios
   const prestadores = providersList.filter(
-    (p) => p.category_id !== "comercios",
+    (p) => p.business_type !== "comercios" && p.category_id !== "comercios",
   );
-  const comercios = providersList.filter((p) => p.category_id === "comercios");
+  const comercios = providersList.filter((p) => p.business_type === "comercios" || p.category_id === "comercios");
 
   // Basic Stats
   const totalUsers = usersList.length;
@@ -2362,7 +2363,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Filtered lists for Advertisers (unified Prestadores and Comércios)
   const filteredAdvertisers = providersList.filter((p) => {
     const term = searchAdvertiser.toLowerCase();
-    const isCom = p.category_id === "comercios";
+    const isCom = p.business_type === "comercios" || p.category_id === "comercios";
     const type = isCom ? "comércio" : "prestador";
     const status = p.status || "ativo";
     const isPremium = p.plan_status === "ativo";
@@ -3063,7 +3064,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </thead>
                   <tbody>
                     {filteredAdvertisers.map((p) => {
-                      const isCom = p.category_id === "comercios";
+                      const isCom = p.business_type === "comercios" || p.category_id === "comercios";
                       const isPremium = p.plan_status === "ativo";
                       const hasExpired = p.plan_status === "expirado";
                       const status = p.status || "ativo";
@@ -6222,7 +6223,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                 }
                               }}
                             >
-                              <option value="servicos">Serviços</option>
+                              <option value="servicos">Serviços (Prestadores)</option>
+                              <option value="comercios">Comércios</option>
                               <option value="alimentacao">Alimentação</option>
                               <option value="produtos">Produtos</option>
                             </select>

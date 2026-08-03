@@ -110,15 +110,10 @@ export default function Busca() {
 
   const displayCategories = [
     { id: "todos", name: "TODAS", icon: "🌐" },
-    { id: "reformas-reparos", name: "REFORMAS", icon: "🔧" },
-    { id: "comercios", name: "ALIMENTAÇÃO", icon: "🍔" },
-    { id: "beleza-estetica", name: "BELEZA", icon: "💇" },
-    { id: "automotivo", name: "AUTOMOTIVO", icon: "🚗" },
-    { id: "servicos-domesticos", name: "CASA", icon: "🏠" },
-    { id: "assistencia-tecnica", name: "TECNOLOGIA", icon: "💻" },
-    { id: "pets", name: "PETS", icon: "🐾" },
-    { id: "saude", name: "SAÚDE", icon: "🏥" },
-    { id: "academias", name: "ACADEMIAS", icon: "🏋️" },
+    { id: "alimentacao", name: "ALIMENTAÇÃO", icon: "🍔" },
+    { id: "servicos", name: "SERVIÇOS", icon: "🔧" },
+    { id: "produtos", name: "PRODUTOS", icon: "🛍️" },
+    { id: "comercios", name: "COMÉRCIOS", icon: "🏪" },
   ];
 
   // Load favorites, request geolocation, and load leaflet
@@ -456,7 +451,7 @@ export default function Busca() {
       );
     }
     if (categoryVal && categoryVal !== "todos") {
-      filtered = filtered.filter((p) => p.categoryId === categoryVal);
+      filtered = filtered.filter((p) => p.businessType === categoryVal || p.categoryId === categoryVal);
     }
     if (typeVal === "comercio") {
       filtered = filtered.filter((p) => p.businessType === "comercio");

@@ -71,6 +71,8 @@ export default function EditarPrestador() {
   const [subcategoryName, setSubcategoryName] = useState("");
   const [subcategoryId, setSubcategoryId] = useState("");
   const [description, setDescription] = useState("");
+  const [businessType, setBusinessType] = useState("servicos");
+  const [deliveryTime, setDeliveryTime] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("Bragança Paulista");
   const [neighborhood, setNeighborhood] = useState("");
@@ -106,6 +108,7 @@ export default function EditarPrestador() {
   });
 
   const isCommerce =
+    businessType === "comercios" ||
     categoryId === "comercios" ||
     category === "Comércios" ||
     category === "comercios";
@@ -188,6 +191,12 @@ export default function EditarPrestador() {
       );
       setSubcategoryId(
         dbProvider.subcategoryId ? String(dbProvider.subcategoryId) : "",
+      );
+      setBusinessType(
+        dbProvider.businessType ? String(dbProvider.businessType) : "servicos",
+      );
+      setDeliveryTime(
+        dbProvider.deliveryTime ? String(dbProvider.deliveryTime) : "",
       );
       setDescription(
         dbProvider.description ? String(dbProvider.description) : "",
@@ -526,8 +535,10 @@ export default function EditarPrestador() {
 
       const data = {
         name: name.trim(),
+        businessType: businessType || "servicos",
+        deliveryTime: businessType === "alimentacao" ? deliveryTime || null : null,
         category: category || null,
-        categoryId: categoryId || null,
+        categoryId: businessType === "comercios" ? "comercios" : categoryId || null,
         subcategoryName: selectedNames.join(", ") || subcategoryName || null,
         subcategoryId: selectedIds.join(", ") || subcategoryId || null,
         serviceId: primaryService?.id || null,
@@ -732,6 +743,58 @@ export default function EditarPrestador() {
             onChangeText={setName}
             placeholderTextColor="#9CA3AF"
           />
+
+          <Text style={styles.fieldLabel}>Tipo de Negócio</Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+            {[
+              { id: "servicos", label: "Serviços (Prestador)", icon: "build" },
+              { id: "comercios", label: "Comércio", icon: "storefront" },
+              { id: "alimentacao", label: "Alimentação", icon: "restaurant" },
+              { id: "produtos", label: "Produtos", icon: "shopping-bag" },
+            ].map((type) => {
+              const isSel = businessType === type.id;
+              return (
+                <Pressable
+                  key={type.id}
+                  style={[
+                    {
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 6,
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                      borderRadius: 10,
+                      borderWidth: 1,
+                      borderColor: isSel ? "#25D366" : "#E5E7EB",
+                      backgroundColor: isSel ? "#ECFDF5" : "#F9FAFB",
+                    },
+                  ]}
+                  onPress={() => {
+                    setBusinessType(type.id);
+                    if (type.id === "comercios") {
+                      setCategory("Comércios");
+                      setCategoryId("comercios");
+                    }
+                  }}
+                >
+                  <MaterialIcons
+                    name={type.icon as any}
+                    size={18}
+                    color={isSel ? "#25D366" : "#6B7280"}
+                  />
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: isSel ? "700" : "500",
+                      color: isSel ? "#15803D" : "#374151",
+                    }}
+                  >
+                    {type.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
 
           <Text style={styles.fieldLabel}>Categoria Principal</Text>
           <Pressable
