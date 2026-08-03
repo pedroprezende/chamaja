@@ -48,6 +48,7 @@ interface Service {
   name: string;
   description: string;
   price: number;
+  imageUri?: string;
 }
 
 interface PlanBenefit {
@@ -178,6 +179,7 @@ export default function Parceiro() {
   const [srvName, setSrvName] = useState("");
   const [srvDescription, setSrvDescription] = useState("");
   const [srvPrice, setSrvPrice] = useState("");
+  const [srvImageUri, setSrvImageUri] = useState("");
 
   // Extended dashboard views states
   const [stats, setStats] = useState<{ views: number; whatsappClicks: number } | null>(null);
@@ -703,14 +705,11 @@ export default function Parceiro() {
 
   // Service handlers
   const openAddServiceModal = () => {
-    if (isLimitReached) {
-      toast.warning("Você atingiu o limite de serviços do seu plano.");
-      return;
-    }
     setEditingServiceId(null);
     setSrvName("");
     setSrvDescription("");
     setSrvPrice("");
+    setSrvImageUri("");
     setIsServiceModalOpen(true);
   };
 
@@ -719,6 +718,7 @@ export default function Parceiro() {
     setSrvName(srv.name);
     setSrvDescription(srv.description);
     setSrvPrice(srv.price.toString());
+    setSrvImageUri(srv.imageUri || "");
     setIsServiceModalOpen(true);
   };
 
@@ -739,6 +739,7 @@ export default function Parceiro() {
               name: srvName,
               description: srvDescription,
               price: priceNum,
+              imageUri: srvImageUri || undefined,
             }
           : s
       );
@@ -754,6 +755,7 @@ export default function Parceiro() {
         name: srvName,
         description: srvDescription,
         price: priceNum,
+        imageUri: srvImageUri || undefined,
       };
       updatedList = [...servicesList, newService];
       toast.success("Serviço adicionado.");
@@ -2860,18 +2862,29 @@ export default function Parceiro() {
                                   key={srv.id}
                                   className="bg-background/40 hover:bg-background/80 border border-border rounded-2xl p-5 flex items-start justify-between gap-4 transition duration-200"
                                 >
-                                  <div className="space-y-1.5 flex-1">
-                                    <div className="flex items-center gap-3">
-                                      <h3 className="text-base font-bold text-white leading-snug">
-                                        {srv.name}
-                                      </h3>
-                                      <span className="text-sm font-black text-primary font-mono bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-lg">
-                                        R$ {Number(srv.price || 0).toFixed(2)}
-                                      </span>
+                                  <div className="flex items-start gap-4 flex-1">
+                                    {srv.imageUri && (
+                                      <div className="w-16 h-16 rounded-xl bg-zinc-800 border border-zinc-700/60 overflow-hidden flex-shrink-0">
+                                        <img
+                                          src={srv.imageUri}
+                                          alt={srv.name}
+                                          className="w-full h-full object-cover"
+                                        />
+                                      </div>
+                                    )}
+                                    <div className="space-y-1.5 flex-1">
+                                      <div className="flex items-center gap-3">
+                                        <h3 className="text-base font-bold text-white leading-snug">
+                                          {srv.name}
+                                        </h3>
+                                        <span className="text-sm font-black text-primary font-mono bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-lg">
+                                          R$ {Number(srv.price || 0).toFixed(2)}
+                                        </span>
+                                      </div>
+                                      <p className="text-xs text-muted-foreground leading-relaxed max-w-2xl">
+                                        {srv.description}
+                                      </p>
                                     </div>
-                                    <p className="text-xs text-muted-foreground leading-relaxed max-w-2xl">
-                                      {srv.description}
-                                    </p>
                                   </div>
 
                                   <div className="flex items-center gap-2">
@@ -3072,6 +3085,46 @@ export default function Parceiro() {
             </div>
 
             <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-white uppercase tracking-wider block">
+                  Foto do Serviço (Opcional)
+                </label>
+                <div className="flex items-center gap-3">
+                  <div className="w-16 h-16 rounded-xl bg-zinc-800 border border-zinc-700/55 overflow-hidden flex items-center justify-center flex-shrink-0">
+                    {srvImageUri ? (
+                      <img
+                        src={srvImageUri}
+                        alt="Preview Foto"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <ImageIcon className="h-6 w-6 text-zinc-500" />
+                    )}
+                  </div>
+                  <div className="space-y-1.5 flex-1">
+                    <label className="cursor-pointer bg-zinc-900 border border-zinc-800 hover:bg-zinc-800/80 text-white text-xs font-bold py-2 px-3 rounded-xl block text-center transition-all duration-200">
+                      <span>Escolher foto...</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleImageUpload(file, setSrvImageUri);
+                        }}
+                      />
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder="Ou cole a URL da foto do serviço..."
+                      value={srvImageUri}
+                      onChange={e => setSrvImageUri(e.target.value)}
+                      className="bg-background border-border text-xs rounded-xl focus-visible:ring-primary text-white"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <label className="text-xs font-bold text-white uppercase tracking-wider">
                   Nome do Serviço *
