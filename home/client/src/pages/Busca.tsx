@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { generateWhatsAppMessage } from "../lib/whatsapp-helper";
 import {
   ArrowRight,
   MapPin,
@@ -704,8 +705,10 @@ export default function Busca() {
       alert("Telefone do parceiro não configurado.");
       return;
     }
-    const message = encodeURIComponent(`Olá ${provider.name}, vi seu perfil no XamaJá e gostaria de mais informações.`);
-    window.open(`https://wa.me/55${cleanPhone}?text=${message}`, "_blank");
+    const text = generateWhatsAppMessage({ provider });
+    const message = encodeURIComponent(text);
+    const targetPhone = cleanPhone.startsWith("55") ? cleanPhone : `55${cleanPhone}`;
+    window.open(`https://wa.me/${targetPhone}?text=${message}`, "_blank");
   };
 
   return (

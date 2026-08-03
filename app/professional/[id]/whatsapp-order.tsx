@@ -18,6 +18,7 @@ import * as Haptics from "expo-haptics";
 import { trpc } from "@/lib/trpc";
 import { useColors } from "@/hooks/use-colors";
 import { useCart, CartItem } from "@/lib/cart-context";
+import { generateWhatsAppMessage } from "@/lib/whatsapp-helper";
 
 export default function WhatsappOrderScreen() {
   const colors = useColors();
@@ -37,40 +38,20 @@ export default function WhatsappOrderScreen() {
 
   const isFood = (professional?.businessType || "servicos") === "alimentacao";
 
-  // Gera a mensagem formatada conforme a imagem de exemplo
+  // Gera a mensagem formatada inteligente
   const messageText = useMemo(() => {
-    let msg = "Olá! 👋\n";
-    msg += "Encontrei vocês pelo XamaJá e gostaria de fazer um pedido:\n\n";
-    msg += "🖥️ MEU PEDIDO:\n";
-
-    items.forEach((item) => {
-      // Alinhamento inteligente com pontinhos
-      const maxLen = 22;
-      const itemName = item.name || "Produto";
-      const namePart = itemName.substring(0, maxLen);
-      const padding = ".".repeat(Math.max(2, maxLen - namePart.length + 4));
-      const itemQuantity = item.quantity || 1;
-      const itemPrice = item.price || 0;
-      msg += `• ${itemQuantity}x ${namePart} ${padding} R$ ${(itemPrice * itemQuantity).toFixed(2)}\n`;
+    if (!professional) return "";
+    return generateWhatsAppMessage({
+      provider: professional,
+      items: items.map((i) => ({
+        name: i.name || "Item",
+        price: i.price,
+        quantity: i.quantity,
+      })),
+      notes,
+      deliveryAddress,
     });
-
-    msg += `\n💰 Total: R$ ${cartTotal.toFixed(2)}\n\n`;
-    if (isFood) {
-      msg += "📍 Entrega\n";
-    } else {
-      msg += "📍 Local do Atendimento\n";
-    }
-    msg += `${deliveryAddress}\n\n`;
-
-    if (isFood) {
-      msg += "📝 Observação:\n";
-      msg += `${notes.trim() ? notes.trim() : "(sem observações)"}\n\n`;
-    }
-
-    msg += "Aguardo confirmação, obrigado! 😊";
-
-    return msg;
-  }, [items, cartTotal, deliveryAddress, notes, isFood]);
+  }, [professional, items, notes, deliveryAddress]);
 
   const handleSendOrder = () => {
     if (!professional) return;

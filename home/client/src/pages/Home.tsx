@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { generateWhatsAppMessage } from "../lib/whatsapp-helper";
 import { Textarea } from "@/components/ui/textarea";
 import {
   ArrowRight,
@@ -1352,8 +1353,14 @@ export default function Home() {
               ) : adsToRender.map((p) => {
                 const linkUrl = p.id.startsWith("mock-ad") ? "/busca" : `/perfil/${p.providerId || ""}`;
                 const isMock = p.id.startsWith("mock-ad");
-                const cleanPhone = p.whatsapp;
-                const waMessage = encodeURIComponent(`Olá ${p.providerName}, vi seu destaque no XamaJá e gostaria de realizar um pedido/combinar serviço.`);
+                const text = generateWhatsAppMessage({
+                  provider: {
+                    name: p.providerName,
+                    category: p.title,
+                    description: p.description,
+                  },
+                });
+                const waMessage = encodeURIComponent(text);
 
                 return (
                   <div

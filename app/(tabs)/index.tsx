@@ -54,6 +54,7 @@ import { AnimatedCard } from "@/components/ui/animated-card";
 import Animated, { FadeInDown, FadeInRight } from "react-native-reanimated";
 import AddressSelectorModal from "@/components/address-selector-modal";
 import { createStyles } from "./index.styles";
+import { generateWhatsAppMessage } from "@/lib/whatsapp-helper";
 import {
   MOCK_PROVIDERS_BY_CAT,
   getMockProvidersForCategory,
@@ -99,12 +100,17 @@ function getAdminIcon(category: string): string {
   return ADMIN_CATEGORY_ICONS.default;
 }
 
-function openWhatsApp(phone: string, serviceName: string) {
+function openWhatsApp(phone: string, serviceName: string, category?: string) {
   let number = phone.replace(/\D/g, "");
   if (!number.startsWith("55")) number = "55" + number;
-  const msg = encodeURIComponent(
-    `Olá! Vi o serviço "${serviceName}" no XamaJá e gostaria de mais informações. 😊`,
-  );
+  const text = generateWhatsAppMessage({
+    provider: {
+      name: serviceName,
+      category,
+    },
+    selectedItemName: serviceName,
+  });
+  const msg = encodeURIComponent(text);
   Linking.openURL(`https://wa.me/${number}?text=${msg}`).catch(() =>
     Alert.alert(
       "WhatsApp não encontrado",

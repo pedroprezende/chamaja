@@ -16,6 +16,7 @@ import { ScreenContainer } from "@/components/screen-container";
 import { useFavorites } from "@/lib/favorites-context";
 import { useColors } from "@/hooks/use-colors";
 import { useLocation } from "@/lib/location-context";
+import { generateWhatsAppMessage } from "@/lib/whatsapp-helper";
 import {
   calculateHaversineDistance,
   formatDistancePtBr,
@@ -29,12 +30,12 @@ export default function FavoritesScreen() {
   const isDefaultCity = addressName === "Bragança Paulista - SP";
   const showDistance = coords !== null;
 
-  const handleWhatsApp = (phone: string, name: string) => {
+  const handleWhatsApp = (item: any) => {
+    const phone = item.phone || item.whatsapp || "";
     const cleaned = phone.replace(/\D/g, "");
     const number = cleaned.startsWith("55") ? cleaned : `55${cleaned}`;
-    const msg = encodeURIComponent(
-      `Olá ${name}, vi seu perfil no XamaJá e gostaria de um orçamento.`,
-    );
+    const text = generateWhatsAppMessage({ provider: item });
+    const msg = encodeURIComponent(text);
     Linking.openURL(`https://wa.me/${number}?text=${msg}`).catch(() =>
       Alert.alert("Erro", "Não foi possível abrir o WhatsApp."),
     );
@@ -138,7 +139,7 @@ export default function FavoritesScreen() {
                     { backgroundColor: colors.primary },
                     pressed && { opacity: 0.8 },
                   ]}
-                  onPress={() => handleWhatsApp(item.phone, item.name)}
+                  onPress={() => handleWhatsApp(item)}
                 >
                   <MaterialIcons name="chat" size={14} color="#fff" />
                 </Pressable>

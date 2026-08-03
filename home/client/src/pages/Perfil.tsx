@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { generateWhatsAppMessage } from "../lib/whatsapp-helper";
 import {
   ArrowLeft,
   MapPin,
@@ -428,7 +429,7 @@ export default function Perfil({ params }: { params: { id: string } }) {
     }
   };
 
-  const handleContactWhatsApp = () => {
+  const handleContactWhatsApp = (singleItemName?: string) => {
     if (!provider) return;
     const cleanPhone = (provider.whatsapp || provider.phone || "").replace(/\D/g, "");
     if (!cleanPhone) {
@@ -436,23 +437,26 @@ export default function Perfil({ params }: { params: { id: string } }) {
       return;
     }
 
-    const selectedList = Object.entries(selectedItems)
+    const items = Object.entries(selectedItems)
       .filter(([_, qty]) => qty > 0)
       .map(([itemId, qty]) => {
         const item = catalogItems.find(i => i.id === itemId);
-        if (!item) return "";
-        return `- ${qty}x ${item.name} (R$ ${Number(item.price).toFixed(2)})`;
-      })
-      .filter(Boolean);
+        return {
+          name: item?.name || "Item",
+          price: item?.price || 0,
+          quantity: qty,
+        };
+      });
 
-    let itemsText = "";
-    if (selectedList.length > 0) {
-      const label = isComercio ? "itens do cardápio" : "serviços";
-      itemsText = `\n\n*Gostaria de solicitar os seguintes ${label}:*\n${selectedList.join("\n")}`;
-    }
+    const text = generateWhatsAppMessage({
+      provider,
+      items,
+      selectedItemName: typeof singleItemName === "string" ? singleItemName : undefined,
+    });
 
-    const message = encodeURIComponent(`Olá ${provider.name}, vi seu perfil no XamaJá e gostaria de combinar um serviço.${itemsText}`);
-    window.open(`https://wa.me/55${cleanPhone}?text=${message}`, "_blank");
+    const message = encodeURIComponent(text);
+    const targetPhone = cleanPhone.startsWith("55") ? cleanPhone : `55${cleanPhone}`;
+    window.open(`https://wa.me/${targetPhone}?text=${message}`, "_blank");
   };
 
   // Copy Profile URL to share

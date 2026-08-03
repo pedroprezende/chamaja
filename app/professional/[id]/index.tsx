@@ -23,6 +23,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { LeaveReviewModal } from "@/components/leave-review-modal";
 import { useFavorites } from "@/lib/favorites-context";
 import { useColors } from "@/hooks/use-colors";
+import { generateWhatsAppMessage } from "@/lib/whatsapp-helper";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/lib/auth-context";
 import { addReview } from "@/data/mock";
@@ -47,12 +48,14 @@ import {
 const DEFAULT_COVER =
   "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800&q=80";
 
-function getWhatsAppUrl(phone: any, name: any) {
+function getWhatsAppUrl(phone: any, professional: any, selectedItemName?: string) {
   const cleaned = String(phone || "").replace(/\D/g, "");
   const number = cleaned.startsWith("55") ? cleaned : `55${cleaned}`;
-  const message = encodeURIComponent(
-    `Olá ${String(name || "")}, encontrei seu perfil no XamaJá e gostaria de solicitar um orçamento.`,
-  );
+  const messageText = generateWhatsAppMessage({
+    provider: professional || {},
+    selectedItemName,
+  });
+  const message = encodeURIComponent(messageText);
   return `https://wa.me/${number}?text=${message}`;
 }
 
@@ -446,7 +449,7 @@ export default function ProfessionalDetailScreen() {
     });
 
     const phone = professional.phone || professional.whatsapp || "";
-    const url = getWhatsAppUrl(phone, professional.name);
+    const url = getWhatsAppUrl(phone, professional);
     Linking.openURL(url).catch(() =>
       Alert.alert("Erro", "Não foi possível abrir o WhatsApp."),
     );

@@ -84,7 +84,7 @@ function RootLayoutNav() {
       segments[0] === "categories" ||
       segments[0] === "reviews" ||
       segments[0] === "(tabs)" ||
-      segments.length === 0;
+      !segments[0];
 
     if (!isSignedIn && !inAuthGroup && !isPublicRoute) {
       if (path !== "oauth/callback" && path !== "") {
