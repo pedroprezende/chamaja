@@ -987,7 +987,7 @@ export default function Home() {
 
         {/* Small drifting light particles */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-          {[...Array(6)].map((_, i) => (
+          {[0, 1, 2, 3, 4, 5].map((_, i) => (
             <div
               key={i}
               className="absolute bg-primary/20 rounded-full blur-[2px]"
