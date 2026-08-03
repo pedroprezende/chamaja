@@ -213,27 +213,14 @@ export default function BecomeProviderScreen() {
           <View style={{ paddingHorizontal: 16, marginTop: 24, gap: 12 }}>
             <Pressable
               style={({ pressed }) => [
-                styles.registerBtnAction,
-                pressed && { opacity: 0.85 },
-              ]}
-              onPress={() => router.push("/register-professional" as any)}
-            >
-              <MaterialIcons name="assignment" size={22} color="#fff" />
-              <Text style={styles.registerBtnActionText}>
-                Criar Perfil no Aplicativo
-              </Text>
-            </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.secondaryContactBtn,
+                styles.whatsappBtn, // Reusing the whatsapp button style from the pending view
                 pressed && { opacity: 0.85 },
               ]}
               onPress={() => handleWhatsAppContact()}
             >
-              <MaterialIcons name="chat" size={20} color="#25D366" />
-              <Text style={styles.secondaryContactBtnText}>
-                Falar com a Central (WhatsApp)
+              <MaterialIcons name="chat" size={24} color="#fff" />
+              <Text style={styles.whatsappBtnText}>
+                Falar no WhatsApp
               </Text>
             </Pressable>
           </View>

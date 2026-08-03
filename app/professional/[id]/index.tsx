@@ -239,6 +239,7 @@ export default function ProfessionalDetailScreen() {
   const insets = useSafeAreaInsets();
   console.log(`[PROFILE: ${id}] Component mounted or updated`);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<"sobre" | "servicos" | "avaliacoes">("sobre");
   const { isFavorite, toggleFavorite } = useFavorites();
   const trackView = trpc.analytics.trackServiceView.useMutation();
   const trackWhatsapp = trpc.analytics.trackWhatsappClick.useMutation();
@@ -951,33 +952,48 @@ export default function ProfessionalDetailScreen() {
           contentContainerStyle={styles.tabStripContent}
           style={[styles.tabStrip, { borderBottomColor: colors.border }]}
         >
-          <View
+          <Pressable
             style={[
               styles.tab,
-              styles.tabActive,
-              { borderBottomColor: colors.primary },
+              activeTab === "sobre" && styles.tabActive,
+              activeTab === "sobre" && { borderBottomColor: colors.primary },
             ]}
+            onPress={() => setActiveTab("sobre")}
           >
-            <MaterialIcons name="info-outline" size={15} color={colors.primary} />
-            <Text style={[styles.tabText, { color: colors.primary }]}>
+            <MaterialIcons name="info-outline" size={15} color={activeTab === "sobre" ? colors.primary : colors.muted} />
+            <Text style={[styles.tabText, { color: activeTab === "sobre" ? colors.primary : colors.muted }]}>
               Sobre & Serviços
             </Text>
-          </View>
+          </Pressable>
           <Pressable
-            style={styles.tab}
+            style={[
+              styles.tab,
+              activeTab === "servicos" && styles.tabActive,
+              activeTab === "servicos" && { borderBottomColor: colors.primary },
+            ]}
             onPress={() => {
-              if (contentGoesToMenu && hasProducts)
+              if (contentGoesToMenu && hasProducts) {
                 router.push(`/professional/${prof.id}/menu` as any);
+              } else {
+                setActiveTab("servicos");
+              }
             }}
           >
-            <MaterialIcons name="sell" size={15} color={colors.muted} />
-            <Text style={[styles.tabText, { color: colors.muted }]}>
+            <MaterialIcons name="sell" size={15} color={activeTab === "servicos" ? colors.primary : colors.muted} />
+            <Text style={[styles.tabText, { color: activeTab === "servicos" ? colors.primary : colors.muted }]}>
               Serviços e Preços
             </Text>
           </Pressable>
-          <Pressable style={styles.tab}>
-            <MaterialIcons name="star-outline" size={15} color={colors.muted} />
-            <Text style={[styles.tabText, { color: colors.muted }]}>
+          <Pressable
+            style={[
+              styles.tab,
+              activeTab === "avaliacoes" && styles.tabActive,
+              activeTab === "avaliacoes" && { borderBottomColor: colors.primary },
+            ]}
+            onPress={() => setActiveTab("avaliacoes")}
+          >
+            <MaterialIcons name="star-outline" size={15} color={activeTab === "avaliacoes" ? colors.primary : colors.muted} />
+            <Text style={[styles.tabText, { color: activeTab === "avaliacoes" ? colors.primary : colors.muted }]}>
               Avaliações ({reviews.length})
             </Text>
           </Pressable>
@@ -999,6 +1015,8 @@ export default function ProfessionalDetailScreen() {
         >
           {/* ── Main Column ── */}
           <View style={[styles.mainCol, isWide && styles.mainColWide]}>
+            {activeTab === "sobre" && (
+              <>
             {/* Gallery Card */}
             {(() => {
               const gl = parseJsonArray(prof.gallery);
@@ -1231,6 +1249,11 @@ export default function ProfessionalDetailScreen() {
               </View>
             </View>
 
+              </>
+            )}
+
+            {activeTab === "servicos" && (
+              <>
             {/* Dynamic Content Module */}
             <View
               style={[
@@ -1386,6 +1409,11 @@ export default function ProfessionalDetailScreen() {
               )}
             </View>
 
+              </>
+            )}
+
+            {activeTab === "avaliacoes" && (
+              <>
             {/* Reviews Card */}
             <View
               style={[
@@ -1554,6 +1582,8 @@ export default function ProfessionalDetailScreen() {
                 </View>
               )}
             </View>
+              </>
+            )}
           </View>
 
           {/* ── Sidebar Column ── */}
