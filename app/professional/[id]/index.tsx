@@ -237,6 +237,7 @@ export default function ProfessionalDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  console.log(`[PROFILE: ${id}] Component mounted or updated`);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const { isFavorite, toggleFavorite } = useFavorites();
   const trackView = trpc.analytics.trackServiceView.useMutation();
@@ -341,6 +342,15 @@ export default function ProfessionalDetailScreen() {
   }, [isMock, id, dbProfessional]);
 
   const loading = !isIdValid || (!isMock && (loadingQuery || (!professional && isFetching)));
+
+  console.log(`[PROFILE: ${id}] State Update:`, {
+    isIdValid,
+    isMock,
+    loadingQuery,
+    isFetching,
+    hasData: !!professional,
+    loading
+  });
 
   const isCommerce = useMemo(() => {
     if (!professional) return false;
@@ -493,7 +503,26 @@ export default function ProfessionalDetailScreen() {
     }
   };
 
+  const parsedHours = useMemo(() => {
+    return parseWorkingHours(professional?.workingHours);
+  }, [professional?.workingHours]);
+
+  const realTimeStatus = useMemo(() => {
+    return calculateRealTimeStatus(parsedHours);
+  }, [parsedHours]);
+
+  const socialLinks = useMemo(() => {
+    if (!professional?.socialLinks) return {};
+    if (typeof professional.socialLinks === "object") return professional.socialLinks;
+    try {
+      return JSON.parse(professional.socialLinks);
+    } catch {
+      return {};
+    }
+  }, [professional?.socialLinks]);
+
   if (loading) {
+    console.log(`[PROFILE: ${id}] Rendering Skeleton (loading)`);
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Floating Header Skeleton */}
@@ -549,6 +578,7 @@ export default function ProfessionalDetailScreen() {
   }
 
   if (!professional) {
+    console.log(`[PROFILE: ${id}] Rendering NotFound (!professional)`);
     return (
       <View
         style={[
@@ -609,24 +639,7 @@ export default function ProfessionalDetailScreen() {
 
   // Type-narrowed alias to prevent TS closure warnings
   const prof = professional;
-
-  const parsedHours = useMemo(() => {
-    return parseWorkingHours(prof.workingHours);
-  }, [prof.workingHours]);
-
-  const realTimeStatus = useMemo(() => {
-    return calculateRealTimeStatus(parsedHours);
-  }, [parsedHours]);
-
-  const socialLinks = useMemo(() => {
-    if (!prof.socialLinks) return {};
-    if (typeof prof.socialLinks === "object") return prof.socialLinks;
-    try {
-      return JSON.parse(prof.socialLinks);
-    } catch {
-      return {};
-    }
-  }, [prof.socialLinks]);
+  console.log(`[PROFILE: ${id}] Main render starting, prof.id=`, prof?.id);
 
   // Dynamic establishment type + config
   const estType = getEstablishmentType(prof.categoryId, prof.subcategoryId);
