@@ -369,10 +369,10 @@ export default function ProviderDashboard() {
         description: form.description.trim(),
         imageUri: form.imageUri || undefined,
         gallery: form.gallery.length > 0 ? form.gallery : undefined,
+        price: form.price ? Number(form.price) : undefined,
       };
 
       if (isCommerce) {
-        payload.price = form.price ? Number(form.price) : undefined;
         payload.productCategory = form.productCategory.trim() || undefined;
       }
 
@@ -808,25 +808,25 @@ export default function ProviderDashboard() {
                 />
               </View>
 
+              <Text style={styles.fieldLabel}>Preço (R$ - opcional)</Text>
+              <View style={styles.fieldBox}>
+                <MaterialIcons
+                  name="attach-money"
+                  size={18}
+                  color="#9CA3AF"
+                />
+                <TextInput
+                  style={styles.fieldInput}
+                  placeholder="Ex: 45.00"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="numeric"
+                  value={form.price}
+                  onChangeText={(t) => setForm({ ...form, price: t })}
+                />
+              </View>
+
               {isCommerce && (
                 <>
-                  <Text style={styles.fieldLabel}>Preço (R$)</Text>
-                  <View style={styles.fieldBox}>
-                    <MaterialIcons
-                      name="attach-money"
-                      size={18}
-                      color="#9CA3AF"
-                    />
-                    <TextInput
-                      style={styles.fieldInput}
-                      placeholder="Ex: 45.00"
-                      placeholderTextColor="#9CA3AF"
-                      keyboardType="numeric"
-                      value={form.price}
-                      onChangeText={(t) => setForm({ ...form, price: t })}
-                    />
-                  </View>
-
                   <Text style={styles.fieldLabel}>
                     Categoria do Produto (opcional)
                   </Text>
