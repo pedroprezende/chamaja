@@ -395,6 +395,7 @@ export default function Home() {
 
   // Helper: build marker icon HTML
   const buildIcon = useCallback((L: any, photoUrl: string, isSelected: boolean) => {
+    if (!L || !L.divIcon) return null;
     const border = isSelected
       ? 'border-[#25D366] shadow-[0_0_15px_rgba(37,211,102,0.7)]'
       : 'border-[#84cc16] shadow-[0_0_8px_rgba(132,204,22,0.4)]';
@@ -412,9 +413,9 @@ export default function Home() {
   // Called by BOTH the list card click AND the Leaflet marker click handler.
   // No useEffect needed — all operations happen synchronously/imperatively.
   const selectProvider = useCallback((providerId: string) => {
-    const L = (window as any).L;
+    const L = typeof window !== "undefined" ? (window as any).L : null;
     const map = mapRef.current;
-    if (!L || !map) return;
+    if (!L || !L.divIcon || !map) return;
 
     setSelectedProviderId(providerId);
 
@@ -424,7 +425,8 @@ export default function Home() {
       if (!mProvider) return;
       const mPhoto = mProvider.avatarUri || mProvider.coverUri || DEFAULT_MASCOT;
       const isSel = mId === providerId;
-      m.setIcon(buildIcon(L, mPhoto, isSel));
+      const icon = buildIcon(L, mPhoto, isSel);
+      if (icon) m.setIcon(icon);
       if (isSel) {
         // Pan to marker first, then open popup after animation settles
         map.setView(m.getLatLng(), 14, { animate: true, duration: 0.5 });
@@ -441,8 +443,8 @@ export default function Home() {
   useEffect(() => {
     if (nearbyProviders.length === 0) return;
 
-    const L = (window as any).L;
-    if (!L) return;
+    const L = typeof window !== "undefined" ? (window as any).L : null;
+    if (!L || !L.map || !L.tileLayer) return;
 
     // Initialise map on first load
     if (!mapInitializedRef.current) {
@@ -1358,7 +1360,8 @@ export default function Home() {
               {isLoadingFeaturedAds ? (
                 <div className="w-full min-w-[100%] h-[160px] md:h-[250px] bg-zinc-950/60 border border-zinc-900 rounded-2xl animate-pulse"></div>
               ) : adsToRender.map((p) => {
-                const linkUrl = p.id.startsWith("mock-ad") ? "/busca" : `/perfil/${p.providerId || ""}`;
+                const targetId = p.providerId || (p.id.startsWith("mock-ad") ? null : p.id);
+                const linkUrl = !targetId || p.id.startsWith("mock-ad") ? "/busca" : `/perfil/${targetId}`;
                 const isMock = p.id.startsWith("mock-ad");
                 const cleanPhone = (p.whatsapp || p.phone || "11999999999").replace(/\D/g, "");
                 const text = generateWhatsAppMessage({

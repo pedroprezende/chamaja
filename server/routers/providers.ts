@@ -163,13 +163,12 @@ function sanitizeProviderForUser(
     return provider;
   }
 
-  // Clone and mask private details
-  const { userId, planExpiresAt, status, ...publicData } = provider;
+  // Clone and mask private details (userId, planExpiresAt)
+  const { userId, planExpiresAt, ...publicData } = provider;
   return {
     ...publicData,
     userId: null,
     planExpiresAt: null,
-    status: null,
   };
 }
 
@@ -1167,11 +1166,26 @@ export const providersRouter = router({
 
     if (res.length === 0) return null;
 
+    let supportsScheduling = res[0].categoryDetails?.supportsScheduling ?? false;
+    if (!supportsScheduling) {
+      const altCatId = res[0].provider.subcategoryId || res[0].provider.categoryId;
+      if (altCatId) {
+        const altCheck = await dbInstance
+          .select({ supportsScheduling: categories.supportsScheduling })
+          .from(categories)
+          .where(eq(categories.id, altCatId))
+          .limit(1);
+        if (altCheck.length > 0) {
+          supportsScheduling = altCheck[0].supportsScheduling ?? false;
+        }
+      }
+    }
+
     const providerData = {
       ...res[0].provider,
       maxServicos: res[0].permissions?.maxServicos ?? 1,
       permissionsStatus: res[0].permissions?.status ?? "ativo",
-      supportsScheduling: res[0].categoryDetails?.supportsScheduling ?? false,
+      supportsScheduling,
     };
 
     return sanitizeProviderForUser(providerData, ctx.user);

@@ -326,7 +326,7 @@ export default function ProfessionalDetailScreen() {
   >("perfil_falso");
   const [reportDetails, setReportDetails] = useState("");
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
-  const isIdValid = !!id && id !== "[id]" && id !== "undefined";
+  const isIdValid = typeof id === "string" && id.trim().length > 0 && id !== "[id]" && id !== "undefined" && id !== "null";
   const isMock = typeof id === "string" && id.startsWith("mock-");
 
   const {

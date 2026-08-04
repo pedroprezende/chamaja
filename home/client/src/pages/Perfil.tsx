@@ -118,7 +118,8 @@ export default function Perfil({ params }: { params: { id: string } }) {
       const res = await fetch(url);
       if (res.ok) {
         const json = await res.json();
-        setAvailableSlots(json.result.data || []);
+        const data = Array.isArray(json) ? json[0]?.result?.data : json?.result?.data;
+        setAvailableSlots(data || []);
       }
     } catch (e) {
       console.error(e);
@@ -237,8 +238,9 @@ export default function Perfil({ params }: { params: { id: string } }) {
       const res = await fetch(url);
       if (res.ok) {
         const json = await res.json();
-        if (json.result && json.result.data) {
-          setProvider(json.result.data);
+        const data = Array.isArray(json) ? json[0]?.result?.data : json?.result?.data;
+        if (data) {
+          setProvider(data);
           setIsLoading(false);
           return;
         }
@@ -421,8 +423,9 @@ export default function Perfil({ params }: { params: { id: string } }) {
       const res = await fetch(url);
       if (res.ok) {
         const json = await res.json();
-        if (json.result && Array.isArray(json.result.data)) {
-          setReviewsList(json.result.data);
+        const data = Array.isArray(json) ? json[0]?.result?.data : json?.result?.data;
+        if (Array.isArray(data)) {
+          setReviewsList(data);
           return;
         }
       }
