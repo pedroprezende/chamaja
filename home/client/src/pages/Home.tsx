@@ -905,204 +905,217 @@ export default function Home() {
         )}
       </header>
 
-      <section className="relative py-20 md:py-28 lg:py-36 overflow-hidden border-b border-white/[0.04] bg-[#030303]">
-        {/* Custom Premium 3D, animations, particles & lines CSS */}
+      {/* ── HERO SECTION WITH TECH MAP BACKGROUND & REAL CARDS ── */}
+      <section className="relative py-16 md:py-24 lg:py-32 overflow-hidden border-b border-white/[0.06] bg-[#030508] select-none">
+        {/* Custom Keyframes and Modern CSS Styles */}
         <style dangerouslySetInnerHTML={{ __html: `
-          @keyframes float-y-1 {
-            0%, 100% { transform: translateY(0px) rotate(-2deg) translateZ(20px); }
-            50% { transform: translateY(-10px) rotate(-1deg) translateZ(25px); }
+          @keyframes float-card-1 {
+            0%, 100% { transform: translateY(0px) rotate(-1deg); }
+            50% { transform: translateY(-12px) rotate(1deg); }
           }
-          @keyframes float-y-2 {
-            0%, 100% { transform: translateY(0px) rotate(3deg) translateZ(40px); }
-            50% { transform: translateY(-16px) rotate(4deg) translateZ(45px); }
+          @keyframes float-card-2 {
+            0%, 100% { transform: translateY(0px) rotate(1.5deg); }
+            50% { transform: translateY(-15px) rotate(-0.5deg); }
           }
-          @keyframes float-y-3 {
-            0%, 100% { transform: translateY(0px) rotate(-4deg) translateZ(15px); }
-            50% { transform: translateY(-8px) rotate(-2deg) translateZ(20px); }
+          @keyframes float-card-3 {
+            0%, 100% { transform: translateY(0px) rotate(-2deg); }
+            50% { transform: translateY(-10px) rotate(0.5deg); }
           }
-          @keyframes float-y-4 {
-            0%, 100% { transform: translateY(0px) rotate(2deg) translateZ(30px); }
-            50% { transform: translateY(-14px) rotate(1deg) translateZ(35px); }
+          @keyframes float-card-4 {
+            0%, 100% { transform: translateY(0px) rotate(1deg); }
+            50% { transform: translateY(-14px) rotate(-1.5deg); }
           }
-          @keyframes float-mascote {
-            0%, 100% { transform: translateY(0px) rotate(0deg) scale(1) translateZ(10px); }
-            50% { transform: translateY(-8px) rotate(2deg) scale(1.02) translateZ(15px); }
+          @keyframes float-phone-main {
+            0%, 100% { transform: translateY(0px) rotateX(8deg) rotateY(-14deg); }
+            50% { transform: translateY(-12px) rotateX(5deg) rotateY(-18deg); }
           }
-          @keyframes float-phone {
-            0%, 100% { transform: translateY(0px) rotateX(12deg) rotateY(-20deg) rotateZ(-3deg); }
-            50% { transform: translateY(-15px) rotateX(9deg) rotateY(-24deg) rotateZ(-1deg); }
+          @keyframes pulse-node {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.3); opacity: 1; }
           }
-          @keyframes particle-drift {
-            0% { transform: translateY(0px) translateX(0px); opacity: 0.1; }
-            50% { opacity: 0.6; }
-            100% { transform: translateY(-80px) translateX(15px); opacity: 0; }
+          @keyframes dash-pulse {
+            0% { stroke-dashoffset: 40; }
+            100% { stroke-dashoffset: 0; }
           }
-          .animate-float-card-1 { animation: float-y-1 7s ease-in-out infinite; }
-          .animate-float-card-2 { animation: float-y-2 9s ease-in-out infinite; }
-          .animate-float-card-3 { animation: float-y-3 8s ease-in-out infinite; }
-          .animate-float-card-4 { animation: float-y-4 10s ease-in-out infinite; }
-          .animate-float-mascote-scene { animation: float-mascote 6s ease-in-out infinite; }
-          .animate-float-phone-scene { animation: float-phone 8s ease-in-out infinite; }
-          .perspective-1500 {
-            perspective: 1500px;
+          @keyframes particle-float {
+            0% { transform: translateY(0) translateX(0); opacity: 0.1; }
+            50% { opacity: 0.7; }
+            100% { transform: translateY(-90px) translateX(20px); opacity: 0; }
           }
-          .transform-style-3d {
-            transform-style: preserve-3d;
-          }
-          .dot-grid {
-            background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 24px 24px;
+          .animate-float-c1 { animation: float-card-1 7s ease-in-out infinite; }
+          .animate-float-c2 { animation: float-card-2 8.5s ease-in-out infinite; }
+          .animate-float-c3 { animation: float-card-3 6.5s ease-in-out infinite; }
+          .animate-float-c4 { animation: float-card-4 9s ease-in-out infinite; }
+          .animate-float-phone-hero { animation: float-phone-main 8s ease-in-out infinite; }
+          .animate-dash-flow { animation: dash-pulse 3s linear infinite; }
+          .tech-grid-overlay {
+            background-image: 
+              radial-gradient(circle at 50% 50%, rgba(37, 211, 102, 0.08) 0%, transparent 60%),
+              linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+              linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 48px 48px, 48px 48px;
           }
         `}} />
 
-        {/* Ambient Dark Tech Background */}
-        <div className="absolute inset-0 dot-grid pointer-events-none z-0" />
-        
-        {/* Large radial dark green glow */}
-        <div className="absolute top-1/2 left-2/3 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/[0.04] rounded-full blur-[160px] pointer-events-none z-0" />
-        <div className="absolute top-1/3 left-1/3 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/[0.03] rounded-full blur-[140px] pointer-events-none z-0" />
+        {/* ── FULL-WIDTH TECH MAP BACKGROUND ── */}
+        <div className="absolute inset-0 tech-grid-overlay pointer-events-none z-0" />
 
-        {/* Abstract connectivity SVG (extremely subtle nodes and dashed lines) */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none z-0 opacity-15" xmlns="http://www.w3.org/2000/svg">
-          <g stroke="rgba(132, 204, 22, 0.2)" strokeWidth="0.75" strokeDasharray="3 3">
-            <line x1="15%" y1="20%" x2="35%" y2="15%" />
-            <line x1="35%" y1="15%" x2="60%" y2="30%" />
-            <line x1="60%" y1="30%" x2="80%" y2="20%" />
-            <line x1="80%" y1="20%" x2="90%" y2="45%" />
-            <line x1="90%" y1="45%" x2="70%" y2="60%" />
-            <line x1="70%" y1="60%" x2="45%" y2="70%" />
-            <line x1="45%" y1="70%" x2="20%" y2="55%" />
-            <line x1="20%" y1="55%" x2="15%" y2="20%" />
-            <line x1="35%" y1="15%" x2="45%" y2="70%" />
-            <line x1="60%" y1="30%" x2="70%" y2="60%" />
+        {/* Radial ambient glows */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-[#25D366]/[0.05] rounded-full blur-[160px] pointer-events-none z-0" />
+        <div className="absolute top-1/4 right-1/4 w-[600px] h-[600px] bg-emerald-500/[0.04] rounded-full blur-[140px] pointer-events-none z-0" />
+        <div className="absolute bottom-10 left-10 w-[500px] h-[500px] bg-lime-500/[0.03] rounded-full blur-[120px] pointer-events-none z-0" />
+
+        {/* SVG TECHNOLOGICAL STREET MAP NETWORK */}
+        <svg
+          className="absolute inset-0 w-full h-full pointer-events-none z-0 opacity-40"
+          xmlns="http://www.w3.org/2000/svg"
+          preserveAspectRatio="none"
+        >
+          <defs>
+            <linearGradient id="roadGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#25D366" stopOpacity="0.6" />
+              <stop offset="50%" stopColor="#84cc16" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="#18181b" stopOpacity="0.1" />
+            </linearGradient>
+            <linearGradient id="roadGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#10b981" stopOpacity="0.5" />
+              <stop offset="100%" stopColor="#25D366" stopOpacity="0.2" />
+            </linearGradient>
+            <filter id="greenGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+          </defs>
+
+          {/* Stylized Street Network Roads */}
+          <g stroke="url(#roadGrad1)" strokeWidth="1.5" fill="none">
+            <path d="M-100,200 C300,100 600,400 1200,150" />
+            <path d="M-50,600 C400,500 700,750 1400,450" />
+            <path d="M400,-100 C500,300 650,600 800,1000" />
+            <path d="M800,-100 C750,250 900,550 1100,1000" />
           </g>
-          <circle cx="15%" cy="20%" r="2" fill="rgba(132, 204, 22, 0.4)" />
-          <circle cx="35%" cy="15%" r="2" fill="rgba(132, 204, 22, 0.4)" />
-          <circle cx="60%" cy="30%" r="3" fill="rgba(37, 211, 102, 0.5)" className="animate-pulse" />
-          <circle cx="80%" cy="20%" r="2" fill="rgba(132, 204, 22, 0.4)" />
-          <circle cx="90%" cy="45%" r="2" fill="rgba(132, 204, 22, 0.4)" />
-          <circle cx="70%" cy="60%" r="3" fill="rgba(37, 211, 102, 0.5)" className="animate-pulse" />
-          <circle cx="45%" cy="70%" r="2" fill="rgba(132, 204, 22, 0.4)" />
-          <circle cx="20%" cy="55%" r="2" fill="rgba(132, 204, 22, 0.4)" />
+
+          <g stroke="url(#roadGrad2)" strokeWidth="1" strokeDasharray="6 6" fill="none" className="animate-dash-flow">
+            <path d="M100,150 Q450,280 850,200 T1500,350" />
+            <path d="M200,650 Q600,400 950,550 T1600,600" />
+            <path d="M650,50 C700,350 780,500 850,900" />
+          </g>
+
+          {/* Secondary streets */}
+          <g stroke="rgba(255, 255, 255, 0.05)" strokeWidth="1" fill="none">
+            <line x1="10%" y1="10%" x2="90%" y2="10%" />
+            <line x1="5%" y1="30%" x2="95%" y2="30%" />
+            <line x1="15%" y1="55%" x2="85%" y2="55%" />
+            <line x1="5%" y1="80%" x2="95%" y2="80%" />
+            <line x1="20%" y1="0%" x2="20%" y2="100%" />
+            <line x1="40%" y1="0%" x2="40%" y2="100%" />
+            <line x1="60%" y1="0%" x2="60%" y2="100%" />
+            <line x1="80%" y1="0%" x2="80%" y2="100%" />
+          </g>
+
+          {/* Luminous Connected Map Pins / Nodes */}
+          {[
+            { cx: "22%", cy: "25%", r: 5 },
+            { cx: "38%", cy: "18%", r: 4 },
+            { cx: "58%", cy: "22%", r: 6 },
+            { cx: "75%", cy: "16%", r: 5 },
+            { cx: "88%", cy: "32%", r: 4 },
+            { cx: "18%", cy: "62%", r: 5 },
+            { cx: "42%", cy: "72%", r: 4 },
+            { cx: "64%", cy: "65%", r: 6 },
+            { cx: "82%", cy: "78%", r: 5 },
+          ].map((node, i) => (
+            <g key={i} filter="url(#greenGlow)">
+              <circle cx={node.cx} cy={node.cy} r={node.r * 2} fill="#25D366" opacity="0.15" />
+              <circle cx={node.cx} cy={node.cy} r={node.r} fill="#25D366" />
+              <circle cx={node.cx} cy={node.cy} r={node.r + 3} stroke="#25D366" strokeWidth="1" fill="none" opacity="0.6" />
+            </g>
+          ))}
         </svg>
 
-        {/* Small drifting light particles */}
+        {/* Floating Particles */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-          {[0, 1, 2, 3, 4, 5].map((_, i) => (
+          {[...Array(12)].map((_, i) => (
             <div
               key={i}
-              className="absolute bg-primary/20 rounded-full blur-[2px]"
+              className="absolute bg-[#25D366]/40 rounded-full blur-[1px]"
               style={{
-                width: `${Math.random() * 4 + 3}px`,
-                height: `${Math.random() * 4 + 3}px`,
-                top: `${Math.random() * 80 + 10}%`,
-                left: `${Math.random() * 80 + 10}%`,
-                animation: `particle-drift ${Math.random() * 8 + 8}s linear infinite`,
-                animationDelay: `${Math.random() * 5}s`,
+                width: `${(i % 3) + 3}px`,
+                height: `${(i % 3) + 3}px`,
+                top: `${(i * 7 + 12) % 85}%`,
+                left: `${(i * 11 + 5) % 92}%`,
+                animation: `particle-float ${7 + (i % 5)}s ease-in-out infinite`,
+                animationDelay: `${i * 0.6}s`,
               }}
             />
           ))}
         </div>
 
         <div className="container mx-auto px-4 relative z-10">
-          {/* Stacked on mobile, side-by-side grid on desktop/tablets */}
           <div className="flex flex-col lg:grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-            
-            {/* Left Content (45% Width -> 5 cols on lg grid) */}
-            <div className="space-y-10 relative w-full z-15 lg:col-span-5 text-left">
-              {/* Mobile Ambient Glow behind Left Content */}
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-72 bg-primary/10 rounded-full blur-[100px] pointer-events-none z-0 lg:hidden"></div>
 
-              {/* Location Pin & Mobile Mascot wrapper */}
-              <div className="flex items-center justify-between gap-4 select-none relative z-10">
-                <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-white/[0.02] border border-white/[0.05] text-xs text-zinc-400 font-semibold select-none backdrop-blur-md">
-                  <MapPin className="h-4 w-4 text-primary" />
-                  <span>Sua localização:</span>
-                  <span className="text-primary font-bold hover:underline cursor-pointer flex items-center gap-0.5">
-                    {searchLocation} ▾
-                  </span>
-                </div>
-                
-                {/* Mobile Mascot: shows a small cute mascot avatar floating in the upper corner */}
-                <div className="lg:hidden flex-shrink-0 relative group">
-                  <div className="absolute inset-0 bg-primary/20 rounded-full blur-md animate-glow-pulse"></div>
-                  <img
-                    src="/assets/images/mascote-xara.png"
-                    alt="Xará"
-                    className="w-10 h-10 object-contain relative z-10 drop-shadow-md animate-float-slow"
-                  />
-                </div>
+            {/* ── LEFT COLUMN: HEADLINE, SEARCH & STATS ── */}
+            <div className="space-y-8 relative w-full z-15 lg:col-span-6 text-left">
+
+              {/* Location Badge */}
+              <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-zinc-900/80 border border-white/[0.08] text-xs text-zinc-300 font-semibold backdrop-blur-md shadow-lg">
+                <MapPin className="h-4 w-4 text-[#25D366]" />
+                <span>Sua localização:</span>
+                <span className="text-[#25D366] font-bold hover:underline cursor-pointer flex items-center gap-1">
+                  {searchLocation} ▾
+                </span>
               </div>
 
-              {/* Headline & Subtitle */}
-              <div className="space-y-6">
-                <h1 className="text-4xl md:text-5.5xl lg:text-7xl font-black leading-[1.02] tracking-tight text-white font-sans">
-                  Encontre os melhores
-                  <br />
-                  <span className="inline-block text-primary transition-all duration-500 ease-out transform translate-y-0 opacity-100 min-w-[280px]">
-                    {rotatingWords[currentWordIdx]}
+              {/* Main Headline */}
+              <div className="space-y-4">
+                <h1 className="text-4xl md:text-5.5xl lg:text-6.5xl font-black leading-[1.04] tracking-tight text-white font-sans">
+                  Encontre tudo o que <br />
+                  você precisa, <br />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#25D366] via-emerald-400 to-lime-400">
+                    perto de você!
                   </span>
-                  <br />
-                  <span className="text-zinc-450">perto de você.</span>
                 </h1>
 
-                <p className="text-sm md:text-base text-zinc-450 max-w-lg leading-relaxed font-medium">
-                  Busque comércios e prestadores de serviço na sua região de forma simples e rápida.
+                <p className="text-sm md:text-base text-zinc-400 max-w-xl leading-relaxed font-medium">
+                  Busque comércios, prestadores de serviços e produtos na sua região de forma simples, rápida e segura.
                 </p>
               </div>
 
-              {/* Integrated Search Bar (Modern Glassmorphic) */}
-              <div className="bg-zinc-950/45 backdrop-blur-xl border border-white/[0.06] hover:border-white/[0.1] p-3 rounded-2xl flex flex-col md:flex-row items-center gap-2.5 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.9)] w-full max-w-2xl transition-all duration-300 focus-within:border-primary/40 focus-within:ring-4 focus-within:ring-primary/5">
-                {/* Input 1: O que você procura */}
-                <div className="flex-1 flex items-center px-4 gap-3.5 w-full group">
-                  <Search className="text-zinc-500 group-focus-within:text-primary h-5 w-5 flex-shrink-0 transition-colors" />
+              {/* Integrated Search Bar */}
+              <div className="bg-zinc-950/80 backdrop-blur-xl border border-white/[0.08] hover:border-[#25D366]/40 p-2.5 rounded-2xl flex flex-col md:flex-row items-center gap-2 shadow-[0_20px_50px_rgba(0,0,0,0.8)] w-full max-w-2xl transition-all duration-300 focus-within:border-[#25D366]/60 focus-within:ring-2 focus-within:ring-[#25D366]/20">
+                {/* Input 1: Search query */}
+                <div className="flex-1 flex items-center px-3.5 gap-3 w-full group">
+                  <Search className="text-zinc-500 group-focus-within:text-[#25D366] h-4.5 w-4.5 flex-shrink-0 transition-colors" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === "Enter") {
-                        handleSearchSubmit();
-                      }
-                    }}
-                    className="bg-transparent border-none focus:outline-none focus:ring-0 text-white w-full text-xs sm:text-sm py-3 placeholder:text-zinc-550 font-medium"
+                    onKeyDown={e => { if (e.key === "Enter") handleSearchSubmit(); }}
+                    className="bg-transparent border-none focus:outline-none focus:ring-0 text-white w-full text-xs sm:text-sm py-2.5 placeholder:text-zinc-500 font-medium"
                     placeholder="O que você procura? Ex: pizzaria, eletricista..."
                   />
                   {searchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery("")}
-                      className="text-zinc-550 hover:text-white transition-colors"
-                    >
+                    <button type="button" onClick={() => setSearchQuery("")} className="text-zinc-500 hover:text-white">
                       <X className="w-4 h-4" />
                     </button>
                   )}
                 </div>
                 
-                {/* Divider */}
-                <div className="hidden md:block h-8 w-px bg-white/[0.08]"></div>
+                <div className="hidden md:block h-7 w-px bg-white/[0.08]"></div>
 
-                {/* Input 2: Cidade, bairro ou CEP */}
-                <div className="flex-1 flex items-center px-4 gap-3.5 w-full group">
-                  <MapPin className="text-zinc-500 group-focus-within:text-primary h-5 w-5 flex-shrink-0 transition-colors" />
+                {/* Input 2: Location */}
+                <div className="flex-1 flex items-center px-3.5 gap-3 w-full group">
+                  <MapPin className="text-zinc-500 group-focus-within:text-[#25D366] h-4.5 w-4.5 flex-shrink-0 transition-colors" />
                   <input
                     type="text"
                     value={searchLocation}
                     onChange={e => setSearchLocation(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === "Enter") {
-                        handleSearchSubmit();
-                      }
-                    }}
-                    className="bg-transparent border-none focus:outline-none focus:ring-0 text-white w-full text-xs sm:text-sm py-3 placeholder:text-zinc-550 font-medium"
+                    onKeyDown={e => { if (e.key === "Enter") handleSearchSubmit(); }}
+                    className="bg-transparent border-none focus:outline-none focus:ring-0 text-white w-full text-xs sm:text-sm py-2.5 placeholder:text-zinc-500 font-medium"
                     placeholder="Cidade, bairro ou CEP"
                   />
                   {searchLocation && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchLocation("")}
-                      className="text-zinc-550 hover:text-white transition-colors"
-                    >
+                    <button type="button" onClick={() => setSearchLocation("")} className="text-zinc-500 hover:text-white">
                       <X className="w-4 h-4" />
                     </button>
                   )}
@@ -1111,9 +1124,10 @@ export default function Home() {
                 {/* Search Button */}
                 <Button
                   onClick={handleSearchSubmit}
-                  className="bg-primary hover:bg-primary/95 text-primary-foreground font-black px-8 py-3.5 h-12 rounded-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-primary/15 w-full md:w-auto text-xs sm:text-sm"
+                  className="bg-[#25D366] hover:bg-[#22C55E] text-black font-black px-7 py-3 h-11 rounded-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-[#25D366]/20 w-full md:w-auto text-xs sm:text-sm flex items-center justify-center gap-1.5"
                 >
-                  Buscar
+                  <span>Buscar</span>
+                  <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
 
@@ -1127,184 +1141,171 @@ export default function Home() {
                       setSearchQuery(tag);
                       window.location.href = `/busca?q=${encodeURIComponent(tag)}`;
                     }}
-                    className="px-4 py-2 bg-zinc-900/40 border border-white/[0.06] hover:bg-primary hover:text-black hover:border-primary text-zinc-350 hover:font-bold rounded-xl transition-all duration-300 hover:-translate-y-0.5 shadow-md"
+                    className="px-3.5 py-1.5 bg-zinc-900/60 border border-white/[0.06] hover:bg-[#25D366] hover:text-black hover:border-[#25D366] text-zinc-300 hover:font-bold rounded-xl transition-all duration-200 shadow-md text-xs"
                   >
                     {tag}
                   </button>
                 ))}
                 <button
                   onClick={() => window.location.href = "/busca"}
-                  className="px-4 py-2 bg-zinc-900/40 border border-white/[0.06] hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-xl transition-all duration-300 flex items-center gap-1.5 shadow-md"
+                  className="px-3.5 py-1.5 bg-zinc-900/60 border border-white/[0.06] hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-xl transition-all duration-200 flex items-center gap-1 text-xs"
                 >
                   <Grid className="w-3.5 h-3.5" />
-                  <span>Ver mais</span>
+                  <span>Ver todas</span>
                 </button>
               </div>
 
-              {/* Real dynamic stats section (Premium Glassmorphic cards) */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 pt-6 max-w-2xl">
-                {/* Card 1: Comércios */}
-                <div className="bg-zinc-950/40 border border-white/[0.04] p-5 rounded-2xl flex items-center gap-4 hover:border-white/[0.08] hover:bg-zinc-950/60 transition-all backdrop-blur-sm shadow-[0_15px_30px_rgba(0,0,0,0.4)] group">
-                  <div className="w-12 h-12 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-center flex-shrink-0 text-primary group-hover:scale-105 transition-transform">
-                    <Store className="w-5.5 h-5.5" />
-                  </div>
-                  <div className="space-y-0.5 text-left">
-                    <span className="text-2xl font-black text-white leading-none block tracking-tight">
-                      +{publicStats.comerciosCount > 0 ? publicStats.comerciosCount : 500}
-                    </span>
-                    <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest block">
-                      comércios
+              {/* ── REAL DATABASE STATS CARDS (CARREGADOS DO BANCO SEM FALLBACKS FICTÍCIOS) ── */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4">
+                {/* Stat 1: Comércios */}
+                <div className="bg-zinc-950/60 border border-white/[0.06] p-4 rounded-2xl flex flex-col justify-center backdrop-blur-md hover:border-[#25D366]/40 transition-colors group">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Store className="w-4 h-4 text-[#25D366]" />
+                    <span className="text-xl sm:text-2xl font-black text-white leading-none tracking-tight">
+                      {publicStats.comerciosCount > 0 ? `+${publicStats.comerciosCount}` : publicStats.comerciosCount}
                     </span>
                   </div>
+                  <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
+                    Comércios
+                  </span>
                 </div>
 
-                {/* Card 2: Usuários */}
-                <div className="bg-zinc-950/40 border border-white/[0.04] p-5 rounded-2xl flex items-center gap-4 hover:border-white/[0.08] hover:bg-zinc-950/60 transition-all backdrop-blur-sm shadow-[0_15px_30px_rgba(0,0,0,0.4)] group">
-                  <div className="w-12 h-12 rounded-xl bg-emerald-500/5 border border-emerald-500/10 flex items-center justify-center flex-shrink-0 text-emerald-400 group-hover:scale-105 transition-transform">
-                    <Users className="w-5.5 h-5.5" />
-                  </div>
-                  <div className="space-y-0.5 text-left">
-                    <span className="text-2xl font-black text-white leading-none block tracking-tight">
-                      +{publicStats.usersCount > 0 ? publicStats.usersCount : "2.000"}
-                    </span>
-                    <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest block">
-                      usuários
+                {/* Stat 2: Prestadores */}
+                <div className="bg-zinc-950/60 border border-white/[0.06] p-4 rounded-2xl flex flex-col justify-center backdrop-blur-md hover:border-[#25D366]/40 transition-colors group">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Wrench className="w-4 h-4 text-emerald-400" />
+                    <span className="text-xl sm:text-2xl font-black text-white leading-none tracking-tight">
+                      {publicStats.prestadoresCount > 0 ? `+${publicStats.prestadoresCount}` : publicStats.prestadoresCount}
                     </span>
                   </div>
+                  <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
+                    Prestadores
+                  </span>
                 </div>
 
-                {/* Card 3: Avaliação */}
-                <div className="bg-zinc-950/40 border border-white/[0.04] p-5 rounded-2xl flex items-center gap-4 hover:border-white/[0.08] hover:bg-zinc-950/60 transition-all backdrop-blur-sm shadow-[0_15px_30px_rgba(0,0,0,0.4)] group">
-                  <div className="w-12 h-12 rounded-xl bg-amber-400/5 border border-amber-400/10 flex items-center justify-center flex-shrink-0 text-amber-400 group-hover:scale-105 transition-transform">
-                    <Star className="w-5.5 h-5.5 fill-current" />
-                  </div>
-                  <div className="space-y-0.5 text-left">
-                    <span className="text-2xl font-black text-white leading-none block tracking-tight">
-                      {publicStats.ratingAverage > 0 ? publicStats.ratingAverage.toFixed(1) : "4.9"}
-                    </span>
-                    <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest block">
-                      avaliação
+                {/* Stat 3: Usuários */}
+                <div className="bg-zinc-950/60 border border-white/[0.06] p-4 rounded-2xl flex flex-col justify-center backdrop-blur-md hover:border-[#25D366]/40 transition-colors group">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Users className="w-4 h-4 text-lime-400" />
+                    <span className="text-xl sm:text-2xl font-black text-white leading-none tracking-tight">
+                      {publicStats.usersCount > 0 ? `+${publicStats.usersCount}` : publicStats.usersCount}
                     </span>
                   </div>
+                  <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
+                    Usuários
+                  </span>
+                </div>
+
+                {/* Stat 4: Média de Avaliação */}
+                <div className="bg-zinc-950/60 border border-white/[0.06] p-4 rounded-2xl flex flex-col justify-center backdrop-blur-md hover:border-[#25D366]/40 transition-colors group">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Star className="w-4 h-4 text-amber-400 fill-current" />
+                    <span className="text-xl sm:text-2xl font-black text-white leading-none tracking-tight">
+                      {publicStats.ratingAverage > 0 ? publicStats.ratingAverage.toFixed(1) : "5.0"}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
+                    Avaliação Média
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Right Content (55% Width -> 7 cols on lg grid) */}
-            <div className="flex justify-center relative w-full h-[600px] md:h-[700px] lg:h-[800px] items-center z-10 perspective-1500 transform-style-3d select-none lg:col-span-7">
+            {/* ── RIGHT COLUMN: SMARTPHONE MOCKUP & FLOATING REAL PROVIDER CARDS ── */}
+            <div className="flex justify-center relative w-full h-[580px] md:h-[680px] lg:h-[760px] items-center z-10 select-none lg:col-span-6">
               
-              {/* Ambient radial green glow behind mockup */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[450px] h-[450px] bg-primary/10 rounded-full blur-[100px] pointer-events-none z-0"></div>
-
-              {/* Central Phone Mockup (35% Larger, 3D inclined perspective, flutuando) */}
-              <div className="relative z-10 w-[300px] md:w-[380px] lg:w-[460px] aspect-[9/18.5] flex items-center justify-center animate-float-phone-scene transform-style-3d">
+              {/* Central Phone Mockup */}
+              <div className="relative z-20 w-[270px] md:w-[340px] lg:w-[390px] aspect-[9/18.5] flex items-center justify-center animate-float-phone-hero">
                 <img
                   src="/assets/images/hero_mockup_right.png"
-                  alt="XamaJá App Ecosystem"
-                  className="w-full h-full object-contain drop-shadow-[0_30px_70px_rgba(132,204,22,0.3)]"
+                  alt="XamaJá App Interface"
+                  className="w-full h-full object-contain filter drop-shadow-[0_25px_60px_rgba(37,211,102,0.25)]"
                 />
 
-                {/* Floating Mascot (Xará) - Close to the mockup, integrated into the composition */}
-                <div className="absolute bottom-[8%] left-[-15%] md:left-[-18%] z-20 w-24 h-24 md:w-32 md:h-32 animate-float-mascote-scene select-none">
+                {/* Mascot Avatar (Xará) floating near phone */}
+                <div className="absolute bottom-[6%] left-[-12%] z-30 w-20 h-20 md:w-28 md:h-28 select-none pointer-events-none">
                   <img
                     src="/assets/images/mascote-xara.png"
-                    alt="Mascote Xará"
-                    className="w-full h-full object-contain filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.5)]"
+                    alt="Xará Mascot"
+                    className="w-full h-full object-contain filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.6)]"
                   />
                 </div>
               </div>
 
-              {/* 4 Floating Cards (React components using REAL database data from featuredProviders) */}
-              
-              {/* Card 1: Top Right */}
-              {featuredProviders[0] ? (
-                <a
-                  href={`/perfil/${featuredProviders[0].id}`}
-                  className="absolute top-[6%] right-[-2%] md:right-[6%] z-30 animate-float-card-1 bg-zinc-950/75 backdrop-blur-xl border border-white/[0.08] p-3 rounded-2xl flex items-center gap-3 shadow-[0_20px_45px_rgba(0,0,0,0.6)] min-w-[190px] select-none hover:border-primary/40 transition-colors"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary flex-shrink-0">
-                    {getProviderIcon(featuredProviders[0].category)}
-                  </div>
-                  <div className="text-left overflow-hidden">
-                    <span className="text-white font-extrabold text-[11px] block truncate">{featuredProviders[0].name}</span>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <Star className="w-3 h-3 text-amber-400 fill-current" />
-                      <span className="text-white font-black text-[10px]">{Number(featuredProviders[0].rating || 5).toFixed(1)}</span>
-                      <span className="text-zinc-500 text-[8px] font-bold uppercase tracking-wider ml-1 truncate">{featuredProviders[0].category}</span>
-                    </div>
-                  </div>
-                </a>
-              ) : (
-                <div className="absolute top-[6%] right-[-2%] md:right-[6%] z-30 animate-float-card-1 bg-zinc-950/40 backdrop-blur-xl border border-white/[0.05] p-3 rounded-2xl flex items-center gap-3 shadow-lg min-w-[190px] h-[64px] opacity-50" />
-              )}
+              {/* ── DYNAMIC FLOATING CARDS (SHOWING ONLY REAL DATABASE PROVIDERS) ── */}
+              {(() => {
+                const realProviders = featuredProviders.length > 0 ? featuredProviders : nearbyProviders;
+                if (!realProviders || realProviders.length === 0) return null;
 
-              {/* Card 2: Middle Left */}
-              {featuredProviders[1] ? (
-                <a
-                  href={`/perfil/${featuredProviders[1].id}`}
-                  className="absolute top-[40%] left-[-8%] md:left-[2%] z-30 animate-float-card-2 bg-zinc-950/75 backdrop-blur-xl border border-white/[0.08] p-3 rounded-2xl flex items-center gap-3 shadow-[0_20px_45px_rgba(0,0,0,0.6)] min-w-[190px] select-none hover:border-emerald-400/40 transition-colors"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0">
-                    {getProviderIcon(featuredProviders[1].category)}
-                  </div>
-                  <div className="text-left overflow-hidden">
-                    <span className="text-white font-extrabold text-[11px] block truncate">{featuredProviders[1].name}</span>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <Star className="w-3 h-3 text-amber-400 fill-current" />
-                      <span className="text-white font-black text-[10px]">{Number(featuredProviders[1].rating || 5).toFixed(1)}</span>
-                      {featuredProviders[1].isVerified && (
-                        <span className="text-emerald-400 text-[7px] font-black uppercase tracking-wider ml-1 bg-emerald-500/10 px-1 py-0.5 rounded">VERIFICADO</span>
-                      )}
-                    </div>
-                  </div>
-                </a>
-              ) : (
-                <div className="absolute top-[40%] left-[-8%] md:left-[2%] z-30 animate-float-card-2 bg-zinc-950/40 backdrop-blur-xl border border-white/[0.05] p-3 rounded-2xl flex items-center gap-3 shadow-lg min-w-[190px] h-[64px] opacity-50" />
-              )}
+                // Card positions configuration (Top-Right, Middle-Left, Bottom-Right, Top-Left, Middle-Right, Bottom-Left)
+                const positions = [
+                  "top-[5%] right-[-4%] md:right-[2%] animate-float-c1",
+                  "top-[38%] left-[-6%] md:left-[-2%] animate-float-c2",
+                  "bottom-[14%] right-[0%] md:right-[4%] animate-float-c3",
+                  "top-[18%] left-[2%] md:left-[8%] animate-float-c4",
+                  "top-[58%] right-[-8%] md:right-[-4%] animate-float-c1",
+                  "bottom-[6%] left-[-4%] md:left-[2%] animate-float-c2",
+                ];
 
-              {/* Card 3: Bottom Right */}
-              {featuredProviders[2] ? (
-                <a
-                  href={`/perfil/${featuredProviders[2].id}`}
-                  className="absolute bottom-[16%] right-[-5%] md:right-[4%] z-30 animate-float-card-3 bg-zinc-950/75 backdrop-blur-xl border border-white/[0.08] p-3 rounded-2xl flex items-center gap-3 shadow-[0_20px_45px_rgba(0,0,0,0.6)] min-w-[190px] select-none hover:border-amber-400/40 transition-colors"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-amber-400/10 border border-amber-400/20 flex items-center justify-center text-amber-400 flex-shrink-0">
-                    {getProviderIcon(featuredProviders[2].category)}
-                  </div>
-                  <div className="text-left overflow-hidden">
-                    <span className="text-white font-extrabold text-[11px] block truncate">{featuredProviders[2].name}</span>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <Star className="w-3 h-3 text-amber-400 fill-current" />
-                      <span className="text-white font-black text-[10px]">{Number(featuredProviders[2].rating || 5).toFixed(1)}</span>
-                      <span className="text-zinc-500 text-[8px] font-bold uppercase tracking-wider ml-1 truncate">{featuredProviders[2].category}</span>
-                    </div>
-                  </div>
-                </a>
-              ) : (
-                <div className="absolute bottom-[16%] right-[-5%] md:right-[4%] z-30 animate-float-card-3 bg-zinc-950/40 backdrop-blur-xl border border-white/[0.05] p-3 rounded-2xl flex items-center gap-3 shadow-lg min-w-[190px] h-[64px] opacity-50" />
-              )}
+                return realProviders.slice(0, 6).map((provider, idx) => {
+                  const avatar = provider.avatarUri || provider.coverUri || DEFAULT_MASCOT;
+                  const categoryName = provider.subcategoryName || provider.category || "Parceiro";
+                  const rating = Number(provider.rating || 5.0).toFixed(1);
+                  const isVerified = provider.isVerified === true;
+                  const isOnline = provider.onlineStatus === true;
+                  const distance = provider.distanceStr || (provider.distanceKm ? formatDistancePtBr(provider.distanceKm) : null);
+                  const posClass = positions[idx % positions.length];
 
-              {/* Card 4: Top Left */}
-              {featuredProviders[3] ? (
-                <a
-                  href={`/perfil/${featuredProviders[3].id}`}
-                  className="absolute top-[22%] left-[4%] md:left-[12%] z-20 animate-float-card-4 bg-zinc-950/75 backdrop-blur-xl border border-white/[0.08] p-3 rounded-2xl flex items-center gap-3 shadow-[0_20px_45px_rgba(0,0,0,0.6)] min-w-[190px] select-none hover:border-primary/40 transition-colors"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary flex-shrink-0">
-                    {getProviderIcon(featuredProviders[3].category)}
-                  </div>
-                  <div className="text-left overflow-hidden">
-                    <span className="text-white font-extrabold text-[11px] block truncate">{featuredProviders[3].name}</span>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <Star className="w-3 h-3 text-amber-400 fill-current" />
-                      <span className="text-white font-black text-[10px]">{Number(featuredProviders[3].rating || 5).toFixed(1)}</span>
-                      <span className="text-zinc-500 text-[8px] font-bold uppercase tracking-wider ml-1 truncate">{featuredProviders[3].category}</span>
-                    </div>
-                  </div>
-                </a>
-              ) : (
-                <div className="absolute top-[22%] left-[4%] md:left-[12%] z-20 animate-float-card-4 bg-zinc-950/40 backdrop-blur-xl border border-white/[0.05] p-3 rounded-2xl flex items-center gap-3 shadow-lg min-w-[190px] h-[64px] opacity-50" />
-              )}
+                  return (
+                    <a
+                      key={provider.id}
+                      href={`/perfil/${provider.id}`}
+                      className={`absolute z-30 ${posClass} bg-[#08090d]/85 backdrop-blur-xl border border-white/[0.08] hover:border-[#25D366]/60 p-3 rounded-2xl flex items-center gap-3 shadow-[0_15px_35px_rgba(0,0,0,0.8),0_0_20px_rgba(37,211,102,0.12)] min-w-[200px] max-w-[240px] transition-all duration-300 hover:scale-105 group`}
+                    >
+                      {/* Avatar / Profile Image */}
+                      <div className="relative w-11 h-11 rounded-xl overflow-hidden bg-zinc-900 border border-white/10 flex-shrink-0">
+                        <img
+                          src={avatar}
+                          alt={provider.name}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        />
+                        {isOnline && (
+                          <span className="absolute bottom-0.5 right-0.5 w-2.5 h-2.5 bg-[#25D366] rounded-full border-2 border-black animate-pulse" />
+                        )}
+                      </div>
+
+                      {/* Info Details */}
+                      <div className="text-left overflow-hidden min-w-0 flex-1">
+                        <div className="flex items-center gap-1">
+                          <span className="text-white font-extrabold text-xs truncate leading-tight group-hover:text-[#25D366] transition-colors">
+                            {provider.name}
+                          </span>
+                          {isVerified && (
+                            <BadgeCheck className="w-3.5 h-3.5 text-[#25D366] flex-shrink-0" />
+                          )}
+                        </div>
+
+                        <p className="text-zinc-400 text-[10px] truncate mt-0.5 font-medium">
+                          {categoryName}
+                        </p>
+
+                        <div className="flex items-center gap-2 mt-1 text-[10px]">
+                          <div className="flex items-center gap-0.5 text-amber-400 font-bold">
+                            <Star className="w-3 h-3 fill-current" />
+                            <span className="text-white font-extrabold">{rating}</span>
+                          </div>
+                          {distance && (
+                            <>
+                              <span className="text-zinc-600">•</span>
+                              <span className="text-[#25D366] font-bold truncate">📍 {distance}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </a>
+                  );
+                });
+              })()}
 
             </div>
           </div>
