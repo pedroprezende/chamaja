@@ -317,7 +317,7 @@ export default function Perfil({ params }: { params: { id: string } }) {
   // Load reviews by provider ID
   const fetchReviews = async () => {
     try {
-      const inputPayload = JSON.stringify({ json: providerId });
+      const inputPayload = JSON.stringify(providerId);
       const url = `/api/trpc/providers.getReviews?input=${encodeURIComponent(inputPayload)}`;
       const res = await fetch(url);
       if (res.ok) {
@@ -376,11 +376,9 @@ export default function Perfil({ params }: { params: { id: string } }) {
           "Authorization": `Bearer ${sessionToken}`
         },
         body: JSON.stringify({
-          json: {
-            providerId,
-            rating,
-            comment: comment.trim(),
-          }
+          providerId,
+          rating,
+          comment: comment.trim(),
         }),
       });
 
