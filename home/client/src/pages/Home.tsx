@@ -39,6 +39,12 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 
+// Utility formatting helpers
+const formatDistancePtBr = (km: number) => {
+  if (km < 1) return `${Math.round(km * 1000)}m`;
+  return `${km.toFixed(1).replace(".", ",")}km`;
+};
+
 // ── Fallback plans (used when admin API has no plans configured yet) ──────────
 const FALLBACK_PLANS = [
   {
@@ -1354,6 +1360,7 @@ export default function Home() {
               ) : adsToRender.map((p) => {
                 const linkUrl = p.id.startsWith("mock-ad") ? "/busca" : `/perfil/${p.providerId || ""}`;
                 const isMock = p.id.startsWith("mock-ad");
+                const cleanPhone = (p.whatsapp || p.phone || "11999999999").replace(/\D/g, "");
                 const text = generateWhatsAppMessage({
                   provider: {
                     name: p.providerName,
