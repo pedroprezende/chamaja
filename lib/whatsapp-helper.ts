@@ -62,8 +62,11 @@ export function isProductSegment(provider: WhatsAppProviderInfo): boolean {
   const bt = cleanText(provider.businessType);
   if (bt === "produtos" || bt === "comercios" || bt === "comercio") return true;
 
-  const cat = cleanText(provider.category) + " " + cleanText(provider.categoryId);
-  return cat.includes("loja") || cat.includes("mercado") || cat.includes("compras") || cat.includes("comercio");
+  const cat = cleanText(provider.category) + " " + cleanText(provider.categoryId) + " " + cleanText(provider.subcategoryName);
+  const productKeywords = [
+    "loja", "mercado", "compras", "comercio", "comércio", "pet", "autopeça", "auto peça", "tabacaria", "eletrônic", "vestuário", "calçado", "biju"
+  ];
+  return productKeywords.some(kw => cat.includes(kw));
 }
 
 /**

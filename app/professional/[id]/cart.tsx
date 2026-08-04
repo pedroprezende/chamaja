@@ -19,6 +19,7 @@ import * as Haptics from "expo-haptics";
 import { trpc } from "@/lib/trpc";
 import { useColors } from "@/hooks/use-colors";
 import { useCart } from "@/lib/cart-context";
+import { isFoodSegment, isProductSegment } from "@/lib/whatsapp-helper";
 import AddressSelectorModal from "@/components/address-selector-modal";
 
 export default function CartScreen() {
@@ -46,6 +47,10 @@ export default function CartScreen() {
   const { data: professional } = trpc.providers.getById.useQuery(id as string, {
     enabled: !!id,
   });
+
+  const isFood = professional ? isFoodSegment(professional) : false;
+  const isProduct = professional ? isProductSegment(professional) : false;
+  const formattedDeliveryTime = professional?.deliveryTime || "30-45 min";
 
   const confirmAction = (
     title: string,
@@ -114,9 +119,6 @@ export default function CartScreen() {
     // Redireciona para a tela de geração do pedido formatado
     router.push(`/professional/${id}/whatsapp-order` as any);
   };
-
-  const isFood = (professional?.businessType || "servicos") === "alimentacao";
-  const formattedDeliveryTime = professional?.deliveryTime || "30-45 min";
 
   return (
     <KeyboardAvoidingView
@@ -280,7 +282,7 @@ export default function CartScreen() {
               <Text
                 style={[styles.cardSectionTitle, { color: colors.foreground }]}
               >
-                Seu pedido
+                {isFood ? "Seu pedido" : isProduct ? "Produtos selecionados" : "Serviços selecionados"}
               </Text>
               {items.map((item) => (
                 <View key={item.id} style={styles.itemRow}>
@@ -301,7 +303,7 @@ export default function CartScreen() {
                       ]}
                     >
                       <MaterialIcons
-                        name="restaurant"
+                        name={isFood ? "restaurant" : isProduct ? "shopping-bag" : "build"}
                         size={20}
                         color={colors.muted}
                       />
@@ -497,10 +499,18 @@ export default function CartScreen() {
               <MaterialIcons name="chat" size={22} color="#FFF" />
               <View style={styles.checkoutBtnTextContainer}>
                 <Text style={styles.checkoutBtnText}>
-                  Enviar pedido no WhatsApp
+                  {isFood
+                    ? "Enviar pedido no WhatsApp"
+                    : isProduct
+                    ? "Consultar no WhatsApp"
+                    : "Solicitar orçamento no WhatsApp"}
                 </Text>
                 <Text style={styles.checkoutBtnSub}>
-                  Seu pedido será enviado para o WhatsApp do estabelecimento
+                  {isFood
+                    ? "Seu pedido será enviado para o WhatsApp do estabelecimento"
+                    : isProduct
+                    ? "Sua mensagem será enviada para o WhatsApp da loja"
+                    : "Sua solicitação será enviada para o WhatsApp do prestador"}
                 </Text>
               </View>
             </Pressable>

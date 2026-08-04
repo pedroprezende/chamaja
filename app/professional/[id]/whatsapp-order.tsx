@@ -18,7 +18,7 @@ import * as Haptics from "expo-haptics";
 import { trpc } from "@/lib/trpc";
 import { useColors } from "@/hooks/use-colors";
 import { useCart, CartItem } from "@/lib/cart-context";
-import { generateWhatsAppMessage } from "@/lib/whatsapp-helper";
+import { generateWhatsAppMessage, isFoodSegment, isProductSegment } from "@/lib/whatsapp-helper";
 
 export default function WhatsappOrderScreen() {
   const colors = useColors();
@@ -36,7 +36,8 @@ export default function WhatsappOrderScreen() {
     },
   );
 
-  const isFood = (professional?.businessType || "servicos") === "alimentacao";
+  const isFood = professional ? isFoodSegment(professional) : false;
+  const isProduct = professional ? isProductSegment(professional) : false;
 
   // Gera a mensagem formatada inteligente
   const messageText = useMemo(() => {
@@ -112,11 +113,29 @@ export default function WhatsappOrderScreen() {
       >
         <ActivityIndicator size="large" color={colors.primary} />
         <Text style={[styles.loadingText, { color: colors.muted }]}>
-          Carregando dados do pedido...
+          Carregando dados...
         </Text>
       </View>
     );
   }
+
+  const screenTitle = isFood
+    ? "Pedido via WhatsApp"
+    : isProduct
+    ? "Consulta via WhatsApp"
+    : "Solicitação via WhatsApp";
+
+  const infoLabel = isFood
+    ? "Confira como seu pedido será enviado:"
+    : isProduct
+    ? "Confira como sua mensagem será enviada:"
+    : "Confira como sua solicitação será enviada:";
+
+  const warningText = isFood
+    ? "Ao enviar, você será direcionado para o WhatsApp do estabelecimento para finalizar seu pedido."
+    : isProduct
+    ? "Ao enviar, você será direcionado para o WhatsApp da loja para consultar a disponibilidade do produto."
+    : "Ao enviar, você será direcionado para o WhatsApp do prestador para solicitar seu orçamento.";
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -140,7 +159,7 @@ export default function WhatsappOrderScreen() {
         </Pressable>
         <View style={styles.headerTitleContainer}>
           <Text style={[styles.headerTitle, { color: colors.foreground }]}>
-            Pedido via WhatsApp
+            {screenTitle}
           </Text>
         </View>
         <View style={{ width: 40 }} />
@@ -151,7 +170,7 @@ export default function WhatsappOrderScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         <Text style={[styles.infoLabel, { color: colors.muted }]}>
-          Confira como seu pedido será enviado:
+          {infoLabel}
         </Text>
 
         {/* Simulador de Balão de WhatsApp */}
@@ -167,47 +186,7 @@ export default function WhatsappOrderScreen() {
               </Text>
             </View>
             <Text style={styles.whatsappText}>
-              Olá! 👋{"\n"}
-              Encontrei vocês pelo XamaJá e gostaria de fazer um pedido:{"\n\n"}
-              <Text style={{ fontWeight: "700" }}>🖥️ MEU PEDIDO:</Text>
-              {"\n"}
-              {items.map((item) => {
-                const maxLen = 22;
-                const itemName = item.name || "Produto";
-                const namePart = itemName.substring(0, maxLen);
-                const padding = ".".repeat(
-                  Math.max(2, maxLen - namePart.length + 4),
-                );
-                const itemQuantity = item.quantity || 1;
-                const itemPrice = item.price || 0;
-                return (
-                  <Text key={item.id}>
-                    • {itemQuantity}x {namePart} {padding} R$ $
-                    {(itemPrice * itemQuantity).toFixed(2)}
-                    {"\n"}
-                  </Text>
-                );
-              })}
-              {"\n"}
-              <Text style={{ fontWeight: "700" }}>
-                💰 Total: R$ {cartTotal.toFixed(2)}
-              </Text>
-              {"\n\n"}
-              <Text style={{ fontWeight: "700" }}>
-                {isFood ? "📍 Entrega" : "📍 Local do Atendimento"}
-              </Text>
-              {"\n"}
-              {deliveryAddress}
-              {"\n\n"}
-              {isFood && (
-                <>
-                  <Text style={{ fontWeight: "700" }}>📝 Observação:</Text>
-                  {"\n"}
-                  {notes.trim() ? notes.trim() : "(sem observações)"}
-                  {"\n\n"}
-                </>
-              )}
-              Aguardo confirmação, obrigado! 😊
+              {messageText}
             </Text>
             <View style={styles.whatsappCheckRow}>
               <MaterialIcons name="done-all" size={16} color="#34B7F1" />
@@ -224,8 +203,7 @@ export default function WhatsappOrderScreen() {
         >
           <MaterialIcons name="info-outline" size={20} color={colors.primary} />
           <Text style={[styles.warningText, { color: colors.muted }]}>
-            Ao enviar, você será direcionado para o WhatsApp do estabelecimento
-            para finalizar seu pedido.
+            {warningText}
           </Text>
         </View>
       </ScrollView>

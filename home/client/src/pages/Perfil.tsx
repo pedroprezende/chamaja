@@ -470,6 +470,7 @@ export default function Perfil({ params }: { params: { id: string } }) {
           name: item.name || item.title || "Serviço",
           price: Number(item.price || item.valor || item.value || 0),
           description: item.description || item.desc || "Serviço oferecido pelo parceiro.",
+          imageUri: item.imageUri || item.image || item.imageUrl || item.photo || null,
         }));
       }
     } catch (e) {
@@ -950,12 +951,28 @@ export default function Perfil({ params }: { params: { id: string } }) {
                         const qty = selectedItems[item.id] || 0;
                         return (
                           <div key={item.id} className="bg-[#0a0a0b] border border-white/[0.07] hover:border-white/[0.14] p-5 rounded-2xl flex flex-col justify-between gap-4 transition-colors">
-                            <div className="space-y-1">
-                              <h4 className="font-extrabold text-white text-sm">{item.name}</h4>
-                              <p className="text-zinc-500 text-xs leading-normal line-clamp-2">{item.description}</p>
-                              <span className="text-[#25D366] text-sm font-extrabold block pt-1">
-                                R$ {Number(item.price).toFixed(2)}
-                              </span>
+                            <div className="flex gap-4 items-start">
+                              {item.imageUri && (
+                                <div
+                                  onClick={() => setSelectedImage(item.imageUri)}
+                                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden bg-zinc-900 border border-white/[0.08] flex-shrink-0 cursor-pointer group"
+                                >
+                                  <img
+                                    src={item.imageUri}
+                                    alt={item.name}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                                  />
+                                </div>
+                              )}
+                              <div className="space-y-1 flex-1 min-w-0">
+                                <h4 className="font-extrabold text-white text-sm">{item.name}</h4>
+                                <p className="text-zinc-500 text-xs leading-normal line-clamp-2">{item.description}</p>
+                                {item.price > 0 && (
+                                  <span className="text-[#25D366] text-sm font-extrabold block pt-1">
+                                    R$ {Number(item.price).toFixed(2)}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                             <div className="flex items-center justify-between pt-3 border-t border-white/[0.06] mt-auto">
                               {qty > 0 ? (
