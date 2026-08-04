@@ -473,18 +473,7 @@ async function startServer() {
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
-    res.setHeader("Content-Type", "application/javascript");
-    // Serve um Service Worker "kamikaze" para desregistrar qualquer SW antigo que 
-    // esteja causando tela branca (caching agressivo) no celular dos usuários.
-    res.send(`
-      self.addEventListener('install', function(e) {
-        self.skipWaiting();
-      });
-      self.addEventListener('activate', function(e) {
-        self.registration.unregister();
-        e.waitUntil(clients.claim());
-      });
-    `);
+    res.sendFile(path.resolve(webDistPath, "service-worker.js"));
   });
   app.get("/manifest.json", (req, res) => {
     // O manifest também não deve ser cacheado agressivamente,
