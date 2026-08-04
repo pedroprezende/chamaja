@@ -204,7 +204,7 @@ function MainContent({ children }: { children: React.ReactNode }) {
             ? {
                 width: "100%",
                 maxWidth: 500,
-                height: "100dvh" as any,
+                height: "100%",
                 backgroundColor: colors.background,
                 overflow: "hidden",
                 shadowColor: "#000",

@@ -55,7 +55,12 @@ export default function InitialLoadingScreen() {
 
       {/* Círculos de luz de fundo estilizados (Glow Neon) */}
       <View style={styles.glowContainer}>
-        <View style={styles.greenGlow} />
+        <View 
+          style={[
+            styles.greenGlow, 
+            Platform.OS === 'web' && { filter: 'blur(80px)' } as any
+          ]} 
+        />
       </View>
 
       <View style={styles.content}>
@@ -111,7 +116,6 @@ const styles = StyleSheet.create({
     height: 250,
     borderRadius: 125,
     backgroundColor: "#25D366",
-    filter: Platform.OS === "web" ? "blur(80px)" : undefined, // Filtro blur nativo não funciona no RN básico, mas funciona em web
   },
   content: {
     alignItems: "center",
