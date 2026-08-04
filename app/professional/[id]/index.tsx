@@ -920,12 +920,10 @@ export default function ProfessionalDetailScreen() {
           ]}
         >
           <View style={styles.metricItem}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-              <MaterialIcons name="star" size={15} color="#F59E0B" />
-              <Text style={[styles.metricValue, { color: colors.foreground }]}>
-                {Number(prof.rating || 0).toFixed(1)}
-              </Text>
-            </View>
+            <MaterialIcons name="star" size={15} color="#F59E0B" />
+            <Text style={[styles.metricValue, { color: colors.foreground }]}>
+              {Number(prof.rating || 0).toFixed(1)}
+            </Text>
             <Text style={[styles.metricLabel, { color: colors.muted }]}>
               {prof.ratingCount || 0} avaliações
             </Text>
@@ -2781,7 +2779,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     width: "100%",
   },
-  metricItem: { flex: 1, alignItems: "center", gap: 4 },
+  metricItem: { flex: 1, alignItems: "center", justifyContent: "center", gap: 4 },
   metricValue: { fontSize: 14, fontWeight: "800" },
   metricLabel: { fontSize: 11, fontWeight: "600" },
 
