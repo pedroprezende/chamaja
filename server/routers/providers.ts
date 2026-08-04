@@ -16,6 +16,7 @@ import {
   whatsappClicks,
   users,
   categories,
+  services,
 } from "../../drizzle/schema";
 import { eq, or, ilike, and, gte, lte, ne, desc, asc, sql, count } from "drizzle-orm";
 
@@ -1146,6 +1147,7 @@ export const providersRouter = router({
     const dbInstance = await db.getDb();
     if (!dbInstance) return null;
 
+    // 1. Search in providers table by id, userId, or serviceId
     const res = await dbInstance
       .select({
         provider: providers,
@@ -1161,34 +1163,81 @@ export const providersRouter = router({
         categories,
         eq(categories.id, providers.categoryId),
       )
-      .where(or(eq(providers.id, input), eq(providers.userId, input)))
+      .where(
+        or(
+          eq(providers.id, input),
+          eq(providers.userId, input),
+          eq(providers.serviceId, input)
+        )
+      )
       .limit(1);
 
-    if (res.length === 0) return null;
-
-    let supportsScheduling = res[0].categoryDetails?.supportsScheduling ?? false;
-    if (!supportsScheduling) {
-      const altCatId = res[0].provider.subcategoryId || res[0].provider.categoryId;
-      if (altCatId) {
-        const altCheck = await dbInstance
-          .select({ supportsScheduling: categories.supportsScheduling })
-          .from(categories)
-          .where(eq(categories.id, altCatId))
-          .limit(1);
-        if (altCheck.length > 0) {
-          supportsScheduling = altCheck[0].supportsScheduling ?? false;
+    if (res.length > 0) {
+      let supportsScheduling = res[0].categoryDetails?.supportsScheduling ?? false;
+      if (!supportsScheduling) {
+        const altCatId = res[0].provider.subcategoryId || res[0].provider.categoryId;
+        if (altCatId) {
+          const altCheck = await dbInstance
+            .select({ supportsScheduling: categories.supportsScheduling })
+            .from(categories)
+            .where(eq(categories.id, altCatId))
+            .limit(1);
+          if (altCheck.length > 0) {
+            supportsScheduling = altCheck[0].supportsScheduling ?? false;
+          }
         }
       }
+
+      const providerData = {
+        ...res[0].provider,
+        maxServicos: res[0].permissions?.maxServicos ?? 1,
+        permissionsStatus: res[0].permissions?.status ?? "ativo",
+        supportsScheduling,
+      };
+
+      return sanitizeProviderForUser(providerData, ctx.user);
     }
 
-    const providerData = {
-      ...res[0].provider,
-      maxServicos: res[0].permissions?.maxServicos ?? 1,
-      permissionsStatus: res[0].permissions?.status ?? "ativo",
-      supportsScheduling,
-    };
+    // 2. Fallback: Search in services table (admin services)
+    const svcRes = await dbInstance
+      .select()
+      .from(services)
+      .where(eq(services.id, input))
+      .limit(1);
 
-    return sanitizeProviderForUser(providerData, ctx.user);
+    if (svcRes.length > 0) {
+      const svc = svcRes[0];
+      const mappedProvider = {
+        id: svc.id,
+        userId: null,
+        name: svc.name,
+        category: svc.category,
+        categoryId: svc.categoryId || "servicos",
+        subcategoryId: svc.subcategoryId || null,
+        subcategoryName: svc.subcategoryName || null,
+        description: svc.description || "",
+        avatarUri: svc.imageUri || null,
+        avatarThumbnailUri: svc.imageUri || null,
+        coverUri: svc.imageUri || null,
+        coverThumbnailUri: svc.imageUri || null,
+        phone: svc.whatsapp || null,
+        whatsapp: svc.whatsapp || null,
+        address: svc.address || null,
+        gallery: svc.gallery || [],
+        rating: 5.0,
+        ratingCount: 1,
+        isVerified: true,
+        onlineStatus: true,
+        supportsScheduling: false,
+        maxServicos: 1,
+        permissionsStatus: "ativo",
+        status: "aprovado",
+      };
+      return sanitizeProviderForUser(mappedProvider, ctx.user);
+    }
+
+    // 3. Not found in either table -> return null cleanly
+    return null;
   }),
 
   getReviews: publicProcedure.input(z.string()).query(async ({ input }) => {
