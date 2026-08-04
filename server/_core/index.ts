@@ -473,7 +473,20 @@ async function startServer() {
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
-    res.sendFile(path.resolve(webDistPath, "service-worker.js"));
+    res.setHeader("Content-Type", "application/javascript");
+    res.send(`
+      self.addEventListener('install', function(e) {
+        self.skipWaiting();
+      });
+      self.addEventListener('activate', function(e) {
+        self.registration.unregister();
+        e.waitUntil(
+          caches.keys().then(function(keys) {
+            return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+          }).then(function() { return clients.claim(); })
+        );
+      });
+    `);
   });
   app.get("/manifest.json", (req, res) => {
     // O manifest também não deve ser cacheado agressivamente,

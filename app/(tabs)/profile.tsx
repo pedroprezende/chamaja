@@ -594,6 +594,7 @@ export default function ProfileScreen() {
 
   const MENU_ITEMS = [
     { id: "addresses", label: "Meus endereços", icon: "place" },
+    { id: "appointments", label: "Meus agendamentos", icon: "event" },
     {
       id: "favorites",
       label: "Favoritos",
@@ -643,6 +644,9 @@ export default function ProfileScreen() {
     switch (itemId) {
       case "addresses":
         setAddressesModalVisible(true);
+        break;
+      case "appointments":
+        router.push("/appointments" as any);
         break;
       case "favorites":
         router.push("/favorites" as any);

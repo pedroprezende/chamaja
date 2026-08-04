@@ -55,6 +55,7 @@ export default function ProviderDashboard() {
     imageUri: "",
     price: "",
     productCategory: "",
+    duration: "30",
     gallery: [] as string[],
   });
   const [saving, setSaving] = useState(false);
@@ -301,6 +302,7 @@ export default function ProviderDashboard() {
       imageUri: "",
       price: "",
       productCategory: "",
+      duration: "30",
       gallery: [],
     });
     setShowModal(true);
@@ -314,6 +316,7 @@ export default function ProviderDashboard() {
       imageUri: service.imageUri || "",
       price: service.price !== undefined ? String(service.price) : "",
       productCategory: service.productCategory || "",
+      duration: service.duration !== undefined ? String(service.duration) : "30",
       gallery: service.gallery || [],
     });
     setShowModal(true);
@@ -371,6 +374,7 @@ export default function ProviderDashboard() {
         imageUri: form.imageUri || undefined,
         gallery: form.gallery.length > 0 ? form.gallery : undefined,
         price: form.price ? Number(form.price) : undefined,
+        duration: form.duration ? Number(form.duration) : 30,
       };
 
       if (isCommerce) {
@@ -613,6 +617,39 @@ export default function ProviderDashboard() {
           </View>
         </View>
 
+        {/* Agenda Link */}
+        {!isCommerce && provider.categoryId !== "comercios" && (
+          <View style={{ marginHorizontal: 16, marginBottom: 24 }}>
+            <Pressable
+              style={({ pressed }) => [
+                {
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  backgroundColor: "#fff",
+                  padding: 16,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: "#E5E7EB",
+                },
+                pressed && { opacity: 0.7 },
+              ]}
+              onPress={() => router.push("/provider-agenda" as any)}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#3B82F615", alignItems: "center", justifyContent: "center" }}>
+                  <MaterialIcons name="event-available" size={20} color="#3B82F6" />
+                </View>
+                <View>
+                  <Text style={{ fontSize: 16, fontWeight: "700", color: "#111827" }}>Minha Agenda</Text>
+                  <Text style={{ fontSize: 13, color: "#6B7280" }}>Configurações e agendamentos</Text>
+                </View>
+              </View>
+              <MaterialIcons name="chevron-right" size={24} color="#9CA3AF" />
+            </Pressable>
+          </View>
+        )}
+
         {/* Services section */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>
@@ -825,6 +862,27 @@ export default function ProviderDashboard() {
                   onChangeText={(t) => setForm({ ...form, price: t })}
                 />
               </View>
+
+              {!isCommerce && (
+                <>
+                  <Text style={styles.fieldLabel}>Duração (minutos)</Text>
+                  <View style={styles.fieldBox}>
+                    <MaterialIcons
+                      name="schedule"
+                      size={18}
+                      color="#9CA3AF"
+                    />
+                    <TextInput
+                      style={styles.fieldInput}
+                      placeholder="Ex: 30"
+                      placeholderTextColor="#9CA3AF"
+                      keyboardType="numeric"
+                      value={form.duration}
+                      onChangeText={(t) => setForm({ ...form, duration: t })}
+                    />
+                  </View>
+                </>
+              )}
 
               {isCommerce && (
                 <>

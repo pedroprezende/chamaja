@@ -91,6 +91,105 @@ export default function Perfil({ params }: { params: { id: string } }) {
   // Image Viewer Modal State
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
+  // Schedule Modal State
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState<Date>(new Date());
+  const [availableSlots, setAvailableSlots] = useState<any[]>([]);
+  const [selectedSlot, setSelectedSlot] = useState<any>(null);
+  const [isFetchingSlots, setIsFetchingSlots] = useState(false);
+  const [isBooking, setIsBooking] = useState(false);
+  const [selectedScheduleService, setSelectedScheduleService] = useState<any>(null);
+
+  // Helper to format date YYYY-MM-DD
+  const formatYMD = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
+
+  const fetchSlots = async (date: Date) => {
+    setIsFetchingSlots(true);
+    setAvailableSlots([]);
+    try {
+      const url = `/api/trpc/appointments.getAvailableSlots?input=${encodeURIComponent(
+        JSON.stringify({ providerId, date: formatYMD(date), serviceDuration: 30 })
+      )}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const json = await res.json();
+        setAvailableSlots(json.result.data || []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setIsFetchingSlots(false);
+  };
+
+  useEffect(() => {
+    if (showScheduleModal && provider) {
+      fetchSlots(scheduleDate);
+    }
+  }, [showScheduleModal, scheduleDate, provider]);
+
+  const handleConfirmSchedule = async () => {
+    if (!sessionToken || !userProfile) {
+      toast.error("Faça login para agendar.");
+      return;
+    }
+    if (!selectedSlot) return;
+
+    setIsBooking(true);
+    try {
+      const url = `/api/trpc/appointments.create`;
+      const srvName = selectedScheduleService ? selectedScheduleService.name : "Atendimento";
+      const srvId = selectedScheduleService ? selectedScheduleService.id : undefined;
+      const price = selectedScheduleService ? Number(selectedScheduleService.price) : undefined;
+
+      const payload = {
+        providerId,
+        clientName: userProfile.name,
+        clientPhone: userProfile.phone || "",
+        serviceId: srvId,
+        serviceName: srvName,
+        price,
+        date: formatYMD(scheduleDate),
+        startTime: selectedSlot.start,
+        endTime: selectedSlot.end,
+      };
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${sessionToken}`
+        },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        toast.success("Agendamento confirmado!");
+        setShowScheduleModal(false);
+        
+        // Optional whatsapp redirect
+        if (provider.whatsapp || provider.phone) {
+          const num = (provider.whatsapp || provider.phone).replace(/\D/g, "");
+          const msg = `Olá! Acabei de agendar um horário pelo XamaJá.\n\nServiço: ${srvName}\nData: ${formatYMD(scheduleDate)}\nHorário: ${selectedSlot.start}\n\nPor favor, confirme se está tudo certo!`;
+          window.open(`https://wa.me/55${num}?text=${encodeURIComponent(msg)}`, "_blank");
+        }
+      } else {
+        const errData = await res.json();
+        if (errData?.error?.message === "SLOT_UNAVAILABLE") {
+          toast.error("Este horário acabou de ser reservado.");
+        } else {
+          toast.error("Erro ao agendar horário.");
+        }
+      }
+    } catch (e) {
+      toast.error("Falha ao agendar.");
+    }
+    setIsBooking(false);
+  };
+
   useEffect(() => {
     fetchProviderDetails();
     fetchReviews();
@@ -1377,10 +1476,18 @@ export default function Perfil({ params }: { params: { id: string } }) {
               Ver Serviços
             </Button>
             <Button
-              onClick={handleContactWhatsApp}
-              className="bg-[#25D366] hover:bg-[#25D366]/90 text-black font-black px-5 h-10 rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/10"
+              onClick={
+                provider?.supportsScheduling
+                  ? () => setShowScheduleModal(true)
+                  : handleContactWhatsApp
+              }
+              className={`${provider?.supportsScheduling ? 'bg-primary hover:bg-primary/90' : 'bg-[#25D366] hover:bg-[#25D366]/90'} text-black font-black px-5 h-10 rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/10`}
             >
-              <Phone className="w-3.5 h-3.5 fill-current" /> Solicitar Orçamento
+              {provider?.supportsScheduling ? (
+                <><Calendar className="w-3.5 h-3.5 fill-current" /> Agendar Horário</>
+              ) : (
+                <><Phone className="w-3.5 h-3.5 fill-current" /> Solicitar Orçamento</>
+              )}
             </Button>
           </div>
         </div>
@@ -1389,11 +1496,18 @@ export default function Perfil({ params }: { params: { id: string } }) {
       {/* Sticky Bottom WhatsApp Mobile Button */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#050505]/85 backdrop-blur-md border-t border-white/[0.08] z-40 lg:hidden flex-shrink-0">
         <button
-          onClick={handleContactWhatsApp}
+          onClick={
+            provider?.supportsScheduling
+              ? () => setShowScheduleModal(true)
+              : handleContactWhatsApp
+          }
           className="w-full py-4 bg-primary text-primary-foreground font-black rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-primary/15 text-sm"
         >
-          <Phone className="w-4.5 h-4.5" />
-          <span>Falar no WhatsApp agora</span>
+          {provider?.supportsScheduling ? (
+            <><Calendar className="w-4.5 h-4.5" /> <span>Agendar Horário</span></>
+          ) : (
+            <><Phone className="w-4.5 h-4.5" /> <span>Falar no WhatsApp agora</span></>
+          )}
         </button>
       </div>
 
@@ -1408,9 +1522,119 @@ export default function Perfil({ params }: { params: { id: string } }) {
           </button>
           <img
             src={selectedImage}
-            alt="Trabalho do Profissional"
-            className="max-w-full max-h-[85vh] object-contain rounded-lg border border-white/10"
+            alt="Ampliada"
+            className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl"
           />
+        </div>
+      )}
+
+      {/* ── SCHEDULE MODAL ── */}
+      {showScheduleModal && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end lg:justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-zinc-950 w-full lg:max-w-md mx-auto rounded-t-3xl lg:rounded-3xl border border-white/10 flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b border-white/5 flex items-center justify-between">
+              <h3 className="text-lg font-black text-white">Agendar Horário</h3>
+              <button onClick={() => setShowScheduleModal(false)} className="p-2 text-zinc-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto flex-1">
+              
+              {/* Service Selection */}
+              {provider?.services && parseJsonArray(provider.services).length > 0 && (
+                <div className="mb-6">
+                  <p className="text-sm font-bold text-white mb-3">1. Escolha o serviço</p>
+                  <div className="space-y-2">
+                    {parseJsonArray(provider.services).map((srv: any, idx: number) => (
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedScheduleService(srv)}
+                        className={`w-full text-left p-3 rounded-xl border transition ${
+                          selectedScheduleService?.id === srv.id ? "border-primary bg-primary/10" : "border-white/10 bg-zinc-900/50"
+                        }`}
+                      >
+                        <div className="flex justify-between font-semibold text-white">
+                          <span>{srv.name}</span>
+                          {srv.price && <span className="text-primary">R$ {Number(srv.price).toFixed(2)}</span>}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Date Selection */}
+              <div className="mb-6">
+                <p className="text-sm font-bold text-white mb-3">
+                  {provider?.services && parseJsonArray(provider.services).length > 0 ? "2." : "1."} Escolha a data
+                </p>
+                <div className="flex overflow-x-auto gap-2 pb-2">
+                  {Array.from({ length: 14 }).map((_, i) => {
+                    const d = new Date();
+                    d.setDate(d.getDate() + i);
+                    const isSelected = formatYMD(d) === formatYMD(scheduleDate);
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          setScheduleDate(d);
+                          setSelectedSlot(null);
+                        }}
+                        className={`min-w-[60px] p-2 rounded-xl border flex flex-col items-center ${
+                          isSelected ? "border-primary bg-primary text-black font-bold" : "border-white/10 bg-zinc-900 text-white"
+                        }`}
+                      >
+                        <span className="text-[10px] uppercase opacity-80">{["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"][d.getDay()]}</span>
+                        <span className="text-lg leading-tight">{d.getDate()}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Slots Selection */}
+              <div className="mb-2">
+                <p className="text-sm font-bold text-white mb-3">
+                  {provider?.services && parseJsonArray(provider.services).length > 0 ? "3." : "2."} Escolha o horário
+                </p>
+                {isFetchingSlots ? (
+                  <p className="text-zinc-400 text-sm">Buscando horários...</p>
+                ) : availableSlots.length === 0 ? (
+                  <div className="p-6 rounded-xl border border-white/5 bg-zinc-900/50 flex flex-col items-center text-center">
+                    <Calendar className="w-8 h-8 text-zinc-500 mb-2" />
+                    <p className="text-white font-bold">Nenhum horário livre</p>
+                    <p className="text-zinc-500 text-xs">Tente selecionar outra data.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-4 gap-2">
+                    {availableSlots.map((slot, idx) => {
+                      const isSelected = selectedSlot?.start === slot.start;
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => setSelectedSlot(slot)}
+                          className={`py-2 rounded-lg text-sm font-semibold border ${
+                            isSelected ? "border-primary bg-primary text-black" : "border-white/10 bg-zinc-900 text-white hover:bg-zinc-800"
+                          }`}
+                        >
+                          {slot.start}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="p-4 border-t border-white/5 bg-zinc-900/50 rounded-b-3xl">
+              <Button
+                onClick={handleConfirmSchedule}
+                disabled={!selectedSlot || isBooking || (parseJsonArray(provider?.services).length > 0 && !selectedScheduleService)}
+                className="w-full bg-primary hover:bg-primary/90 text-black font-black h-12 rounded-xl"
+              >
+                {isBooking ? "Confirmando..." : "Confirmar Agendamento"}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 

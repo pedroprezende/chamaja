@@ -15,6 +15,7 @@ import {
   serviceViews,
   whatsappClicks,
   users,
+  categories,
 } from "../../drizzle/schema";
 import { eq, or, ilike, and, gte, lte, ne, desc, asc, sql, count } from "drizzle-orm";
 
@@ -57,6 +58,7 @@ const adminProviderSchema = z.object({
   tags: z.union([z.string(), z.array(z.string())]).nullable().optional(),
   workingHours: z.union([z.string(), z.any()]).nullable().optional(),
   socialLinks: z.union([z.string(), z.record(z.string(), z.string())]).nullable().optional(),
+  scheduleSettings: z.union([z.string(), z.any()]).nullable().optional(),
   hasCatalog: z.boolean().optional(),
 });
 
@@ -101,6 +103,7 @@ const ProviderUpsertSchema = z.object({
   tags: z.any().optional(),
   workingHours: z.any().optional(),
   socialLinks: z.any().optional(),
+  scheduleSettings: z.any().optional(),
   utmSource: z.string().nullable().optional(),
   hasCatalog: z.boolean().optional(),
   isActive: z.boolean().optional(),
@@ -139,6 +142,7 @@ const ProviderUpdateSchema = z.object({
     tags: z.any().optional(),
     workingHours: z.any().optional(),
     socialLinks: z.any().optional(),
+    scheduleSettings: z.any().optional(),
     hasCatalog: z.boolean().optional(),
     businessType: z.string().optional(),
     deliveryTime: z.string().nullable().optional(),
@@ -280,6 +284,7 @@ export const providersRouter = router({
             tags: safeStringify(input.tags),
             workingHours: safeStringify(input.workingHours),
             socialLinks: safeStringify(input.socialLinks),
+            scheduleSettings: safeStringify(input.scheduleSettings),
             businessType: input.businessType,
             deliveryTime: input.deliveryTime,
             updatedAt: new Date(),
@@ -327,6 +332,7 @@ export const providersRouter = router({
           tags: safeStringify(input.tags),
           workingHours: safeStringify(input.workingHours),
           socialLinks: safeStringify(input.socialLinks),
+          scheduleSettings: safeStringify(input.scheduleSettings),
           isActive: input.isActive ?? false,
           status: input.status ?? "pendente",
           businessType: input.businessType || "servicos",
@@ -434,6 +440,8 @@ export const providersRouter = router({
         mappedUpdates.workingHours = safeStringify(input.updates.workingHours);
       if (input.updates.socialLinks !== undefined)
         mappedUpdates.socialLinks = safeStringify(input.updates.socialLinks);
+      if (input.updates.scheduleSettings !== undefined)
+        mappedUpdates.scheduleSettings = safeStringify(input.updates.scheduleSettings);
       if (input.updates.businessType !== undefined)
         mappedUpdates.businessType = input.updates.businessType;
       if (input.updates.deliveryTime !== undefined)
@@ -1143,11 +1151,16 @@ export const providersRouter = router({
       .select({
         provider: providers,
         permissions: businessPermissions,
+        categoryDetails: categories,
       })
       .from(providers)
       .leftJoin(
         businessPermissions,
         eq(businessPermissions.businessId, providers.id),
+      )
+      .leftJoin(
+        categories,
+        eq(categories.id, providers.categoryId),
       )
       .where(or(eq(providers.id, input), eq(providers.userId, input)))
       .limit(1);
@@ -1158,6 +1171,7 @@ export const providersRouter = router({
       ...res[0].provider,
       maxServicos: res[0].permissions?.maxServicos ?? 1,
       permissionsStatus: res[0].permissions?.status ?? "ativo",
+      supportsScheduling: res[0].categoryDetails?.supportsScheduling ?? false,
     };
 
     return sanitizeProviderForUser(providerData, ctx.user);

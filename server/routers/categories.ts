@@ -15,54 +15,63 @@ const SEED_CATEGORIES = [
     name: "Reformas",
     icon: "build",
     displayOrder: 1,
+    supportsScheduling: false,
   },
   {
     id: "comercios",
     name: "Alimentação",
     icon: "restaurant",
     displayOrder: 2,
+    supportsScheduling: false,
   },
   {
     id: "beleza-estetica",
     name: "Beleza",
     icon: "content-cut",
     displayOrder: 3,
+    supportsScheduling: true,
   },
   {
     id: "automotivo",
     name: "Automotivo",
     icon: "directions-car",
     displayOrder: 4,
+    supportsScheduling: false,
   },
   {
     id: "servicos-domesticos",
     name: "Casa",
     icon: "deck",
     displayOrder: 5,
+    supportsScheduling: false,
   },
   {
     id: "assistencia-tecnica",
     name: "Tecnologia / Assistência Técnica",
     icon: "devices",
     displayOrder: 6,
+    supportsScheduling: false,
   },
   {
     id: "pets",
     name: "Pets",
     icon: "pets",
     displayOrder: 7,
+    supportsScheduling: true,
   },
   {
     id: "saude",
     name: "Saúde",
     icon: "medical-services",
     displayOrder: 8,
+    supportsScheduling: true,
   },
   {
     id: "academias",
     name: "Academias / Fitness",
     icon: "fitness-center",
     displayOrder: 9,
+    supportsScheduling: true,
   },
 ];
 
@@ -311,6 +320,7 @@ export const categoriesRouter = router({
       z.object({
         name: z.string().min(1),
         icon: z.string().default("build"),
+        supportsScheduling: z.boolean().default(false),
       }),
     )
     .mutation(async ({ input }) => {
@@ -329,6 +339,7 @@ export const categoriesRouter = router({
         icon: input.icon,
         displayOrder: maxOrder + 1,
         isActive: true,
+        supportsScheduling: input.supportsScheduling,
       });
     }),
 
@@ -339,6 +350,7 @@ export const categoriesRouter = router({
         name: z.string().optional(),
         icon: z.string().optional(),
         isActive: z.boolean().optional(),
+        supportsScheduling: z.boolean().optional(),
       }),
     )
     .mutation(async ({ input }) => {

@@ -97,6 +97,7 @@ export const categories = pgTable("categories", {
   icon: varchar("icon", { length: 64 }).notNull().default("build"),
   displayOrder: integer("display_order").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
+  supportsScheduling: boolean("supports_scheduling").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -206,6 +207,7 @@ export const providers = pgTable(
     tags: text("tags"),
     workingHours: text("working_hours"),
     socialLinks: text("social_links"), // JSON stringified: { instagram, facebook, youtube, tiktok, website, linkedin, telegram, whatsapp_channel }
+    scheduleSettings: jsonb("schedule_settings"), // JSON for advanced scheduling configuration
     priceLevel: integer("price_level").default(2).notNull(),
     isActive: boolean("is_active").notNull().default(true),
     status: varchar("status", { length: 50 }).default("ativo"),
@@ -232,6 +234,36 @@ export const providers = pgTable(
     index("providers_rating_idx").on(table.rating),
     index("providers_online_status_idx").on(table.onlineStatus),
     index("providers_price_level_idx").on(table.priceLevel),
+  ],
+);
+
+// ── Appointments (Agendamentos) ───────────────────────────────────────────────
+export const appointments = pgTable(
+  "appointments",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    providerId: varchar("provider_id", { length: 64 })
+      .notNull()
+      .references(() => providers.id, { onDelete: "cascade" }),
+    userId: varchar("user_id", { length: 64 })
+      .references(() => users.openId, { onDelete: "set null" }), // User ID if booked by a registered user
+    clientName: varchar("client_name", { length: 255 }).notNull(),
+    clientPhone: varchar("client_phone", { length: 50 }).notNull(),
+    serviceId: varchar("service_id", { length: 64 }), // ID inside provider's JSON services array
+    serviceName: varchar("service_name", { length: 255 }).notNull(),
+    price: real("price"),
+    date: timestamp("date").notNull(),
+    startTime: varchar("start_time", { length: 5 }).notNull(), // HH:MM
+    endTime: varchar("end_time", { length: 5 }).notNull(), // HH:MM
+    status: varchar("status", { length: 50 }).default("pending").notNull(), // pending, confirmed, completed, canceled, rescheduled
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("appointments_provider_id_idx").on(table.providerId),
+    index("appointments_user_id_idx").on(table.userId),
+    index("appointments_date_idx").on(table.date),
+    index("appointments_status_idx").on(table.status),
   ],
 );
 
@@ -266,6 +298,8 @@ export type Provider = typeof providers.$inferSelect;
 export type InsertProvider = typeof providers.$inferInsert;
 export type FeaturedAd = typeof featuredAds.$inferSelect;
 export type InsertFeaturedAd = typeof featuredAds.$inferInsert;
+export type Appointment = typeof appointments.$inferSelect;
+export type InsertAppointment = typeof appointments.$inferInsert;
 
 // ── Analytics ─────────────────────────────────────────────────────────────────
 export const whatsappClicks = pgTable("whatsapp_clicks", {

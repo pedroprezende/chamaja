@@ -33,6 +33,7 @@ import {
   BarChart3,
   Settings,
   Gift,
+  Calendar,
 } from "lucide-react";
 import {
   parseWorkingHours,
@@ -143,7 +144,7 @@ export default function Parceiro() {
 
   // Dashboard active tab
   const [activeTab, setActiveTab] = useState<
-    "perfil" | "dados" | "horarios" | "localizacao" | "fotos" | "servicos" | "estatisticas" | "favoritos" | "minhas-avaliacoes" | "indicacoes" | "assinatura" | "configuracoes"
+    "perfil" | "dados" | "horarios" | "localizacao" | "fotos" | "servicos" | "estatisticas" | "favoritos" | "minhas-avaliacoes" | "indicacoes" | "assinatura" | "configuracoes" | "meus-agendamentos" | "agenda"
   >("dados");
 
   const [busWorkingHours, setBusWorkingHours] = useState<WorkingHoursMap>(DEFAULT_WORKING_HOURS);
@@ -1748,6 +1749,7 @@ export default function Parceiro() {
                     {(user?.tipo === "cliente"
                       ? [
                           { id: "perfil", label: "Meu Perfil", icon: User },
+                          { id: "meus-agendamentos", label: "Meus Agendamentos", icon: Calendar },
                           { id: "favoritos", label: "Meus Favoritos", icon: Heart },
                           { id: "minhas-avaliacoes", label: "Minhas Avaliações", icon: Star },
                           { id: "indicacoes", label: "Indique e Ganhe", icon: Gift },
@@ -1756,6 +1758,7 @@ export default function Parceiro() {
                       : [
                           { id: "perfil", label: "Meu Perfil", icon: User },
                           { id: "dados", label: "Meu Negócio", icon: Store },
+                          { id: "agenda", label: "Agenda", icon: Calendar },
                           { id: "horarios", label: "Horário de Funcionamento", icon: Clock },
                           { id: "localizacao", label: "Endereço & Localização", icon: MapPin },
                           { id: "fotos", label: "Fotos & Galeria", icon: ImageIcon },
@@ -2247,6 +2250,62 @@ export default function Parceiro() {
                                   </table>
                                 </div>
                             )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* AGENDA PANEL */}
+                      {activeTab === "agenda" && (
+                        <div className="space-y-6">
+                          <div className="pb-4 border-b border-border">
+                            <h2 className="text-xl font-black text-white">Minha Agenda</h2>
+                            <p className="text-xs text-muted-foreground">
+                              Gerencie seus agendamentos e horários marcados pelos clientes.
+                            </p>
+                          </div>
+                          
+                          <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-6 flex flex-col items-center justify-center text-center space-y-4 min-h-[300px]">
+                            <Calendar className="h-12 w-12 text-zinc-700" />
+                            <div>
+                              <h3 className="text-lg font-bold text-white">Agenda em Desenvolvimento</h3>
+                              <p className="text-sm text-zinc-500 mt-2 max-w-md mx-auto">
+                                Estamos finalizando o sistema de agendamentos. Em breve você poderá ver e gerenciar todos os horários marcados pelos seus clientes aqui.
+                              </p>
+                            </div>
+                            <Button 
+                              onClick={() => toast.info("Em breve!")}
+                              className="bg-primary text-primary-foreground font-bold hover:bg-primary/90 rounded-xl"
+                            >
+                              Configurar Parâmetros de Agenda
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* MEUS AGENDAMENTOS PANEL */}
+                      {activeTab === "meus-agendamentos" && (
+                        <div className="space-y-6">
+                          <div className="pb-4 border-b border-border">
+                            <h2 className="text-xl font-black text-white">Meus Agendamentos</h2>
+                            <p className="text-xs text-muted-foreground">
+                              Acompanhe os horários que você marcou com os profissionais.
+                            </p>
+                          </div>
+                          
+                          <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-6 flex flex-col items-center justify-center text-center space-y-4 min-h-[300px]">
+                            <Calendar className="h-12 w-12 text-zinc-700" />
+                            <div>
+                              <h3 className="text-lg font-bold text-white">Nenhum agendamento encontrado</h3>
+                              <p className="text-sm text-zinc-500 mt-2 max-w-md mx-auto">
+                                Você ainda não marcou nenhum horário. Encontre um profissional na busca e clique em "Agendar Horário" para começar.
+                              </p>
+                            </div>
+                            <Button 
+                              onClick={() => setLocation("/")}
+                              className="bg-primary text-primary-foreground font-bold hover:bg-primary/90 rounded-xl"
+                            >
+                              Buscar Profissionais
+                            </Button>
                           </div>
                         </div>
                       )}

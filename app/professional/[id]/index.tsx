@@ -2208,21 +2208,20 @@ export default function ProfessionalDetailScreen() {
               },
             ]}
             onPress={
-              contentGoesToMenu
-                ? () =>
-                    router.push(
-                      `/professional/${prof.id}/menu` as any,
-                    )
-                : handleOpenWhatsApp
+              prof?.supportsScheduling
+                ? () => router.push(`/professional/${prof.id}/schedule` as any)
+                : contentGoesToMenu
+                  ? () => router.push(`/professional/${prof.id}/menu` as any)
+                  : handleOpenWhatsApp
             }
           >
             <MaterialIcons
-              name={estConfig.ctaIcon as any}
+              name={prof?.supportsScheduling ? "calendar-today" : estConfig.ctaIcon as any}
               size={20}
               color="#FFF"
             />
             <Text style={styles.bottomBtnPrimaryText}>
-              {estConfig.ctaLabel}
+              {prof?.supportsScheduling ? "Agendar Horário" : estConfig.ctaLabel}
             </Text>
           </Pressable>
         </View>

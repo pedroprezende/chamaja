@@ -58,6 +58,7 @@ export interface ProviderService {
   createdAt: string;
   price?: number;
   productCategory?: string;
+  duration?: number;
 }
 
 export const PLANS = {
