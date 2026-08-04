@@ -136,8 +136,8 @@ export default function Parceiro() {
   );
 
   // Complete profile fields
-  const [completeType, setCompleteType] = useState<"prestador" | "comercio">(
-    "prestador"
+  const [completeType, setCompleteType] = useState<"prestador" | "comercio" | "cliente">(
+    "prestador",
   );
   const [completeWhatsapp, setCompleteWhatsapp] = useState("");
   const [completeCity, setCompleteCity] = useState("");
@@ -192,91 +192,94 @@ export default function Parceiro() {
 
   // Load Statistics
   useEffect(() => {
-    if (activeTab === "estatisticas" && business?.id && sessionToken) {
-      async function loadStats() {
-        setIsLoadingStats(true);
-        try {
-          const res = await fetch(`/api/trpc/providers.getProviderStats?input=${encodeURIComponent(JSON.stringify({ providerId: business.id }))}`, {
-            headers: {
-              "Authorization": `Bearer ${sessionToken}`
-            }
-          });
-          if (res.ok) {
-            const json = await res.json();
-            if (json.result && json.result.data) {
-              setStats(json.result.data);
-            }
+    const loadStats = async () => {
+      setIsLoadingStats(true);
+      try {
+        const res = await fetch(`/api/trpc/providers.getProviderStats?input=${encodeURIComponent(JSON.stringify({ providerId: business?.id }))}`, {
+          headers: {
+            "Authorization": `Bearer ${sessionToken}`
           }
-        } catch (e) {
-          console.error(e);
-        } finally {
-          setIsLoadingStats(false);
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.result && json.result.data) {
+            setStats(json.result.data);
+          }
         }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoadingStats(false);
       }
+    };
+
+    if (activeTab === "estatisticas" && business?.id && sessionToken) {
       loadStats();
     }
   }, [activeTab, business?.id, sessionToken]);
 
   // Load Favorites
   useEffect(() => {
-    if (activeTab === "favoritos") {
-      async function loadFavs() {
-        setIsLoadingFavs(true);
-        try {
-          const favs = localStorage.getItem("xamaja_favs");
-          if (favs) {
-            const parsed = JSON.parse(favs);
-            if (parsed.length > 0) {
-              const list = [];
-              for (const id of parsed) {
-                const res = await fetch(`/api/trpc/providers.getById?input=${encodeURIComponent(JSON.stringify(id))}`);
-                if (res.ok) {
-                  const json = await res.json();
-                  if (json.result && json.result.data) {
-                    list.push(json.result.data);
-                  }
+    const loadFavs = async () => {
+      setIsLoadingFavs(true);
+      try {
+        const favs = localStorage.getItem("xamaja_favs");
+        if (favs) {
+          const parsed = JSON.parse(favs);
+          if (parsed.length > 0) {
+            const list = [];
+            for (const id of parsed) {
+              const res = await fetch(`/api/trpc/providers.getById?input=${encodeURIComponent(JSON.stringify(id))}`);
+              if (res.ok) {
+                const json = await res.json();
+                if (json.result && json.result.data) {
+                  list.push(json.result.data);
                 }
               }
-              setFavoriteDetails(list);
-            } else {
-              setFavoriteDetails([]);
             }
+            setFavoriteDetails(list);
           } else {
             setFavoriteDetails([]);
           }
-        } catch (e) {
-          console.error(e);
-        } finally {
-          setIsLoadingFavs(false);
+        } else {
+          setFavoriteDetails([]);
         }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoadingFavs(false);
       }
+    };
+
+    if (activeTab === "favoritos") {
       loadFavs();
     }
   }, [activeTab]);
 
   // Load User Reviews
   useEffect(() => {
-    if (activeTab === "minhas-avaliacoes" && sessionToken) {
-      async function loadUserReviews() {
-        setIsLoadingUserReviews(true);
-        try {
-          const res = await fetch(`/api/trpc/providers.getUserReviews`, {
-            headers: {
-              "Authorization": `Bearer ${sessionToken}`
-            }
-          });
-          if (res.ok) {
-            const json = await res.json();
-            if (json.result && json.result.data) {
-              setUserReviews(json.result.data);
-            }
+    const loadUserReviews = async () => {
+      setIsLoadingUserReviews(true);
+      try {
+        const res = await fetch(`/api/trpc/providers.getUserReviews`, {
+          headers: {
+            "Authorization": `Bearer ${sessionToken}`
           }
-        } catch (e) {
-          console.error(e);
-        } finally {
-          setIsLoadingUserReviews(false);
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.result && json.result.data) {
+            setUserReviews(json.result.data);
+          }
         }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoadingUserReviews(false);
       }
+    };
+
+    if (activeTab === "minhas-avaliacoes" && sessionToken) {
       loadUserReviews();
     }
   }, [activeTab, sessionToken]);
@@ -1804,8 +1807,8 @@ export default function Parceiro() {
 
                           <div className="flex flex-col md:flex-row gap-6 items-center pb-6 border-b border-border">
                             <div className="w-24 h-24 rounded-full bg-zinc-900 border border-border flex items-center justify-center overflow-hidden">
-                              {user.avatarUrl ? (
-                                <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+                              {(user as any).avatarUrl ? (
+                                <img src={(user as any).avatarUrl} alt={user.name} className="w-full h-full object-cover" />
                               ) : (
                                 <User className="h-10 w-10 text-primary" />
                               )}

@@ -1416,7 +1416,7 @@ export default function Perfil({ params }: { params: { id: string } }) {
               <h4 className="font-extrabold text-white text-base leading-tight">Fale direto com o {isComercio ? "comércio" : "profissional"}!</h4>
               <p className="text-zinc-400 text-xs leading-relaxed">Combine detalhes, solicite orçamentos ou faça pedidos de forma 100% gratuita via WhatsApp.</p>
               <button
-                onClick={handleContactWhatsApp}
+                onClick={() => handleContactWhatsApp()}
                 className="w-full py-3.5 bg-[#25D366] hover:bg-[#25D366]/95 text-black font-black rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/10 text-xs transition"
               >
                 <Phone className="w-4 h-4 fill-current" />
@@ -1479,7 +1479,7 @@ export default function Perfil({ params }: { params: { id: string } }) {
               onClick={
                 provider?.supportsScheduling
                   ? () => setShowScheduleModal(true)
-                  : handleContactWhatsApp
+                  : () => handleContactWhatsApp()
               }
               className={`${provider?.supportsScheduling ? 'bg-primary hover:bg-primary/90' : 'bg-[#25D366] hover:bg-[#25D366]/90'} text-black font-black px-5 h-10 rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/10`}
             >
@@ -1499,7 +1499,7 @@ export default function Perfil({ params }: { params: { id: string } }) {
           onClick={
             provider?.supportsScheduling
               ? () => setShowScheduleModal(true)
-              : handleContactWhatsApp
+              : () => handleContactWhatsApp()
           }
           className="w-full py-4 bg-primary text-primary-foreground font-black rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-primary/15 text-sm"
         >
