@@ -317,38 +317,21 @@ export default function Perfil({ params }: { params: { id: string } }) {
   // Load reviews by provider ID
   const fetchReviews = async () => {
     try {
-      const url = `/api/trpc/providers.getReviews?input=${encodeURIComponent(JSON.stringify(providerId))}`;
+      const inputPayload = JSON.stringify({ json: providerId });
+      const url = `/api/trpc/providers.getReviews?input=${encodeURIComponent(inputPayload)}`;
       const res = await fetch(url);
       if (res.ok) {
         const json = await res.json();
-        if (json.result && json.result.data) {
+        if (json.result && Array.isArray(json.result.data)) {
           setReviewsList(json.result.data);
           return;
         }
       }
     } catch (e) {
-      console.warn("Failed loading database reviews, using fallbacks:", e);
+      console.warn("Failed loading database reviews:", e);
     }
 
-    // fallback mock reviews
-    setReviewsList([
-      {
-        id: "rev-1",
-        userName: "Maria Silva",
-        userAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=50&q=80",
-        rating: 5,
-        comment: "Excelente profissional! Ambiente agradável e atendimento impecável. Super recomendo!",
-        createdAt: "Há 2 semanas",
-      },
-      {
-        id: "rev-2",
-        userName: "João Oliveira",
-        userAvatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=50&q=80",
-        rating: 5,
-        comment: "Massagem incrível, me ajudou muito com minhas dores nas costas. Voltarei sempre!",
-        createdAt: "Há 1 mês",
-      }
-    ]);
+    setReviewsList([]);
   };
 
   // Toggle favorite
@@ -393,9 +376,11 @@ export default function Perfil({ params }: { params: { id: string } }) {
           "Authorization": `Bearer ${sessionToken}`
         },
         body: JSON.stringify({
-          providerId,
-          rating,
-          comment: comment.trim(),
+          json: {
+            providerId,
+            rating,
+            comment: comment.trim(),
+          }
         }),
       });
 
@@ -404,26 +389,15 @@ export default function Perfil({ params }: { params: { id: string } }) {
         toast.success("Avaliação enviada com sucesso!");
         setComment("");
         // Reload reviews & updates provider rating
-        fetchReviews();
-        fetchProviderDetails();
+        await fetchReviews();
+        await fetchProviderDetails();
       } else {
-        toast.error("Ocorreu um erro ao enviar sua avaliação.");
+        const errorMsg = json.error?.json?.message || json.error?.message || "Ocorreu um erro ao enviar sua avaliação.";
+        toast.error(errorMsg);
       }
     } catch (err) {
       console.error(err);
-      // Fallback local append for visual feedback
-      const newLocalReview = {
-        id: `local-rev-${Date.now()}`,
-        userName: reviewerName.trim(),
-        userAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(reviewerName.trim())}&background=25D366&color=000`,
-        rating,
-        comment: comment.trim(),
-        createdAt: new Date().toISOString().split("T")[0],
-      };
-      setReviewsList(prev => [newLocalReview, ...prev]);
-      toast.success("Avaliação enviada (Local)!");
-      setComment("");
-      setReviewerName("");
+      toast.error("Erro de conexão ao enviar avaliação.");
     } finally {
       setIsSubmittingReview(false);
     }

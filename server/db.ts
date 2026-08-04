@@ -1,4 +1,4 @@
-import { eq, desc, asc, and, sql, or, ilike } from "drizzle-orm";
+import { eq, desc, asc, and, sql, or, ilike, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import {
@@ -643,10 +643,23 @@ export async function deleteFeaturedAd(id: string) {
 export async function getReviewsByProfessional(professionalId: string) {
   const db = await getDb();
   if (!db) return [];
+
+  const provs = await db
+    .select({ id: providers.id, userId: providers.userId })
+    .from(providers)
+    .where(or(eq(providers.id, professionalId), eq(providers.userId, professionalId)))
+    .limit(1);
+
+  const targetIds = [professionalId];
+  if (provs.length > 0) {
+    if (provs[0].id && !targetIds.includes(provs[0].id)) targetIds.push(provs[0].id);
+    if (provs[0].userId && !targetIds.includes(provs[0].userId)) targetIds.push(provs[0].userId);
+  }
+
   return db
     .select()
     .from(reviews)
-    .where(eq(reviews.professionalId, professionalId))
+    .where(inArray(reviews.professionalId, targetIds))
     .orderBy(desc(reviews.createdAt));
 }
 
