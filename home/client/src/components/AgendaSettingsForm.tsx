@@ -1,9 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Save, Calendar, Clock, Lock, Trash2, Plus, X } from "lucide-react";
-import { trpc } from "../../lib/trpc";
+import { Calendar, Clock, Lock, Plus, X } from "lucide-react";
 
 export interface WorkingDay {
   day: number; // 0=Sun, 1=Mon...
@@ -69,7 +68,12 @@ export function AgendaSettingsForm({
   });
 
   const [newUnavailDate, setNewUnavailDate] = useState("");
-  const updateMutation = trpc.providers.update.useMutation();
+  const [isSaving, setIsSaving] = useState(false);
+
+  const [blockDate, setBlockDate] = useState("");
+  const [blockStart, setBlockStart] = useState("");
+  const [blockEnd, setBlockEnd] = useState("");
+  const [isBlocking, setIsBlocking] = useState(false);
 
   const handleDayChange = (dayIndex: number, field: keyof WorkingDay, value: any) => {
     setSettings((prev) => ({
@@ -81,44 +85,70 @@ export function AgendaSettingsForm({
   };
 
   const handleSave = async () => {
+    setIsSaving(true);
     try {
-      await updateMutation.mutateAsync({
-        id: providerId,
-        updates: {
-          scheduleSettings: settings,
+      const token = localStorage.getItem("bp_session_token") || localStorage.getItem("session_token");
+      const res = await fetch("/api/business-partner/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
+        body: JSON.stringify({
+          scheduleSettings: settings,
+        }),
       });
-      toast.success("Configurações de agenda salvas com sucesso!");
-      onSaved?.();
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success("Configurações de agenda salvas com sucesso!");
+        onSaved?.();
+      } else {
+        toast.error(data.error || "Erro ao salvar as configurações");
+      }
     } catch (err: any) {
       toast.error(err.message || "Erro ao salvar as configurações");
+    } finally {
+      setIsSaving(false);
     }
   };
-
-  const [blockDate, setBlockDate] = useState("");
-  const [blockStart, setBlockStart] = useState("");
-  const [blockEnd, setBlockEnd] = useState("");
-  const blockMutation = trpc.appointments.blockSlot.useMutation();
 
   const handleBlockSlot = async () => {
     if (!blockDate || !blockStart || !blockEnd) {
       toast.error("Preencha data, início e fim para bloquear o horário.");
       return;
     }
+    setIsBlocking(true);
     try {
-      await blockMutation.mutateAsync({
-        providerId,
-        date: blockDate,
-        startTime: blockStart,
-        endTime: blockEnd,
-        reason: "Bloqueio Manual",
+      const token = localStorage.getItem("bp_session_token") || localStorage.getItem("session_token");
+      const res = await fetch("/api/trpc/appointments.blockSlot", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          providerId,
+          date: blockDate,
+          startTime: blockStart,
+          endTime: blockEnd,
+          reason: "Bloqueio Manual",
+        }),
       });
-      toast.success("Horário bloqueado com sucesso!");
-      setBlockDate("");
-      setBlockStart("");
-      setBlockEnd("");
+
+      const data = await res.json();
+      if (res.ok) {
+        toast.success("Horário bloqueado com sucesso!");
+        setBlockDate("");
+        setBlockStart("");
+        setBlockEnd("");
+      } else {
+        toast.error(data.error?.message || "Erro ao bloquear horário");
+      }
     } catch (err: any) {
       toast.error(err.message || "Erro ao bloquear horário");
+    } finally {
+      setIsBlocking(false);
     }
   };
 
@@ -263,8 +293,8 @@ export function AgendaSettingsForm({
       </div>
 
       <div className="flex justify-end pt-4 border-b border-zinc-800 pb-8">
-        <Button onClick={handleSave} disabled={updateMutation.isPending} className="h-12 px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-wider rounded-xl">
-          {updateMutation.isPending ? "Salvando..." : "Salvar Configurações"}
+        <Button onClick={handleSave} disabled={isSaving} className="h-12 px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-wider rounded-xl">
+          {isSaving ? "Salvando..." : "Salvar Configurações"}
         </Button>
       </div>
 
@@ -293,8 +323,8 @@ export function AgendaSettingsForm({
             <Input type="time" value={blockEnd} onChange={(e) => setBlockEnd(e.target.value)} className="bg-zinc-900 border-zinc-800 h-11 text-white" />
           </div>
           <div className="flex items-end">
-            <Button onClick={handleBlockSlot} disabled={blockMutation.isPending} className="h-11 w-full bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl">
-              {blockMutation.isPending ? "Bloqueando..." : "Bloquear Horário"}
+            <Button onClick={handleBlockSlot} disabled={isBlocking} className="h-11 w-full bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl">
+              {isBlocking ? "Bloqueando..." : "Bloquear Horário"}
             </Button>
           </div>
         </div>

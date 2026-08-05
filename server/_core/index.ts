@@ -1794,6 +1794,10 @@ async function startServer() {
         updates.workingHours = typeof workingHours === "object" ? JSON.stringify(workingHours) : workingHours;
       }
 
+      if (req.body.scheduleSettings !== undefined) {
+        updates.scheduleSettings = typeof req.body.scheduleSettings === "object" ? JSON.stringify(req.body.scheduleSettings) : req.body.scheduleSettings;
+      }
+
       await db.updateProvider(businessProfile.id, updates);
 
       res.json({
