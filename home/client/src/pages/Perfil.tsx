@@ -108,12 +108,12 @@ export default function Perfil({ params }: { params: { id: string } }) {
     return `${y}-${m}-${day}`;
   };
 
-  const fetchSlots = async (date: Date) => {
+  const fetchSlots = async (date: Date, duration?: number) => {
     setIsFetchingSlots(true);
     setAvailableSlots([]);
     try {
       const url = `/api/trpc/appointments.getAvailableSlots?input=${encodeURIComponent(
-        JSON.stringify({ providerId, date: formatYMD(date), serviceDuration: 30 })
+        JSON.stringify({ providerId, date: formatYMD(date), serviceDuration: duration || 30 })
       )}`;
       const res = await fetch(url);
       if (res.ok) {
@@ -129,9 +129,9 @@ export default function Perfil({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     if (showScheduleModal && provider) {
-      fetchSlots(scheduleDate);
+      fetchSlots(scheduleDate, selectedScheduleService?.durationMinutes);
     }
-  }, [showScheduleModal, scheduleDate, provider]);
+  }, [showScheduleModal, scheduleDate, provider, selectedScheduleService]);
 
   const handleConfirmSchedule = async () => {
     if (!sessionToken || !userProfile) {

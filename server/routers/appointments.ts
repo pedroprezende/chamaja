@@ -62,7 +62,37 @@ export const appointmentsRouter = router({
         endTime: input.endTime,
         status: "pending",
       });
-      return { success: true, appointmentId };
+      return { success: true, id: appointmentId };
+    }),
+
+  blockSlot: protectedProcedure
+    .input(
+      z.object({
+        providerId: z.string(),
+        date: z.string(), // YYYY-MM-DD
+        startTime: z.string(), // HH:MM
+        endTime: z.string(), // HH:MM
+        reason: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const dbInstance = await db.getDb();
+      if (!dbInstance) throw new Error("DB_UNAVAILABLE");
+
+      const appointmentId = uid();
+      await dbInstance.insert(appointments).values({
+        id: appointmentId,
+        providerId: input.providerId,
+        userId: ctx.user.openId,
+        clientName: "Bloqueio Manual",
+        clientPhone: "-",
+        serviceName: input.reason || "Bloqueio Administrativo",
+        date: new Date(`${input.date}T00:00:00Z`),
+        startTime: input.startTime,
+        endTime: input.endTime,
+        status: "blocked",
+      });
+      return { success: true, id: appointmentId };
     }),
 
   getByProvider: protectedProcedure
@@ -173,6 +203,16 @@ export const appointmentsRouter = router({
       const settings = providerRes[0].scheduleSettings as any;
       if (!settings || !settings.workingDays) return [];
 
+      const targetDateStr = input.date;
+      if (settings.unavailableDates && settings.unavailableDates.includes(targetDateStr)) {
+        return [];
+      }
+      if (settings.vacationStart && settings.vacationEnd) {
+        if (targetDateStr >= settings.vacationStart && targetDateStr <= settings.vacationEnd) {
+          return [];
+        }
+      }
+
       // Parse date to find day of week
       const targetDate = new Date(`${input.date}T12:00:00Z`);
       const dayOfWeek = targetDate.getUTCDay(); // 0 is Sunday
@@ -227,22 +267,25 @@ export const appointmentsRouter = router({
           ),
         );
 
-      const activeExisting = existing.filter(a => a.status === "pending" || a.status === "confirmed");
+      const activeExisting = existing.filter(a => a.status === "pending" || a.status === "confirmed" || a.status === "blocked");
+
+      const maxSimultaneous = settings.maxSimultaneous || 1;
 
       // Math for overlap: Math.max(start1, start2) < Math.min(end1, end2)
       return slots.filter((slot) => {
         const sStart = parseTime(slot.start);
         const sEnd = parseTime(slot.end);
         
+        let overlapCount = 0;
         for (const ex of activeExisting) {
           const eStart = parseTime(ex.startTime);
           const eEnd = parseTime(ex.endTime);
           
           if (Math.max(sStart, eStart) < Math.min(sEnd, eEnd)) {
-            return false; // overlap found, slot unavailable
+            overlapCount++;
           }
         }
-        return true;
+        return overlapCount < maxSimultaneous;
       });
     }),
 });

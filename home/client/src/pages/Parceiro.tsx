@@ -43,6 +43,7 @@ import {
   DayKey,
   formatDaySchedule,
 } from "../../../../lib/working-hours";
+import { AgendaSettingsForm } from "../components/AgendaSettingsForm";
 
 interface Service {
   id: string;
@@ -50,6 +51,7 @@ interface Service {
   description: string;
   price: number;
   imageUri?: string;
+  durationMinutes?: number;
 }
 
 interface PlanBenefit {
@@ -181,6 +183,7 @@ export default function Parceiro() {
   const [srvDescription, setSrvDescription] = useState("");
   const [srvPrice, setSrvPrice] = useState("");
   const [srvImageUri, setSrvImageUri] = useState("");
+  const [srvDuration, setSrvDuration] = useState("");
 
   // Extended dashboard views states
   const [stats, setStats] = useState<{ views: number; whatsappClicks: number } | null>(null);
@@ -714,6 +717,7 @@ export default function Parceiro() {
     setSrvDescription("");
     setSrvPrice("");
     setSrvImageUri("");
+    setSrvDuration("");
     setIsServiceModalOpen(true);
   };
 
@@ -723,6 +727,7 @@ export default function Parceiro() {
     setSrvDescription(srv.description);
     setSrvPrice(srv.price.toString());
     setSrvImageUri(srv.imageUri || "");
+    setSrvDuration(srv.durationMinutes ? srv.durationMinutes.toString() : "");
     setIsServiceModalOpen(true);
   };
 
@@ -743,6 +748,7 @@ export default function Parceiro() {
               name: srvName,
               description: srvDescription,
               price: priceNum,
+              durationMinutes: parseInt(srvDuration) || undefined,
               imageUri: srvImageUri || undefined,
             }
           : s
@@ -759,6 +765,7 @@ export default function Parceiro() {
         name: srvName,
         description: srvDescription,
         price: priceNum,
+        durationMinutes: parseInt(srvDuration) || undefined,
         imageUri: srvImageUri || undefined,
       };
       updatedList = [...servicesList, newService];
@@ -2267,20 +2274,12 @@ export default function Parceiro() {
                             </p>
                           </div>
                           
-                          <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-6 flex flex-col items-center justify-center text-center space-y-4 min-h-[300px]">
-                            <Calendar className="h-12 w-12 text-zinc-700" />
-                            <div>
-                              <h3 className="text-lg font-bold text-white">Agenda em Desenvolvimento</h3>
-                              <p className="text-sm text-zinc-500 mt-2 max-w-md mx-auto">
-                                Estamos finalizando o sistema de agendamentos. Em breve você poderá ver e gerenciar todos os horários marcados pelos seus clientes aqui.
-                              </p>
-                            </div>
-                            <Button 
-                              onClick={() => toast.info("Em breve!")}
-                              className="bg-primary text-primary-foreground font-bold hover:bg-primary/90 rounded-xl"
-                            >
-                              Configurar Parâmetros de Agenda
-                            </Button>
+                          <div className="mt-4">
+                            <AgendaSettingsForm
+                              providerId={provider.id}
+                              initialSettings={provider.scheduleSettings}
+                              onSaved={() => fetchProfile()}
+                            />
                           </div>
                         </div>
                       )}
@@ -3210,6 +3209,19 @@ export default function Parceiro() {
                   placeholder="Ex: 120.00"
                   value={srvPrice}
                   onChange={e => setSrvPrice(e.target.value)}
+                  className="bg-background border-border h-12 rounded-xl focus-visible:ring-primary text-sm font-mono text-white"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-white uppercase tracking-wider">
+                  Duração Estimada (Minutos)
+                </label>
+                <Input
+                  type="number"
+                  placeholder="Ex: 45"
+                  value={srvDuration}
+                  onChange={e => setSrvDuration(e.target.value)}
                   className="bg-background border-border h-12 rounded-xl focus-visible:ring-primary text-sm font-mono text-white"
                 />
               </div>
