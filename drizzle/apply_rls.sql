@@ -26,6 +26,7 @@ ALTER TABLE public.utm_links ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.plans ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.plan_price_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.plan_benefits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.appointments ENABLE ROW LEVEL SECURITY;
 
 
 
@@ -103,6 +104,11 @@ CREATE POLICY "Admin full access system_logs" ON public.system_logs FOR ALL USIN
 CREATE POLICY "Admin full access app_events" ON public.app_events FOR ALL USING (public.is_admin());
 CREATE POLICY "Admin full access pagamentos" ON public.pagamentos FOR ALL USING (public.is_admin());
 CREATE POLICY "Admin full access utm_links" ON public.utm_links FOR ALL USING (public.is_admin());
+
+-- appointments
+CREATE POLICY "Read own appointments" ON public.appointments FOR SELECT USING (auth.uid()::text = user_id OR EXISTS (SELECT 1 FROM public.providers WHERE id = provider_id AND user_id = auth.uid()::text) OR public.is_admin());
+CREATE POLICY "Insert own appointment" ON public.appointments FOR INSERT WITH CHECK (auth.uid()::text = user_id OR EXISTS (SELECT 1 FROM public.providers WHERE id = provider_id AND user_id = auth.uid()::text) OR public.is_admin());
+CREATE POLICY "Update own appointment" ON public.appointments FOR UPDATE USING (auth.uid()::text = user_id OR EXISTS (SELECT 1 FROM public.providers WHERE id = provider_id AND user_id = auth.uid()::text) OR public.is_admin());
 
 
 
