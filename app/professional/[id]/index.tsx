@@ -1930,6 +1930,42 @@ export default function ProfessionalDetailScreen() {
               })()}
             </View>
 
+            {/* Scheduling CTA Card */}
+            {prof?.supportsScheduling && (
+              <View
+                style={[
+                  styles.ctaCard,
+                  {
+                    backgroundColor: colors.primary + "10",
+                    borderColor: colors.primary + "40",
+                    marginBottom: 16,
+                  },
+                ]}
+              >
+                <MaterialIcons name="event-available" size={28} color={colors.primary} />
+                <Text style={[styles.ctaTitle, { color: colors.foreground }]}>
+                  Agende seu horário online!
+                </Text>
+                <Text style={[styles.ctaSub, { color: colors.muted }]}>
+                  Veja os horários livres e garanta seu atendimento de forma rápida, sem complicação.
+                </Text>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.ctaBtn,
+                    { backgroundColor: colors.primary },
+                    pressed && {
+                      opacity: 0.9,
+                      transform: [{ scale: 0.98 }],
+                    },
+                  ]}
+                  onPress={() => router.push(`/professional/${prof.id}/schedule` as any)}
+                >
+                  <MaterialIcons name="calendar-today" size={20} color="#FFF" />
+                  <Text style={styles.ctaBtnText}>Agendar Horário</Text>
+                </Pressable>
+              </View>
+            )}
+
             {/* WhatsApp CTA Card */}
             <View
               style={[
@@ -2167,61 +2203,74 @@ export default function ProfessionalDetailScreen() {
           </View>
         </View>
         <View style={styles.bottomBarBtns}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.bottomBtnOutline,
-              { borderColor: colors.primary },
-              pressed && { opacity: 0.85 },
-            ]}
-            onPress={() => {
-              if (contentGoesToMenu && hasProducts)
-                router.push(`/professional/${prof.id}/menu` as any);
-              else setShowReviewModal(true);
-            }}
-          >
-            <MaterialIcons
-              name={
-                contentGoesToMenu && hasProducts
-                  ? "menu-book"
-                  : "star-outline"
-              }
-              size={18}
-              color={colors.primary}
-            />
-            <Text
-              style={{
-                fontSize: 13,
-                fontWeight: "700",
-                color: colors.primary,
+          {prof?.supportsScheduling ? (
+            <Pressable
+              style={({ pressed }) => [
+                styles.bottomBtnPrimary,
+                { backgroundColor: colors.primary },
+                pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
+              ]}
+              onPress={() => router.push(`/professional/${prof.id}/schedule` as any)}
+            >
+              <MaterialIcons name="calendar-today" size={20} color="#FFF" />
+              <Text style={styles.bottomBtnPrimaryText}>Agendar Horário</Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              style={({ pressed }) => [
+                styles.bottomBtnOutline,
+                { borderColor: colors.primary },
+                pressed && { opacity: 0.85 },
+              ]}
+              onPress={() => {
+                if (contentGoesToMenu && hasProducts)
+                  router.push(`/professional/${prof.id}/menu` as any);
+                else setShowReviewModal(true);
               }}
             >
-              {contentGoesToMenu && hasProducts ? "Ver Serviços" : "Avaliar"}
-            </Text>
-          </Pressable>
+              <MaterialIcons
+                name={
+                  contentGoesToMenu && hasProducts
+                    ? "menu-book"
+                    : "star-outline"
+                }
+                size={18}
+                color={colors.primary}
+              />
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: "700",
+                  color: colors.primary,
+                }}
+              >
+                {contentGoesToMenu && hasProducts ? "Ver Serviços" : "Avaliar"}
+              </Text>
+            </Pressable>
+          )}
+
           <Pressable
             style={({ pressed }) => [
               styles.bottomBtnPrimary,
-              { backgroundColor: colors.primary },
+              { backgroundColor: prof?.supportsScheduling ? colors.primary + "15" : colors.primary },
               pressed && {
                 opacity: 0.9,
                 transform: [{ scale: 0.98 }],
               },
             ]}
             onPress={
-              prof?.supportsScheduling
-                ? () => router.push(`/professional/${prof.id}/schedule` as any)
-                : contentGoesToMenu
-                  ? () => router.push(`/professional/${prof.id}/menu` as any)
-                  : handleOpenWhatsApp
+              contentGoesToMenu
+                ? () => router.push(`/professional/${prof.id}/menu` as any)
+                : handleOpenWhatsApp
             }
           >
             <MaterialIcons
-              name={prof?.supportsScheduling ? "calendar-today" : estConfig.ctaIcon as any}
+              name={estConfig.ctaIcon as any}
               size={20}
-              color="#FFF"
+              color={prof?.supportsScheduling ? colors.primary : "#FFF"}
             />
-            <Text style={styles.bottomBtnPrimaryText}>
-              {prof?.supportsScheduling ? "Agendar Horário" : estConfig.ctaLabel}
+            <Text style={[styles.bottomBtnPrimaryText, prof?.supportsScheduling && { color: colors.primary }]}>
+              {estConfig.ctaLabel}
             </Text>
           </Pressable>
         </View>
