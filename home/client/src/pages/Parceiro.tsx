@@ -88,6 +88,7 @@ interface BusinessProfile {
   planExpiresAt: string | null;
   benefits: PlanBenefit[];
   socialLinks?: Record<string, string>;
+  scheduleSettings?: any;
 }
 
 interface UserProfile {
@@ -2275,11 +2276,13 @@ export default function Parceiro() {
                           </div>
                           
                           <div className="mt-4">
-                            <AgendaSettingsForm
-                              providerId={provider.id}
-                              initialSettings={provider.scheduleSettings}
-                              onSaved={() => fetchProfile()}
-                            />
+                            {business && (
+                              <AgendaSettingsForm
+                                providerId={business.id}
+                                initialSettings={business.scheduleSettings}
+                                onSaved={() => fetchProfile()}
+                              />
+                            )}
                           </div>
                         </div>
                       )}
