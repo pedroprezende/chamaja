@@ -129,7 +129,7 @@ export const appointmentsRouter = router({
             ilike(appointments.clientName, searchTerm),
             ilike(appointments.clientPhone, searchTerm),
             ilike(appointments.serviceName, searchTerm)
-          )
+          )!
         );
       }
 

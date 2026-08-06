@@ -148,12 +148,14 @@ export default function DestaquesAdmin() {
       if (customAdImage) {
         try {
           adImageUrl = await storage.uploadImage(customAdImage, "providers");
-        } catch (imgErr) {
-          console.warn(
-            "[Admin] Upload do storage falhou, usando URI direta como fallback:",
-            imgErr,
+        } catch (imgErr: any) {
+          console.error("[Admin] Upload do storage falhou:", imgErr);
+          Alert.alert(
+            "Erro no upload",
+            "Não foi possível fazer o upload da imagem. " + (imgErr.message || "Tente novamente.")
           );
-          adImageUrl = customAdImage;
+          setSaving(false);
+          return;
         }
       }
 
