@@ -141,7 +141,6 @@ export default function DestaquesAdmin() {
   const handleConfirmAdd = async () => {
     if (!selectedProvider) return;
 
-    console.log("[Admin] Confirmado adição de:", selectedProvider.name);
     setSaving(true);
     try {
       let adImageUrl: string | null = null;

@@ -119,12 +119,16 @@ export const storage = {
               reader.onerror = reject;
               reader.readAsDataURL(blob);
             });
-          }
-
           // 2. Enviar via endpoint de servidor (Evita CORS / RLS client-side no Supabase)
+          const sessionData = await supabase.auth.getSession();
+          const token = sessionData.data.session?.access_token || "";
+
           const serverRes = await fetch("/api/upload-image", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+              "Content-Type": "application/json",
+              ...(token ? { "Authorization": `Bearer ${token}` } : {})
+            },
             body: JSON.stringify({
               base64Data: base64String,
               fileType: fileType || "image/jpeg",
@@ -166,10 +170,8 @@ export const storage = {
             "Upload no Supabase Web falhou, verificando fallback:",
             webErr,
           );
-          if (uri.startsWith("data:") || uri.startsWith("http")) {
-            return uri;
-          }
-          throw webErr;
+          console.error("[STORAGE] Erro web completo:", webErr);
+          throw new Error("Falha no upload da imagem para a nuvem. Erro: " + (webErr.message || "Desconhecido"));
         }
       } else {
         logger.info("STORAGE", "Lendo arquivo local como Base64...");

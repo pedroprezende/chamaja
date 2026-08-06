@@ -1791,7 +1791,20 @@ async function startServer() {
       const { decode } = await import("base64-arraybuffer");
       const buffer = decode(pureBase64);
 
-      const { data, error: uploadError } = await supabase.storage
+      const authHeader = req.headers.authorization;
+      const scopedSupabase = createClient(
+        process.env.EXPO_PUBLIC_SUPABASE_URL || "",
+        process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "",
+        {
+          global: {
+            headers: {
+              ...(authHeader ? { Authorization: authHeader } : {}),
+            },
+          },
+        }
+      );
+
+      const { data, error: uploadError } = await scopedSupabase.storage
         .from(targetBucket)
         .upload(filePath, buffer, {
           contentType: cleanType,
