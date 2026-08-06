@@ -7,7 +7,7 @@ import {
 } from "../_core/trpc";
 import * as db from "../db";
 import { appointments, providers } from "../../drizzle/schema";
-import { eq, and, desc, asc, gte, lte } from "drizzle-orm";
+import { eq, and, desc, asc, gte, lte, inArray, ilike, or } from "drizzle-orm";
 
 const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -100,6 +100,8 @@ export const appointmentsRouter = router({
       z.object({
         dateStart: z.string().optional(),
         dateEnd: z.string().optional(),
+        search: z.string().optional(),
+        statusFilter: z.array(z.string()).optional(),
       })
     )
     .query(async ({ input, ctx }) => {
@@ -117,12 +119,58 @@ export const appointmentsRouter = router({
       let conditions = [eq(appointments.providerId, provider[0].id)];
       if (input.dateStart) conditions.push(gte(appointments.date, new Date(`${input.dateStart}T00:00:00Z`)));
       if (input.dateEnd) conditions.push(lte(appointments.date, new Date(`${input.dateEnd}T00:00:00Z`)));
+      if (input.statusFilter && input.statusFilter.length > 0) {
+        conditions.push(inArray(appointments.status, input.statusFilter));
+      }
+      if (input.search) {
+        const searchTerm = `%${input.search}%`;
+        conditions.push(
+          or(
+            ilike(appointments.clientName, searchTerm),
+            ilike(appointments.clientPhone, searchTerm),
+            ilike(appointments.serviceName, searchTerm)
+          )
+        );
+      }
 
       return dbInstance
         .select()
         .from(appointments)
         .where(and(...conditions))
         .orderBy(asc(appointments.date), asc(appointments.startTime));
+    }),
+
+  updateNotes: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        notes: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const dbInstance = await db.getDb();
+      if (!dbInstance) throw new Error("DB_UNAVAILABLE");
+      
+      const appts = await dbInstance
+        .select()
+        .from(appointments)
+        .where(eq(appointments.id, input.id));
+      if (appts.length === 0) throw new Error("NOT_FOUND");
+      
+      const provider = await dbInstance
+        .select()
+        .from(providers)
+        .where(eq(providers.id, appts[0].providerId));
+        
+      const isProvider = provider.length > 0 && provider[0].userId === ctx.user.openId;
+      if (!isProvider) throw new Error("UNAUTHORIZED");
+      
+      await dbInstance
+        .update(appointments)
+        .set({ notes: input.notes, updatedAt: new Date() })
+        .where(eq(appointments.id, input.id));
+        
+      return { success: true };
     }),
 
   getByUser: protectedProcedure.query(async ({ ctx }) => {
@@ -176,6 +224,64 @@ export const appointmentsRouter = router({
       await dbInstance
         .update(appointments)
         .set({ status: input.status, updatedAt: new Date() })
+        .where(eq(appointments.id, input.id));
+        
+      return { success: true };
+    }),
+
+  reschedule: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        newDate: z.string(), // YYYY-MM-DD
+        newStartTime: z.string(), // HH:MM
+        newEndTime: z.string(), // HH:MM
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const dbInstance = await db.getDb();
+      if (!dbInstance) throw new Error("DB_UNAVAILABLE");
+
+      const appts = await dbInstance
+        .select()
+        .from(appointments)
+        .where(eq(appointments.id, input.id));
+      if (appts.length === 0) throw new Error("NOT_FOUND");
+
+      const provider = await dbInstance
+        .select()
+        .from(providers)
+        .where(eq(providers.id, appts[0].providerId));
+        
+      const isProvider = provider.length > 0 && provider[0].userId === ctx.user.openId;
+      if (!isProvider) throw new Error("UNAUTHORIZED");
+
+      // Check slot availability
+      const existing = await dbInstance
+        .select()
+        .from(appointments)
+        .where(
+          and(
+            eq(appointments.providerId, appts[0].providerId),
+            eq(appointments.date, new Date(`${input.newDate}T00:00:00Z`)),
+            eq(appointments.startTime, input.newStartTime),
+          ),
+        );
+      
+      const activeExisting = existing.filter(a => (a.status === "pending" || a.status === "confirmed") && a.id !== input.id);
+      if (activeExisting.length > 0) {
+        throw new Error("SLOT_UNAVAILABLE");
+      }
+
+      await dbInstance
+        .update(appointments)
+        .set({ 
+          date: new Date(`${input.newDate}T00:00:00Z`),
+          startTime: input.newStartTime,
+          endTime: input.newEndTime,
+          status: "pending", 
+          updatedAt: new Date() 
+        })
         .where(eq(appointments.id, input.id));
         
       return { success: true };

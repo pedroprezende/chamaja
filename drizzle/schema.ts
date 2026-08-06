@@ -256,7 +256,8 @@ export const appointments = pgTable(
     date: timestamp("date").notNull(),
     startTime: varchar("start_time", { length: 5 }).notNull(), // HH:MM
     endTime: varchar("end_time", { length: 5 }).notNull(), // HH:MM
-    status: varchar("status", { length: 50 }).default("pending").notNull(), // pending, confirmed, completed, canceled, rescheduled
+    status: varchar("status", { length: 50 }).default("pending").notNull(), // pending, confirmed, completed, canceled, rescheduled, blocked
+    notes: text("notes"), // Internal notes for the provider
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },

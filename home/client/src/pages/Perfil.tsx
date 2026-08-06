@@ -168,15 +168,25 @@ export default function Perfil({ params }: { params: { id: string } }) {
         body: JSON.stringify(payload)
       });
       if (res.ok) {
-        toast.success("Agendamento confirmado!");
         setShowScheduleModal(false);
         
-        // Optional whatsapp redirect
+        // Formata data para o Whatsapp
+        const [yyyy, mm, dd] = formatYMD(scheduleDate).split("-");
+        const formattedDate = `${dd}/${mm}/${yyyy}`;
+
+        // Abre WhatsApp automaticamente
         if (provider.whatsapp || provider.phone) {
           const num = (provider.whatsapp || provider.phone).replace(/\D/g, "");
-          const msg = `Olá! Acabei de agendar um horário pelo XamaJá.\n\nServiço: ${srvName}\nData: ${formatYMD(scheduleDate)}\nHorário: ${selectedSlot.start}\n\nPor favor, confirme se está tudo certo!`;
+          const msg = `Olá! Acabei de solicitar um agendamento pelo XamaJá.\n\nServiço:\n${srvName}\n\nData:\n${formattedDate}\n\nHorário:\n${selectedSlot.start}\n\nAguardo sua confirmação. Obrigado!`;
           window.open(`https://wa.me/55${num}?text=${encodeURIComponent(msg)}`, "_blank");
         }
+        
+        // Exibe feedback
+        toast.success("✅ Solicitação enviada. Agora aguarde o prestador confirmar seu horário pelo WhatsApp.", {
+          duration: 8000,
+          style: { background: "#18181b", color: "#fff", border: "1px solid #27272a" },
+        });
+
       } else {
         const errData = await res.json();
         if (errData?.error?.message === "SLOT_UNAVAILABLE") {

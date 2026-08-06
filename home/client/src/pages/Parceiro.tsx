@@ -44,6 +44,7 @@ import {
   formatDaySchedule,
 } from "../../../../lib/working-hours";
 import { AgendaSettingsForm } from "../components/AgendaSettingsForm";
+import { AgendaManager } from "../components/AgendaManager";
 
 interface Service {
   id: string;
@@ -2271,13 +2272,13 @@ export default function Parceiro() {
                           <div className="pb-4 border-b border-border">
                             <h2 className="text-xl font-black text-white">Minha Agenda</h2>
                             <p className="text-xs text-muted-foreground">
-                              Gerencie seus agendamentos e horários marcados pelos clientes.
+                              Gerencie seus agendamentos e horários de funcionamento.
                             </p>
                           </div>
                           
                           <div className="mt-4">
                             {business && (
-                              <AgendaSettingsForm
+                              <AgendaManager
                                 providerId={business.id}
                                 initialSettings={business.scheduleSettings}
                                 onSaved={() => fetchProfile()}
@@ -2287,7 +2288,7 @@ export default function Parceiro() {
                         </div>
                       )}
 
-                      {/* MEUS AGENDAMENTOS PANEL */}
+                      {/* MEUS AGENDAMENTOS PANEL - DEPRECATED */}
                       {activeTab === "meus-agendamentos" && (
                         <div className="space-y-6">
                           <div className="pb-4 border-b border-border">

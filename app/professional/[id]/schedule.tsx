@@ -54,31 +54,28 @@ export default function ScheduleScreen() {
   );
 
   const createAppointment = trpc.appointments.create.useMutation({
-    onSuccess: (data) => {
+    onSuccess: () => {
+      // Abre Whatsapp primeiro
+      if (provider?.whatsapp || provider?.phone) {
+        const num = provider.whatsapp || provider.phone;
+        const cleaned = String(num).replace(/\D/g, "");
+        const phoneNum = cleaned.startsWith("55") ? cleaned : `55${cleaned}`;
+        
+        const srv = services.find((s: any) => s.id === selectedServiceId);
+        const srvName = srv?.name || "Atendimento";
+        const msg = `Olá! Acabei de solicitar um agendamento pelo XamaJá.\n\nServiço:\n${srvName}\n\nData:\n${formatDate(selectedDate)}\n\nHorário:\n${selectedSlot?.start}\n\nAguardo sua confirmação. Obrigado!`;
+        
+        Linking.openURL(`https://wa.me/${phoneNum}?text=${encodeURIComponent(msg)}`);
+      }
+      
+      // Exibe sucesso
       Alert.alert(
-        "Agendamento Confirmado!",
-        "Seu horário foi marcado com sucesso.",
+        "✅ Solicitação enviada",
+        "Agora aguarde o prestador confirmar seu horário pelo WhatsApp.",
         [
           {
-            text: "Avisar pelo WhatsApp",
-            onPress: () => {
-              if (provider?.whatsapp || provider?.phone) {
-                const num = provider.whatsapp || provider.phone;
-                const cleaned = String(num).replace(/\D/g, "");
-                const phoneNum = cleaned.startsWith("55") ? cleaned : `55${cleaned}`;
-                
-                const srv = services.find((s: any) => s.id === selectedServiceId);
-                const msg = `Olá! Acabei de agendar um horário pelo app XamaJá.\n\nServiço: ${srv?.name || "Atendimento"}\nData: ${formatDate(selectedDate)}\nHorário: ${selectedSlot?.start}\n\nPor favor, me confirme se está tudo certo!`;
-                
-                Linking.openURL(`https://wa.me/${phoneNum}?text=${encodeURIComponent(msg)}`);
-              }
-              router.back();
-            },
-          },
-          {
-            text: "Ok",
+            text: "Entendido",
             onPress: () => router.back(),
-            style: "cancel",
           }
         ]
       );
