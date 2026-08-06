@@ -50,22 +50,35 @@ export default function DestaquesAdmin() {
   const [customAdImage, setCustomAdImage] = useState<string | null>(null);
 
   const pickAdImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert(
-        "Permissão necessária",
-        "Permita o acesso à galeria para adicionar imagens.",
-      );
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [16, 9],
-      quality: 0.8,
-    });
-    if (!result.canceled && result.assets[0]) {
-      setCustomAdImage(result.assets[0].uri);
+    try {
+      if (Platform.OS !== "web") {
+        const { status } =
+          await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== "granted") {
+          Alert.alert(
+            "Permissão necessária",
+            "Permita o acesso à galeria para adicionar imagens.",
+          );
+          return;
+        }
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.8,
+        base64: true,
+      });
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        const uri =
+          Platform.OS === "web" && asset.base64
+            ? `data:image/jpeg;base64,${asset.base64}`
+            : asset.uri;
+        setCustomAdImage(uri);
+      }
+    } catch (err: any) {
+      console.error("[Admin] Erro ao selecionar foto de capa do anúncio:", err);
     }
   };
 
@@ -102,8 +115,9 @@ export default function DestaquesAdmin() {
     onError: (err) => {
       console.error("[Admin] Erro ao criar destaque:", err);
       Alert.alert(
-        "Erro",
-        "Não foi possível adicionar aos destaques: " + err.message,
+        "Erro ao salvar anúncio",
+        "Não foi possível adicionar aos destaques: " +
+          (err.message || "Permissão ou servidor indisponível"),
       );
     },
     onSettled: () => setSaving(false),
@@ -132,10 +146,18 @@ export default function DestaquesAdmin() {
     try {
       let adImageUrl: string | null = null;
       if (customAdImage) {
-        adImageUrl = await storage.uploadImage(customAdImage, "providers");
+        try {
+          adImageUrl = await storage.uploadImage(customAdImage, "providers");
+        } catch (imgErr) {
+          console.warn(
+            "[Admin] Upload do storage falhou, usando URI direta como fallback:",
+            imgErr,
+          );
+          adImageUrl = customAdImage;
+        }
       }
 
-      createMutation.mutate({
+      await createMutation.mutateAsync({
         providerId: selectedProvider.id,
         providerName: selectedProvider.name,
         providerAvatar: selectedProvider.avatarUri || null,
@@ -145,10 +167,11 @@ export default function DestaquesAdmin() {
         isFeatured: true,
       });
     } catch (e: any) {
-      console.error("[Admin] Erro ao fazer upload da imagem do anúncio:", e);
+      console.error("[Admin] Erro no fluxo de criação de anúncio:", e);
       Alert.alert(
-        "Erro",
-        "Não foi possível enviar a imagem: " + (e.message || ""),
+        "Erro ao salvar",
+        "Não foi possível salvar o anúncio: " +
+          (e.message || "Verifique as permissões de administrador."),
       );
       setSaving(false);
     }

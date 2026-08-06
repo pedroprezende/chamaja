@@ -323,9 +323,15 @@ export default function AdminAdsScreen() {
       allowsEditing: true,
       aspect: [16, 9],
       quality: 0.85,
+      base64: true,
     });
-    if (!result.canceled) {
-      setForm((f) => ({ ...f, imageUrl: result.assets[0].uri }));
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      const uri =
+        Platform.OS === "web" && asset.base64
+          ? `data:image/jpeg;base64,${asset.base64}`
+          : asset.uri;
+      setForm((f) => ({ ...f, imageUrl: uri }));
     }
   };
 

@@ -36,21 +36,31 @@ export default function ScheduleScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
 
-  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
+  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(
+    null,
+  );
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [selectedSlot, setSelectedSlot] = useState<{ start: string; end: string } | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<{
+    start: string;
+    end: string;
+  } | null>(null);
 
-  const { data: provider, isLoading: isProviderLoading } = trpc.providers.getById.useQuery(id as string, {
-    enabled: !!id,
-  });
+  const { data: provider, isLoading: isProviderLoading } =
+    trpc.providers.getById.useQuery(id as string, {
+      enabled: !!id,
+    });
 
-  const { data: slots, isLoading: isSlotsLoading, refetch } = trpc.appointments.getAvailableSlots.useQuery(
+  const {
+    data: slots,
+    isLoading: isSlotsLoading,
+    refetch,
+  } = trpc.appointments.getAvailableSlots.useQuery(
     {
       providerId: id as string,
       date: formatDate(selectedDate),
       serviceDuration: 30, // Default duration
     },
-    { enabled: !!id && !!selectedDate && !!provider?.supportsScheduling }
+    { enabled: !!id && !!selectedDate && !!provider?.supportsScheduling },
   );
 
   const createAppointment = trpc.appointments.create.useMutation({
@@ -60,14 +70,16 @@ export default function ScheduleScreen() {
         const num = provider.whatsapp || provider.phone;
         const cleaned = String(num).replace(/\D/g, "");
         const phoneNum = cleaned.startsWith("55") ? cleaned : `55${cleaned}`;
-        
+
         const srv = services.find((s: any) => s.id === selectedServiceId);
         const srvName = srv?.name || "Atendimento";
         const msg = `Olá! Acabei de solicitar um agendamento pelo XamaJá.\n\nServiço:\n${srvName}\n\nData:\n${formatDate(selectedDate)}\n\nHorário:\n${selectedSlot?.start}\n\nAguardo sua confirmação. Obrigado!`;
-        
-        Linking.openURL(`https://wa.me/${phoneNum}?text=${encodeURIComponent(msg)}`);
+
+        Linking.openURL(
+          `https://wa.me/${phoneNum}?text=${encodeURIComponent(msg)}`,
+        );
       }
-      
+
       // Exibe sucesso
       Alert.alert(
         "✅ Solicitação enviada",
@@ -76,14 +88,20 @@ export default function ScheduleScreen() {
           {
             text: "Entendido",
             onPress: () => router.back(),
-          }
-        ]
+          },
+        ],
       );
     },
     onError: (err) => {
-      Alert.alert("Erro", err.message === "SLOT_UNAVAILABLE" ? "Esse horário já foi reservado. Por favor, escolha outro." : "Não foi possível realizar o agendamento.");
+      console.error("APP SUPABASE / TRPC ERROR:", JSON.stringify(err, null, 2));
+      Alert.alert(
+        "Erro",
+        err.message === "SLOT_UNAVAILABLE"
+          ? "Esse horário já foi reservado. Por favor, escolha outro."
+          : `Não foi possível realizar o agendamento: ${err.message}`,
+      );
       refetch();
-    }
+    },
   });
 
   if (isProviderLoading) {
@@ -118,24 +136,32 @@ export default function ScheduleScreen() {
 
   const handleBook = () => {
     if (!user) {
-      Alert.alert("Atenção", "Você precisa fazer login para agendar horários.", [
-        { text: "Fazer Login", onPress: () => router.push("/(tabs)/profile" as any) },
-        { text: "Cancelar", style: "cancel" },
-      ]);
+      Alert.alert(
+        "Atenção",
+        "Você precisa fazer login para agendar horários.",
+        [
+          {
+            text: "Fazer Login",
+            onPress: () => router.push("/(tabs)/profile" as any),
+          },
+          { text: "Cancelar", style: "cancel" },
+        ],
+      );
       return;
     }
-    
+
     if (!selectedSlot) return;
-    
+
     const srv = services.find((s: any) => s.id === selectedServiceId);
-    
+
+    const srvPrice = Number(srv?.price);
     createAppointment.mutate({
       providerId: id as string,
-      clientName: user.name,
-      clientPhone: "",
+      clientName: user.name || "Cliente",
+      clientPhone: "-",
       serviceId: srv?.id,
       serviceName: srv?.name || "Atendimento",
-      price: srv?.price,
+      price: isNaN(srvPrice) ? undefined : srvPrice,
       date: formatDate(selectedDate),
       startTime: selectedSlot.start,
       endTime: selectedSlot.end,
@@ -143,39 +169,88 @@ export default function ScheduleScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colors.background, paddingTop: insets.top },
+      ]}
+    >
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <MaterialIcons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Agendar Horário</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
+          Agendar Horário
+        </Text>
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: 100 }}>
-        
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
         {/* Step 1: Services */}
         {services.length > 0 && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>1. Selecione o Serviço</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              1. Selecione o Serviço
+            </Text>
             {services.map((srv: any) => (
               <Pressable
                 key={srv.id}
                 style={[
                   styles.serviceCard,
-                  { backgroundColor: colors.surface, borderColor: selectedServiceId === srv.id ? colors.primary : colors.border }
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor:
+                      selectedServiceId === srv.id
+                        ? colors.primary
+                        : colors.border,
+                  },
                 ]}
                 onPress={() => setSelectedServiceId(srv.id)}
               >
                 <View style={styles.serviceInfo}>
-                  <Text style={[styles.serviceName, { color: colors.text }]}>{srv.name}</Text>
-                  {srv.description ? <Text style={[styles.serviceDesc, { color: colors.muted }]} numberOfLines={2}>{srv.description}</Text> : null}
+                  <Text style={[styles.serviceName, { color: colors.text }]}>
+                    {srv.name}
+                  </Text>
+                  {srv.description ? (
+                    <Text
+                      style={[styles.serviceDesc, { color: colors.muted }]}
+                      numberOfLines={2}
+                    >
+                      {srv.description}
+                    </Text>
+                  ) : null}
                 </View>
                 <View style={styles.serviceRight}>
-                  {srv.price ? <Text style={[styles.servicePrice, { color: colors.primary }]}>R$ {Number(srv.price).toFixed(2).replace(".", ",")}</Text> : null}
-                  <View style={[styles.radio, { borderColor: selectedServiceId === srv.id ? colors.primary : colors.muted }]}>
-                    {selectedServiceId === srv.id && <View style={[styles.radioInner, { backgroundColor: colors.primary }]} />}
+                  {srv.price ? (
+                    <Text
+                      style={[styles.servicePrice, { color: colors.primary }]}
+                    >
+                      R$ {Number(srv.price).toFixed(2).replace(".", ",")}
+                    </Text>
+                  ) : null}
+                  <View
+                    style={[
+                      styles.radio,
+                      {
+                        borderColor:
+                          selectedServiceId === srv.id
+                            ? colors.primary
+                            : colors.muted,
+                      },
+                    ]}
+                  >
+                    {selectedServiceId === srv.id && (
+                      <View
+                        style={[
+                          styles.radioInner,
+                          { backgroundColor: colors.primary },
+                        ]}
+                      />
+                    )}
                   </View>
                 </View>
               </Pressable>
@@ -185,8 +260,14 @@ export default function ScheduleScreen() {
 
         {/* Step 2: Date */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>{services.length > 0 ? "2." : "1."} Escolha a Data</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dateScroll}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            {services.length > 0 ? "2." : "1."} Escolha a Data
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.dateScroll}
+          >
             {dates.map((d, idx) => {
               const isSelected = formatDate(d) === formatDate(selectedDate);
               return (
@@ -194,18 +275,34 @@ export default function ScheduleScreen() {
                   key={idx}
                   style={[
                     styles.dateCard,
-                    { 
-                      backgroundColor: isSelected ? colors.primary : colors.surface,
-                      borderColor: isSelected ? colors.primary : colors.border
-                    }
+                    {
+                      backgroundColor: isSelected
+                        ? colors.primary
+                        : colors.surface,
+                      borderColor: isSelected ? colors.primary : colors.border,
+                    },
                   ]}
                   onPress={() => {
                     setSelectedDate(d);
                     setSelectedSlot(null);
                   }}
                 >
-                  <Text style={[styles.dateDayName, { color: isSelected ? "#FFF" : colors.muted }]}>{getDayName(d)}</Text>
-                  <Text style={[styles.dateDayNum, { color: isSelected ? "#FFF" : colors.text }]}>{d.getDate()}</Text>
+                  <Text
+                    style={[
+                      styles.dateDayName,
+                      { color: isSelected ? "#FFF" : colors.muted },
+                    ]}
+                  >
+                    {getDayName(d)}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.dateDayNum,
+                      { color: isSelected ? "#FFF" : colors.text },
+                    ]}
+                  >
+                    {d.getDate()}
+                  </Text>
                 </Pressable>
               );
             })}
@@ -214,15 +311,40 @@ export default function ScheduleScreen() {
 
         {/* Step 3: Slots */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>{services.length > 0 ? "3." : "2."} Escolha o Horário</Text>
-          
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            {services.length > 0 ? "3." : "2."} Escolha o Horário
+          </Text>
+
           {isSlotsLoading ? (
-            <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: 20 }} />
+            <ActivityIndicator
+              size="small"
+              color={colors.primary}
+              style={{ marginTop: 20 }}
+            />
           ) : !slots || slots.length === 0 ? (
-            <View style={[styles.noSlots, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View
+              style={[
+                styles.noSlots,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
+            >
               <MaterialIcons name="event-busy" size={32} color={colors.muted} />
-              <Text style={{ color: colors.text, marginTop: 8, fontWeight: "600" }}>Nenhum horário disponível</Text>
-              <Text style={{ color: colors.muted, fontSize: 13, marginTop: 4, textAlign: "center" }}>Este profissional não possui horários livres para a data selecionada.</Text>
+              <Text
+                style={{ color: colors.text, marginTop: 8, fontWeight: "600" }}
+              >
+                Nenhum horário disponível
+              </Text>
+              <Text
+                style={{
+                  color: colors.muted,
+                  fontSize: 13,
+                  marginTop: 4,
+                  textAlign: "center",
+                }}
+              >
+                Este profissional não possui horários livres para a data
+                selecionada.
+              </Text>
             </View>
           ) : (
             <View style={styles.slotsGrid}>
@@ -234,13 +356,24 @@ export default function ScheduleScreen() {
                     style={[
                       styles.slotBtn,
                       {
-                        backgroundColor: isSelected ? colors.primary : colors.surface,
-                        borderColor: isSelected ? colors.primary : colors.border,
-                      }
+                        backgroundColor: isSelected
+                          ? colors.primary
+                          : colors.surface,
+                        borderColor: isSelected
+                          ? colors.primary
+                          : colors.border,
+                      },
                     ]}
                     onPress={() => setSelectedSlot(slot)}
                   >
-                    <Text style={[styles.slotText, { color: isSelected ? "#FFF" : colors.text }]}>{slot.start}</Text>
+                    <Text
+                      style={[
+                        styles.slotText,
+                        { color: isSelected ? "#FFF" : colors.text },
+                      ]}
+                    >
+                      {slot.start}
+                    </Text>
                   </Pressable>
                 );
               })}
@@ -250,23 +383,42 @@ export default function ScheduleScreen() {
       </ScrollView>
 
       {/* Footer CTA */}
-      <View style={[styles.footer, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
+      <View
+        style={[
+          styles.footer,
+          { backgroundColor: colors.surface, borderTopColor: colors.border },
+        ]}
+      >
         <View style={styles.footerInfo}>
           <Text style={[styles.footerDate, { color: colors.text }]}>
-            {selectedSlot ? `${formatDate(selectedDate).split("-").reverse().join("/")} às ${selectedSlot.start}` : "Selecione um horário"}
+            {selectedSlot
+              ? `${formatDate(selectedDate).split("-").reverse().join("/")} às ${selectedSlot.start}`
+              : "Selecione um horário"}
           </Text>
           {(services.length === 0 || selectedServiceId) && selectedSlot ? (
             <Text style={[styles.footerService, { color: colors.muted }]}>
-              {services.length === 0 ? "Atendimento Padrão" : services.find((s:any) => s.id === selectedServiceId)?.name}
+              {services.length === 0
+                ? "Atendimento Padrão"
+                : services.find((s: any) => s.id === selectedServiceId)?.name}
             </Text>
           ) : null}
         </View>
         <Pressable
           style={[
             styles.bookBtn,
-            { backgroundColor: colors.primary, opacity: selectedSlot && (services.length === 0 || selectedServiceId) ? 1 : 0.5 }
+            {
+              backgroundColor: colors.primary,
+              opacity:
+                selectedSlot && (services.length === 0 || selectedServiceId)
+                  ? 1
+                  : 0.5,
+            },
           ]}
-          disabled={!selectedSlot || (services.length > 0 && !selectedServiceId) || createAppointment.isPending}
+          disabled={
+            !selectedSlot ||
+            (services.length > 0 && !selectedServiceId) ||
+            createAppointment.isPending
+          }
           onPress={handleBook}
         >
           {createAppointment.isPending ? (

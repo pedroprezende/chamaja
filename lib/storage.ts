@@ -107,22 +107,34 @@ export const storage = {
       let publicUrl = "";
 
       if (Platform.OS === "web") {
-        const response = await fetch(uri);
-        const blob = await response.blob();
-        const { data, error } = await supabase.storage
-          .from(bucket)
-          .upload(filePath, blob, {
-            contentType: fileType,
-            cacheControl: "3600",
-            upsert: true,
-          });
+        try {
+          const response = await fetch(uri);
+          const blob = await response.blob();
+          const { data, error } = await supabase.storage
+            .from(bucket)
+            .upload(filePath, blob, {
+              contentType: fileType || "image/jpeg",
+              cacheControl: "3600",
+              upsert: true,
+            });
 
-        if (error) throw error;
+          if (error) throw error;
 
-        const {
-          data: { publicUrl: url },
-        } = supabase.storage.from(bucket).getPublicUrl(filePath);
-        publicUrl = url;
+          const {
+            data: { publicUrl: url },
+          } = supabase.storage.from(bucket).getPublicUrl(filePath);
+          publicUrl = url;
+        } catch (webErr: any) {
+          logger.warn(
+            "STORAGE",
+            "Upload direto no Supabase Web falhou, usando URI local como fallback:",
+            webErr,
+          );
+          if (uri.startsWith("data:") || uri.startsWith("http")) {
+            return uri;
+          }
+          throw webErr;
+        }
       } else {
         logger.info("STORAGE", "Lendo arquivo local como Base64...");
         const base64 = await FileSystem.readAsStringAsync(uri, {

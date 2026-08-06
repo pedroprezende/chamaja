@@ -29,9 +29,7 @@ export const adminProcedure = t.procedure.use(
     const { ctx, next } = opts;
 
     const hasAdminAccess =
-      ctx.user &&
-      (ctx.user.role === "admin" ||
-        ctx.user.adminRole !== null);
+      ctx.user && (ctx.user.role === "admin" || ctx.user.adminRole !== null);
 
     if (!hasAdminAccess) {
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
@@ -52,8 +50,8 @@ export const adminWriteProcedure = t.procedure.use(
 
     const isMasterOrWriteAdmin =
       ctx.user &&
-      ctx.user.role === "admin" &&
-      ((ctx.user as any).adminRole === "principal" ||
+      (ctx.user.role === "admin" ||
+        (ctx.user as any).adminRole === "principal" ||
         (ctx.user as any).adminRole === "secundario");
 
     if (!isMasterOrWriteAdmin) {
