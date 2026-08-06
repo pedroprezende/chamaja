@@ -568,6 +568,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [editDeliveryTime, setEditDeliveryTime] = useState("");
   const [editIsVerified, setEditIsVerified] = useState(false);
   const [editTopBadge, setEditTopBadge] = useState<string | null>(null);
+  const [editAllowScheduling, setEditAllowScheduling] = useState<boolean | null>(null);
   const [editDestaque, setEditDestaque] = useState(false);
   const [isAdLoading, setIsAdLoading] = useState(false);
   const [existingAd, setExistingAd] = useState<any | null>(null);
@@ -1088,6 +1089,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     setEditDeliveryTime(provider.delivery_time || "");
     setEditIsVerified(provider.is_verified || false);
     setEditTopBadge(provider.top_badge || null);
+    setEditAllowScheduling(provider.allow_scheduling !== undefined ? provider.allow_scheduling : null);
     setEditDestaque(provider.destaque || false);
     setExistingAd(null);
     setAdTitle(provider.category || "");
@@ -1357,6 +1359,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             editBusinessType === "alimentacao" ? editDeliveryTime : null,
           is_verified: editIsVerified,
           top_badge: editTopBadge,
+          allow_scheduling: editAllowScheduling,
         })
         .eq("id", selectedAdvertiser.id);
 
@@ -6205,6 +6208,23 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               <option value="Patrocinado">Patrocinado</option>
                               <option value="Destaque">Destaque</option>
                               <option value="Verificado">Verificado</option>
+                            </select>
+                          </div>
+
+                          <div className="form-group">
+                            <label className="form-label">Agenda de Serviços</label>
+                            <select
+                              className="filter-select"
+                              style={{ width: "100%" }}
+                              value={editAllowScheduling === null ? "" : editAllowScheduling.toString()}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setEditAllowScheduling(val === "" ? null : val === "true");
+                              }}
+                            >
+                              <option value="">Padrão da Categoria</option>
+                              <option value="true">Ativada (Forçar ativação)</option>
+                              <option value="false">Desativada (Forçar desativação)</option>
                             </select>
                           </div>
 

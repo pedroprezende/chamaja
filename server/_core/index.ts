@@ -1714,12 +1714,13 @@ async function startServer() {
         avatarUri,
         coverUri,
         gallery,
-        services, // Array de serviços
-        socialLinks, // Record<string, string>
-        workingHours, // Object or string
+        services,
+        socialLinks,
+        workingHours,
+        scheduleSettings,
       } = req.body;
 
-      if (!name) {
+      if (name !== undefined && !name) {
         return res
           .status(400)
           .json({ success: false, error: "Nome do negócio é obrigatório." });
@@ -1745,37 +1746,45 @@ async function startServer() {
 
       let latitude = businessProfile.latitude;
       let longitude = businessProfile.longitude;
-      const addressChanged =
-        address !== businessProfile.address ||
-        neighborhood !== businessProfile.neighborhood ||
-        city !== businessProfile.city;
+      
+      const addressChanged = 
+        (address !== undefined && address !== businessProfile.address) ||
+        (neighborhood !== undefined && neighborhood !== businessProfile.neighborhood) ||
+        (city !== undefined && city !== businessProfile.city);
 
-      if (addressChanged && address) {
-        const { geocodeAddress } = await import("../geocoding");
-        const coords = await geocodeAddress(address, neighborhood, city);
-        if (coords) {
-          latitude = coords.latitude;
-          longitude = coords.longitude;
+      if (addressChanged && (address || businessProfile.address)) {
+        const addrToUse = address !== undefined ? address : businessProfile.address;
+        const neighToUse = neighborhood !== undefined ? neighborhood : businessProfile.neighborhood;
+        const cityToUse = city !== undefined ? city : businessProfile.city;
+        
+        if (addrToUse) {
+          const { geocodeAddress } = await import("../geocoding");
+          const coords = await geocodeAddress(addrToUse, neighToUse, cityToUse);
+          if (coords) {
+            latitude = coords.latitude;
+            longitude = coords.longitude;
+          }
         }
       }
 
-      // Salvar atualizações no banco local
+      // Salvar atualizações no banco local com PATCH semântico (atualização parcial real)
       const updates: any = {
-        name,
-        description: description || null,
-        phone: phone || null,
-        whatsapp: whatsapp || null,
-        address: address || null,
-        city: city || null,
-        neighborhood: neighborhood || null,
-        cep: cep || null,
+        updatedAt: new Date(),
         latitude,
         longitude,
-        avatarUri: avatarUri || null,
-        coverUri: coverUri || null,
-        gallery: gallery || [],
-        updatedAt: new Date(),
       };
+
+      if (name !== undefined) updates.name = name;
+      if (description !== undefined) updates.description = description || null;
+      if (phone !== undefined) updates.phone = phone || null;
+      if (whatsapp !== undefined) updates.whatsapp = whatsapp || null;
+      if (address !== undefined) updates.address = address || null;
+      if (city !== undefined) updates.city = city || null;
+      if (neighborhood !== undefined) updates.neighborhood = neighborhood || null;
+      if (cep !== undefined) updates.cep = cep || null;
+      if (avatarUri !== undefined) updates.avatarUri = avatarUri || null;
+      if (coverUri !== undefined) updates.coverUri = coverUri || null;
+      if (gallery !== undefined) updates.gallery = gallery || [];
 
       if (categoryId !== undefined) {
         updates.categoryId = categoryId;

@@ -208,6 +208,7 @@ export const providers = pgTable(
     workingHours: text("working_hours"),
     socialLinks: text("social_links"), // JSON stringified: { instagram, facebook, youtube, tiktok, website, linkedin, telegram, whatsapp_channel }
     scheduleSettings: jsonb("schedule_settings"), // JSON for advanced scheduling configuration
+    allowScheduling: boolean("allow_scheduling"), // Explicitly allow or block scheduling
     priceLevel: integer("price_level").default(2).notNull(),
     isActive: boolean("is_active").notNull().default(true),
     status: varchar("status", { length: 50 }).default("ativo"),

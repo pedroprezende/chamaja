@@ -1188,6 +1188,13 @@ export const providersRouter = router({
         }
       }
 
+      // Admin override
+      if (res[0].provider.allowScheduling === true) {
+        supportsScheduling = true;
+      } else if (res[0].provider.allowScheduling === false) {
+        supportsScheduling = false;
+      }
+
       if (supportsScheduling) {
         const scheduleSettingsStr = res[0].provider.scheduleSettings;
         let hasWorkingDays = false;
