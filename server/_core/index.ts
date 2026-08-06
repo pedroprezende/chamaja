@@ -10,7 +10,11 @@ import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
-import { getPrivacyPolicyHtml, getDeletionPolicyHtml, getTermsOfUseHtml } from "./privacy";
+import {
+  getPrivacyPolicyHtml,
+  getDeletionPolicyHtml,
+  getTermsOfUseHtml,
+} from "./privacy";
 import * as db from "../db";
 import { getDb } from "../db";
 import { plans, planBenefits } from "../../drizzle/schema";
@@ -105,7 +109,7 @@ async function startServer() {
     if (process.env.NODE_ENV === "production") {
       res.setHeader(
         "Strict-Transport-Security",
-        "max-age=63072000; includeSubDomains; preload"
+        "max-age=63072000; includeSubDomains; preload",
       );
     }
     next();
@@ -155,7 +159,9 @@ async function startServer() {
       status: "ok",
       message: "Servidor ChamaJá está ONLINE!",
       // Do not expose internal infrastructure details in production
-      ...(process.env.NODE_ENV !== "production" && { database: !!process.env.DATABASE_URL }),
+      ...(process.env.NODE_ENV !== "production" && {
+        database: !!process.env.DATABASE_URL,
+      }),
     });
   });
 
@@ -165,9 +171,15 @@ async function startServer() {
       const maskedUrl = dbUrl.replace(/:([^:@]+)@/, ":***@");
       const dbInstance = await getDb();
       if (!dbInstance) {
-        return res.json({ status: "error", message: "Database not initialized", dbUrl: maskedUrl });
+        return res.json({
+          status: "error",
+          message: "Database not initialized",
+          dbUrl: maskedUrl,
+        });
       }
-      const queryResult = await dbInstance.execute(sql`SELECT column_name FROM information_schema.columns WHERE table_name='providers'`);
+      const queryResult = await dbInstance.execute(
+        sql`SELECT column_name FROM information_schema.columns WHERE table_name='providers'`,
+      );
       const columns = (queryResult as any).map((row: any) => row.column_name);
       return res.json({
         status: "ok",
@@ -183,64 +195,69 @@ async function startServer() {
   // app_redirect: deep link for native apps (e.g. exp://192.168.x.x:8081)
   app.get(
     "/api/auth/google",
-    rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: "Muitas tentativas de autenticação. Aguarde 15 minutos." }),
+    rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: 20,
+      message: "Muitas tentativas de autenticação. Aguarde 15 minutos.",
+    }),
     (req, res) => {
-    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || "";
-    const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "";
-    const backendHost = req.get("host") || "";
-    const host = req.get("x-forwarded-host") || req.get("host") || "";
-    let protocol = req.get("x-forwarded-proto") || req.protocol;
-    if (
-      host.includes("xamaja.com.br") || 
-      host.includes("railway.app") || 
-      protocol === "https" ||
-      req.headers["x-forwarded-proto"] === "https"
-    ) {
-      protocol = "https";
-    }
-    const baseUrl = `${protocol}://${backendHost}`;
-    const appRedirect = req.query.app_redirect as string | undefined;
-
-    const cookieOptions: any = {
-      maxAge: 10 * 60 * 1000,
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-      secure: process.env.NODE_ENV === "production",
-    };
-
-    if (host.includes("xamaja.com.br")) {
-      cookieOptions.domain = ".xamaja.com.br";
-    }
-
-    const referer = req.headers.referer;
-    let clientOrigin = "";
-    if (referer) {
-      try {
-        const refUrl = new URL(referer);
-        clientOrigin = refUrl.origin;
-      } catch (e) {
-        console.error("[Auth] Error parsing referer URL:", e);
+      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || "";
+      const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "";
+      const backendHost = req.get("host") || "";
+      const host = req.get("x-forwarded-host") || req.get("host") || "";
+      let protocol = req.get("x-forwarded-proto") || req.protocol;
+      if (
+        host.includes("xamaja.com.br") ||
+        host.includes("railway.app") ||
+        protocol === "https" ||
+        req.headers["x-forwarded-proto"] === "https"
+      ) {
+        protocol = "https";
       }
-    }
+      const baseUrl = `${protocol}://${backendHost}`;
+      const appRedirect = req.query.app_redirect as string | undefined;
 
-    if (clientOrigin) {
-      res.cookie("oauth_client_origin", clientOrigin, cookieOptions);
-    }
+      const cookieOptions: any = {
+        maxAge: 10 * 60 * 1000,
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      };
 
-    if (appRedirect) {
-      res.cookie("oauth_app_redirect", appRedirect, cookieOptions);
-    } else {
-      // If no appRedirect, it came from the partner website tab, so we flag it
-      res.cookie("oauth_redirect_target", "partner", cookieOptions);
-    }
+      if (host.includes("xamaja.com.br")) {
+        cookieOptions.domain = ".xamaja.com.br";
+      }
 
-    const targetParam = appRedirect ? "" : "?target=partner";
-    const callbackUrl = `${baseUrl}/app/oauth/callback${targetParam}`;
-    
-    const oauthUrl = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(callbackUrl)}&apikey=${supabaseAnonKey}`;
-    res.redirect(oauthUrl);
-  });
+      const referer = req.headers.referer;
+      let clientOrigin = "";
+      if (referer) {
+        try {
+          const refUrl = new URL(referer);
+          clientOrigin = refUrl.origin;
+        } catch (e) {
+          console.error("[Auth] Error parsing referer URL:", e);
+        }
+      }
+
+      if (clientOrigin) {
+        res.cookie("oauth_client_origin", clientOrigin, cookieOptions);
+      }
+
+      if (appRedirect) {
+        res.cookie("oauth_app_redirect", appRedirect, cookieOptions);
+      } else {
+        // If no appRedirect, it came from the partner website tab, so we flag it
+        res.cookie("oauth_redirect_target", "partner", cookieOptions);
+      }
+
+      const targetParam = appRedirect ? "" : "?target=partner";
+      const callbackUrl = `${baseUrl}/app/oauth/callback${targetParam}`;
+
+      const oauthUrl = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(callbackUrl)}&apikey=${supabaseAnonKey}`;
+      res.redirect(oauthUrl);
+    },
+  );
 
   // Google OAuth callback at /parceiros/auth-callback (matches Supabase redirect wildcard)
   app.get("/parceiros/auth-callback", (req, res) => {
@@ -318,130 +335,162 @@ async function startServer() {
   // Google OAuth callback — exchange tokens for session
   app.post(
     "/api/auth/google-callback",
-    rateLimit({ windowMs: 5 * 60 * 1000, max: 10, message: "Muitas requisições." }),
+    rateLimit({
+      windowMs: 5 * 60 * 1000,
+      max: 10,
+      message: "Muitas requisições.",
+    }),
     async (req, res) => {
-    try {
-      const { access_token, refresh_token } = req.body;
-      if (!access_token || !refresh_token) {
-        return res.status(400).json({ success: false, error: "Tokens ausentes." });
-      }
-
-      const { data, error } = await supabase.auth.setSession({
-        access_token,
-        refresh_token,
-      });
-
-      if (error || !data.session || !data.user) {
-        return res.status(401).json({ success: false, error: "Sessão inválida." });
-      }
-
-      // Find or create user profile
-      let userProfile = await db.getUserByOpenId(data.user.id);
-      if (!userProfile && data.user.email) {
-        const existingUser = await db.getUserByEmail(data.user.email);
-        if (existingUser) {
-          if (existingUser.openId !== data.user.id) {
-            // Delete the dummy user with the new openId if it exists to avoid unique constraint violations
-            const dummyUser = await db.getUserByOpenId(data.user.id);
-            if (dummyUser) {
-              await db.deleteUserFully(data.user.id);
-            }
-            // Link the existing account
-            await db.updateUserOpenId(existingUser.openId, data.user.id);
-          }
-          userProfile = await db.getUserByOpenId(data.user.id);
+      try {
+        const { access_token, refresh_token } = req.body;
+        if (!access_token || !refresh_token) {
+          return res
+            .status(400)
+            .json({ success: false, error: "Tokens ausentes." });
         }
-      }
 
-      const googleAvatar = data.user.user_metadata?.avatar_url || null;
-      const name = data.user.user_metadata?.full_name || data.user.email?.split("@")[0] || "Usuário";
-      
-      await db.upsertUser({
-        openId: data.user.id,
-        name,
-        email: data.user.email ?? null,
-        loginMethod: "google",
-        avatarUrl: googleAvatar,
-        ...(userProfile ? {} : { tipo: "cliente" }),
-      });
-      userProfile = await db.getUserByOpenId(data.user.id);
-
-      // Find or create partner profile
-      let partnerProfile = await db.getPartnerById(data.user.id);
-      if (!partnerProfile && userProfile) {
-        const nameToUse = userProfile.name || data.user.email?.split("@")[0] || "PARCEIRO";
-        const firstName = nameToUse.trim().split(" ")[0].normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z]/g, "");
-        const randomNum = Math.floor(100 + Math.random() * 900);
-        const codigoIndicacao = `${firstName}${randomNum}`;
-        await db.createPartner({
-          id: data.user.id,
-          nome: nameToUse,
-          email: userProfile.email || data.user.email || "",
-          telefone: userProfile.phone || "",
-          cidade: "",
-          codigoIndicacao,
+        const { data, error } = await supabase.auth.setSession({
+          access_token,
+          refresh_token,
         });
-        partnerProfile = await db.getPartnerById(data.user.id);
+
+        if (error || !data.session || !data.user) {
+          return res
+            .status(401)
+            .json({ success: false, error: "Sessão inválida." });
+        }
+
+        // Find or create user profile
+        let userProfile = await db.getUserByOpenId(data.user.id);
+        if (!userProfile && data.user.email) {
+          const existingUser = await db.getUserByEmail(data.user.email);
+          if (existingUser) {
+            if (existingUser.openId !== data.user.id) {
+              // Delete the dummy user with the new openId if it exists to avoid unique constraint violations
+              const dummyUser = await db.getUserByOpenId(data.user.id);
+              if (dummyUser) {
+                await db.deleteUserFully(data.user.id);
+              }
+              // Link the existing account
+              await db.updateUserOpenId(existingUser.openId, data.user.id);
+            }
+            userProfile = await db.getUserByOpenId(data.user.id);
+          }
+        }
+
+        const googleAvatar = data.user.user_metadata?.avatar_url || null;
+        const name =
+          data.user.user_metadata?.full_name ||
+          data.user.email?.split("@")[0] ||
+          "Usuário";
+
+        await db.upsertUser({
+          openId: data.user.id,
+          name,
+          email: data.user.email ?? null,
+          loginMethod: "google",
+          avatarUrl: googleAvatar,
+          ...(userProfile ? {} : { tipo: "cliente" }),
+        });
+        userProfile = await db.getUserByOpenId(data.user.id);
+
+        // Find or create partner profile
+        let partnerProfile = await db.getPartnerById(data.user.id);
+        if (!partnerProfile && userProfile) {
+          const nameToUse =
+            userProfile.name || data.user.email?.split("@")[0] || "PARCEIRO";
+          const firstName = nameToUse
+            .trim()
+            .split(" ")[0]
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toUpperCase()
+            .replace(/[^A-Z]/g, "");
+          const randomNum = Math.floor(100 + Math.random() * 900);
+          const codigoIndicacao = `${firstName}${randomNum}`;
+          await db.createPartner({
+            id: data.user.id,
+            nome: nameToUse,
+            email: userProfile.email || data.user.email || "",
+            telefone: userProfile.phone || "",
+            cidade: "",
+            codigoIndicacao,
+          });
+          partnerProfile = await db.getPartnerById(data.user.id);
+        }
+
+        // Find business profile
+        const businessProfile = await db.getProviderByUserId(data.user.id);
+
+        // Set httpOnly cookie for secure session management
+        res.cookie(COOKIE_NAME, data.session.access_token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          maxAge: 60 * 60 * 24 * 30,
+        });
+
+        res.json({
+          success: true,
+          sessionToken: data.session.access_token,
+          user: {
+            id: data.user.id,
+            name:
+              userProfile?.name || data.user.email?.split("@")[0] || "Usuário",
+            email: data.user.email,
+            tipo: userProfile?.tipo || "cliente",
+            role: userProfile?.role || "user",
+          },
+          business: businessProfile
+            ? {
+                id: businessProfile.id,
+                name: businessProfile.name,
+                category: businessProfile.category,
+                categoryId: businessProfile.categoryId,
+                city: businessProfile.city,
+                neighborhood: businessProfile.neighborhood,
+                phone: businessProfile.phone,
+                whatsapp: businessProfile.whatsapp,
+                description: businessProfile.description,
+                address: businessProfile.address,
+                avatarUri: businessProfile.avatarUri,
+                coverUri: businessProfile.coverUri,
+                gallery: businessProfile.gallery || [],
+                isActive: businessProfile.isActive,
+                status: businessProfile.status,
+                services: businessProfile.services
+                  ? JSON.parse(businessProfile.services)
+                  : [],
+              }
+            : null,
+          partner: partnerProfile
+            ? {
+                id: partnerProfile.id,
+                nome: partnerProfile.nome,
+                email: partnerProfile.email,
+                telefone: partnerProfile.telefone,
+                cidade: partnerProfile.cidade,
+                codigoIndicacao: partnerProfile.codigoIndicacao,
+              }
+            : null,
+        });
+      } catch (error: any) {
+        console.error("[Web API] Erro no callback Google OAuth:", error);
+        res
+          .status(500)
+          .json({ success: false, error: error.message || "Erro interno." });
       }
-
-      // Find business profile
-      const businessProfile = await db.getProviderByUserId(data.user.id);
-
-      // Set httpOnly cookie for secure session management
-      res.cookie(COOKIE_NAME, data.session.access_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/",
-        maxAge: 60 * 60 * 24 * 30,
-      });
-
-      res.json({
-        success: true,
-        sessionToken: data.session.access_token,
-        user: {
-          id: data.user.id,
-          name: userProfile?.name || data.user.email?.split("@")[0] || "Usuário",
-          email: data.user.email,
-          tipo: userProfile?.tipo || "cliente",
-          role: userProfile?.role || "user",
-        },
-        business: businessProfile ? {
-          id: businessProfile.id,
-          name: businessProfile.name,
-          category: businessProfile.category,
-          categoryId: businessProfile.categoryId,
-          city: businessProfile.city,
-          neighborhood: businessProfile.neighborhood,
-          phone: businessProfile.phone,
-          whatsapp: businessProfile.whatsapp,
-          description: businessProfile.description,
-          address: businessProfile.address,
-          avatarUri: businessProfile.avatarUri,
-          coverUri: businessProfile.coverUri,
-          gallery: businessProfile.gallery || [],
-          isActive: businessProfile.isActive,
-          status: businessProfile.status,
-          services: businessProfile.services ? JSON.parse(businessProfile.services) : [],
-        } : null,
-        partner: partnerProfile ? {
-          id: partnerProfile.id,
-          nome: partnerProfile.nome,
-          email: partnerProfile.email,
-          telefone: partnerProfile.telefone,
-          cidade: partnerProfile.cidade,
-          codigoIndicacao: partnerProfile.codigoIndicacao,
-        } : null,
-      });
-    } catch (error: any) {
-      console.error("[Web API] Erro no callback Google OAuth:", error);
-      res.status(500).json({ success: false, error: error.message || "Erro interno." });
-    }
-  });
+    },
+  );
 
   app.use(
     "/api/trpc",
-    rateLimit({ windowMs: 60 * 1000, max: 120, message: "Limite de requisições excedido. Tente novamente em instantes." }),
+    rateLimit({
+      windowMs: 60 * 1000,
+      max: 120,
+      message: "Limite de requisições excedido. Tente novamente em instantes.",
+    }),
     createExpressMiddleware({
       router: appRouter,
       createContext,
@@ -509,10 +558,11 @@ async function startServer() {
     const cookies = parseCookieHeader(req.headers.cookie || "");
     const redirectTarget = cookies["oauth_redirect_target"];
     const clientOriginCookie = cookies["oauth_client_origin"];
-    
+
     const targetQueryVal = req.query.target as string | undefined;
-    
-    let isPartner = redirectTarget === "partner" || targetQueryVal === "partner";
+
+    let isPartner =
+      redirectTarget === "partner" || targetQueryVal === "partner";
     let extractedOrigin = clientOriginCookie || "";
 
     // 1. Server-side cookie check OR state parameter check (100% reliable)
@@ -529,12 +579,17 @@ async function startServer() {
       res.clearCookie("oauth_client_origin", cookieOptions);
 
       let redirectBase = extractedOrigin || "";
-      if (!redirectBase && (host.includes("localhost") || host.includes("127.0.0.1"))) {
+      if (
+        !redirectBase &&
+        (host.includes("localhost") || host.includes("127.0.0.1"))
+      ) {
         redirectBase = "http://localhost:3001";
       }
       return res.redirect(
         302,
-        redirectBase + "/parceiros/auth-callback" + req.url.slice("/app/oauth/callback".length),
+        redirectBase +
+          "/parceiros/auth-callback" +
+          req.url.slice("/app/oauth/callback".length),
       );
     }
 
@@ -588,279 +643,306 @@ async function startServer() {
   // Rota de Cadastro de Prestador via Web
   app.post(
     "/api/web-register-provider",
-    rateLimit({ windowMs: 15 * 60 * 1000, max: 5, message: "Muitos cadastros. Aguarde 15 minutos." }),
+    rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: 5,
+      message: "Muitos cadastros. Aguarde 15 minutos.",
+    }),
     async (req, res) => {
-    try {
-      const {
-        name,          // nome do responsável
-        businessName,  // nome do negócio (novo)
-        email,
-        phone,
-        whatsapp,      // novo campo separado
-        categoryId,
-        otherCategory,
-        city,
-        neighborhood,
-        state,         // novo campo estado
-        cep,           // novo campo CEP
-        description,
-        planId,        // ID do plano escolhido (novo)
-        billingCycle,  // periodicidade (novo): monthly | quarterly | semiannual | annual
-        refCode,
-      } = req.body;
+      try {
+        const {
+          name, // nome do responsável
+          businessName, // nome do negócio (novo)
+          email,
+          phone,
+          whatsapp, // novo campo separado
+          categoryId,
+          otherCategory,
+          city,
+          neighborhood,
+          state, // novo campo estado
+          cep, // novo campo CEP
+          description,
+          planId, // ID do plano escolhido (novo)
+          billingCycle, // periodicidade (novo): monthly | quarterly | semiannual | annual
+          refCode,
+        } = req.body;
 
-      if (
-        !name ||
-        !email ||
-        !phone ||
-        !categoryId ||
-        !city ||
-        !neighborhood ||
-        !description
-      ) {
-        return res.status(400).json({
+        if (
+          !name ||
+          !email ||
+          !phone ||
+          !categoryId ||
+          !city ||
+          !neighborhood ||
+          !description
+        ) {
+          return res.status(400).json({
+            success: false,
+            error: "Preencha todos os campos obrigatórios.",
+          });
+        }
+
+        // Validar billingCycle se fornecido
+        const validCycles = ["monthly", "quarterly", "semiannual", "annual"];
+        const finalBillingCycle =
+          billingCycle && validCycles.includes(billingCycle)
+            ? billingCycle
+            : "monthly";
+
+        const CATEGORY_MAP: Record<string, string> = {
+          "reformas-reparos": "Reformas e Reparos",
+          "assistencia-tecnica": "Assistência Técnica",
+          "servicos-domesticos": "Serviços Domésticos",
+          "servicos-externos": "Serviços Externos",
+          automotivo: "Automotivo",
+          "beleza-estetica": "Beleza e Estética",
+          "servicos-profissionais": "Serviços Profissionais",
+          saude: "Saúde",
+          eventos: "Eventos",
+          logistica: "Logística",
+          educacao: "Educação",
+          comercios: "Comércios",
+          mobilidade: "Mobilidade",
+          pets: "Pets",
+          academias: "Academias / Fitness",
+          outro: "Outro",
+        };
+
+        const finalCategory =
+          categoryId === "outro"
+            ? otherCategory || "Outro"
+            : CATEGORY_MAP[categoryId] || "";
+        const providerId = `prov_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+        // Nome de exibição: nome do negócio (se informado) ou nome do responsável
+        const displayName = businessName?.trim() || name;
+
+        await db.createProvider({
+          id: providerId,
+          userId: null,
+          name: displayName,
+          category: finalCategory,
+          categoryId,
+          city,
+          neighborhood,
+          phone,
+          whatsapp: whatsapp || phone,
+          description,
+          cep: cep || null,
+          address: state ? `${city}, ${state}` : city,
+          plan: "monthly", // LEGACY
+          planId: planId || null,
+          billingCycle: finalBillingCycle,
+          isActive: false,
+          status: "pendente",
+          isVerified: false,
+          rating: 5,
+          ratingCount: 0,
+          priceLevel: 2,
+          onlineStatus: false,
+        });
+
+        console.log(
+          `[Web API] Provider registered successfully: ${displayName} (${providerId}) plan=${planId || "none"} cycle=${finalBillingCycle} category=${finalCategory}`,
+        );
+
+        // Se houver código de indicação, associa o lead ao parceiro
+        if (refCode) {
+          try {
+            const partner = await db.getPartnerByCode(refCode);
+            if (partner) {
+              await db.createReferral({
+                partnerId: partner.id,
+                codigoIndicacao: refCode,
+                nomeIndicado: name,
+                telefoneIndicado: phone,
+                status: "novo",
+              });
+              console.log(
+                `[Web API] Lead/referral registered successfully for partner: ${partner.nome} (${refCode})`,
+              );
+            } else {
+              console.warn(`[Web API] Partner with code ${refCode} not found`);
+            }
+          } catch (refErr) {
+            console.error("[Web API] Failed to create referral entry:", refErr);
+          }
+        }
+
+        res.json({ success: true });
+      } catch (error: any) {
+        console.error("[Web API] Failed to register provider:", error);
+        res.status(500).json({
           success: false,
-          error: "Preencha todos os campos obrigatórios.",
+          error: error.message || "Erro interno no servidor.",
         });
       }
-
-      // Validar billingCycle se fornecido
-      const validCycles = ["monthly", "quarterly", "semiannual", "annual"];
-      const finalBillingCycle = billingCycle && validCycles.includes(billingCycle) ? billingCycle : "monthly";
-
-      const CATEGORY_MAP: Record<string, string> = {
-        "reformas-reparos": "Reformas e Reparos",
-        "assistencia-tecnica": "Assistência Técnica",
-        "servicos-domesticos": "Serviços Domésticos",
-        "servicos-externos": "Serviços Externos",
-        automotivo: "Automotivo",
-        "beleza-estetica": "Beleza e Estética",
-        "servicos-profissionais": "Serviços Profissionais",
-        saude: "Saúde",
-        eventos: "Eventos",
-        logistica: "Logística",
-        educacao: "Educação",
-        comercios: "Comércios",
-        mobilidade: "Mobilidade",
-        pets: "Pets",
-        academias: "Academias / Fitness",
-        outro: "Outro",
-      };
-
-      const finalCategory =
-        categoryId === "outro"
-          ? otherCategory || "Outro"
-          : CATEGORY_MAP[categoryId] || "";
-      const providerId = `prov_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-      // Nome de exibição: nome do negócio (se informado) ou nome do responsável
-      const displayName = businessName?.trim() || name;
-
-      await db.createProvider({
-        id: providerId,
-        userId: null,
-        name: displayName,
-        category: finalCategory,
-        categoryId,
-        city,
-        neighborhood,
-        phone,
-        whatsapp: whatsapp || phone,
-        description,
-        cep: cep || null,
-        address: state ? `${city}, ${state}` : city,
-        plan: "monthly", // LEGACY
-        planId: planId || null,
-        billingCycle: finalBillingCycle,
-        isActive: false,
-        status: "pendente",
-        isVerified: false,
-        rating: 5,
-        ratingCount: 0,
-        priceLevel: 2,
-        onlineStatus: false,
-      });
-
-      console.log(
-        `[Web API] Provider registered successfully: ${displayName} (${providerId}) plan=${planId || 'none'} cycle=${finalBillingCycle} category=${finalCategory}`,
-      );
-
-      // Se houver código de indicação, associa o lead ao parceiro
-      if (refCode) {
-        try {
-          const partner = await db.getPartnerByCode(refCode);
-          if (partner) {
-            await db.createReferral({
-              partnerId: partner.id,
-              codigoIndicacao: refCode,
-              nomeIndicado: name,
-              telefoneIndicado: phone,
-              status: "novo",
-            });
-            console.log(
-              `[Web API] Lead/referral registered successfully for partner: ${partner.nome} (${refCode})`,
-            );
-          } else {
-            console.warn(`[Web API] Partner with code ${refCode} not found`);
-          }
-        } catch (refErr) {
-          console.error("[Web API] Failed to create referral entry:", refErr);
-        }
-      }
-
-      res.json({ success: true });
-    } catch (error: any) {
-      console.error("[Web API] Failed to register provider:", error);
-      res.status(500).json({
-        success: false,
-        error: error.message || "Erro interno no servidor.",
-      });
-    }
-  });
+    },
+  );
 
   // ── Rotas do Sistema de Parceiros ───────────────────────────────────────────
 
   // Registro de Parceiro
   app.post(
     "/api/partners/register",
-    rateLimit({ windowMs: 15 * 60 * 1000, max: 5, message: "Muitos cadastros. Aguarde 15 minutos." }),
+    rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: 5,
+      message: "Muitos cadastros. Aguarde 15 minutos.",
+    }),
     async (req, res) => {
-    try {
-      const { nome, email, telefone, cidade, senha } = req.body;
-      if (!nome || !email || !telefone || !cidade || !senha) {
-        return res
-          .status(400)
-          .json({ success: false, error: "Todos os campos são obrigatórios." });
-      }
+      try {
+        const { nome, email, telefone, cidade, senha } = req.body;
+        if (!nome || !email || !telefone || !cidade || !senha) {
+          return res
+            .status(400)
+            .json({
+              success: false,
+              error: "Todos os campos são obrigatórios.",
+            });
+        }
 
-      // 0. Verificar se o e-mail já existe no banco local antes de criar no Supabase
-      const existingLocalUser = await db.getUserByEmail(email);
-      if (existingLocalUser) {
-        return res.status(409).json({
+        // 0. Verificar se o e-mail já existe no banco local antes de criar no Supabase
+        const existingLocalUser = await db.getUserByEmail(email);
+        if (existingLocalUser) {
+          return res.status(409).json({
+            success: false,
+            error: "Este e-mail já está cadastrado. Faça login para continuar.",
+          });
+        }
+
+        // 1. Criar usuário no Supabase Auth
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password: senha,
+        });
+
+        if (error) {
+          // Supabase may also return "User already registered" — normalize the message
+          const msg = error.message?.includes("already registered")
+            ? "Este e-mail já está cadastrado. Faça login para continuar."
+            : error.message;
+          return res.status(400).json({ success: false, error: msg });
+        }
+
+        if (!data.user) {
+          return res.status(400).json({
+            success: false,
+            error: "Falha ao criar conta de autenticação.",
+          });
+        }
+
+        // 2. Gerar código único de indicação (Primeiro nome + 3 números aleatórios)
+        const firstName = nome
+          .trim()
+          .split(" ")[0]
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toUpperCase()
+          .replace(/[^A-Z]/g, "");
+        const randomNum = Math.floor(100 + Math.random() * 900);
+        const codigoIndicacao = `${firstName}${randomNum}`;
+
+        // 3. Salvar perfil de parceiro no banco de dados local
+        await db.createPartner({
+          id: data.user.id,
+          nome,
+          email,
+          telefone,
+          cidade,
+          codigoIndicacao,
+        });
+
+        res.json({
+          success: true,
+          message: "Parceiro cadastrado com sucesso!",
+        });
+      } catch (error: any) {
+        console.error("[Web API] Erro no cadastro de parceiro:", error);
+        res.status(500).json({
           success: false,
-          error: "Este e-mail já está cadastrado. Faça login para continuar.",
+          error: error.message || "Erro interno no servidor.",
         });
       }
-
-      // 1. Criar usuário no Supabase Auth
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password: senha,
-      });
-
-      if (error) {
-        // Supabase may also return "User already registered" — normalize the message
-        const msg = error.message?.includes("already registered")
-          ? "Este e-mail já está cadastrado. Faça login para continuar."
-          : error.message;
-        return res.status(400).json({ success: false, error: msg });
-      }
-
-      if (!data.user) {
-        return res.status(400).json({
-          success: false,
-          error: "Falha ao criar conta de autenticação.",
-        });
-      }
-
-      // 2. Gerar código único de indicação (Primeiro nome + 3 números aleatórios)
-      const firstName = nome
-        .trim()
-        .split(" ")[0]
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toUpperCase()
-        .replace(/[^A-Z]/g, "");
-      const randomNum = Math.floor(100 + Math.random() * 900);
-      const codigoIndicacao = `${firstName}${randomNum}`;
-
-      // 3. Salvar perfil de parceiro no banco de dados local
-      await db.createPartner({
-        id: data.user.id,
-        nome,
-        email,
-        telefone,
-        cidade,
-        codigoIndicacao,
-      });
-
-      res.json({ success: true, message: "Parceiro cadastrado com sucesso!" });
-    } catch (error: any) {
-      console.error("[Web API] Erro no cadastro de parceiro:", error);
-      res.status(500).json({
-        success: false,
-        error: error.message || "Erro interno no servidor.",
-      });
-    }
-  });
+    },
+  );
 
   // Login de Parceiro
   app.post(
     "/api/partners/login",
-    rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: "Muitas tentativas de login. Aguarde 15 minutos." }),
+    rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: 10,
+      message: "Muitas tentativas de login. Aguarde 15 minutos.",
+    }),
     async (req, res) => {
-    try {
-      const { email, senha } = req.body;
-      if (!email || !senha) {
-        return res
-          .status(400)
-          .json({ success: false, error: "E-mail e senha são obrigatórios." });
-      }
+      try {
+        const { email, senha } = req.body;
+        if (!email || !senha) {
+          return res
+            .status(400)
+            .json({
+              success: false,
+              error: "E-mail e senha são obrigatórios.",
+            });
+        }
 
-      // 1. Login no Supabase Auth
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password: senha,
-      });
+        // 1. Login no Supabase Auth
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password: senha,
+        });
 
-      if (error) {
-        return res.status(400).json({ success: false, error: error.message });
-      }
+        if (error) {
+          return res.status(400).json({ success: false, error: error.message });
+        }
 
-      if (!data.user || !data.session) {
-        return res
-          .status(400)
-          .json({ success: false, error: "Falha ao iniciar sessão." });
-      }
+        if (!data.user || !data.session) {
+          return res
+            .status(400)
+            .json({ success: false, error: "Falha ao iniciar sessão." });
+        }
 
-      // 2. Buscar perfil de parceiro no banco de dados
-      const partner = await db.getPartnerById(data.user.id);
-      if (!partner) {
-        return res.status(404).json({
+        // 2. Buscar perfil de parceiro no banco de dados
+        const partner = await db.getPartnerById(data.user.id);
+        if (!partner) {
+          return res.status(404).json({
+            success: false,
+            error: "Perfil de parceiro não encontrado no banco local.",
+          });
+        }
+
+        // Set httpOnly cookie for secure session management
+        res.cookie(COOKIE_NAME, data.session.access_token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          maxAge: 60 * 60 * 24 * 30,
+        });
+
+        res.json({
+          success: true,
+          sessionToken: data.session.access_token,
+          partner: {
+            id: partner.id,
+            nome: partner.nome,
+            email: partner.email,
+            telefone: partner.telefone,
+            cidade: partner.cidade,
+            codigoIndicacao: partner.codigoIndicacao,
+          },
+        });
+      } catch (error: any) {
+        console.error("[Web API] Erro no login de parceiro:", error);
+        res.status(500).json({
           success: false,
-          error: "Perfil de parceiro não encontrado no banco local.",
+          error: error.message || "Erro interno no servidor.",
         });
       }
-
-      // Set httpOnly cookie for secure session management
-      res.cookie(COOKIE_NAME, data.session.access_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/",
-        maxAge: 60 * 60 * 24 * 30,
-      });
-
-      res.json({
-        success: true,
-        sessionToken: data.session.access_token,
-        partner: {
-          id: partner.id,
-          nome: partner.nome,
-          email: partner.email,
-          telefone: partner.telefone,
-          cidade: partner.cidade,
-          codigoIndicacao: partner.codigoIndicacao,
-        },
-      });
-    } catch (error: any) {
-      console.error("[Web API] Erro no login de parceiro:", error);
-      res.status(500).json({
-        success: false,
-        error: error.message || "Erro interno no servidor.",
-      });
-    }
-  });
+    },
+  );
 
   // Dashboard de Indicações do Parceiro
   app.get("/api/partners/dashboard", async (req, res) => {
@@ -906,330 +988,347 @@ async function startServer() {
   // Registro de Parceiro de Negócio (Prestador / Comércio / Cliente)
   app.post(
     "/api/business-partner/register",
-    rateLimit({ windowMs: 15 * 60 * 1000, max: 5, message: "Muitos cadastros. Aguarde 15 minutos." }),
+    rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: 5,
+      message: "Muitos cadastros. Aguarde 15 minutos.",
+    }),
     async (req, res) => {
-    try {
-      const { name, email, password, whatsapp, city, type } = req.body;
-      if (!name || !email || !password || !whatsapp || !type) {
-        return res
-          .status(400)
-          .json({ success: false, error: "Todos os campos são obrigatórios." });
-      }
+      try {
+        const { name, email, password, whatsapp, city, type } = req.body;
+        if (!name || !email || !password || !whatsapp || !type) {
+          return res
+            .status(400)
+            .json({
+              success: false,
+              error: "Todos os campos são obrigatórios.",
+            });
+        }
 
-      if (type !== "prestador" && type !== "comercio" && type !== "cliente") {
-        return res
-          .status(400)
-          .json({ success: false, error: "Tipo de parceiro inválido." });
-      }
+        if (type !== "prestador" && type !== "comercio" && type !== "cliente") {
+          return res
+            .status(400)
+            .json({ success: false, error: "Tipo de parceiro inválido." });
+        }
 
-      // 0. Verificar se o e-mail já existe no banco local antes de criar no Supabase
-      const existingLocalUser = await db.getUserByEmail(email);
-      if (existingLocalUser) {
-        return res.status(409).json({
-          success: false,
-          error: "Este e-mail já está cadastrado. Faça login para continuar.",
-        });
-      }
+        // 0. Verificar se o e-mail já existe no banco local antes de criar no Supabase
+        const existingLocalUser = await db.getUserByEmail(email);
+        if (existingLocalUser) {
+          return res.status(409).json({
+            success: false,
+            error: "Este e-mail já está cadastrado. Faça login para continuar.",
+          });
+        }
 
-      // 1. Criar usuário no Supabase Auth
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-
-      if (error) {
-        // Supabase may also return "User already registered" — normalize the message
-        const msg = error.message?.includes("already registered")
-          ? "Este e-mail já está cadastrado. Faça login para continuar."
-          : error.message;
-        return res.status(400).json({ success: false, error: msg });
-      }
-
-      if (!data.user) {
-        return res.status(400).json({
-          success: false,
-          error: "Falha ao criar conta de autenticação.",
-        });
-      }
-
-      // 2. Salvar no banco local (users)
-      await db.upsertUser({
-        openId: data.user.id,
-        name,
-        email,
-        phone: whatsapp,
-        role: "user",
-        tipo: type,
-        lastSignedIn: new Date(),
-      });
-
-      if (type === "cliente") {
-        // Gerar código único de indicação (Primeiro nome + 3 números aleatórios)
-        const firstName = name
-          .trim()
-          .split(" ")[0]
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .toUpperCase()
-          .replace(/[^A-Z]/g, "");
-        const randomNum = Math.floor(100 + Math.random() * 900);
-        const codigoIndicacao = `${firstName}${randomNum}`;
-
-        // Criar registro na tabela partners
-        await db.createPartner({
-          id: data.user.id,
-          nome: name,
+        // 1. Criar usuário no Supabase Auth
+        const { data, error } = await supabase.auth.signUp({
           email,
-          telefone: whatsapp,
-          cidade: city,
-          codigoIndicacao,
+          password,
+        });
+
+        if (error) {
+          // Supabase may also return "User already registered" — normalize the message
+          const msg = error.message?.includes("already registered")
+            ? "Este e-mail já está cadastrado. Faça login para continuar."
+            : error.message;
+          return res.status(400).json({ success: false, error: msg });
+        }
+
+        if (!data.user) {
+          return res.status(400).json({
+            success: false,
+            error: "Falha ao criar conta de autenticação.",
+          });
+        }
+
+        // 2. Salvar no banco local (users)
+        await db.upsertUser({
+          openId: data.user.id,
+          name,
+          email,
+          phone: whatsapp,
+          role: "user",
+          tipo: type,
+          lastSignedIn: new Date(),
+        });
+
+        if (type === "cliente") {
+          // Gerar código único de indicação (Primeiro nome + 3 números aleatórios)
+          const firstName = name
+            .trim()
+            .split(" ")[0]
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toUpperCase()
+            .replace(/[^A-Z]/g, "");
+          const randomNum = Math.floor(100 + Math.random() * 900);
+          const codigoIndicacao = `${firstName}${randomNum}`;
+
+          // Criar registro na tabela partners
+          await db.createPartner({
+            id: data.user.id,
+            nome: name,
+            email,
+            telefone: whatsapp,
+            cidade: city,
+            codigoIndicacao,
+          });
+
+          // Log event
+          await db.createAppEvent({
+            tipoEvento: "cadastro",
+            valor: `parceiro_cliente`,
+            cidade: city,
+            usuarioId: data.user.id,
+          });
+
+          return res.json({
+            success: true,
+            message:
+              "Cadastro realizado com sucesso! Você já pode acessar seu painel.",
+          });
+        }
+
+        const providerId = `prov_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+        // 3. Salvar perfil de negócio (providers)
+        await db.createProvider({
+          id: providerId,
+          userId: data.user.id,
+          name,
+          phone: whatsapp,
+          whatsapp,
+          city: city || "",
+          isActive: false, // Requer aprovação do admin
+          status: "pendente",
+          businessType: type === "comercio" ? "comercio" : "servicos",
+          categoryId: type === "comercio" ? "comercios" : null,
+          category: type === "comercio" ? "Comércios" : null,
+          services: "[]",
+          rating: 5,
+          ratingCount: 0,
+          priceLevel: 2,
+          onlineStatus: false,
+        });
+
+        // 4. Salvar permissões do negócio (businessPermissions)
+        await db.createBusinessPermission({
+          businessId: providerId,
+          maxServicos: 1, // Limite inicial de 1 serviço (preparando para planos futuros)
+          status: "pendente",
         });
 
         // Log event
         await db.createAppEvent({
           tipoEvento: "cadastro",
-          valor: `parceiro_cliente`,
+          valor: `parceiro_${type}`,
           cidade: city,
+          prestadorId: providerId,
           usuarioId: data.user.id,
         });
 
-        return res.json({
+        res.json({
           success: true,
-          message: "Cadastro realizado com sucesso! Você já pode acessar seu painel.",
+          message:
+            "Cadastro realizado com sucesso! Aguarde a aprovação do administrador.",
+        });
+      } catch (error: any) {
+        console.error(
+          "[Web API] Erro no cadastro de parceiro de negócio:",
+          error,
+        );
+        res.status(500).json({
+          success: false,
+          error: error.message || "Erro interno no servidor.",
         });
       }
-
-      const providerId = `prov_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-      // 3. Salvar perfil de negócio (providers)
-      await db.createProvider({
-        id: providerId,
-        userId: data.user.id,
-        name,
-        phone: whatsapp,
-        whatsapp,
-        city: city || "",
-        isActive: false, // Requer aprovação do admin
-        status: "pendente",
-        businessType: type === "comercio" ? "comercio" : "servicos",
-        categoryId: type === "comercio" ? "comercios" : null,
-        category: type === "comercio" ? "Comércios" : null,
-        services: "[]",
-        rating: 5,
-        ratingCount: 0,
-        priceLevel: 2,
-        onlineStatus: false,
-      });
-
-      // 4. Salvar permissões do negócio (businessPermissions)
-      await db.createBusinessPermission({
-        businessId: providerId,
-        maxServicos: 1, // Limite inicial de 1 serviço (preparando para planos futuros)
-        status: "pendente",
-      });
-
-      // Log event
-      await db.createAppEvent({
-        tipoEvento: "cadastro",
-        valor: `parceiro_${type}`,
-        cidade: city,
-        prestadorId: providerId,
-        usuarioId: data.user.id,
-      });
-
-      res.json({
-        success: true,
-        message:
-          "Cadastro realizado com sucesso! Aguarde a aprovação do administrador.",
-      });
-    } catch (error: any) {
-      console.error(
-        "[Web API] Erro no cadastro de parceiro de negócio:",
-        error,
-      );
-      res.status(500).json({
-        success: false,
-        error: error.message || "Erro interno no servidor.",
-      });
-    }
-  });
+    },
+  );
 
   // Login de Parceiro de Negócio (Prestador / Comércio)
   app.post(
     "/api/business-partner/login",
-    rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: "Muitas tentativas de login. Aguarde 15 minutos." }),
+    rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: 10,
+      message: "Muitas tentativas de login. Aguarde 15 minutos.",
+    }),
     async (req, res) => {
-    try {
-      const { email, password } = req.body;
-      if (!email || !password) {
-        return res
-          .status(400)
-          .json({ success: false, error: "E-mail e senha são obrigatórios." });
-      }
+      try {
+        const { email, password } = req.body;
+        if (!email || !password) {
+          return res
+            .status(400)
+            .json({
+              success: false,
+              error: "E-mail e senha são obrigatórios.",
+            });
+        }
 
-      // 1. Login no Supabase Auth
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        return res.status(400).json({ success: false, error: error.message });
-      }
-
-      if (!data.user || !data.session) {
-        return res
-          .status(400)
-          .json({ success: false, error: "Falha ao iniciar sessão." });
-      }
-
-      // 2. Buscar usuário localmente para validar o tipo
-      let userProfile = await db.getUserByOpenId(data.user.id);
-      if (!userProfile) {
-        // Sincroniza se não encontrado no banco local
-        await db.upsertUser({
-          openId: data.user.id,
-          name:
-            data.user.user_metadata?.full_name ||
-            data.user.email?.split("@")[0] ||
-            null,
-          email: data.user.email ?? null,
-          loginMethod: "email",
-          tipo: "cliente", // default se não cadastrado pelo fluxo do parceiro
+        // 1. Login no Supabase Auth
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
         });
-        userProfile = await db.getUserByOpenId(data.user.id);
-      }
 
-      if (!userProfile) {
-        return res
-          .status(404)
-          .json({ success: false, error: "Usuário não encontrado." });
-      }
+        if (error) {
+          return res.status(400).json({ success: false, error: error.message });
+        }
 
-      // 3. Buscar perfil de negócio vinculado
-      const businessProfile = await db.getProviderByUserId(data.user.id);
+        if (!data.user || !data.session) {
+          return res
+            .status(400)
+            .json({ success: false, error: "Falha ao iniciar sessão." });
+        }
 
-      // Validar tipo ou existência de perfil de negócio
-      if (
-        userProfile.tipo !== "prestador" &&
-        userProfile.tipo !== "comercio" &&
-        userProfile.tipo !== "cliente" &&
-        userProfile.role !== "admin" &&
-        !businessProfile
-      ) {
-        return res.status(403).json({
+        // 2. Buscar usuário localmente para validar o tipo
+        let userProfile = await db.getUserByOpenId(data.user.id);
+        if (!userProfile) {
+          // Sincroniza se não encontrado no banco local
+          await db.upsertUser({
+            openId: data.user.id,
+            name:
+              data.user.user_metadata?.full_name ||
+              data.user.email?.split("@")[0] ||
+              null,
+            email: data.user.email ?? null,
+            loginMethod: "email",
+            tipo: "cliente", // default se não cadastrado pelo fluxo do parceiro
+          });
+          userProfile = await db.getUserByOpenId(data.user.id);
+        }
+
+        if (!userProfile) {
+          return res
+            .status(404)
+            .json({ success: false, error: "Usuário não encontrado." });
+        }
+
+        // 3. Buscar perfil de negócio vinculado
+        const businessProfile = await db.getProviderByUserId(data.user.id);
+
+        // Validar tipo ou existência de perfil de negócio
+        if (
+          userProfile.tipo !== "prestador" &&
+          userProfile.tipo !== "comercio" &&
+          userProfile.tipo !== "cliente" &&
+          userProfile.role !== "admin" &&
+          !businessProfile
+        ) {
+          return res.status(403).json({
+            success: false,
+            error: "Acesso negado. Apenas parceiros podem acessar esta área.",
+          });
+        }
+
+        // Se possui perfil de negócio mas o tipo de usuário está desatualizado no banco local, corrige
+        if (
+          businessProfile &&
+          userProfile.tipo !== "prestador" &&
+          userProfile.tipo !== "comercio"
+        ) {
+          const nextTipo =
+            businessProfile.businessType === "comercio"
+              ? "comercio"
+              : "prestador";
+          await db.upsertUser({
+            openId: data.user.id,
+            tipo: nextTipo,
+          });
+          userProfile.tipo = nextTipo;
+        }
+
+        // Buscar ou auto-criar perfil de parceiro para indicações se for cliente ou admin
+        let partnerProfile = await db.getPartnerById(data.user.id);
+        if (
+          !partnerProfile &&
+          (userProfile.tipo === "cliente" || userProfile.role === "admin")
+        ) {
+          const nameToUse =
+            userProfile.name || data.user.email?.split("@")[0] || "PARCEIRO";
+          const firstName = nameToUse
+            .trim()
+            .split(" ")[0]
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toUpperCase()
+            .replace(/[^A-Z]/g, "");
+          const randomNum = Math.floor(100 + Math.random() * 900);
+          const codigoIndicacao = `${firstName}${randomNum}`;
+
+          await db.createPartner({
+            id: data.user.id,
+            nome: nameToUse,
+            email: userProfile.email || data.user.email || "",
+            telefone: userProfile.phone || "",
+            cidade: "",
+            codigoIndicacao,
+          });
+          partnerProfile = await db.getPartnerById(data.user.id);
+        }
+
+        // Set httpOnly cookie for secure session management
+        res.cookie(COOKIE_NAME, data.session.access_token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          maxAge: 60 * 60 * 24 * 30,
+        });
+
+        res.json({
+          success: true,
+          sessionToken: data.session.access_token,
+          user: {
+            id: userProfile.openId,
+            name: userProfile.name,
+            email: userProfile.email,
+            tipo: userProfile.tipo,
+            role: userProfile.role,
+          },
+          business: businessProfile
+            ? {
+                id: businessProfile.id,
+                name: businessProfile.name,
+                category: businessProfile.category,
+                categoryId: businessProfile.categoryId,
+                city: businessProfile.city,
+                neighborhood: businessProfile.neighborhood,
+                cep: businessProfile.cep,
+                phone: businessProfile.phone,
+                whatsapp: businessProfile.whatsapp,
+                description: businessProfile.description,
+                address: businessProfile.address,
+                avatarUri: businessProfile.avatarUri,
+                coverUri: businessProfile.coverUri,
+                gallery: businessProfile.gallery,
+                isActive: businessProfile.isActive,
+                status: businessProfile.status,
+                services: businessProfile.services
+                  ? JSON.parse(businessProfile.services)
+                  : [],
+              }
+            : null,
+          partner: partnerProfile
+            ? {
+                id: partnerProfile.id,
+                nome: partnerProfile.nome,
+                email: partnerProfile.email,
+                telefone: partnerProfile.telefone,
+                cidade: partnerProfile.cidade,
+                codigoIndicacao: partnerProfile.codigoIndicacao,
+              }
+            : null,
+        });
+      } catch (error: any) {
+        console.error("[Web API] Erro no login de parceiro de negócio:", error);
+        res.status(500).json({
           success: false,
-          error: "Acesso negado. Apenas parceiros podem acessar esta área.",
+          error: error.message || "Erro interno no servidor.",
         });
       }
-
-      // Se possui perfil de negócio mas o tipo de usuário está desatualizado no banco local, corrige
-      if (
-        businessProfile &&
-        userProfile.tipo !== "prestador" &&
-        userProfile.tipo !== "comercio"
-      ) {
-        const nextTipo =
-          businessProfile.businessType === "comercio"
-            ? "comercio"
-            : "prestador";
-        await db.upsertUser({
-          openId: data.user.id,
-          tipo: nextTipo,
-        });
-        userProfile.tipo = nextTipo;
-      }
-
-      // Buscar ou auto-criar perfil de parceiro para indicações se for cliente ou admin
-      let partnerProfile = await db.getPartnerById(data.user.id);
-      if (
-        !partnerProfile &&
-        (userProfile.tipo === "cliente" || userProfile.role === "admin")
-      ) {
-        const nameToUse =
-          userProfile.name || data.user.email?.split("@")[0] || "PARCEIRO";
-        const firstName = nameToUse
-          .trim()
-          .split(" ")[0]
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .toUpperCase()
-          .replace(/[^A-Z]/g, "");
-        const randomNum = Math.floor(100 + Math.random() * 900);
-        const codigoIndicacao = `${firstName}${randomNum}`;
-
-        await db.createPartner({
-          id: data.user.id,
-          nome: nameToUse,
-          email: userProfile.email || data.user.email || "",
-          telefone: userProfile.phone || "",
-          cidade: "",
-          codigoIndicacao,
-        });
-        partnerProfile = await db.getPartnerById(data.user.id);
-      }
-
-      // Set httpOnly cookie for secure session management
-      res.cookie(COOKIE_NAME, data.session.access_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/",
-        maxAge: 60 * 60 * 24 * 30,
-      });
-
-      res.json({
-        success: true,
-        sessionToken: data.session.access_token,
-        user: {
-          id: userProfile.openId,
-          name: userProfile.name,
-          email: userProfile.email,
-          tipo: userProfile.tipo,
-          role: userProfile.role,
-        },
-        business: businessProfile
-          ? {
-              id: businessProfile.id,
-              name: businessProfile.name,
-              category: businessProfile.category,
-              categoryId: businessProfile.categoryId,
-              city: businessProfile.city,
-              neighborhood: businessProfile.neighborhood,
-              cep: businessProfile.cep,
-              phone: businessProfile.phone,
-              whatsapp: businessProfile.whatsapp,
-              description: businessProfile.description,
-              address: businessProfile.address,
-              avatarUri: businessProfile.avatarUri,
-              coverUri: businessProfile.coverUri,
-              gallery: businessProfile.gallery,
-              isActive: businessProfile.isActive,
-              status: businessProfile.status,
-              services: businessProfile.services
-                ? JSON.parse(businessProfile.services)
-                : [],
-            }
-          : null,
-        partner: partnerProfile
-          ? {
-              id: partnerProfile.id,
-              nome: partnerProfile.nome,
-              email: partnerProfile.email,
-              telefone: partnerProfile.telefone,
-              cidade: partnerProfile.cidade,
-              codigoIndicacao: partnerProfile.codigoIndicacao,
-            }
-          : null,
-      });
-    } catch (error: any) {
-      console.error("[Web API] Erro no login de parceiro de negócio:", error);
-      res.status(500).json({
-        success: false,
-        error: error.message || "Erro interno no servidor.",
-      });
-    }
-  });
+    },
+  );
 
   // Obter Perfil do "Meu Negócio"
   app.get("/api/business-partner/profile", async (req, res) => {
@@ -1378,13 +1477,23 @@ async function startServer() {
                 : [],
               socialLinks: (() => {
                 if (!businessProfile.socialLinks) return {};
-                if (typeof businessProfile.socialLinks === "object") return businessProfile.socialLinks;
-                try { return JSON.parse(businessProfile.socialLinks); } catch { return {}; }
+                if (typeof businessProfile.socialLinks === "object")
+                  return businessProfile.socialLinks;
+                try {
+                  return JSON.parse(businessProfile.socialLinks);
+                } catch {
+                  return {};
+                }
               })(),
               workingHours: (() => {
                 if (!businessProfile.workingHours) return null;
-                if (typeof businessProfile.workingHours === "object") return businessProfile.workingHours;
-                try { return JSON.parse(businessProfile.workingHours); } catch { return businessProfile.workingHours; }
+                if (typeof businessProfile.workingHours === "object")
+                  return businessProfile.workingHours;
+                try {
+                  return JSON.parse(businessProfile.workingHours);
+                } catch {
+                  return businessProfile.workingHours;
+                }
               })(),
               // ── Dados do Plano (sempre vindos do banco, nunca hardcoded) ──
               planId: businessProfile.planId || null,
@@ -1488,7 +1597,8 @@ async function startServer() {
           cidade: city,
         });
       } else {
-        const nameToUse = userProfile.name || authUser.email?.split("@")[0] || "PARCEIRO";
+        const nameToUse =
+          userProfile.name || authUser.email?.split("@")[0] || "PARCEIRO";
         const firstName = nameToUse
           .trim()
           .split(" ")[0]
@@ -1584,7 +1694,10 @@ async function startServer() {
       }
 
       const token = authHeader.split(" ")[1];
-      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
+      const {
+        data: { user: authUser },
+        error: authError,
+      } = await supabase.auth.getUser(token);
       if (authError || !authUser) {
         return res
           .status(401)
@@ -1596,10 +1709,20 @@ async function startServer() {
         return res.status(400).json({ success: false, error: "Imagem vazia." });
       }
 
-      const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+      const allowedTypes = [
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/webp",
+      ];
       const currentType = fileType || "image/jpeg";
       if (!allowedTypes.includes(currentType)) {
-        return res.status(400).json({ success: false, error: "Formato de arquivo inválido. Use JPG, PNG ou WEBP." });
+        return res
+          .status(400)
+          .json({
+            success: false,
+            error: "Formato de arquivo inválido. Use JPG, PNG ou WEBP.",
+          });
       }
 
       const ext = currentType.split("/")[1] || "jpg";
@@ -1622,7 +1745,9 @@ async function startServer() {
         throw uploadError;
       }
 
-      const { data: { publicUrl } } = supabase.storage.from("providers").getPublicUrl(filePath);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("providers").getPublicUrl(filePath);
 
       return res.json({
         success: true,
@@ -1633,6 +1758,66 @@ async function startServer() {
       return res.status(500).json({
         success: false,
         error: e.message || "Erro no upload da imagem.",
+      });
+    }
+  });
+
+  // Upload universal de imagem para a Web/PWA (Suporta Base64/Data URI direto para o Supabase)
+  app.post("/api/upload-image", async (req, res) => {
+    try {
+      const { base64Data, fileType, bucket } = req.body;
+      if (!base64Data) {
+        return res
+          .status(400)
+          .json({ success: false, error: "Imagem ausente." });
+      }
+
+      const cleanType = fileType || "image/jpeg";
+      const ext = cleanType.includes("png")
+        ? "png"
+        : cleanType.includes("webp")
+          ? "webp"
+          : "jpg";
+      const targetBucket = bucket || "providers";
+      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
+      const filePath = fileName;
+
+      // Extract raw base64 string if data URL passed
+      let pureBase64 = base64Data;
+      if (base64Data.includes(",")) {
+        pureBase64 = base64Data.split(",")[1];
+      }
+
+      const { decode } = await import("base64-arraybuffer");
+      const buffer = decode(pureBase64);
+
+      const { data, error: uploadError } = await supabase.storage
+        .from(targetBucket)
+        .upload(filePath, buffer, {
+          contentType: cleanType,
+          cacheControl: "3600",
+          upsert: true,
+        });
+
+      if (uploadError) {
+        console.error("[Server Upload] Erro no Supabase storage:", uploadError);
+        throw uploadError;
+      }
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from(targetBucket).getPublicUrl(filePath);
+
+      return res.json({
+        success: true,
+        url: publicUrl,
+        publicUrl,
+      });
+    } catch (e: any) {
+      console.error("[Server Upload] Falha no upload:", e);
+      return res.status(500).json({
+        success: false,
+        error: e.message || "Falha ao processar upload da imagem.",
       });
     }
   });
@@ -1746,17 +1931,22 @@ async function startServer() {
 
       let latitude = businessProfile.latitude;
       let longitude = businessProfile.longitude;
-      
-      const addressChanged = 
+
+      const addressChanged =
         (address !== undefined && address !== businessProfile.address) ||
-        (neighborhood !== undefined && neighborhood !== businessProfile.neighborhood) ||
+        (neighborhood !== undefined &&
+          neighborhood !== businessProfile.neighborhood) ||
         (city !== undefined && city !== businessProfile.city);
 
       if (addressChanged && (address || businessProfile.address)) {
-        const addrToUse = address !== undefined ? address : businessProfile.address;
-        const neighToUse = neighborhood !== undefined ? neighborhood : businessProfile.neighborhood;
+        const addrToUse =
+          address !== undefined ? address : businessProfile.address;
+        const neighToUse =
+          neighborhood !== undefined
+            ? neighborhood
+            : businessProfile.neighborhood;
         const cityToUse = city !== undefined ? city : businessProfile.city;
-        
+
         if (addrToUse) {
           const { geocodeAddress } = await import("../geocoding");
           const coords = await geocodeAddress(addrToUse, neighToUse, cityToUse);
@@ -1780,7 +1970,8 @@ async function startServer() {
       if (whatsapp !== undefined) updates.whatsapp = whatsapp || null;
       if (address !== undefined) updates.address = address || null;
       if (city !== undefined) updates.city = city || null;
-      if (neighborhood !== undefined) updates.neighborhood = neighborhood || null;
+      if (neighborhood !== undefined)
+        updates.neighborhood = neighborhood || null;
       if (cep !== undefined) updates.cep = cep || null;
       if (avatarUri !== undefined) updates.avatarUri = avatarUri || null;
       if (coverUri !== undefined) updates.coverUri = coverUri || null;
@@ -1796,15 +1987,24 @@ async function startServer() {
       }
 
       if (socialLinks !== undefined) {
-        updates.socialLinks = typeof socialLinks === "object" ? JSON.stringify(socialLinks) : socialLinks;
+        updates.socialLinks =
+          typeof socialLinks === "object"
+            ? JSON.stringify(socialLinks)
+            : socialLinks;
       }
 
       if (workingHours !== undefined) {
-        updates.workingHours = typeof workingHours === "object" ? JSON.stringify(workingHours) : workingHours;
+        updates.workingHours =
+          typeof workingHours === "object"
+            ? JSON.stringify(workingHours)
+            : workingHours;
       }
 
       if (req.body.scheduleSettings !== undefined) {
-        updates.scheduleSettings = typeof req.body.scheduleSettings === "object" ? JSON.stringify(req.body.scheduleSettings) : req.body.scheduleSettings;
+        updates.scheduleSettings =
+          typeof req.body.scheduleSettings === "object"
+            ? JSON.stringify(req.body.scheduleSettings)
+            : req.body.scheduleSettings;
       }
 
       await db.updateProvider(businessProfile.id, updates);

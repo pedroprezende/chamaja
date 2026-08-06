@@ -108,6 +108,42 @@ export const storage = {
 
       if (Platform.OS === "web") {
         try {
+          // 1. Converter URI (blob: ou data:) em Base64 limpo
+          let base64String = uri;
+          if (uri.startsWith("blob:") || !uri.startsWith("data:")) {
+            const response = await fetch(uri);
+            const blob = await response.blob();
+            base64String = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+          }
+
+          // 2. Enviar via endpoint de servidor (Evita CORS / RLS client-side no Supabase)
+          const serverRes = await fetch("/api/upload-image", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              base64Data: base64String,
+              fileType: fileType || "image/jpeg",
+              bucket: bucket || "providers",
+            }),
+          });
+
+          if (serverRes.ok) {
+            const resData = await serverRes.json();
+            if (resData.success && resData.publicUrl) {
+              logger.info(
+                "STORAGE",
+                `Upload via Servidor concluído: ${resData.publicUrl}`,
+              );
+              return resData.publicUrl;
+            }
+          }
+
+          // Fallback para upload direto via SDK caso o servidor falhe
           const response = await fetch(uri);
           const blob = await response.blob();
           const { data, error } = await supabase.storage
@@ -127,7 +163,7 @@ export const storage = {
         } catch (webErr: any) {
           logger.warn(
             "STORAGE",
-            "Upload direto no Supabase Web falhou, usando URI local como fallback:",
+            "Upload no Supabase Web falhou, verificando fallback:",
             webErr,
           );
           if (uri.startsWith("data:") || uri.startsWith("http")) {

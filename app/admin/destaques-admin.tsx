@@ -158,11 +158,11 @@ export default function DestaquesAdmin() {
       }
 
       await createMutation.mutateAsync({
-        providerId: selectedProvider.id,
-        providerName: selectedProvider.name,
+        providerId: String(selectedProvider.id || `prov-${Date.now()}`),
+        providerName: String(selectedProvider.name || "Prestador"),
         providerAvatar: selectedProvider.avatarUri || null,
         categoryName: selectedProvider.category || "Geral",
-        customDescription: customAdDescription,
+        customDescription: customAdDescription || "",
         adImageUrl: adImageUrl || null,
         isFeatured: true,
       });
