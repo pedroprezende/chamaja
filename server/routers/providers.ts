@@ -1188,6 +1188,20 @@ export const providersRouter = router({
         }
       }
 
+      if (supportsScheduling) {
+        const scheduleSettingsStr = res[0].provider.scheduleSettings;
+        let hasWorkingDays = false;
+        if (scheduleSettingsStr) {
+          try {
+            const settings = typeof scheduleSettingsStr === "string" ? JSON.parse(scheduleSettingsStr) : scheduleSettingsStr;
+            if (Array.isArray(settings?.workingDays)) {
+              hasWorkingDays = settings.workingDays.some((d: any) => d.isOpen === true);
+            }
+          } catch (e) {}
+        }
+        supportsScheduling = hasWorkingDays;
+      }
+
       const providerData = {
         ...res[0].provider,
         maxServicos: res[0].permissions?.maxServicos ?? 1,

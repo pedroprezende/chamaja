@@ -177,6 +177,9 @@ function RootLayoutNav() {
         <Stack.Screen name="favorites" />
         <Stack.Screen name="notifications" />
         <Stack.Screen name="admin-services/[serviceId]" />
+        <Stack.Screen name="appointments" />
+        <Stack.Screen name="professional/[id]/schedule" />
+        <Stack.Screen name="provider-agenda" />
       </Stack>
     </>
   );
