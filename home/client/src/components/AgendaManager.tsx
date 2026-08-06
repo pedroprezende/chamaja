@@ -1,5 +1,4 @@
-import React, { useState, useMemo } from "react";
-import { trpc } from "@/lib/trpc";
+import React, { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -37,6 +36,10 @@ export function AgendaManager({ providerId, initialSettings, onSaved }: { provid
   
   const [currentDate, setCurrentDate] = useState(new Date());
   
+  // Data & Loading
+  const [appointments, setAppointments] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
   // Filters & Search
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
@@ -69,24 +72,108 @@ export function AgendaManager({ providerId, initialSettings, onSaved }: { provid
     }
     return { dateStart: formatYMD(start), dateEnd: formatYMD(end) };
   }, [currentDate, viewMode]);
-  
-  // Fetch appointments
-  const { data: appointments, refetch, isLoading } = trpc.appointments.getByProvider.useQuery({
-    dateStart,
-    dateEnd,
-    search: searchTerm || undefined,
-    statusFilter: activeFilters.length > 0 ? activeFilters : undefined
-  });
 
-  const updateStatus = trpc.appointments.updateStatus.useMutation({
-    onSuccess: () => { toast.success("Status atualizado!"); refetch(); setSelectedAppt(null); }
-  });
-  const updateNotes = trpc.appointments.updateNotes.useMutation({
-    onSuccess: () => { toast.success("Observações salvas!"); refetch(); }
-  });
-  const blockSlot = trpc.appointments.blockSlot.useMutation({
-    onSuccess: () => { toast.success("Horário bloqueado!"); refetch(); setShowBlockModal(false); }
-  });
+  // Fetch appointments via API endpoint
+  const fetchAppointments = async () => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem("bp_session_token");
+      const input: any = {
+        dateStart,
+        dateEnd,
+      };
+      if (searchTerm) input.search = searchTerm;
+      if (activeFilters.length > 0) input.statusFilter = activeFilters;
+
+      const url = `/api/trpc/appointments.getByProvider?input=${encodeURIComponent(JSON.stringify(input))}`;
+      const res = await fetch(url, {
+        headers: token ? { "Authorization": `Bearer ${token}` } : {}
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json?.result?.data) {
+          setAppointments(json.result.data);
+        }
+      }
+    } catch (e) {
+      console.error("Error fetching appointments:", e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAppointments();
+  }, [dateStart, dateEnd, searchTerm, activeFilters]);
+
+  // Mutations via Fetch
+  const handleUpdateStatus = async (id: string, status: string) => {
+    try {
+      const token = localStorage.getItem("bp_session_token");
+      const res = await fetch("/api/trpc/appointments.updateStatus", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ id, status })
+      });
+      if (res.ok) {
+        toast.success("Status atualizado!");
+        setSelectedAppt(null);
+        fetchAppointments();
+      } else {
+        toast.error("Erro ao atualizar status.");
+      }
+    } catch (e) {
+      toast.error("Erro de conexão.");
+    }
+  };
+
+  const handleUpdateNotes = async (id: string, notes: string) => {
+    try {
+      const token = localStorage.getItem("bp_session_token");
+      const res = await fetch("/api/trpc/appointments.updateNotes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ id, notes })
+      });
+      if (res.ok) {
+        toast.success("Observações salvas!");
+        fetchAppointments();
+      } else {
+        toast.error("Erro ao salvar observações.");
+      }
+    } catch (e) {
+      toast.error("Erro de conexão.");
+    }
+  };
+
+  const handleBlockSlot = async () => {
+    try {
+      const token = localStorage.getItem("bp_session_token");
+      const res = await fetch("/api/trpc/appointments.blockSlot", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ providerId, ...blockData })
+      });
+      if (res.ok) {
+        toast.success("Horário bloqueado!");
+        setShowBlockModal(false);
+        fetchAppointments();
+      } else {
+        toast.error("Erro ao bloquear horário.");
+      }
+    } catch (e) {
+      toast.error("Erro de conexão.");
+    }
+  };
 
   const handlePrev = () => {
     const d = new Date(currentDate);
@@ -428,7 +515,7 @@ export function AgendaManager({ providerId, initialSettings, onSaved }: { provid
                 <div className="text-[10px] uppercase text-zinc-500 font-bold mb-2 flex justify-between items-center">
                   <span>Observações Internas (Só você vê)</span>
                   {selectedAppt.notes !== notesText && (
-                    <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px] bg-primary/20 text-primary hover:bg-primary/30" onClick={() => updateNotes.mutate({ id: selectedAppt.id, notes: notesText })}>Salvar Notas</Button>
+                    <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px] bg-primary/20 text-primary hover:bg-primary/30" onClick={() => handleUpdateNotes(selectedAppt.id, notesText)}>Salvar Notas</Button>
                   )}
                 </div>
                 <textarea 
@@ -445,17 +532,17 @@ export function AgendaManager({ providerId, initialSettings, onSaved }: { provid
                   <div className="text-[10px] uppercase text-zinc-500 font-bold mb-3">Ações do Agendamento</div>
                   <div className="grid grid-cols-2 gap-3 mb-3">
                     {selectedAppt.status === "pending" && (
-                      <Button onClick={() => updateStatus.mutate({ id: selectedAppt.id, status: "confirmed" })} className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold h-12 shadow-lg shadow-emerald-500/20">
+                      <Button onClick={() => handleUpdateStatus(selectedAppt.id, "confirmed")} className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold h-12 shadow-lg shadow-emerald-500/20">
                         <Check className="w-5 h-5 mr-2" /> Aprovar
                       </Button>
                     )}
                     {(selectedAppt.status === "pending" || selectedAppt.status === "confirmed") && (
-                      <Button onClick={() => updateStatus.mutate({ id: selectedAppt.id, status: "canceled" })} variant="outline" className="bg-transparent border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500 h-12 font-bold">
+                      <Button onClick={() => handleUpdateStatus(selectedAppt.id, "canceled")} variant="outline" className="bg-transparent border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500 h-12 font-bold">
                         <X className="w-5 h-5 mr-2" /> {selectedAppt.status === "pending" ? "Rejeitar" : "Cancelar"}
                       </Button>
                     )}
                     {selectedAppt.status === "confirmed" && (
-                      <Button onClick={() => updateStatus.mutate({ id: selectedAppt.id, status: "completed" })} className="bg-blue-500 hover:bg-blue-600 text-white font-bold h-12 col-span-2 shadow-lg shadow-blue-500/20">
+                      <Button onClick={() => handleUpdateStatus(selectedAppt.id, "completed")} className="bg-blue-500 hover:bg-blue-600 text-white font-bold h-12 col-span-2 shadow-lg shadow-blue-500/20">
                         <Check className="w-5 h-5 mr-2" /> Marcar como Concluído
                       </Button>
                     )}
@@ -470,7 +557,7 @@ export function AgendaManager({ providerId, initialSettings, onSaved }: { provid
               )}
 
               {selectedAppt.status === "blocked" && (
-                <Button onClick={() => updateStatus.mutate({ id: selectedAppt.id, status: "canceled" })} variant="outline" className="w-full bg-zinc-900 border-red-500/30 text-red-400 hover:bg-red-500/10 h-12 font-bold">
+                <Button onClick={() => handleUpdateStatus(selectedAppt.id, "canceled")} variant="outline" className="w-full bg-zinc-900 border-red-500/30 text-red-400 hover:bg-red-500/10 h-12 font-bold">
                   Remover Bloqueio
                 </Button>
               )}
@@ -516,7 +603,7 @@ export function AgendaManager({ providerId, initialSettings, onSaved }: { provid
             <div className="p-4 border-t border-zinc-900 bg-zinc-900/30 flex justify-end gap-3">
               <Button onClick={() => setShowBlockModal(false)} variant="ghost" className="text-zinc-400 hover:text-white">Cancelar</Button>
               <Button 
-                onClick={() => blockSlot.mutate({ providerId, ...blockData })}
+                onClick={handleBlockSlot}
                 className="bg-primary text-black font-bold hover:bg-primary/90"
               >
                 Bloquear
