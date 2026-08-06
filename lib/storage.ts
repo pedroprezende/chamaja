@@ -119,6 +119,8 @@ export const storage = {
               reader.onerror = reject;
               reader.readAsDataURL(blob);
             });
+          }
+          
           // 2. Enviar via endpoint de servidor (Evita CORS / RLS client-side no Supabase)
           const sessionData = await supabase.auth.getSession();
           const token = sessionData.data.session?.access_token || "";
