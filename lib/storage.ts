@@ -68,13 +68,13 @@ export const storage = {
         `Validando arquivo: tamanho = ${fileSize} bytes, tipo = ${fileType}`,
       );
 
-      const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+      const MAX_SIZE = 20 * 1024 * 1024; // 20MB
       if (fileSize > MAX_SIZE) {
         logger.error(
           "STORAGE",
           `Arquivo excede o limite de tamanho: ${fileSize} > ${MAX_SIZE}`,
         );
-        throw new Error("O arquivo excede o limite de tamanho de 5MB.");
+        throw new Error("O arquivo excede o limite de tamanho de 20MB.");
       }
 
       const ALLOWED_TYPES = [

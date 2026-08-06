@@ -27,6 +27,7 @@ export default function DestaquesAdmin() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>("em-destaque");
+  const [errorMessage, setErrorMessage] = useState("");
 
   const utils = trpc.useUtils();
 
@@ -140,7 +141,8 @@ export default function DestaquesAdmin() {
 
   const handleConfirmAdd = async () => {
     if (!selectedProvider) return;
-
+    
+    setErrorMessage("");
     setSaving(true);
     try {
       let adImageUrl: string | null = null;
@@ -149,10 +151,7 @@ export default function DestaquesAdmin() {
           adImageUrl = await storage.uploadImage(customAdImage, "providers");
         } catch (imgErr: any) {
           console.error("[Admin] Upload do storage falhou:", imgErr);
-          Alert.alert(
-            "Erro no upload",
-            "Não foi possível fazer o upload da imagem. " + (imgErr.message || "Tente novamente.")
-          );
+          setErrorMessage("Falha no upload da imagem: " + (imgErr.message || "Tente novamente."));
           setSaving(false);
           return;
         }
@@ -169,11 +168,7 @@ export default function DestaquesAdmin() {
       });
     } catch (e: any) {
       console.error("[Admin] Erro no fluxo de criação de anúncio:", e);
-      Alert.alert(
-        "Erro ao salvar",
-        "Não foi possível salvar o anúncio: " +
-          (e.message || "Verifique as permissões de administrador."),
-      );
+      setErrorMessage("Erro ao salvar anúncio: " + (e.message || "Verifique permissões."));
       setSaving(false);
     }
   };
@@ -555,6 +550,10 @@ export default function DestaquesAdmin() {
                   textAlignVertical="top"
                 />
 
+                {errorMessage ? (
+                  <Text style={styles.errorText}>{errorMessage}</Text>
+                ) : null}
+
                 <Pressable
                   style={[
                     styles.confirmBtn,
@@ -827,4 +826,6 @@ const styles = StyleSheet.create({
   },
   confirmBtnDisabled: { opacity: 0.6 },
   confirmBtnText: { color: "#FFF", fontSize: 16, fontWeight: "700" },
+  listEmptyText: { color: "#6B7280", fontSize: 14, textAlign: "center" },
+  errorText: { color: "#DC2626", fontSize: 14, textAlign: "center", marginBottom: 12, fontWeight: "600" }
 });
