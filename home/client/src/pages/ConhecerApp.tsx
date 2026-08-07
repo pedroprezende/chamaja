@@ -7,21 +7,25 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { getSessionToken } from "@/lib/supabase";
 
 export default function ConhecerApp() {
   const [activeStep, setActiveStep] = useState(1);
   const [userProfile, setUserProfile] = useState<any | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("bp_session_token");
-    const savedUser = localStorage.getItem("bp_user_profile");
-    if (token && savedUser) {
-      try {
-        setUserProfile(JSON.parse(savedUser));
-      } catch (e) {
-        console.error(e);
+    const checkSession = async () => {
+      const token = await getSessionToken();
+      const savedUser = localStorage.getItem("bp_user_profile");
+      if (token && savedUser) {
+        try {
+          setUserProfile(JSON.parse(savedUser));
+        } catch (e) {
+          console.error(e);
+        }
       }
-    }
+    };
+    checkSession();
   }, []);
 
   return (

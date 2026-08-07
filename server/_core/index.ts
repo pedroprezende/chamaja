@@ -925,6 +925,7 @@ async function startServer() {
         res.json({
           success: true,
           sessionToken: data.session.access_token,
+          refreshToken: data.session.refresh_token,
           partner: {
             id: partner.id,
             nome: partner.nome,
@@ -1279,6 +1280,7 @@ async function startServer() {
         res.json({
           success: true,
           sessionToken: data.session.access_token,
+          refreshToken: data.session.refresh_token,
           user: {
             id: userProfile.openId,
             name: userProfile.name,

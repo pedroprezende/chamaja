@@ -18,6 +18,7 @@ import {
   User,
 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase, getSessionToken } from "@/lib/supabase";
 
 interface Referral {
   id: number;
@@ -58,12 +59,29 @@ export default function Parceiros() {
 
   // Check for active session on load
   useEffect(() => {
-    const savedToken = localStorage.getItem("partner_token");
-    const savedPartner = localStorage.getItem("partner_profile");
-    if (savedToken && savedPartner) {
-      setSessionToken(savedToken);
-      setPartner(JSON.parse(savedPartner));
-    }
+    const checkSession = async () => {
+      const savedToken = await getSessionToken();
+      const savedPartner = localStorage.getItem("partner_profile");
+      if (savedToken && savedPartner) {
+        setSessionToken(savedToken);
+        setPartner(JSON.parse(savedPartner));
+      }
+    };
+    checkSession();
+  }, []);
+
+  // Subscribe to auth state changes to auto-refresh token
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'TOKEN_REFRESHED' && session) {
+        setSessionToken(session.access_token);
+      } else if (event === 'SIGNED_OUT') {
+        handleLogout(false);
+      }
+    });
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Fetch referrals when session is active
@@ -114,7 +132,14 @@ export default function Parceiros() {
         });
         const result = await response.json();
         if (response.ok && result.success) {
-          localStorage.setItem("partner_token", result.sessionToken);
+          if (result.refreshToken) {
+            const { error } = await supabase.auth.setSession({
+              access_token: result.sessionToken,
+              refresh_token: result.refreshToken,
+            });
+            if (error) console.error("Failed to set local Supabase session:", error);
+          }
+
           localStorage.setItem(
             "partner_profile",
             JSON.stringify(result.partner)
@@ -154,13 +179,16 @@ export default function Parceiros() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("partner_token");
+  const handleLogout = async (triggerSupabaseSignOut = true) => {
     localStorage.removeItem("partner_profile");
     setSessionToken(null);
     setPartner(null);
     setReferrals([]);
     toast.success("Sessão encerrada.");
+    
+    if (triggerSupabaseSignOut) {
+      await supabase.auth.signOut();
+    }
   };
 
   const resetForm = () => {

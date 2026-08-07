@@ -45,6 +45,7 @@ import {
 } from "../../../../lib/working-hours";
 import { AgendaSettingsForm } from "../components/AgendaSettingsForm";
 import { AgendaManager } from "../components/AgendaManager";
+import { supabase, getSessionToken } from "@/lib/supabase";
 
 interface Service {
   id: string;
@@ -316,37 +317,54 @@ export default function Parceiro() {
       window.history.replaceState(null, "", cleanUrl);
     }
 
-    // Check for existing session
-    const token = localStorage.getItem("bp_session_token");
-    const savedUser = localStorage.getItem("bp_user_profile");
-    if (token && savedUser) {
-      const parsedUser = JSON.parse(savedUser);
-      setSessionToken(token);
-      setUser(parsedUser);
-      
-      if (parsedUser.tipo === "prestador" || parsedUser.tipo === "comercio" || parsedUser.tipo === "cliente") {
-        setView("dashboard");
-        if (location === "/parceiros" || location === "/parceiro") {
-          setLocation(location + "/dashboard");
+    // Check for existing session using Supabase
+    const checkSession = async () => {
+      const token = await getSessionToken();
+      const savedUser = localStorage.getItem("bp_user_profile");
+      if (token && savedUser) {
+        const parsedUser = JSON.parse(savedUser);
+        setSessionToken(token);
+        setUser(parsedUser);
+        
+        if (parsedUser.tipo === "prestador" || parsedUser.tipo === "comercio" || parsedUser.tipo === "cliente") {
+          setView("dashboard");
+          if (location === "/parceiros" || location === "/parceiro") {
+            setLocation(location + "/dashboard");
+          }
+        } else if (completeRegParam) {
+          setView("complete-profile");
+        } else {
+          setView("dashboard");
+          if (location === "/parceiros" || location === "/parceiro") {
+            setLocation(location + "/dashboard");
+          }
         }
-      } else if (completeRegParam) {
-        setView("complete-profile");
       } else {
-        setView("dashboard");
-        if (location === "/parceiros" || location === "/parceiro") {
-          setLocation(location + "/dashboard");
+        // Not logged in: if trying to access dashboard, send to select/login
+        if (location === "/parceiros/dashboard") {
+          setLocation("/parceiros");
+        } else if (location === "/parceiro/dashboard") {
+          setLocation("/parceiro");
         }
+        setView("select");
       }
-    } else {
-      // Not logged in: if trying to access dashboard, send to select/login
-      if (location === "/parceiros/dashboard") {
-        setLocation("/parceiros");
-      } else if (location === "/parceiro/dashboard") {
-        setLocation("/parceiro");
-      }
-      setView("select");
-    }
+    };
+    checkSession();
   }, [location]);
+
+  // Subscribe to auth state changes to auto-refresh token
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'TOKEN_REFRESHED' && session) {
+        setSessionToken(session.access_token);
+      } else if (event === 'SIGNED_OUT') {
+        handleLogout(false);
+      }
+    });
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const handleGoogleLogin = () => {
     localStorage.setItem("oauth_redirect_target", "partner");
@@ -468,7 +486,17 @@ export default function Parceiro() {
       });
       const result = await response.json();
       if (response.ok && result.success) {
-        localStorage.setItem("bp_session_token", result.sessionToken);
+        // Allow Supabase JS to manage the session securely
+        if (result.refreshToken) {
+          const { error } = await supabase.auth.setSession({
+            access_token: result.sessionToken,
+            refresh_token: result.refreshToken,
+          });
+          if (error) {
+            console.error("Failed to set local Supabase session:", error);
+          }
+        }
+        
         localStorage.setItem("bp_user_profile", JSON.stringify(result.user));
 
         setSessionToken(result.sessionToken);
@@ -541,8 +569,7 @@ export default function Parceiro() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("bp_session_token");
+  const handleLogout = async (triggerSupabaseSignOut = true) => {
     localStorage.removeItem("bp_user_profile");
     setSessionToken(null);
     setUser(null);
@@ -554,6 +581,10 @@ export default function Parceiro() {
     setView("select");
     toast.success("Sessão encerrada.");
     setLocation("/");
+    
+    if (triggerSupabaseSignOut) {
+      await supabase.auth.signOut();
+    }
   };
 
   const saveProfile = async (e?: React.FormEvent) => {

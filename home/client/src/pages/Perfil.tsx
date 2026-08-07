@@ -32,9 +32,10 @@ import {
   ChevronRight,
   Sunrise,
   Sun,
-  Moon,
+  Search,
   User,
 } from "lucide-react";
+import { supabase, getSessionToken } from "@/lib/supabase";
 import { useState, useEffect } from "react";
 
 function WebMonthCalendar({
@@ -415,18 +416,21 @@ export default function Perfil({ params }: { params: { id: string } }) {
     fetchReviews();
 
     // Check session
-    const token = localStorage.getItem("bp_session_token");
-    const savedUser = localStorage.getItem("bp_user_profile");
-    if (token && savedUser) {
-      try {
-        const parsedUser = JSON.parse(savedUser);
-        setSessionToken(token);
-        setUserProfile(parsedUser);
-        setReviewerName(parsedUser.name || "");
-      } catch (e) {
-        console.error(e);
+    const checkSession = async () => {
+      const token = await getSessionToken();
+      const savedUser = localStorage.getItem("bp_user_profile");
+      if (token && savedUser) {
+        try {
+          const parsedUser = JSON.parse(savedUser);
+          setSessionToken(token);
+          setUserProfile(parsedUser);
+          setReviewerName(parsedUser.name || "");
+        } catch (e) {
+          console.error(e);
+        }
       }
-    }
+    };
+    checkSession();
 
     // Check initial tab
     const urlParams = new URLSearchParams(window.location.search);

@@ -20,6 +20,7 @@ import {
   Eye,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { getSessionToken } from "@/lib/supabase";
 
 function getDisplayCategory(categoryId?: string | null, categoryName?: string | null): string {
   const catId = (categoryId || "").toLowerCase().trim();
@@ -121,15 +122,18 @@ export default function Busca() {
   useEffect(() => {
     console.log("[Audit Busca] Componente Busca montado. Iniciando ciclo de vida do mapa.");
 
-    const token = localStorage.getItem("bp_session_token");
-    const savedUser = localStorage.getItem("bp_user_profile");
-    if (token && savedUser) {
-      try {
-        setUserProfile(JSON.parse(savedUser));
-      } catch (e) {
-        console.error(e);
+    const checkSession = async () => {
+      const token = await getSessionToken();
+      const savedUser = localStorage.getItem("bp_user_profile");
+      if (token && savedUser) {
+        try {
+          setUserProfile(JSON.parse(savedUser));
+        } catch (e) {
+          console.error(e);
+        }
       }
-    }
+    };
+    checkSession();
 
     // Load Local Favorites
     const favs = localStorage.getItem("xamaja_favs");

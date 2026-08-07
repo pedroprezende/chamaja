@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Calendar, Clock, Lock, Plus, X } from "lucide-react";
+import { getSessionToken } from "@/lib/supabase";
 
 export interface WorkingDay {
   day: number; // 0=Sun, 1=Mon...
@@ -87,7 +88,7 @@ export function AgendaSettingsForm({
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const token = localStorage.getItem("bp_session_token") || localStorage.getItem("session_token");
+      const token = await getSessionToken();
       const res = await fetch("/api/business-partner/profile", {
         method: "PUT",
         headers: {
@@ -120,7 +121,7 @@ export function AgendaSettingsForm({
     }
     setIsBlocking(true);
     try {
-      const token = localStorage.getItem("bp_session_token") || localStorage.getItem("session_token");
+      const token = await getSessionToken();
       const res = await fetch("/api/trpc/appointments.blockSlot", {
         method: "POST",
         headers: {

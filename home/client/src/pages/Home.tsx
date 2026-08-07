@@ -38,6 +38,7 @@ import {
   Users,
 } from "lucide-react";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { getSessionToken } from "@/lib/supabase";
 
 // Utility formatting helpers
 const formatDistancePtBr = (km: number) => {
@@ -271,15 +272,18 @@ export default function Home() {
   }, [adsToRender]);
 
   useEffect(() => {
-    const token = localStorage.getItem("bp_session_token");
-    const savedUser = localStorage.getItem("bp_user_profile");
-    if (token && savedUser) {
-      try {
-        setUserProfile(JSON.parse(savedUser));
-      } catch (e) {
-        console.error(e);
+    const checkSession = async () => {
+      const token = await getSessionToken();
+      const savedUser = localStorage.getItem("bp_user_profile");
+      if (token && savedUser) {
+        try {
+          setUserProfile(JSON.parse(savedUser));
+        } catch (e) {
+          console.error(e);
+        }
       }
-    }
+    };
+    checkSession();
 
     async function loadFeaturedAds() {
       try {
