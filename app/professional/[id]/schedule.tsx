@@ -29,6 +29,200 @@ const getDayName = (date: Date) => {
   return days[date.getDay()];
 };
 
+// Month Calendar Component for Expo React Native
+function RNMonthCalendar({
+  selectedDate,
+  onSelectDate,
+  colors,
+}: {
+  selectedDate: Date;
+  onSelectDate: (date: Date) => void;
+  colors: any;
+}) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const [viewDate, setViewDate] = useState(
+    () => new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
+  );
+
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+
+  const monthNames = [
+    "Janeiro",
+    "Fevereiro",
+    "Março",
+    "Abril",
+    "Maio",
+    "Junho",
+    "Julho",
+    "Agosto",
+    "Setembro",
+    "Outubro",
+    "Novembro",
+    "Dezembro",
+  ];
+
+  const daysOfWeek = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+  const canGoBack =
+    year > today.getFullYear() ||
+    (year === today.getFullYear() && month > today.getMonth());
+
+  const handlePrevMonth = () => {
+    if (canGoBack) {
+      setViewDate(new Date(year, month - 1, 1));
+    }
+  };
+
+  const handleNextMonth = () => {
+    setViewDate(new Date(year, month + 1, 1));
+  };
+
+  const firstDayOfWeek = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+  const grid: { date: Date; isCurrentMonth: boolean; dayNum: number }[] = [];
+
+  for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+    const dayNum = daysInPrevMonth - i;
+    grid.push({
+      date: new Date(year, month - 1, dayNum),
+      isCurrentMonth: false,
+      dayNum,
+    });
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    grid.push({
+      date: new Date(year, month, d),
+      isCurrentMonth: true,
+      dayNum: d,
+    });
+  }
+
+  const remaining = (7 - (grid.length % 7)) % 7;
+  for (let d = 1; d <= remaining; d++) {
+    grid.push({
+      date: new Date(year, month + 1, d),
+      isCurrentMonth: false,
+      dayNum: d,
+    });
+  }
+
+  const isSameDay = (d1: Date, d2: Date) => {
+    return (
+      d1.getFullYear() === d2.getFullYear() &&
+      d1.getMonth() === d2.getMonth() &&
+      d1.getDate() === d2.getDate()
+    );
+  };
+
+  return (
+    <View
+      style={[
+        styles.calendarCard,
+        { backgroundColor: colors.surface, borderColor: colors.border },
+      ]}
+    >
+      {/* Month Navigation */}
+      <View style={styles.monthHeader}>
+        <Pressable
+          onPress={handlePrevMonth}
+          disabled={!canGoBack}
+          style={[styles.monthNavBtn, !canGoBack && { opacity: 0.25 }]}
+        >
+          <MaterialIcons
+            name="chevron-left"
+            size={24}
+            color={canGoBack ? colors.text : colors.muted}
+          />
+        </Pressable>
+
+        <View style={styles.monthTitleBox}>
+          <Text style={[styles.monthTitleText, { color: colors.text }]}>
+            {monthNames[month]} {year}
+          </Text>
+        </View>
+
+        <Pressable onPress={handleNextMonth} style={styles.monthNavBtn}>
+          <MaterialIcons name="chevron-right" size={24} color={colors.text} />
+        </Pressable>
+      </View>
+
+      {/* Weekday Labels */}
+      <View style={styles.weekRow}>
+        {daysOfWeek.map((day, idx) => (
+          <Text key={idx} style={[styles.weekDayText, { color: colors.muted }]}>
+            {day}
+          </Text>
+        ))}
+      </View>
+
+      {/* Days Grid */}
+      <View style={styles.gridContainer}>
+        {grid.map((cell, idx) => {
+          const cellDate = new Date(cell.date);
+          cellDate.setHours(0, 0, 0, 0);
+          const isToday = isSameDay(cellDate, today);
+          const isSelected = isSameDay(cellDate, selectedDate);
+          const isPast = cellDate < today;
+          const isDisabled = !cell.isCurrentMonth || isPast;
+
+          return (
+            <Pressable
+              key={idx}
+              disabled={isDisabled}
+              onPress={() => onSelectDate(cell.date)}
+              style={[
+                styles.dayCell,
+                isSelected && {
+                  backgroundColor: colors.primary,
+                  borderRadius: 12,
+                },
+                isToday &&
+                  !isSelected && {
+                    borderWidth: 1,
+                    borderColor: colors.primary,
+                    borderRadius: 12,
+                  },
+                isDisabled && { opacity: 0.2 },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.dayNumText,
+                  {
+                    color: isSelected
+                      ? "#FFF"
+                      : cell.isCurrentMonth
+                        ? colors.text
+                        : colors.muted,
+                  },
+                  isToday && !isSelected && { color: colors.primary, fontWeight: "bold" },
+                  isSelected && { fontWeight: "bold" },
+                ]}
+              >
+                {cell.dayNum}
+              </Text>
+              {isToday && !isSelected && (
+                <View
+                  style={[
+                    styles.todayDot,
+                    { backgroundColor: colors.primary },
+                  ]}
+                />
+              )}
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 export default function ScheduleScreen() {
   const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -258,55 +452,22 @@ export default function ScheduleScreen() {
           </View>
         )}
 
-        {/* Step 2: Date */}
+
+
+        {/* Step 2: Date Calendar */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             {services.length > 0 ? "2." : "1."} Escolha a Data
           </Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.dateScroll}
-          >
-            {dates.map((d, idx) => {
-              const isSelected = formatDate(d) === formatDate(selectedDate);
-              return (
-                <Pressable
-                  key={idx}
-                  style={[
-                    styles.dateCard,
-                    {
-                      backgroundColor: isSelected
-                        ? colors.primary
-                        : colors.surface,
-                      borderColor: isSelected ? colors.primary : colors.border,
-                    },
-                  ]}
-                  onPress={() => {
-                    setSelectedDate(d);
-                    setSelectedSlot(null);
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.dateDayName,
-                      { color: isSelected ? "#FFF" : colors.muted },
-                    ]}
-                  >
-                    {getDayName(d)}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.dateDayNum,
-                      { color: isSelected ? "#FFF" : colors.text },
-                    ]}
-                  >
-                    {d.getDate()}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
+
+          <RNMonthCalendar
+            selectedDate={selectedDate}
+            onSelectDate={(d) => {
+              setSelectedDate(d);
+              setSelectedSlot(null);
+            }}
+            colors={colors}
+          />
         </View>
 
         {/* Step 3: Slots */}
@@ -512,6 +673,72 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
+  },
+  calendarCard: {
+    padding: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  monthHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  monthNavBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  monthTitleBox: {
+    flex: 1,
+    alignItems: "center",
+  },
+  monthTitleText: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  weekRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginBottom: 12,
+  },
+  weekDayText: {
+    width: "14%",
+    textAlign: "center",
+    fontSize: 12,
+    fontWeight: "bold",
+    textTransform: "uppercase",
+  },
+  gridContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+  dayCell: {
+    width: "14%",
+    height: 42,
+    alignItems: "center",
+    justifyContent: "center",
+    marginVertical: 2,
+    position: "relative",
+  },
+  dayNumText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  todayDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    position: "absolute",
+    bottom: 4,
   },
   dateScroll: {
     flexDirection: "row",

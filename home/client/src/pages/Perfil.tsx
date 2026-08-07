@@ -28,9 +28,186 @@ import {
   Instagram,
   Facebook,
   Youtube,
+  ChevronLeft,
+  ChevronRight,
+  Sunrise,
+  Sun,
+  Moon,
   User,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+
+function WebMonthCalendar({
+  selectedDate,
+  onSelectDate,
+}: {
+  selectedDate: Date;
+  onSelectDate: (date: Date) => void;
+}) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const [viewDate, setViewDate] = useState(
+    () => new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
+  );
+
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+
+  const monthNames = [
+    "Janeiro",
+    "Fevereiro",
+    "Março",
+    "Abril",
+    "Maio",
+    "Junho",
+    "Julho",
+    "Agosto",
+    "Setembro",
+    "Outubro",
+    "Novembro",
+    "Dezembro",
+  ];
+
+  const daysOfWeek = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+  const canGoBack =
+    year > today.getFullYear() ||
+    (year === today.getFullYear() && month > today.getMonth());
+
+  const handlePrevMonth = () => {
+    if (canGoBack) {
+      setViewDate(new Date(year, month - 1, 1));
+    }
+  };
+
+  const handleNextMonth = () => {
+    setViewDate(new Date(year, month + 1, 1));
+  };
+
+  const firstDayOfWeek = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+  const grid: { date: Date; isCurrentMonth: boolean; dayNum: number }[] = [];
+
+  for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+    const dayNum = daysInPrevMonth - i;
+    grid.push({
+      date: new Date(year, month - 1, dayNum),
+      isCurrentMonth: false,
+      dayNum,
+    });
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    grid.push({
+      date: new Date(year, month, d),
+      isCurrentMonth: true,
+      dayNum: d,
+    });
+  }
+
+  const remaining = (7 - (grid.length % 7)) % 7;
+  for (let d = 1; d <= remaining; d++) {
+    grid.push({
+      date: new Date(year, month + 1, d),
+      isCurrentMonth: false,
+      dayNum: d,
+    });
+  }
+
+  const isSameDay = (d1: Date, d2: Date) => {
+    return (
+      d1.getFullYear() === d2.getFullYear() &&
+      d1.getMonth() === d2.getMonth() &&
+      d1.getDate() === d2.getDate()
+    );
+  };
+
+  return (
+    <div className="bg-zinc-900/60 border border-white/10 rounded-2xl p-4 md:p-5 shadow-xl">
+      {/* Month Header Navigation */}
+      <div className="flex items-center justify-between mb-4">
+        <button
+          type="button"
+          onClick={handlePrevMonth}
+          disabled={!canGoBack}
+          className={`p-2 rounded-xl border border-white/10 transition ${
+            canGoBack
+              ? "bg-zinc-800 text-white hover:bg-zinc-700 hover:border-white/20"
+              : "opacity-30 text-zinc-500 cursor-not-allowed"
+          }`}
+          title="Mês anterior"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+
+        <div className="text-center">
+          <h4 className="text-base font-black text-white capitalize tracking-wide">
+            {monthNames[month]} {year}
+          </h4>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleNextMonth}
+          className="p-2 rounded-xl border border-white/10 bg-zinc-800 text-white hover:bg-zinc-700 hover:border-white/20 transition"
+          title="Próximo mês"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Weekdays header */}
+      <div className="grid grid-cols-7 gap-1 text-center mb-2">
+        {daysOfWeek.map((day, idx) => (
+          <div
+            key={idx}
+            className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider py-1"
+          >
+            {day}
+          </div>
+        ))}
+      </div>
+
+      {/* Days grid */}
+      <div className="grid grid-cols-7 gap-1.5">
+        {grid.map((cell, idx) => {
+          const cellDate = new Date(cell.date);
+          cellDate.setHours(0, 0, 0, 0);
+          const isToday = isSameDay(cellDate, today);
+          const isSelected = isSameDay(cellDate, selectedDate);
+          const isPast = cellDate < today;
+          const isDisabled = !cell.isCurrentMonth || isPast;
+
+          return (
+            <button
+              key={idx}
+              type="button"
+              disabled={isDisabled}
+              onClick={() => onSelectDate(cell.date)}
+              className={`h-10 rounded-xl font-bold text-xs flex flex-col items-center justify-center relative transition-all duration-150 ${
+                isDisabled
+                  ? "opacity-20 text-zinc-500 cursor-not-allowed"
+                  : isSelected
+                    ? "bg-primary text-black font-black shadow-lg shadow-primary/20 scale-105"
+                    : isToday
+                      ? "border border-primary text-primary bg-primary/10 hover:bg-primary/20"
+                      : "bg-zinc-900/80 border border-white/5 text-white hover:bg-zinc-800 hover:border-white/20"
+              }`}
+            >
+              <span>{cell.dayNum}</span>
+              {isToday && !isSelected && (
+                <span className="w-1 h-1 rounded-full bg-primary absolute bottom-1"></span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 import { toast } from "sonner";
 import {
   parseWorkingHours,
@@ -1783,77 +1960,66 @@ export default function Perfil({ params }: { params: { id: string } }) {
                     : "1."}{" "}
                   Escolha a data
                 </p>
-                <div className="flex overflow-x-auto gap-2 pb-2">
-                  {Array.from({ length: 14 }).map((_, i) => {
-                    const d = new Date();
-                    d.setDate(d.getDate() + i);
-                    const isSelected = formatYMD(d) === formatYMD(scheduleDate);
-                    return (
-                      <button
-                        key={i}
-                        onClick={() => {
-                          setScheduleDate(d);
-                          setSelectedSlot(null);
-                        }}
-                        className={`min-w-[60px] p-2 rounded-xl border flex flex-col items-center ${
-                          isSelected
-                            ? "border-primary bg-primary text-black font-bold"
-                            : "border-white/10 bg-zinc-900 text-white"
-                        }`}
-                      >
-                        <span className="text-[10px] uppercase opacity-80">
-                          {
-                            ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"][
-                              d.getDay()
-                            ]
-                          }
-                        </span>
-                        <span className="text-lg leading-tight">
-                          {d.getDate()}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
+                <WebMonthCalendar
+                  selectedDate={scheduleDate}
+                  onSelectDate={(d) => {
+                    setScheduleDate(d);
+                    setSelectedSlot(null);
+                  }}
+                />
               </div>
 
               {/* Slots Selection */}
               <div className="mb-2">
-                <p className="text-sm font-bold text-white mb-3">
-                  {provider?.services &&
-                  parseJsonArray(provider.services).length > 0
-                    ? "3."
-                    : "2."}{" "}
-                  Escolha o horário
+                <p className="text-sm font-bold text-white mb-3 flex items-center justify-between">
+                  <span>
+                    {provider?.services &&
+                    parseJsonArray(provider.services).length > 0
+                      ? "3."
+                      : "2."}{" "}
+                    Escolha o horário
+                  </span>
+                  {availableSlots.length > 0 && (
+                    <span className="text-xs text-primary font-semibold">
+                      {availableSlots.length} livre(s)
+                    </span>
+                  )}
                 </p>
                 {isFetchingSlots ? (
-                  <p className="text-zinc-400 text-sm">Buscando horários...</p>
+                  <div className="p-6 rounded-xl border border-white/5 bg-zinc-900/50 flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-zinc-400 text-sm">Buscando horários disponíveis...</span>
+                  </div>
                 ) : availableSlots.length === 0 ? (
                   <div className="p-6 rounded-xl border border-white/5 bg-zinc-900/50 flex flex-col items-center text-center">
                     <Calendar className="w-8 h-8 text-zinc-500 mb-2" />
-                    <p className="text-white font-bold">Nenhum horário livre</p>
-                    <p className="text-zinc-500 text-xs">
-                      Tente selecionar outra data.
+                    <p className="text-white font-bold">Nenhum horário livre nesta data</p>
+                    <p className="text-zinc-500 text-xs mt-1">
+                      Selecione outro dia no calendário acima para encontrar horários.
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-4 gap-2">
-                    {availableSlots.map((slot, idx) => {
-                      const isSelected = selectedSlot?.start === slot.start;
-                      return (
-                        <button
-                          key={idx}
-                          onClick={() => setSelectedSlot(slot)}
-                          className={`py-2 rounded-lg text-sm font-semibold border ${
-                            isSelected
-                              ? "border-primary bg-primary text-black"
-                              : "border-white/10 bg-zinc-900 text-white hover:bg-zinc-800"
-                          }`}
-                        >
-                          {slot.start}
-                        </button>
-                      );
-                    })}
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                      {availableSlots.map((slot, idx) => {
+                        const isSelected = selectedSlot?.start === slot.start;
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setSelectedSlot(slot)}
+                            className={`py-2.5 px-3 rounded-xl text-xs font-extrabold border flex items-center justify-center gap-1.5 transition-all duration-150 ${
+                              isSelected
+                                ? "border-primary bg-primary text-black shadow-lg shadow-primary/20 scale-105"
+                                : "border-white/10 bg-zinc-900/90 text-white hover:bg-zinc-800 hover:border-white/20"
+                            }`}
+                          >
+                            <Clock className="w-3.5 h-3.5 opacity-70" />
+                            <span>{slot.start}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
