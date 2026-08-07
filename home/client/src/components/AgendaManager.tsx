@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { 
   ChevronLeft, ChevronRight, Check, X, Calendar as CalendarIcon, 
   Clock, MessageCircle, Search, Filter, Plus, CalendarDays, ArrowUpDown,
-  Phone, User, CheckCircle2, AlertCircle, Clock4, CalendarCheck, CalendarRange, Eye
+  Phone, User, CheckCircle2, AlertCircle, Clock4, CalendarCheck, CalendarRange, Eye, Trash2
 } from "lucide-react";
 import { toast } from "sonner";
 import { AgendaSettingsForm } from "./AgendaSettingsForm";
@@ -53,6 +53,7 @@ export function AgendaManager({ providerId, initialSettings, onSaved }: { provid
 
   // Modals
   const [selectedAppt, setSelectedAppt] = useState<any>(null);
+  const [apptToDelete, setApptToDelete] = useState<any>(null);
   const [notesText, setNotesText] = useState("");
   
   const [showBlockModal, setShowBlockModal] = useState(false);
@@ -206,6 +207,30 @@ export function AgendaManager({ providerId, initialSettings, onSaved }: { provid
         fetchAppointments();
       } else {
         toast.error("Erro ao atualizar status.");
+      }
+    } catch (e) {
+      toast.error("Erro de conexão.");
+    }
+  };
+
+  const handleDeleteAppointment = async () => {
+    if (!apptToDelete) return;
+    try {
+      const token = await getSessionToken();
+      const res = await fetch("/api/trpc/appointments.delete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ id: apptToDelete.id })
+      });
+      if (res.ok) {
+        toast.success("Agendamento excluído com sucesso!");
+        setAppointments(prev => prev.filter(a => a.id !== apptToDelete.id));
+        setApptToDelete(null);
+      } else {
+        toast.error("Erro ao excluir agendamento.");
       }
     } catch (e) {
       toast.error("Erro de conexão.");
@@ -762,10 +787,23 @@ export function AgendaManager({ providerId, initialSettings, onSaved }: { provid
                               </div>
                             </div>
 
-                            {/* Status Badge */}
-                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${statusColors[appt.status]} bg-opacity-20 text-white border border-white/10 shrink-0`}>
-                              {statusLabels[appt.status]}
-                            </span>
+                            {/* Status & Delete */}
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${statusColors[appt.status]} bg-opacity-20 text-white border border-white/10`}>
+                                {statusLabels[appt.status]}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setApptToDelete(appt);
+                                }}
+                                className="p-1.5 rounded-lg text-zinc-500 hover:text-red-500 hover:bg-red-500/10 transition"
+                                title="Excluir agendamento"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
 
                           {/* Info row: Date, Time & Phone */}
@@ -914,6 +952,31 @@ export function AgendaManager({ providerId, initialSettings, onSaved }: { provid
 
             <div className="p-4 border-t border-zinc-900 bg-zinc-900/30 flex justify-end">
               <Button onClick={() => setSelectedAppt(null)} variant="ghost" className="text-zinc-400 hover:text-white">Fechar</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO */}
+      {apptToDelete && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col">
+            <div className="p-6 text-center">
+              <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4 border border-red-500/20">
+                <Trash2 className="w-6 h-6 text-red-500" />
+              </div>
+              <h2 className="text-xl font-black text-white mb-2">Excluir este agendamento?</h2>
+              <p className="text-sm text-zinc-400">Essa ação removerá o agendamento da sua agenda.</p>
+            </div>
+            
+            <div className="p-4 border-t border-zinc-900 bg-zinc-900/30 flex flex-col-reverse sm:flex-row justify-end gap-3">
+              <Button onClick={() => setApptToDelete(null)} variant="ghost" className="text-zinc-400 hover:text-white sm:flex-1">Cancelar</Button>
+              <Button 
+                onClick={handleDeleteAppointment}
+                className="bg-red-500 text-white font-bold hover:bg-red-600 sm:flex-1 shadow-lg shadow-red-500/20"
+              >
+                Excluir agendamento
+              </Button>
             </div>
           </div>
         </div>

@@ -229,6 +229,39 @@ export const appointmentsRouter = router({
       return { success: true };
     }),
 
+  delete: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const dbInstance = await db.getDb();
+      if (!dbInstance) throw new Error("DB_UNAVAILABLE");
+      
+      const appts = await dbInstance
+        .select()
+        .from(appointments)
+        .where(eq(appointments.id, input.id));
+      if (appts.length === 0) throw new Error("NOT_FOUND");
+      
+      // Ensure user owns the provider
+      const provider = await dbInstance
+        .select()
+        .from(providers)
+        .where(eq(providers.id, appts[0].providerId));
+        
+      const isProvider = provider.length > 0 && provider[0].userId === ctx.user.openId;
+      
+      if (!isProvider) throw new Error("UNAUTHORIZED");
+      
+      await dbInstance
+        .delete(appointments)
+        .where(eq(appointments.id, input.id));
+        
+      return { success: true };
+    }),
+
   reschedule: protectedProcedure
     .input(
       z.object({
