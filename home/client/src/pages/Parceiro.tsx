@@ -1680,11 +1680,15 @@ export default function Parceiro() {
 
         {/* Dashboard Panel */}
         {view === "dashboard" && user && (
-          <section className="flex-1 py-12 bg-background">
-            <div className="container mx-auto px-4 max-w-6xl space-y-8">
-              <div className="space-y-8">
+          <section className="flex-1 py-8 md:py-10 bg-background">
+            <div className={`mx-auto px-3 sm:px-5 md:px-6 lg:px-8 space-y-6 md:space-y-8 transition-all duration-200 ${
+              activeTab === "agenda"
+                ? "w-full max-w-[94vw] 2xl:max-w-[1760px] xl:max-w-[1580px] lg:max-w-[1400px]"
+                : "container max-w-6xl"
+            }`}>
+              <div className="space-y-6 md:space-y-8">
                 {/* Dashboard Top Header */}
-                <div className="bg-card border border-border rounded-3xl p-6 md:p-8 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+                <div className="bg-card border border-border rounded-3xl p-5 md:p-8 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent pointer-events-none"></div>
 
                   <div className="flex items-center gap-5 relative z-10">
@@ -1732,7 +1736,7 @@ export default function Parceiro() {
                             )}
                             {business.status === "ativo" && (
                               <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 gap-1">
-                                <ShieldCheck className="h-3 w-3" /> Negócio Ativo
+                                <ShieldCheck className="h-3 w-3" /> Negócio Verificado
                               </span>
                             )}
                             {business.status === "rejeitado" && (
@@ -1746,26 +1750,27 @@ export default function Parceiro() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-3 relative z-10 w-full md:w-auto">
-                    {user.tipo !== "cliente" && (
+                  <div className="flex flex-wrap items-center gap-3 relative z-10 w-full md:w-auto">
+                    {user.tipo !== "cliente" && business && (
                       <Button
-                        onClick={() => saveProfile()}
-                        disabled={isLoading}
-                        className="bg-primary text-primary-foreground font-bold hover:bg-primary/90 h-11 px-6 rounded-xl flex items-center justify-center gap-2 w-full sm:w-auto"
+                        onClick={() => {
+                          const target = business.category === "Comércio" || business.categoryId === "comercio"
+                            ? `/comercio/${business.id}`
+                            : `/prestador/${business.id}`;
+                          window.open(target, "_blank");
+                        }}
+                        variant="outline"
+                        className="border-zinc-800 hover:bg-zinc-800 text-xs font-semibold rounded-xl h-10 px-4 flex-1 md:flex-none"
                       >
-                        {isLoading ? (
-                          <span className="loader-btn w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></span>
-                        ) : (
-                          "Salvar Alterações"
-                        )}
+                        Ver Perfil Público
                       </Button>
                     )}
                     <Button
-                      variant="ghost"
                       onClick={() => handleLogout()}
-                      className="text-zinc-400 hover:text-white hover:bg-zinc-900 border border-zinc-800 rounded-xl h-11 px-5 text-sm flex items-center justify-center gap-2"
+                      variant="ghost"
+                      className="text-red-400 hover:text-red-300 hover:bg-red-500/10 text-xs font-semibold rounded-xl h-10 px-4 flex-1 md:flex-none"
                     >
-                      <LogOut className="h-4 w-4" />
+                      <LogOut className="h-4 w-4 mr-2" />
                       Sair
                     </Button>
                   </div>
@@ -1786,9 +1791,15 @@ export default function Parceiro() {
                 )}
 
                 {/* Tab Selector & Main Layout */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div className={`grid grid-cols-1 gap-6 md:gap-8 ${
+                  activeTab === "agenda"
+                    ? "lg:grid-cols-12"
+                    : "lg:grid-cols-12"
+                }`}>
                   {/* Sidebar Navigation */}
-                  <div className="lg:col-span-3 space-y-3">
+                  <div className={`${
+                    activeTab === "agenda" ? "lg:col-span-2 xl:col-span-2" : "lg:col-span-3"
+                  } space-y-2.5`}>
                     {(user?.tipo === "cliente"
                       ? [
                           { id: "perfil", label: "Meu Perfil", icon: User },
@@ -1819,22 +1830,26 @@ export default function Parceiro() {
                         <button
                           key={tab.id}
                           onClick={() => setActiveTab(tab.id as any)}
-                          className={`w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl font-bold text-sm transition-all border ${
+                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-bold text-sm transition-all border ${
                             activeTab === tab.id
                               ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/5"
                               : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-card/85"
                           }`}
                         >
-                          <Icon className="h-4.5 w-4.5" />
-                          <span>{tab.label}</span>
+                          <Icon className="h-4.5 w-4.5 shrink-0" />
+                          <span className="truncate">{tab.label}</span>
                         </button>
                       );
                     })}
                   </div>
 
                   {/* Tabs Panels Container */}
-                  <div className="lg:col-span-9">
-                    <div className="bg-card border border-border rounded-3xl p-6 md:p-8 shadow-xl min-h-[500px]">
+                  <div className={`${
+                    activeTab === "agenda" ? "lg:col-span-10 xl:col-span-10" : "lg:col-span-9"
+                  }`}>
+                    <div className={`bg-card border border-border rounded-3xl ${
+                      activeTab === "agenda" ? "p-4 sm:p-6 md:p-7" : "p-6 md:p-8"
+                    } shadow-xl min-h-[500px]`}>
                       {/* MEU PERFIL PANEL */}
                       {activeTab === "perfil" && (
                         <div className="space-y-6">

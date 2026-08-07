@@ -550,22 +550,22 @@ export function AgendaManager({ providerId, initialSettings, onSaved }: { provid
               </div>
             </div>
 
-            {/* MAIN TWO-COLUMN WORKSPACE: CALENDAR (LEFT) & UPCOMING APPOINTMENTS LIST (RIGHT) */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* MAIN TWO-COLUMN WORKSPACE: CALENDAR (LEFT ~65%) & UPCOMING APPOINTMENTS LIST (RIGHT ~35%) */}
+            <div className="flex flex-col lg:flex-row gap-8 items-start w-full">
               
-              {/* LEFT COLUMN: INTERACTIVE CALENDAR & CONTROLS */}
-              <div className="lg:col-span-7 xl:col-span-7 space-y-4">
+              {/* LEFT COLUMN: INTERACTIVE CALENDAR & CONTROLS (~65% WIDTH) */}
+              <div className="w-full lg:w-[65%] xl:w-[65%] shrink-0 min-w-0 space-y-4">
                 {/* CALENDAR CONTROLS */}
-                <div className="flex flex-wrap items-center justify-between gap-3 bg-zinc-900/40 p-3 rounded-2xl border border-zinc-800/80">
+                <div className="flex flex-wrap items-center justify-between gap-3 bg-zinc-900/40 p-3.5 rounded-2xl border border-zinc-800/80 shadow-sm">
                   <div className="flex items-center gap-1.5 bg-zinc-900 p-1 rounded-xl border border-zinc-800">
-                    <Button variant="ghost" size="sm" onClick={() => setViewMode("day")} className={`px-3 py-1 rounded-lg h-7 text-xs font-bold ${viewMode === "day" ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-400 hover:text-white"}`}>Dia</Button>
-                    <Button variant="ghost" size="sm" onClick={() => setViewMode("week")} className={`px-3 py-1 rounded-lg h-7 text-xs font-bold ${viewMode === "week" ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-400 hover:text-white"}`}>Semana</Button>
-                    <Button variant="ghost" size="sm" onClick={() => setViewMode("month")} className={`px-3 py-1 rounded-lg h-7 text-xs font-bold ${viewMode === "month" ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-400 hover:text-white"}`}>Mês</Button>
+                    <Button variant="ghost" size="sm" onClick={() => setViewMode("day")} className={`px-3.5 py-1 rounded-lg h-7 text-xs font-bold transition ${viewMode === "day" ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-400 hover:text-white"}`}>Dia</Button>
+                    <Button variant="ghost" size="sm" onClick={() => setViewMode("week")} className={`px-3.5 py-1 rounded-lg h-7 text-xs font-bold transition ${viewMode === "week" ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-400 hover:text-white"}`}>Semana</Button>
+                    <Button variant="ghost" size="sm" onClick={() => setViewMode("month")} className={`px-3.5 py-1 rounded-lg h-7 text-xs font-bold transition ${viewMode === "month" ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-400 hover:text-white"}`}>Mês</Button>
                   </div>
 
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="icon" onClick={handlePrev} className="h-8 w-8 bg-zinc-900 border-zinc-800 text-white hover:bg-zinc-800 rounded-lg"><ChevronLeft className="w-4 h-4" /></Button>
-                    <h2 className="text-xs sm:text-sm font-black text-white min-w-[130px] text-center capitalize tracking-wide">
+                    <h2 className="text-xs sm:text-sm font-black text-white min-w-[140px] text-center capitalize tracking-wide">
                       {viewMode === "month" 
                         ? currentDate.toLocaleDateString("pt-BR", { month: "long", year: "numeric" }) 
                         : currentDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })
@@ -575,8 +575,8 @@ export function AgendaManager({ providerId, initialSettings, onSaved }: { provid
                     <Button variant="ghost" size="sm" onClick={() => { setCurrentDate(new Date()); setSelectedCalendarDay(null); }} className="text-xs font-bold text-primary hover:bg-primary/10 h-8 px-2.5 rounded-lg">Hoje</Button>
                   </div>
 
-                  <Button onClick={() => setShowBlockModal(true)} size="sm" variant="outline" className="bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-white text-xs font-bold h-8 rounded-xl">
-                    <Plus className="w-3.5 h-3.5 mr-1 text-primary" /> Bloquear
+                  <Button onClick={() => setShowBlockModal(true)} size="sm" variant="outline" className="bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-white text-xs font-bold h-8 rounded-xl px-3.5">
+                    <Plus className="w-3.5 h-3.5 mr-1 text-primary" /> Bloquear Horário
                   </Button>
                 </div>
 
@@ -595,17 +595,17 @@ export function AgendaManager({ providerId, initialSettings, onSaved }: { provid
                 </div>
               </div>
 
-              {/* RIGHT COLUMN: PRÓXIMOS AGENDAMENTOS (FIXED & SMART LIST) */}
-              <div className="lg:col-span-5 xl:col-span-5 bg-zinc-900/40 border border-zinc-800/80 rounded-3xl p-4 md:p-5 flex flex-col space-y-4 shadow-xl">
+              {/* RIGHT COLUMN: PRÓXIMOS AGENDAMENTOS (FIXED & SMART LIST ~35% WIDTH) */}
+              <div className="w-full lg:w-[35%] xl:w-[35%] min-w-0 bg-zinc-900/40 border border-zinc-800/80 rounded-3xl p-4 sm:p-5 md:p-6 flex flex-col space-y-4 shadow-xl">
                 
                 {/* PANEL HEADER */}
-                <div className="flex items-center justify-between pb-3 border-b border-zinc-800/80">
+                <div className="flex items-center justify-between pb-3.5 border-b border-zinc-800/80">
                   <div className="flex items-center gap-2">
                     <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
                     <h3 className="font-black text-base text-white tracking-wide">Próximos Agendamentos</h3>
                   </div>
                   <span className="text-xs font-bold bg-zinc-800 border border-white/5 text-zinc-300 px-2.5 py-0.5 rounded-full">
-                    {filteredAppointments.length} item(s)
+                    {filteredAppointments.length} agendamento(s)
                   </span>
                 </div>
 
@@ -629,7 +629,7 @@ export function AgendaManager({ providerId, initialSettings, onSaved }: { provid
                 </div>
 
                 {/* PERIOD & STATUS FILTERS */}
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   {/* Period Pills */}
                   <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
                     {[
@@ -703,7 +703,7 @@ export function AgendaManager({ providerId, initialSettings, onSaved }: { provid
                 )}
 
                 {/* CHRONOLOGICAL APPOINTMENTS LIST */}
-                <div className="space-y-3 max-h-[580px] overflow-y-auto pr-1 custom-scrollbar">
+                <div className="space-y-3.5 max-h-[620px] overflow-y-auto pr-1 custom-scrollbar">
                   {filteredAppointments.length === 0 ? (
                     <div className="p-8 text-center bg-zinc-950/60 border border-zinc-800/80 rounded-2xl space-y-2">
                       <CalendarDays className="w-8 h-8 text-zinc-600 mx-auto" />
@@ -744,19 +744,19 @@ export function AgendaManager({ providerId, initialSettings, onSaved }: { provid
                             setSelectedAppt(appt);
                             setNotesText(appt.notes || "");
                           }}
-                          className="bg-zinc-950 border border-zinc-800/90 hover:border-zinc-700 p-4 rounded-2xl space-y-3 transition-all duration-150 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer group"
+                          className="bg-zinc-950/90 border border-zinc-800/90 hover:border-primary/40 p-4 sm:p-5 rounded-2xl space-y-3.5 transition-all duration-150 hover:shadow-xl hover:-translate-y-0.5 cursor-pointer group"
                         >
                           {/* Header: Client & Status */}
                           <div className="flex items-start justify-between gap-3">
-                            <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                              <div className="w-8 h-8 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-300 font-bold text-xs shrink-0">
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <div className="w-10 h-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-300 font-bold text-sm shrink-0 group-hover:border-primary/40 transition">
                                 {appt.clientName ? appt.clientName.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
                               </div>
-                              <div className="min-w-0">
-                                <h4 className="font-extrabold text-sm text-white truncate group-hover:text-primary transition">
+                              <div className="min-w-0 flex-1">
+                                <h4 className="font-extrabold text-sm md:text-base text-white truncate group-hover:text-primary transition">
                                   {appt.clientName}
                                 </h4>
-                                <p className="text-xs text-zinc-400 truncate">
+                                <p className="text-xs text-zinc-400 truncate mt-0.5">
                                   {appt.serviceName}
                                 </p>
                               </div>
@@ -769,27 +769,27 @@ export function AgendaManager({ providerId, initialSettings, onSaved }: { provid
                           </div>
 
                           {/* Info row: Date, Time & Phone */}
-                          <div className="flex flex-wrap items-center justify-between gap-2 text-xs pt-1 border-t border-zinc-900">
+                          <div className="flex flex-wrap items-center justify-between gap-2 text-xs pt-2 border-t border-zinc-900">
                             <div className="flex items-center gap-3 text-zinc-300 font-medium">
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-1.5 bg-zinc-900/80 px-2.5 py-1 rounded-lg border border-zinc-800">
                                 <CalendarIcon className="w-3.5 h-3.5 text-primary" />
                                 <span className={`font-bold ${isToday ? "text-primary" : ""}`}>{dateDisplay}</span>
                               </div>
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-1.5 bg-zinc-900/80 px-2.5 py-1 rounded-lg border border-zinc-800">
                                 <Clock className="w-3.5 h-3.5 text-zinc-400" />
-                                <span className="font-mono">{appt.startTime} - {appt.endTime}</span>
+                                <span className="font-mono font-bold">{appt.startTime} - {appt.endTime}</span>
                               </div>
                             </div>
 
                             {appt.clientPhone && appt.clientPhone !== "-" && (
-                              <span className="text-[11px] text-zinc-500 font-mono">
-                                {appt.clientPhone}
+                              <span className="text-xs text-zinc-400 font-mono flex items-center gap-1">
+                                <Phone className="w-3 h-3 text-zinc-500" /> {appt.clientPhone}
                               </span>
                             )}
                           </div>
 
                           {/* Action Buttons: WhatsApp & Ver Detalhes */}
-                          <div className="flex items-center gap-2 pt-1">
+                          <div className="flex items-center gap-2.5 pt-1">
                             {appt.clientPhone && appt.clientPhone !== "-" && (
                               <button
                                 type="button"
@@ -797,9 +797,9 @@ export function AgendaManager({ providerId, initialSettings, onSaved }: { provid
                                   e.stopPropagation();
                                   openWhatsapp(appt.clientPhone, appt.clientName);
                                 }}
-                                className="flex-1 py-2 px-3 rounded-xl bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/30 text-[#25D366] text-xs font-bold flex items-center justify-center gap-1.5 transition"
+                                className="flex-1 py-2.5 px-3 rounded-xl bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/30 text-[#25D366] text-xs font-bold flex items-center justify-center gap-1.5 transition"
                               >
-                                <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                                <MessageCircle className="w-4 h-4" /> WhatsApp
                               </button>
                             )}
 
@@ -811,9 +811,9 @@ export function AgendaManager({ providerId, initialSettings, onSaved }: { provid
                                 setSelectedAppt(appt);
                                 setNotesText(appt.notes || "");
                               }}
-                              className="flex-1 py-2 px-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition"
+                              className="flex-1 py-2.5 px-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition hover:border-zinc-700"
                             >
-                              <Eye className="w-3.5 h-3.5 text-zinc-400" /> Ver detalhes
+                              <Eye className="w-4 h-4 text-zinc-400" /> Ver detalhes
                             </button>
                           </div>
                         </div>
