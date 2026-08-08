@@ -18,6 +18,18 @@ function formatYMD(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+function parseSafeLocal(ymdString: string) {
+  if (!ymdString) return new Date();
+  const [y, m, d] = ymdString.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function displayDate(ymdString: string) {
+  if (!ymdString) return "";
+  const [y, m, d] = ymdString.split("-");
+  return `${d}/${m}/${y}`;
+}
+
 const statusColors: any = {
   pending: "#EAB308",
   confirmed: "#10B981",
@@ -118,8 +130,7 @@ export default function ProviderAgendaScreen() {
 
     return (appointments || [])
       .filter((appt: any) => {
-        const apptDate = new Date(`${appt.date}T12:00:00Z`);
-        apptDate.setHours(0, 0, 0, 0);
+        const apptDate = parseSafeLocal(appt.date);
 
         // 1. Day selection from calendar
         if (selectedCalendarDay) {
@@ -489,18 +500,23 @@ export default function ProviderAgendaScreen() {
             </View>
           ) : (
             filteredAppointments.map((appt: any) => {
-              const apptDate = new Date(`${appt.date}T12:00:00Z`);
-              apptDate.setHours(0, 0, 0, 0);
-              const isToday = formatYMD(apptDate) === formatYMD(new Date());
-              const isTomorrow = formatYMD(apptDate) === formatYMD(new Date(Date.now() + 86400000));
-              const dateStr = isToday ? "Hoje" : isTomorrow ? "Amanhã" : apptDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+              const isToday = appt.date === formatYMD(new Date());
+              const isTomorrow = appt.date === formatYMD(new Date(Date.now() + 86400000));
+              
+              let dateStr = displayDate(appt.date);
+              if (isToday) dateStr = "Hoje";
+              else if (isTomorrow) dateStr = "Amanhã";
+              else {
+                const months = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+                const [y, m, d] = appt.date.split("-");
+                dateStr = `${d} de ${months[Number(m)-1]}`;
+              }
 
               return (
                 <Pressable
                   key={appt.id}
                   onPress={() => {
-                    const d = new Date(`${appt.date}T12:00:00Z`);
-                    d.setHours(0, 0, 0, 0);
+                    const d = parseSafeLocal(appt.date);
                     setCurrentDate(d);
                     setSelectedAppt(appt);
                     setNotesText(appt.notes || "");
@@ -543,8 +559,7 @@ export default function ProviderAgendaScreen() {
                     )}
                     <Pressable
                       onPress={() => {
-                        const d = new Date(`${appt.date}T12:00:00Z`);
-                        d.setHours(0, 0, 0, 0);
+                        const d = parseSafeLocal(appt.date);
                         setCurrentDate(d);
                         setSelectedAppt(appt);
                         setNotesText(appt.notes || "");
@@ -583,7 +598,7 @@ export default function ProviderAgendaScreen() {
                   <View style={styles.detailRow}>
                     <MaterialIcons name="event" size={20} color={colors.muted} />
                     <Text style={[styles.detailText, { color: colors.text }]}>
-                      {new Date(`${selectedAppt.date}T12:00:00Z`).toLocaleDateString("pt-BR")} às {selectedAppt.startTime}
+                      {displayDate(selectedAppt.date)} às {selectedAppt.startTime}
                     </Text>
                   </View>
                   

@@ -87,9 +87,11 @@ export default function AppointmentsScreen() {
               const prov = item.provider;
               const [y, m, d] = appt.date.split("-");
               const formattedDate = `${d}/${m}/${y}`;
-              const dateObj = new Date(`${appt.date}T12:00:00Z`);
-              dateObj.setHours(0, 0, 0, 0);
-              const isPast = dateObj < new Date(new Date().setHours(0,0,0,0));
+              
+              const dateObj = new Date(Number(y), Number(m) - 1, Number(d));
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const isPast = dateObj < today;
               
               return (
                 <View key={appt.id} style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
