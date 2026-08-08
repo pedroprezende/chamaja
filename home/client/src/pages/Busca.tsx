@@ -18,6 +18,16 @@ import {
   List as ListIcon,
   CheckCircle,
   Eye,
+  Grid,
+  Utensils,
+  Scissors,
+  HeartPulse,
+  Wrench,
+  Home as HomeIcon,
+  Hammer,
+  Car,
+  GraduationCap,
+  MoreHorizontal,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { getSessionToken } from "@/lib/supabase";
@@ -111,11 +121,16 @@ export default function Busca() {
   const mapRef = useRef<any>(null);
 
   const displayCategories = [
-    { id: "todos", name: "TODAS", icon: "🌐" },
-    { id: "alimentacao", name: "ALIMENTAÇÃO", icon: "🍔" },
-    { id: "servicos", name: "SERVIÇOS", icon: "🔧" },
-    { id: "produtos", name: "PRODUTOS", icon: "🛍️" },
-    { id: "comercios", name: "COMÉRCIOS", icon: "🏪" },
+    { id: "todos", name: "Todas", icon: Grid },
+    { id: "alimentacao", name: "Alimentação", icon: Utensils },
+    { id: "beleza-estetica", name: "Beleza", icon: Scissors },
+    { id: "saude", name: "Saúde", icon: HeartPulse },
+    { id: "reformas-reparos", name: "Serviços", icon: Wrench },
+    { id: "servicos-domesticos", name: "Casa", icon: HomeIcon },
+    { id: "construcao", name: "Construção", icon: Hammer },
+    { id: "automotivo", name: "Automotivo", icon: Car },
+    { id: "educacao", name: "Educação", icon: GraduationCap },
+    { id: "mais", name: "Mais", icon: MoreHorizontal },
   ];
 
   // Load favorites, request geolocation, and load leaflet
@@ -799,31 +814,40 @@ export default function Busca() {
         </div>
       </section>
 
-      {/* ── CATEGORIES BAR ── */}
-      <section className="bg-[#050505] border-b border-zinc-900/60 sticky top-0 z-40 backdrop-blur-lg flex-shrink-0">
-        <div className="container mx-auto px-4 lg:px-8 py-4 flex gap-3.5 items-center justify-start overflow-x-auto no-scrollbar scroll-smooth">
-          {displayCategories.map((cat) => {
-            const isSelected = selectedCategory === cat.id;
-            return (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => handleCategoryClick(cat.id)}
-                className={`flex flex-col items-center justify-center gap-2.5 min-w-[110px] h-24 rounded-2xl border transition-all duration-300 ${
-                  isSelected
-                    ? "bg-transparent border-2 border-primary text-primary shadow-[0_0_15px_rgba(37,211,102,0.1)] scale-102"
-                    : "bg-[#0c0c0e]/60 border border-[#1e1e1e] hover:border-zinc-800 text-white"
-                }`}
-              >
-                <span className="text-[26px]">{cat.icon}</span>
-                <span className={`text-[10px] font-black tracking-wider uppercase text-center px-1 ${
-                  isSelected ? "text-primary" : "text-zinc-400"
-                }`}>
-                  {cat.name}
-                </span>
-              </button>
-            );
-          })}
+      {/* ── CATEGORIES BAR (REDESIGNED PER REFERENCE) ── */}
+      <section className="bg-black border-b border-zinc-900 py-3.5 flex-shrink-0 z-40 select-none">
+        <div className="container mx-auto px-4 lg:px-8">
+          <div className="flex md:grid md:grid-cols-10 overflow-x-auto gap-2.5 sm:gap-3 lg:gap-3.5 pb-1 md:pb-0 scrollbar-none no-scrollbar">
+            {displayCategories.map((cat) => {
+              const Icon = cat.icon;
+              const isSelected = selectedCategory === cat.id || (selectedCategory === "all" && cat.id === "todos");
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => handleCategoryClick(cat.id)}
+                  className={`group flex flex-col items-center justify-center gap-2.5 h-[98px] md:h-[108px] min-w-[86px] sm:min-w-[94px] md:min-w-0 flex-shrink-0 md:flex-shrink rounded-2xl cursor-pointer transition-all duration-200 ${
+                    isSelected
+                      ? "bg-[#09090b] border-2 border-primary text-primary shadow-[0_0_20px_rgba(132,204,22,0.12)]"
+                      : "bg-[#0e0e11] border border-zinc-800/80 text-zinc-400 hover:text-white hover:border-zinc-700 hover:bg-[#141418]"
+                  }`}
+                >
+                  <div className={`w-11 h-11 md:w-12 md:h-12 rounded-xl flex items-center justify-center transition-all duration-200 ${
+                    isSelected
+                      ? "bg-zinc-900/90 border border-primary/30 text-primary"
+                      : "bg-zinc-900/60 border border-white/[0.04] text-zinc-400 group-hover:text-zinc-200 group-hover:bg-zinc-800/60"
+                  }`}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <span className={`text-[11px] md:text-xs tracking-tight text-center leading-none ${
+                    isSelected ? "font-semibold text-primary" : "font-medium text-zinc-400 group-hover:text-zinc-200"
+                  }`}>
+                    {cat.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </section>
 

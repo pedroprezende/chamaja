@@ -1492,16 +1492,17 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Categories Modern Cards Grid */}
-      <section className="bg-black py-10 border-b border-zinc-900 select-none">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-8 space-y-1">
-            <h3 className="text-lg font-extrabold text-white">Navegue por Categoria</h3>
-            <p className="text-zinc-500 text-xs">Encontre comércios ou prestadores de serviço por especialidade</p>
+      {/* Categories Modern Cards Grid (Redesigned per Reference) */}
+      <section className="bg-black py-8 md:py-10 border-b border-zinc-900 select-none">
+        <div className="container mx-auto px-4 max-w-7xl">
+          <div className="text-center mb-6 md:mb-8">
+            <p className="text-zinc-400 text-xs md:text-sm font-medium tracking-wide">
+              Encontre comércios ou prestadores de serviço por especialidade
+            </p>
           </div>
 
-          {/* Horizontal scroll on mobile, grid on desktop */}
-          <div className="flex overflow-x-auto gap-4 pb-4 md:grid md:grid-cols-5 lg:grid-cols-10 md:pb-0 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none]">
+          {/* Horizontal row on desktop (10 columns), smooth scroll on mobile */}
+          <div className="flex md:grid md:grid-cols-10 overflow-x-auto gap-2.5 sm:gap-3 lg:gap-3.5 pb-2 md:pb-0 scrollbar-none no-scrollbar">
             {[
               { id: "all", name: "Todas", icon: Grid },
               { id: "comercios", name: "Alimentação", icon: Utensils },
@@ -1526,18 +1527,24 @@ export default function Home() {
                       window.location.href = `/busca?category=${cat.id}`;
                     }
                   }}
-                  className={`group flex flex-col items-center justify-center gap-3 h-28 w-24 md:w-auto flex-shrink-0 md:flex-shrink rounded-2xl cursor-pointer transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 ${
+                  className={`group flex flex-col items-center justify-center gap-2.5 h-[98px] md:h-[108px] min-w-[86px] sm:min-w-[94px] md:min-w-0 flex-shrink-0 md:flex-shrink rounded-2xl cursor-pointer transition-all duration-200 ${
                     isActive 
-                      ? "bg-zinc-950 border-2 border-primary text-primary shadow-[0_10px_20px_rgba(132,204,22,0.15)]" 
-                      : "bg-[#0c0c0e] border border-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-800 hover:shadow-2xl hover:shadow-primary/5"
+                      ? "bg-[#09090b] border-2 border-primary text-primary shadow-[0_0_20px_rgba(132,204,22,0.12)]" 
+                      : "bg-[#0e0e11] border border-zinc-800/80 text-zinc-400 hover:text-white hover:border-zinc-700 hover:bg-[#141418]"
                   }`}
                 >
-                  <div className={`p-2.5 rounded-xl transition duration-300 ${
-                    isActive ? "bg-primary/10" : "bg-zinc-900/60 group-hover:bg-primary/10 group-hover:text-primary"
+                  <div className={`w-11 h-11 md:w-12 md:h-12 rounded-xl flex items-center justify-center transition-all duration-200 ${
+                    isActive 
+                      ? "bg-zinc-900/90 border border-primary/30 text-primary" 
+                      : "bg-zinc-900/60 border border-white/[0.04] text-zinc-400 group-hover:text-zinc-200 group-hover:bg-zinc-800/60"
                   }`}>
-                    <Icon className="h-5.5 w-5.5" />
+                    <Icon className="h-5 w-5" />
                   </div>
-                  <span className="text-[11px] font-bold tracking-wide">{cat.name}</span>
+                  <span className={`text-[11px] md:text-xs tracking-tight text-center leading-none ${
+                    isActive ? "font-semibold text-primary" : "font-medium text-zinc-400 group-hover:text-zinc-200"
+                  }`}>
+                    {cat.name}
+                  </span>
                 </div>
               );
             })}
