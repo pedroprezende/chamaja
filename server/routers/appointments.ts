@@ -37,7 +37,7 @@ export const appointmentsRouter = router({
         .where(
           and(
             eq(appointments.providerId, input.providerId),
-            eq(appointments.date, new Date(`${input.date}T00:00:00Z`)),
+            eq(appointments.date, input.date),
             eq(appointments.startTime, input.startTime),
           ),
         );
@@ -57,7 +57,7 @@ export const appointmentsRouter = router({
         serviceId: input.serviceId,
         serviceName: input.serviceName,
         price: input.price,
-        date: new Date(`${input.date}T00:00:00Z`),
+        date: input.date,
         startTime: input.startTime,
         endTime: input.endTime,
         status: "pending",
@@ -87,7 +87,7 @@ export const appointmentsRouter = router({
         clientName: "Bloqueio Manual",
         clientPhone: "-",
         serviceName: input.reason || "Bloqueio Administrativo",
-        date: new Date(`${input.date}T00:00:00Z`),
+        date: input.date,
         startTime: input.startTime,
         endTime: input.endTime,
         status: "blocked",
@@ -117,8 +117,8 @@ export const appointmentsRouter = router({
       if (provider.length === 0) return [];
       
       let conditions = [eq(appointments.providerId, provider[0].id)];
-      if (input.dateStart) conditions.push(gte(appointments.date, new Date(`${input.dateStart}T00:00:00Z`)));
-      if (input.dateEnd) conditions.push(lte(appointments.date, new Date(`${input.dateEnd}T00:00:00Z`)));
+      if (input.dateStart) conditions.push(gte(appointments.date, input.dateStart));
+      if (input.dateEnd) conditions.push(lte(appointments.date, input.dateEnd));
       if (input.statusFilter && input.statusFilter.length > 0) {
         conditions.push(inArray(appointments.status, input.statusFilter));
       }
@@ -296,7 +296,7 @@ export const appointmentsRouter = router({
         .where(
           and(
             eq(appointments.providerId, appts[0].providerId),
-            eq(appointments.date, new Date(`${input.newDate}T00:00:00Z`)),
+            eq(appointments.date, input.newDate),
             eq(appointments.startTime, input.newStartTime),
           ),
         );
@@ -309,7 +309,7 @@ export const appointmentsRouter = router({
       await dbInstance
         .update(appointments)
         .set({ 
-          date: new Date(`${input.newDate}T00:00:00Z`),
+          date: input.newDate,
           startTime: input.newStartTime,
           endTime: input.newEndTime,
           status: "pending", 
@@ -402,7 +402,7 @@ export const appointmentsRouter = router({
         .where(
           and(
             eq(appointments.providerId, input.providerId),
-            eq(appointments.date, new Date(`${input.date}T00:00:00Z`)),
+            eq(appointments.date, input.date),
           ),
         );
 

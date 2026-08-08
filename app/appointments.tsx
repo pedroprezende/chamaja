@@ -85,8 +85,10 @@ export default function AppointmentsScreen() {
             appointments.map((item: any) => {
               const appt = item.appointment;
               const prov = item.provider;
-              const dateObj = new Date(appt.date);
-              const formattedDate = `${String(dateObj.getDate()).padStart(2, "0")}/${String(dateObj.getMonth() + 1).padStart(2, "0")}/${dateObj.getFullYear()}`;
+              const [y, m, d] = appt.date.split("-");
+              const formattedDate = `${d}/${m}/${y}`;
+              const dateObj = new Date(`${appt.date}T12:00:00Z`);
+              dateObj.setHours(0, 0, 0, 0);
               const isPast = dateObj < new Date(new Date().setHours(0,0,0,0));
               
               return (

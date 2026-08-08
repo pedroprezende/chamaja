@@ -11,6 +11,7 @@ import {
   index,
   jsonb,
   uuid,
+  date,
 } from "drizzle-orm/pg-core";
 
 // ── Enums ─────────────────────────────────────────────────────────────────────
@@ -253,7 +254,7 @@ export const appointments = pgTable(
     serviceId: varchar("service_id", { length: 64 }), // ID inside provider's JSON services array
     serviceName: varchar("service_name", { length: 255 }).notNull(),
     price: real("price"),
-    date: timestamp("date").notNull(),
+    date: date("date", { mode: "string" }).notNull(),
     startTime: varchar("start_time", { length: 5 }).notNull(), // HH:MM
     endTime: varchar("end_time", { length: 5 }).notNull(), // HH:MM
     status: varchar("status", { length: 50 }).default("pending").notNull(), // pending, confirmed, completed, canceled, rescheduled, blocked

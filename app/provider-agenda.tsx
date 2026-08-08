@@ -93,7 +93,7 @@ export default function ProviderAgendaScreen() {
     let confirmados = 0;
 
     (appointments || []).forEach((a: any) => {
-      const apptDateStr = formatYMD(new Date(a.date));
+      const apptDateStr = a.date;
       if (apptDateStr === todayStr && a.status !== "canceled") hoje++;
       if (a.status === "pending") pendentes++;
       if (a.status === "confirmed") confirmados++;
@@ -118,7 +118,7 @@ export default function ProviderAgendaScreen() {
 
     return (appointments || [])
       .filter((appt: any) => {
-        const apptDate = new Date(appt.date);
+        const apptDate = new Date(`${appt.date}T12:00:00Z`);
         apptDate.setHours(0, 0, 0, 0);
 
         // 1. Day selection from calendar
@@ -194,7 +194,7 @@ export default function ProviderAgendaScreen() {
   const getAppointmentsForDay = (d: Date) => {
     if (!appointments) return [];
     const ymd = formatYMD(d);
-    return appointments.filter((a: any) => formatYMD(new Date(a.date)) === ymd);
+    return appointments.filter((a: any) => a.date === ymd);
   };
 
   const handlePrev = () => {
@@ -489,7 +489,8 @@ export default function ProviderAgendaScreen() {
             </View>
           ) : (
             filteredAppointments.map((appt: any) => {
-              const apptDate = new Date(appt.date);
+              const apptDate = new Date(`${appt.date}T12:00:00Z`);
+              apptDate.setHours(0, 0, 0, 0);
               const isToday = formatYMD(apptDate) === formatYMD(new Date());
               const isTomorrow = formatYMD(apptDate) === formatYMD(new Date(Date.now() + 86400000));
               const dateStr = isToday ? "Hoje" : isTomorrow ? "Amanhã" : apptDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
@@ -498,7 +499,9 @@ export default function ProviderAgendaScreen() {
                 <Pressable
                   key={appt.id}
                   onPress={() => {
-                    setCurrentDate(new Date(appt.date));
+                    const d = new Date(`${appt.date}T12:00:00Z`);
+                    d.setHours(0, 0, 0, 0);
+                    setCurrentDate(d);
                     setSelectedAppt(appt);
                     setNotesText(appt.notes || "");
                   }}
@@ -540,7 +543,9 @@ export default function ProviderAgendaScreen() {
                     )}
                     <Pressable
                       onPress={() => {
-                        setCurrentDate(new Date(appt.date));
+                        const d = new Date(`${appt.date}T12:00:00Z`);
+                        d.setHours(0, 0, 0, 0);
+                        setCurrentDate(d);
                         setSelectedAppt(appt);
                         setNotesText(appt.notes || "");
                       }}
@@ -578,7 +583,7 @@ export default function ProviderAgendaScreen() {
                   <View style={styles.detailRow}>
                     <MaterialIcons name="event" size={20} color={colors.muted} />
                     <Text style={[styles.detailText, { color: colors.text }]}>
-                      {new Date(selectedAppt.date).toLocaleDateString("pt-BR")} às {selectedAppt.startTime}
+                      {new Date(`${selectedAppt.date}T12:00:00Z`).toLocaleDateString("pt-BR")} às {selectedAppt.startTime}
                     </Text>
                   </View>
                   
