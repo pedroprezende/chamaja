@@ -38,6 +38,11 @@ interface ProviderForm extends CreateAdminProviderInput {
   workingHoursSaturday?: string;
   avatarThumbnailUri?: string;
   coverThumbnailUri?: string;
+  street?: string;
+  number?: string;
+  neighborhood?: string;
+  city?: string;
+  cep?: string;
 }
 
 const EMPTY_FORM: ProviderForm = {
@@ -51,6 +56,11 @@ const EMPTY_FORM: ProviderForm = {
   whatsapp: "",
   description: "",
   address: "",
+  cep: "",
+  city: "Bragança Paulista",
+  neighborhood: "",
+  street: "",
+  number: "",
   avatarUri: "",
   avatarThumbnailUri: "",
   gallery: [],
@@ -228,12 +238,14 @@ async function geocodeAddressClient(
   address: string | null | undefined,
   neighborhood?: string | null,
   city?: string | null,
+  cep?: string | null,
 ): Promise<{ latitude: number; longitude: number } | null> {
   const parts: string[] = [];
   if (address && address.trim() !== "") parts.push(address.trim());
   if (neighborhood && neighborhood.trim() !== "")
     parts.push(neighborhood.trim());
   if (city && city.trim() !== "") parts.push(city.trim());
+  if (cep && cep.trim() !== "") parts.push(cep.trim());
 
   if (parts.length === 0) return null;
   parts.push("Brasil");
@@ -345,6 +357,26 @@ export default function AdminProvidersScreen() {
     Record<string, boolean>
   >({});
 
+  const fetchCep = async (cepText: string) => {
+    const cleaned = cepText.replace(/\D/g, "");
+    if (cleaned.length === 8) {
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${cleaned}/json/`);
+        const data = await res.json();
+        if (!data.erro) {
+          setForm(f => ({
+            ...f,
+            street: data.logradouro || f.street,
+            neighborhood: data.bairro || f.neighborhood,
+            city: data.localidade || f.city,
+          }));
+        }
+      } catch (e) {
+        console.warn("ViaCEP error:", e);
+      }
+    }
+  };
+
   const loadData = useCallback(async () => {
     await utils.providers.all.invalidate();
   }, [utils]);
@@ -442,6 +474,11 @@ export default function AdminProvidersScreen() {
       whatsapp: p.whatsapp || p.phone || "",
       description: p.description || "",
       address: p.address || "",
+      street: p.address ? p.address.split(",")[0]?.trim() : "",
+      number: p.address && p.address.includes(",") ? p.address.split(",")[1]?.trim() : "",
+      cep: p.cep || "",
+      city: p.city || "Bragança Paulista",
+      neighborhood: p.neighborhood || "",
       avatarUri: p.avatarUri || "",
       avatarThumbnailUri: p.avatarThumbnailUri || "",
       gallery: p.gallery || [],
@@ -494,27 +531,39 @@ export default function AdminProvidersScreen() {
     }
     setSaving(true);
     try {
+      // Montar o endereço final
+      const finalAddress = form.street
+        ? form.number
+          ? `${form.street.trim()}, ${form.number.trim()}`
+          : form.street.trim()
+        : "";
+
       // Geocodificação no Cliente
       let latitude: number | null = null;
       let longitude: number | null = null;
 
-      if (form.address && form.address.trim() !== "") {
-        const coords = await geocodeAddressClient(form.address);
+      if (finalAddress && finalAddress.trim() !== "") {
+        const coords = await geocodeAddressClient(
+          finalAddress,
+          form.neighborhood,
+          form.city,
+          form.cep
+        );
         if (coords) {
           latitude = coords.latitude;
           longitude = coords.longitude;
         } else {
           // Fallback para o centro de Bragança Paulista se o geocoding falhar
           console.warn(
-            "[Geocoding] Falha, usando coordenadas do centro da cidade.",
+            "[Geocoding] Falha, usando coordenadas nulas pois geocoding falhou."
           );
-          latitude = -22.9519;
-          longitude = -46.5419;
+          latitude = null;
+          longitude = null;
         }
       } else {
-        // Se não tiver endereço, define o centro da cidade por padrão para evitar nulos
-        latitude = -22.9519;
-        longitude = -46.5419;
+        // Se não tiver endereço, deixa as coordenadas nulas
+        latitude = null;
+        longitude = null;
       }
 
       // 1. Upload Avatar
@@ -579,7 +628,10 @@ export default function AdminProvidersScreen() {
         whatsapp: form.whatsapp,
         phone: form.whatsapp,
         description: form.description,
-        address: form.address,
+        address: finalAddress,
+        cep: form.cep || null,
+        city: form.city || "Bragança Paulista",
+        neighborhood: form.neighborhood || "",
         avatarUri: finalAvatar,
         avatarThumbnailUri: finalAvatarThumbnail || null,
         gallery: finalGallery,
@@ -947,7 +999,35 @@ export default function AdminProvidersScreen() {
                   />
                 </View>
 
-                <Text style={styles.fieldLabel}>Endereço (bairro/cidade)</Text>
+                <Text style={styles.fieldLabel}>CEP</Text>
+                <View style={styles.inputWrap}>
+                  <MaterialIcons
+                    name="markunread-mailbox"
+                    size={17}
+                    color="#94A3B8"
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Ex: 12900-000"
+                    value={form.cep}
+                    onChangeText={(v) => {
+                      const cleaned = v.replace(/\D/g, "");
+                      let formatted = cleaned;
+                      if (cleaned.length > 5) {
+                        formatted = `${cleaned.substring(0, 5)}-${cleaned.substring(5, 8)}`;
+                      }
+                      setForm((f) => ({ ...f, cep: formatted }));
+                      if (cleaned.length === 8) {
+                        fetchCep(cleaned);
+                      }
+                    }}
+                    keyboardType="numeric"
+                    maxLength={9}
+                  />
+                </View>
+
+                <Text style={styles.fieldLabel}>Rua</Text>
                 <View style={styles.inputWrap}>
                   <MaterialIcons
                     name="place"
@@ -957,9 +1037,58 @@ export default function AdminProvidersScreen() {
                   />
                   <TextInput
                     style={styles.input}
-                    placeholder="Ex: Centro, São Paulo - SP"
-                    value={form.address}
-                    onChangeText={(v) => setForm((f) => ({ ...f, address: v }))}
+                    placeholder="Ex: Rua das Flores"
+                    value={form.street}
+                    onChangeText={(v) => setForm((f) => ({ ...f, street: v }))}
+                  />
+                </View>
+
+                <Text style={styles.fieldLabel}>Número</Text>
+                <View style={styles.inputWrap}>
+                  <MaterialIcons
+                    name="pin"
+                    size={17}
+                    color="#94A3B8"
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Ex: 123"
+                    value={form.number}
+                    onChangeText={(v) => setForm((f) => ({ ...f, number: v }))}
+                    keyboardType="numeric"
+                  />
+                </View>
+
+                <Text style={styles.fieldLabel}>Bairro</Text>
+                <View style={styles.inputWrap}>
+                  <MaterialIcons
+                    name="map"
+                    size={17}
+                    color="#94A3B8"
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Ex: Centro"
+                    value={form.neighborhood}
+                    onChangeText={(v) => setForm((f) => ({ ...f, neighborhood: v }))}
+                  />
+                </View>
+
+                <Text style={styles.fieldLabel}>Cidade</Text>
+                <View style={styles.inputWrap}>
+                  <MaterialIcons
+                    name="location-city"
+                    size={17}
+                    color="#94A3B8"
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Ex: Bragança Paulista"
+                    value={form.city}
+                    onChangeText={(v) => setForm((f) => ({ ...f, city: v }))}
                   />
                 </View>
 

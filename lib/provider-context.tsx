@@ -34,6 +34,7 @@ export interface ProviderProfile {
   createdAt: string;
   services: ProviderService[];
   address?: string;
+  cep?: string | null;
   latitude?: number;
   longitude?: number;
   workingHours?: any;
@@ -162,6 +163,7 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
             createdAt: dbProvider.createdAt,
             services: dbProvider.services || [],
             address: dbProvider.address,
+            cep: dbProvider.cep,
             latitude: dbProvider.latitude,
             longitude: dbProvider.longitude,
             workingHours: dbProvider.workingHours,
@@ -270,6 +272,7 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
       coverThumbnailUri: finalCoverThumbnail,
       description: data.description,
       address: data.address || "",
+      cep: data.cep || null,
       gallery: data.gallery || [],
       plan,
       planExpiresAt: expiresAt,
@@ -332,6 +335,7 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
       planExpiresAt: updated.planExpiresAt,
       isActive: updated.isActive,
       address: updated.address,
+      cep: updated.cep || null,
       latitude: updated.latitude,
       longitude: updated.longitude,
       workingHours: updated.workingHours,

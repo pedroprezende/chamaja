@@ -40,6 +40,7 @@ const adminProviderSchema = z.object({
   whatsapp: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   address: z.string().nullable().optional(),
+  cep: z.string().nullable().optional(),
   avatarUri: z.string().nullable().optional(),
   avatarThumbnailUri: z.string().nullable().optional(),
   gallery: z.array(z.string()).nullable().optional(),
@@ -88,6 +89,7 @@ const ProviderUpsertSchema = z.object({
   avatarThumbnailUri: z.string().nullable().optional(),
   gallery: z.array(z.string()).nullable().optional(),
   address: z.string().nullable().optional(),
+  cep: z.string().nullable().optional(),
   rating: z.number().optional(),
   reviewCount: z.number().optional(),
   latitude: z.number().nullable().optional(),
@@ -125,6 +127,7 @@ const ProviderUpdateSchema = z.object({
     phone: z.string().optional(),
     description: z.string().optional(),
     address: z.string().optional(),
+    cep: z.string().optional(),
     services: z.any().optional(),
     plan: z.string().nullable().optional(),
     planExpiresAt: z.string().nullable().optional(),
@@ -228,7 +231,8 @@ export const providersRouter = router({
         existing.length === 0 ||
         existing[0].address !== input.address ||
         existing[0].neighborhood !== input.neighborhood ||
-        existing[0].city !== input.city;
+        existing[0].city !== input.city ||
+        existing[0].cep !== input.cep;
 
       if (
         hasAddressChanged &&
@@ -238,10 +242,15 @@ export const providersRouter = router({
           input.address,
           input.neighborhood,
           input.city,
+          input.cep,
+          true
         );
         if (coords) {
           latitude = coords.latitude;
           longitude = coords.longitude;
+        } else {
+          latitude = null;
+          longitude = null;
         }
       }
 
@@ -270,6 +279,7 @@ export const providersRouter = router({
             avatarThumbnailUri: input.avatarThumbnailUri,
             gallery: input.gallery || [],
             address: input.address,
+            cep: input.cep || null,
             latitude,
             longitude,
             coverUri: input.coverUri,
@@ -316,6 +326,7 @@ export const providersRouter = router({
           avatarThumbnailUri: input.avatarThumbnailUri,
           gallery: input.gallery || [],
           address: input.address,
+          cep: input.cep || null,
           rating: input.rating || 0,
           ratingCount: input.reviewCount || 0,
           latitude,
@@ -399,6 +410,8 @@ export const providersRouter = router({
         mappedUpdates.description = input.updates.description;
       if (input.updates.address !== undefined)
         mappedUpdates.address = input.updates.address;
+      if (input.updates.cep !== undefined)
+        mappedUpdates.cep = input.updates.cep;
       if (input.updates.services !== undefined)
         mappedUpdates.services = JSON.stringify(input.updates.services || []);
       if (input.updates.plan !== undefined)
@@ -460,7 +473,9 @@ export const providersRouter = router({
           (input.updates.neighborhood !== undefined &&
             existing[0].neighborhood !== input.updates.neighborhood) ||
           (input.updates.city !== undefined &&
-            existing[0].city !== input.updates.city);
+            existing[0].city !== input.updates.city) ||
+          (input.updates.cep !== undefined &&
+            existing[0].cep !== input.updates.cep);
 
         if (
           hasAddressChanged &&
@@ -477,10 +492,17 @@ export const providersRouter = router({
             input.updates.city !== undefined
               ? input.updates.city
               : existing[0].city,
+            input.updates.cep !== undefined
+              ? input.updates.cep
+              : existing[0].cep,
+            true
           );
           if (coords) {
             mappedUpdates.latitude = coords.latitude;
             mappedUpdates.longitude = coords.longitude;
+          } else {
+            mappedUpdates.latitude = null;
+            mappedUpdates.longitude = null;
           }
         }
       }

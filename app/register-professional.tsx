@@ -33,6 +33,9 @@ export default function RegisterProfessionalScreen() {
     name: "",
     city: "",
     neighborhood: "",
+    cep: "",
+    street: "",
+    number: "",
     phone: "",
     avatar:
       "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
@@ -46,6 +49,26 @@ export default function RegisterProfessionalScreen() {
   const selectedIds = Object.keys(selectedSpecialties).filter(
     (id) => selectedSpecialties[id],
   );
+
+  const fetchCep = async (cepText: string) => {
+    const cleaned = cepText.replace(/\D/g, "");
+    if (cleaned.length === 8) {
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${cleaned}/json/`);
+        const data = await res.json();
+        if (!data.erro) {
+          setFormData((prev) => ({
+            ...prev,
+            street: data.logradouro || prev.street,
+            neighborhood: data.bairro || prev.neighborhood,
+            city: data.localidade || prev.city,
+          }));
+        }
+      } catch (e) {
+        console.warn("ViaCEP error:", e);
+      }
+    }
+  };
 
   const handlePickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -75,6 +98,14 @@ export default function RegisterProfessionalScreen() {
     }
     if (!formData.neighborhood.trim()) {
       Alert.alert("Erro", "Digite seu bairro");
+      return false;
+    }
+    if (!formData.street.trim()) {
+      Alert.alert("Erro", "Digite sua rua");
+      return false;
+    }
+    if (!formData.number.trim()) {
+      Alert.alert("Erro", "Digite o número");
       return false;
     }
     if (!formData.phone.trim() || formData.phone.length < 10) {
@@ -129,6 +160,12 @@ export default function RegisterProfessionalScreen() {
           category: categoryNames,
           city: formData.city,
           neighborhood: formData.neighborhood,
+          address: formData.street
+            ? formData.number
+              ? `${formData.street.trim()}, ${formData.number.trim()}`
+              : formData.street.trim()
+            : "",
+          cep: formData.cep || null,
           phone: formData.phone,
           avatar: finalAvatar,
           description: formData.description,
@@ -373,17 +410,58 @@ export default function RegisterProfessionalScreen() {
               </View>
             )}
 
-            {/* City */}
+            {/* CEP */}
             <View style={styles.fieldGroup}>
-              <Text style={styles.label}>Cidade</Text>
+              <Text style={styles.label}>CEP</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Ex: São Paulo"
+                placeholder="Ex: 12900-000"
                 placeholderTextColor="#9CA3AF"
-                value={formData.city}
+                value={formData.cep}
+                onChangeText={(text) => {
+                  const cleaned = text.replace(/\D/g, "");
+                  let formatted = cleaned;
+                  if (cleaned.length > 5) {
+                    formatted = `${cleaned.substring(0, 5)}-${cleaned.substring(5, 8)}`;
+                  }
+                  setFormData({ ...formData, cep: formatted });
+                  if (cleaned.length === 8) {
+                    fetchCep(cleaned);
+                  }
+                }}
+                keyboardType="numeric"
+                maxLength={9}
+                editable={!loading}
+              />
+            </View>
+
+            {/* Street */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Rua</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Ex: Rua das Flores"
+                placeholderTextColor="#9CA3AF"
+                value={formData.street}
                 onChangeText={(text) =>
-                  setFormData({ ...formData, city: text })
+                  setFormData({ ...formData, street: text })
                 }
+                editable={!loading}
+              />
+            </View>
+
+            {/* Number */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Número</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Ex: 123"
+                placeholderTextColor="#9CA3AF"
+                value={formData.number}
+                onChangeText={(text) =>
+                  setFormData({ ...formData, number: text })
+                }
+                keyboardType="numeric"
                 editable={!loading}
               />
             </View>
@@ -398,6 +476,21 @@ export default function RegisterProfessionalScreen() {
                 value={formData.neighborhood}
                 onChangeText={(text) =>
                   setFormData({ ...formData, neighborhood: text })
+                }
+                editable={!loading}
+              />
+            </View>
+
+            {/* City */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Cidade</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Ex: São Paulo"
+                placeholderTextColor="#9CA3AF"
+                value={formData.city}
+                onChangeText={(text) =>
+                  setFormData({ ...formData, city: text })
                 }
                 editable={!loading}
               />

@@ -16,6 +16,7 @@ export interface StoredProvider {
   coverThumbnailUri?: string;
   description: string;
   address: string;
+  cep?: string | null;
   gallery: string[];
   plan: "monthly" | "annual" | "free" | null;
   planId: string | null;
@@ -71,6 +72,7 @@ function mapToStoredProvider(dbProvider: any): StoredProvider {
     coverThumbnailUri: dbProvider.coverThumbnailUri || null,
     description: dbProvider.description || "",
     address: dbProvider.address || "",
+    cep: dbProvider.cep || null,
     gallery: dbProvider.gallery || [],
     plan: (dbProvider.plan as any) || null,
     planId: dbProvider.planId || null,

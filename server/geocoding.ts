@@ -8,15 +8,17 @@ export async function geocodeAddress(
   address: string | null | undefined,
   neighborhood?: string | null,
   city?: string | null,
+  cep?: string | null,
+  strict: boolean = false
 ): Promise<{ latitude: number; longitude: number } | null> {
   if (!address || address.trim() === "") {
-    // If no address is provided, try to geocode the neighborhood and city
+    if (strict) return null;
     if (!neighborhood && !city) return null;
     return geocodeBackup(neighborhood, city);
   }
 
-  // Check if address looks like a web link (Google Maps etc.)
   if (address.startsWith("http://") || address.startsWith("https://")) {
+    if (strict) return null;
     return geocodeBackup(neighborhood, city);
   }
 
@@ -24,6 +26,7 @@ export async function geocodeAddress(
   const parts: string[] = [address];
   if (neighborhood) parts.push(neighborhood);
   if (city) parts.push(city);
+  if (cep) parts.push(cep);
   parts.push("Brasil");
 
   const queryStr = parts.join(", ");
@@ -61,6 +64,37 @@ export async function geocodeAddress(
       `[Geocoding] Full address geocoding failed for "${queryStr}":`,
       error.message,
     );
+  }
+
+  // Fallback 1 for strict: try without CEP as it sometimes causes misses in Nominatim
+  if (strict && cep) {
+    const queryStrNoCep = [address, neighborhood, city, "Brasil"]
+      .filter(Boolean)
+      .join(", ");
+    try {
+      const response = await axios.get(
+        "https://nominatim.openstreetmap.org/search",
+        {
+          params: { q: queryStrNoCep, format: "json", limit: 1 },
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          },
+          timeout: 4000,
+        },
+      );
+      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+        const lat = parseFloat(response.data[0].lat);
+        const lon = parseFloat(response.data[0].lon);
+        if (!isNaN(lat) && !isNaN(lon)) {
+          return { latitude: lat, longitude: lon };
+        }
+      }
+    } catch (e: any) {}
+  }
+
+  if (strict) {
+    return null; // Don't use generic fallback if strict
   }
 
   // If full address geocoding fails, fallback to geocoding neighborhood and city

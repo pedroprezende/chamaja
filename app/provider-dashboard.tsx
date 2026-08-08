@@ -70,6 +70,9 @@ export default function ProviderDashboard() {
     city: "",
     neighborhood: "",
     address: "",
+    cep: "",
+    street: "",
+    number: "",
     avatar: "",
     coverUri: "",
     workingHours: "",
@@ -169,6 +172,26 @@ export default function ProviderDashboard() {
     }
   };
 
+  const fetchCep = async (cepText: string) => {
+    const cleaned = cepText.replace(/\D/g, "");
+    if (cleaned.length === 8) {
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${cleaned}/json/`);
+        const data = await res.json();
+        if (!data.erro) {
+          setProfileForm((prev) => ({
+            ...prev,
+            street: data.logradouro || prev.street,
+            neighborhood: data.bairro || prev.neighborhood,
+            city: data.localidade || prev.city,
+          }));
+        }
+      } catch (e) {
+        console.warn("ViaCEP error:", e);
+      }
+    }
+  };
+
   const handlePickAvatar = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -229,6 +252,12 @@ export default function ProviderDashboard() {
 
     setSavingProfile(true);
     try {
+      const finalAddress = profileForm.street
+        ? profileForm.number
+          ? `${profileForm.street.trim()}, ${profileForm.number.trim()}`
+          : profileForm.street.trim()
+        : "";
+
       await updateProvider({
         name: profileForm.name.trim(),
         category: profileForm.category.trim(),
@@ -236,7 +265,8 @@ export default function ProviderDashboard() {
         phone: profileForm.phone.trim(),
         city: profileForm.city.trim(),
         neighborhood: profileForm.neighborhood.trim(),
-        address: profileForm.address.trim(),
+        address: finalAddress,
+        cep: profileForm.cep || null,
         avatar: profileForm.avatar,
         coverUri: profileForm.coverUri,
         workingHours: workingHoursValue.trim(),
@@ -539,6 +569,9 @@ export default function ProviderDashboard() {
                   city: provider.city || "",
                   neighborhood: provider.neighborhood || "",
                   address: provider.address || "",
+                  cep: provider.cep || "",
+                  street: provider.address ? provider.address.split(",")[0]?.trim() : "",
+                  number: provider.address && provider.address.includes(",") ? provider.address.split(",")[1]?.trim() : "",
                   avatar: provider.avatar || "",
                   coverUri: provider.coverUri || "",
                   workingHours: rawValue,
@@ -1553,17 +1586,56 @@ export default function ProviderDashboard() {
                 </View>
               )}
 
-              <Text style={styles.fieldLabel}>Endereço Completo</Text>
+              <Text style={styles.fieldLabel}>CEP</Text>
+              <View style={styles.fieldBox}>
+                <MaterialIcons name="markunread-mailbox" size={18} color="#9CA3AF" />
+                <TextInput
+                  style={styles.fieldInput}
+                  placeholder="Ex: 12900-000"
+                  placeholderTextColor="#9CA3AF"
+                  value={profileForm.cep}
+                  onChangeText={(t) => {
+                    const cleaned = t.replace(/\D/g, "");
+                    let formatted = cleaned;
+                    if (cleaned.length > 5) {
+                      formatted = `${cleaned.substring(0, 5)}-${cleaned.substring(5, 8)}`;
+                    }
+                    setProfileForm({ ...profileForm, cep: formatted });
+                    if (cleaned.length === 8) {
+                      fetchCep(cleaned);
+                    }
+                  }}
+                  keyboardType="numeric"
+                  maxLength={9}
+                />
+              </View>
+
+              <Text style={styles.fieldLabel}>Rua</Text>
               <View style={styles.fieldBox}>
                 <MaterialIcons name="place" size={18} color="#9CA3AF" />
                 <TextInput
                   style={styles.fieldInput}
-                  placeholder="Rua, número, complemento"
+                  placeholder="Rua das Flores"
                   placeholderTextColor="#9CA3AF"
-                  value={profileForm.address}
+                  value={profileForm.street}
                   onChangeText={(t) =>
-                    setProfileForm({ ...profileForm, address: t })
+                    setProfileForm({ ...profileForm, street: t })
                   }
+                />
+              </View>
+
+              <Text style={styles.fieldLabel}>Número</Text>
+              <View style={styles.fieldBox}>
+                <MaterialIcons name="pin" size={18} color="#9CA3AF" />
+                <TextInput
+                  style={styles.fieldInput}
+                  placeholder="123"
+                  placeholderTextColor="#9CA3AF"
+                  value={profileForm.number}
+                  onChangeText={(t) =>
+                    setProfileForm({ ...profileForm, number: t })
+                  }
+                  keyboardType="numeric"
                 />
               </View>
 

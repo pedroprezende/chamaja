@@ -74,6 +74,9 @@ export default function EditarPrestador() {
   const [businessType, setBusinessType] = useState("servicos");
   const [deliveryTime, setDeliveryTime] = useState("");
   const [address, setAddress] = useState("");
+  const [cep, setCep] = useState("");
+  const [street, setStreet] = useState("");
+  const [number, setNumber] = useState("");
   const [city, setCity] = useState("Bragança Paulista");
   const [neighborhood, setNeighborhood] = useState("");
   const [isActive, setIsActive] = useState(true);
@@ -106,6 +109,23 @@ export default function EditarPrestador() {
     productCategory: "",
     imageUri: "",
   });
+
+  const fetchCep = async (cepText: string) => {
+    const cleaned = cepText.replace(/\D/g, "");
+    if (cleaned.length === 8) {
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${cleaned}/json/`);
+        const data = await res.json();
+        if (!data.erro) {
+          setStreet(data.logradouro || street);
+          setNeighborhood(data.bairro || neighborhood);
+          setCity(data.localidade || city);
+        }
+      } catch (e) {
+        console.warn("ViaCEP error:", e);
+      }
+    }
+  };
 
   const isCommerce =
     businessType === "comercios" ||
@@ -202,6 +222,9 @@ export default function EditarPrestador() {
         dbProvider.description ? String(dbProvider.description) : "",
       );
       setAddress(dbProvider.address ? String(dbProvider.address) : "");
+      setCep(dbProvider.cep ? String(dbProvider.cep) : "");
+      setStreet(dbProvider.address ? String(dbProvider.address).split(",")[0]?.trim() || "" : "");
+      setNumber(dbProvider.address && String(dbProvider.address).includes(",") ? String(dbProvider.address).split(",")[1]?.trim() || "" : "");
       setCity(dbProvider.city ? String(dbProvider.city) : "Bragança Paulista");
       setNeighborhood(
         dbProvider.neighborhood ? String(dbProvider.neighborhood) : "",
@@ -544,7 +567,8 @@ export default function EditarPrestador() {
         serviceId: primaryService?.id || null,
         serviceName: primaryService?.name || null,
         description: description || null,
-        address: address || null,
+        address: street ? (number ? `${street.trim()}, ${number.trim()}` : street.trim()) : address || null,
+        cep: cep || null,
         city: city || null,
         neighborhood: neighborhood || null,
         isActive,
@@ -1037,14 +1061,54 @@ export default function EditarPrestador() {
 
           <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.fieldLabel}>Cidade</Text>
+              <Text style={styles.fieldLabel}>CEP</Text>
               <TextInput
                 style={styles.fieldInput}
-                value={city}
-                onChangeText={setCity}
+                value={cep}
+                onChangeText={(t) => {
+                  const cleaned = t.replace(/\D/g, "");
+                  let formatted = cleaned;
+                  if (cleaned.length > 5) {
+                    formatted = `${cleaned.substring(0, 5)}-${cleaned.substring(5, 8)}`;
+                  }
+                  setCep(formatted);
+                  if (cleaned.length === 8) {
+                    fetchCep(cleaned);
+                  }
+                }}
+                keyboardType="numeric"
+                maxLength={9}
+                placeholder="Ex: 12900-000"
                 placeholderTextColor="#9CA3AF"
               />
             </View>
+          </View>
+
+          <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
+            <View style={{ flex: 2 }}>
+              <Text style={styles.fieldLabel}>Rua</Text>
+              <TextInput
+                style={styles.fieldInput}
+                value={street}
+                onChangeText={setStreet}
+                placeholder="Ex: Rua Central"
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.fieldLabel}>Número</Text>
+              <TextInput
+                style={styles.fieldInput}
+                value={number}
+                onChangeText={setNumber}
+                placeholder="Ex: 123"
+                keyboardType="numeric"
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
+          </View>
+
+          <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
             <View style={{ flex: 1 }}>
               <Text style={styles.fieldLabel}>Bairro</Text>
               <TextInput
@@ -1054,18 +1118,16 @@ export default function EditarPrestador() {
                 placeholderTextColor="#9CA3AF"
               />
             </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.fieldLabel}>Cidade</Text>
+              <TextInput
+                style={styles.fieldInput}
+                value={city}
+                onChangeText={setCity}
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
           </View>
-
-          <Text style={[styles.fieldLabel, { marginTop: 16 }]}>
-            Endereço Completo / Google Maps Link
-          </Text>
-          <TextInput
-            style={styles.fieldInput}
-            value={address}
-            onChangeText={setAddress}
-            placeholder="Ex: Rua Central, 123 ou link do maps"
-            placeholderTextColor="#9CA3AF"
-          />
 
           <Text style={[styles.fieldLabel, { marginTop: 16 }]}>
             Ano início (Fundação)
