@@ -349,6 +349,10 @@ export default function ScheduleScreen() {
     const srv = services.find((s: any) => s.id === selectedServiceId);
 
     const srvPrice = Number(srv?.price);
+    const payloadDate = formatDate(selectedDate);
+    console.log("[AGENDA-DEBUG] Cliente selecionou (Date local):", selectedDate.toString());
+    console.log("[AGENDA-DEBUG] Payload enviado (formatDate):", payloadDate);
+
     createAppointment.mutate({
       providerId: id as string,
       clientName: user.name || "Cliente",
@@ -356,7 +360,7 @@ export default function ScheduleScreen() {
       serviceId: srv?.id,
       serviceName: srv?.name || "Atendimento",
       price: isNaN(srvPrice) ? undefined : srvPrice,
-      date: formatDate(selectedDate),
+      date: payloadDate,
       startTime: selectedSlot.start,
       endTime: selectedSlot.end,
     });

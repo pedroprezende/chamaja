@@ -205,7 +205,13 @@ export default function ProviderAgendaScreen() {
   const getAppointmentsForDay = (d: Date) => {
     if (!appointments) return [];
     const ymd = formatYMD(d);
-    return appointments.filter((a: any) => a.date === ymd);
+    return appointments.filter((a: any) => {
+      // LOG TRACE
+      if (a.clientName === "Cliente" || a.clientName === "Trace Test") {
+        console.log("[AGENDA-DEBUG] getAppointmentsForDay comparando (dia da celula):", ymd, "com (a.date):", a.date);
+      }
+      return a.date === ymd;
+    });
   };
 
   const handlePrev = () => {
@@ -500,6 +506,9 @@ export default function ProviderAgendaScreen() {
             </View>
           ) : (
             filteredAppointments.map((appt: any) => {
+              if (appt.clientName === "Cliente" || appt.clientName === "Trace Test") {
+                console.log("[AGENDA-DEBUG] Renderizando card para appt.date:", appt.date, " (Original data recebida do backend)");
+              }
               const isToday = appt.date === formatYMD(new Date());
               const isTomorrow = appt.date === formatYMD(new Date(Date.now() + 86400000));
               

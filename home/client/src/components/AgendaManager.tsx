@@ -14,6 +14,18 @@ function formatYMD(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+function parseSafeLocal(ymdString: string) {
+  if (!ymdString) return new Date();
+  const [y, m, d] = ymdString.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function displayDate(ymdString: string) {
+  if (!ymdString) return "";
+  const [y, m, d] = ymdString.split("-");
+  return `${d}/${m}/${y}`;
+}
+
 const statusColors: any = {
   pending: "bg-amber-500",
   confirmed: "bg-emerald-500",
@@ -107,7 +119,7 @@ export function AgendaManager({ providerId, initialSettings, onSaved }: { provid
     let concluidos = 0;
 
     appointments.forEach((a) => {
-      const apptDateStr = formatYMD(new Date(a.date));
+      const apptDateStr = a.date;
       if (apptDateStr === todayStr && a.status !== "canceled") {
         hoje++;
       }
@@ -135,8 +147,7 @@ export function AgendaManager({ providerId, initialSettings, onSaved }: { provid
 
     return appointments
       .filter((appt) => {
-        const apptDate = new Date(appt.date);
-        apptDate.setHours(0, 0, 0, 0);
+        const apptDate = parseSafeLocal(appt.date);
 
         // 1. Filter by specific calendar day selection (if user clicked a day on the calendar)
         if (selectedCalendarDay) {
@@ -178,8 +189,8 @@ export function AgendaManager({ providerId, initialSettings, onSaved }: { provid
         return true;
       })
       .sort((a, b) => {
-        const dateA = new Date(a.date).getTime();
-        const dateB = new Date(b.date).getTime();
+        const dateA = parseSafeLocal(a.date).getTime();
+        const dateB = parseSafeLocal(b.date).getTime();
         if (dateA !== dateB) {
           return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
         }
@@ -301,7 +312,7 @@ export function AgendaManager({ providerId, initialSettings, onSaved }: { provid
   const getAppointmentsForDay = (d: Date) => {
     if (!appointments) return [];
     const ymd = formatYMD(d);
-    return appointments.filter(a => formatYMD(new Date(a.date)) === ymd);
+    return appointments.filter(a => a.date === ymd);
   };
 
   const openWhatsapp = (phone: string, clientName: string) => {
@@ -751,21 +762,24 @@ export function AgendaManager({ providerId, initialSettings, onSaved }: { provid
                     </div>
                   ) : (
                     filteredAppointments.map((appt) => {
-                      const apptDate = new Date(appt.date);
-                      const isToday = formatYMD(apptDate) === formatYMD(new Date());
-                      const isTomorrow = formatYMD(apptDate) === formatYMD(new Date(Date.now() + 86400000));
-                      const dateDisplay = isToday 
-                        ? "Hoje" 
-                        : isTomorrow 
-                        ? "Amanhã" 
-                        : apptDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+                      const isToday = appt.date === formatYMD(new Date());
+                      const isTomorrow = appt.date === formatYMD(new Date(Date.now() + 86400000));
+                      
+                      let dateDisplay = displayDate(appt.date);
+                      if (isToday) dateDisplay = "Hoje";
+                      else if (isTomorrow) dateDisplay = "Amanhã";
+                      else {
+                        const months = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+                        const [y, m, d] = appt.date.split("-");
+                        dateDisplay = `${d} de ${months[Number(m)-1]}`;
+                      }
 
                       return (
                         <div
                           key={appt.id}
                           onClick={() => {
                             // Focus date on calendar & open details modal
-                            setCurrentDate(new Date(appt.date));
+                            setCurrentDate(parseSafeLocal(appt.date));
                             setSelectedAppt(appt);
                             setNotesText(appt.notes || "");
                           }}
@@ -845,7 +859,7 @@ export function AgendaManager({ providerId, initialSettings, onSaved }: { provid
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setCurrentDate(new Date(appt.date));
+                                setCurrentDate(parseSafeLocal(appt.date));
                                 setSelectedAppt(appt);
                                 setNotesText(appt.notes || "");
                               }}
@@ -892,7 +906,7 @@ export function AgendaManager({ providerId, initialSettings, onSaved }: { provid
                 <div className="bg-zinc-900/50 p-3 rounded-xl border border-zinc-800">
                   <div className="text-[10px] uppercase text-zinc-500 font-bold mb-1">Data e Hora</div>
                   <div className="text-sm text-white font-semibold">
-                    {new Date(selectedAppt.date).toLocaleDateString("pt-BR")} • {selectedAppt.startTime}
+                    {displayDate(selectedAppt.date)} • {selectedAppt.startTime}
                   </div>
                 </div>
               </div>

@@ -47,8 +47,10 @@ export const appointmentsRouter = router({
         throw new Error("SLOT_UNAVAILABLE");
       }
 
+      console.log("[AGENDA-DEBUG] Backend recebeu date:", input.date);
       const appointmentId = uid();
-      await dbInstance.insert(appointments).values({
+      
+      const insertData = {
         id: appointmentId,
         providerId: input.providerId,
         userId: ctx.user.openId,
@@ -60,8 +62,16 @@ export const appointmentsRouter = router({
         date: input.date,
         startTime: input.startTime,
         endTime: input.endTime,
-        status: "pending",
-      });
+        status: "pending" as const,
+      };
+      
+      console.log("[AGENDA-DEBUG] Valor antes do INSERT:", insertData.date);
+      await dbInstance.insert(appointments).values(insertData);
+      
+      // Consultando de volta para ver o valor exato no banco!
+      const verify = await dbInstance.select().from(appointments).where(eq(appointments.id, appointmentId)).limit(1);
+      console.log("[AGENDA-DEBUG] Valor salvo (verificado no banco):", verify[0]?.date);
+
       return { success: true, id: appointmentId };
     }),
 
