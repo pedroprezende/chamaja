@@ -122,7 +122,7 @@ export default function Busca() {
 
   const displayCategories = [
     { id: "todos", name: "Todas", icon: Grid },
-    { id: "alimentacao", name: "Alimentação", icon: Utensils },
+    { id: "comercios", name: "Alimentação", icon: Utensils },
     { id: "beleza-estetica", name: "Beleza", icon: Scissors },
     { id: "saude", name: "Saúde", icon: HeartPulse },
     { id: "reformas-reparos", name: "Serviços", icon: Wrench },
