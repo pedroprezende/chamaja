@@ -1717,4 +1717,134 @@ export const providersRouter = router({
 
       return { success: true };
     }),
+
+  // ── Disponibilidade do Profissional para Oportunidades (Etapa 11) ───────────
+
+  getOpportunityAvailability: protectedProcedure.query(async ({ ctx }) => {
+    const dbInstance = await db.getDb();
+    if (!dbInstance) throw new Error("DB not found");
+    const userId = ctx.user.openId;
+
+    const existing = await dbInstance
+      .select()
+      .from(providers)
+      .where(eq(providers.userId, userId))
+      .limit(1);
+
+    if (existing.length > 0 && existing[0].opportunityAvailability) {
+      const saved = typeof existing[0].opportunityAvailability === "string"
+        ? JSON.parse(existing[0].opportunityAvailability)
+        : existing[0].opportunityAvailability;
+
+      return {
+        isAvailable: saved.isAvailable ?? true,
+        categories: Array.isArray(saved.categories) ? saved.categories : (existing[0].category ? [existing[0].category] : []),
+        subcategories: Array.isArray(saved.subcategories) ? saved.subcategories : (existing[0].subcategoryId ? [existing[0].subcategoryId] : []),
+        cities: Array.isArray(saved.cities) && saved.cities.length > 0 ? saved.cities : [existing[0].city || "Bragança Paulista"],
+        maxDistanceKm: Number(saved.maxDistanceKm) || 30,
+        availableDays: Array.isArray(saved.availableDays) && saved.availableDays.length > 0 ? saved.availableDays : ["seg", "ter", "qua", "qui", "sex"],
+        shifts: Array.isArray(saved.shifts) && saved.shifts.length > 0 ? saved.shifts : ["manha", "tarde"],
+        startTime: saved.startTime || "08:00",
+        endTime: saved.endTime || "18:00",
+        notes: saved.notes || "",
+        updatedAt: saved.updatedAt || existing[0].updatedAt?.toISOString(),
+        hasProviderProfile: true,
+        providerId: existing[0].id,
+        providerName: existing[0].name,
+        providerCategory: existing[0].category,
+        providerCity: existing[0].city,
+      };
+    }
+
+    // Default when no configuration exists yet
+    const prov = existing.length > 0 ? existing[0] : null;
+    return {
+      isAvailable: true,
+      categories: prov?.category ? [prov.category] : [],
+      subcategories: prov?.subcategoryId ? [prov.subcategoryId] : [],
+      cities: prov?.city ? [prov.city] : ["Bragança Paulista"],
+      maxDistanceKm: 30,
+      availableDays: ["seg", "ter", "qua", "qui", "sex"],
+      shifts: ["manha", "tarde"],
+      startTime: "08:00",
+      endTime: "18:00",
+      notes: "",
+      updatedAt: null,
+      hasProviderProfile: !!prov,
+      providerId: prov?.id || null,
+      providerName: prov?.name || ctx.user.name || "",
+      providerCategory: prov?.category || "",
+      providerCity: prov?.city || "Bragança Paulista",
+    };
+  }),
+
+  updateOpportunityAvailability: protectedProcedure
+    .input(
+      z.object({
+        isAvailable: z.boolean().default(true),
+        categories: z.array(z.string()).default([]),
+        subcategories: z.array(z.string()).default([]),
+        cities: z.array(z.string()).default([]),
+        maxDistanceKm: z.number().min(1).max(500).default(30),
+        availableDays: z.array(z.string()).default([]),
+        shifts: z.array(z.string()).default([]),
+        startTime: z.string().optional().nullable(),
+        endTime: z.string().optional().nullable(),
+        notes: z.string().optional().nullable(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const dbInstance = await db.getDb();
+      if (!dbInstance) throw new Error("DB not found");
+      const userId = ctx.user.openId;
+
+      const payload = {
+        isAvailable: input.isAvailable,
+        categories: input.categories,
+        subcategories: input.subcategories,
+        cities: input.cities,
+        maxDistanceKm: input.maxDistanceKm,
+        availableDays: input.availableDays,
+        shifts: input.shifts,
+        startTime: input.startTime || "08:00",
+        endTime: input.endTime || "18:00",
+        notes: input.notes || "",
+        updatedAt: new Date().toISOString(),
+      };
+
+      const existing = await dbInstance
+        .select()
+        .from(providers)
+        .where(eq(providers.userId, userId))
+        .limit(1);
+
+      if (existing.length > 0) {
+        await dbInstance
+          .update(providers)
+          .set({
+            opportunityAvailability: payload,
+            updatedAt: new Date(),
+          })
+          .where(eq(providers.userId, userId));
+      } else {
+        const providerId = `prov_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+        await dbInstance.insert(providers).values({
+          id: providerId,
+          userId,
+          name: ctx.user.name || "Profissional",
+          category: input.categories[0] || "Reformas e Reparos",
+          city: input.cities[0] || "Bragança Paulista",
+          opportunityAvailability: payload,
+          isActive: true,
+          status: "ativo",
+          businessType: "servicos",
+          displayOrder: 0,
+        });
+      }
+
+      return {
+        success: true,
+        availability: payload,
+      };
+    }),
 });

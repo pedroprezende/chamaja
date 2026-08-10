@@ -24,9 +24,12 @@ import {
   Sunset,
   Moon,
   RotateCcw,
+  Star,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { categories, subcategoriesByCategory, type Category, type Subcategory } from "../../../../data/mock";
+import { supabase, getSessionToken } from "@/lib/supabase";
 
 // Helper to format time ago in Portuguese
 function formatTimeAgo(dateInput: string | Date | null | undefined): string {
@@ -71,6 +74,11 @@ function formatFriendlyDate(dateStr: string): string {
 }
 
 export default function Oportunidades() {
+  // Auth & Session
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
+  const [user, setUser] = useState<any | null>(null);
+  const [hasCompatibilityProfile, setHasCompatibilityProfile] = useState(false);
+
   // Data states
   const [opportunities, setOpportunities] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -80,7 +88,7 @@ export default function Oportunidades() {
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [isLocating, setIsLocating] = useState(false);
 
-  // 7 Filter states
+  // 7 Filter states + Compatibility Filter
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("todos");
   const [selectedSubcategory, setSelectedSubcategory] = useState("todos");
@@ -90,7 +98,19 @@ export default function Oportunidades() {
   const [minBudget, setMinBudget] = useState<number | undefined>(undefined);
   const [selectedPaymentType, setSelectedPaymentType] = useState("todos");
   const [maxDistanceKm, setMaxDistanceKm] = useState<number | undefined>(undefined);
-  const [sortBy, setSortBy] = useState<"recent" | "budget_desc" | "budget_asc" | "distance" | "date_asc">("recent");
+  const [sortBy, setSortBy] = useState<"recent" | "compatibility" | "budget_desc" | "budget_asc" | "distance" | "date_asc">("recent");
+  const [onlyCompatible, setOnlyCompatible] = useState(false);
+
+  // Initialize auth
+  useEffect(() => {
+    const initAuth = async () => {
+      const token = await getSessionToken();
+      setSessionToken(token);
+      const { data } = await supabase.auth.getUser();
+      setUser(data?.user || null);
+    };
+    initAuth();
+  }, []);
 
   // Get user geolocation on load or manual request
   const requestLocation = () => {
@@ -147,6 +167,8 @@ export default function Oportunidades() {
       if (timeFilter !== "qualquer") inputObj.timeFilter = timeFilter;
       if (selectedPaymentType !== "todos") inputObj.paymentType = selectedPaymentType;
       if (minBudget && minBudget > 0) inputObj.minBudget = minBudget;
+      if (onlyCompatible) inputObj.onlyCompatible = true;
+      if (user?.id) inputObj.professionalUserId = user.id;
 
       if (userCoords) {
         inputObj.latitude = userCoords.lat;
@@ -156,8 +178,13 @@ export default function Oportunidades() {
         }
       }
 
+      const headers: Record<string, string> = {};
+      if (sessionToken) {
+        headers["Authorization"] = `Bearer ${sessionToken}`;
+      }
+
       const url = `/api/trpc/needs.list?input=${encodeURIComponent(JSON.stringify(inputObj))}`;
-      const res = await fetch(url);
+      const res = await fetch(url, { headers });
       if (res.ok) {
         const json = await res.json();
         const data = Array.isArray(json)
@@ -165,6 +192,7 @@ export default function Oportunidades() {
           : json?.result?.data;
         if (data && Array.isArray(data.items)) {
           setOpportunities(data.items);
+          setHasCompatibilityProfile(!!data.hasCompatibilityProfile);
           setIsLoading(false);
           return;
         }
@@ -190,7 +218,10 @@ export default function Oportunidades() {
     minBudget,
     maxDistanceKm,
     sortBy,
+    onlyCompatible,
     userCoords,
+    sessionToken,
+    user?.id,
   ]);
 
   // Debounced search
@@ -594,6 +625,21 @@ export default function Oportunidades() {
                     oportunidade{opportunities.length === 1 ? "" : "s"}
                   </span>
 
+                  {/* Compatibility filter button if user has profile */}
+                  {hasCompatibilityProfile && (
+                    <button
+                      onClick={() => setOnlyCompatible(!onlyCompatible)}
+                      className={`px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border ${
+                        onlyCompatible
+                          ? "bg-primary text-black border-primary font-black shadow-md shadow-primary/10"
+                          : "bg-primary/10 border-primary/30 text-primary hover:bg-primary/20"
+                      }`}
+                    >
+                      <Star className="h-3.5 w-3.5" />
+                      <span>{onlyCompatible ? "Mostrando apenas compatíveis" : "⭐ Compatíveis comigo"}</span>
+                    </button>
+                  )}
+
                   {/* Active filters pill badges */}
                   {selectedCategory !== "todos" && (
                     <span className="px-2 py-0.5 bg-zinc-900 border border-zinc-800 rounded-md text-[10px] text-zinc-300 flex items-center gap-1">
@@ -634,7 +680,8 @@ export default function Oportunidades() {
                     onChange={(e: any) => setSortBy(e.target.value)}
                     className="bg-zinc-900 border border-zinc-800 text-white rounded-xl px-3 py-1.5 text-xs font-bold focus:outline-none focus:border-primary cursor-pointer"
                   >
-                    <option value="recent">Mais Recentes</option>
+                    <option value="recent">Relevância / Mais Recentes</option>
+                    <option value="compatibility">Mais Compatíveis Primeiro</option>
                     <option value="budget_desc">Maior Valor</option>
                     <option value="budget_asc">Menor Valor</option>
                     <option value="date_asc">Data Mais Próxima</option>
@@ -642,6 +689,51 @@ export default function Oportunidades() {
                   </select>
                 </div>
               </div>
+
+              {/* Top Banner: Availability Status / Customization */}
+              {user && hasCompatibilityProfile ? (
+                <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                      <Sparkles className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-white">
+                        Destaques de compatibilidade ativados
+                      </h4>
+                      <p className="text-[11px] text-zinc-400">
+                        Oportunidades com o selo verde são compatíveis com suas categorias, cidades e horários cadastrados.
+                      </p>
+                    </div>
+                  </div>
+                  <Link href="/disponibilidade">
+                    <Button variant="outline" className="border-primary/30 hover:bg-primary/10 text-primary text-xs h-8 px-3 rounded-xl shrink-0">
+                      Ajustar Disponibilidade
+                    </Button>
+                  </Link>
+                </div>
+              ) : user ? (
+                <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
+                      <SlidersHorizontal className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-white">
+                        Personalize suas oportunidades
+                      </h4>
+                      <p className="text-[11px] text-zinc-400">
+                        Configure suas cidades de atendimento, serviços e turnos para receber destaques personalizados.
+                      </p>
+                    </div>
+                  </div>
+                  <Link href="/disponibilidade">
+                    <Button className="bg-primary text-black font-black hover:bg-primary/90 text-xs h-8 px-3 rounded-xl shrink-0">
+                      Configurar Agora
+                    </Button>
+                  </Link>
+                </div>
+              ) : null}
 
               {/* Opportunities List / Cards */}
               {isLoading ? (
@@ -691,7 +783,26 @@ export default function Oportunidades() {
                       href={`/necessidade/${opp.id}`}
                       className="group block"
                     >
-                      <div className="bg-zinc-950 border border-zinc-800/90 hover:border-primary/60 rounded-3xl p-6 shadow-xl hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300 flex flex-col justify-between h-full space-y-4">
+                      <div className={`border rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 flex flex-col justify-between h-full space-y-4 ${
+                        opp.isCompatible
+                          ? "bg-zinc-950 border-primary/40 hover:border-primary shadow-primary/5 ring-1 ring-primary/20"
+                          : "bg-zinc-950 border-zinc-800/90 hover:border-primary/60 hover:shadow-primary/5"
+                      }`}>
+                        {/* Highlight badge for compatible opportunities (Etapa 12) */}
+                        {opp.isCompatible && (
+                          <div className="bg-primary/10 border border-primary/30 rounded-xl px-3 py-2 flex items-center justify-between gap-2 text-primary text-xs font-black">
+                            <div className="flex items-center gap-1.5">
+                              <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
+                              <span>✓ Compatível com você</span>
+                            </div>
+                            {opp.compatibilityReasons && opp.compatibilityReasons.length > 0 && (
+                              <span className="text-[10px] text-zinc-400 font-semibold truncate max-w-[200px]">
+                                {opp.compatibilityReasons.join(" • ")}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
                         {/* Card Header: Category & Publication Time */}
                         <div className="flex items-center justify-between gap-2 border-b border-zinc-900 pb-3">
                           <div className="flex flex-wrap items-center gap-2">

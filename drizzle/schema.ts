@@ -211,6 +211,7 @@ export const providers = pgTable(
     socialLinks: text("social_links"), // JSON stringified: { instagram, facebook, youtube, tiktok, website, linkedin, telegram, whatsapp_channel }
     scheduleSettings: jsonb("schedule_settings"), // JSON for advanced scheduling configuration
     allowScheduling: boolean("allow_scheduling"), // Explicitly allow or block scheduling
+    opportunityAvailability: jsonb("opportunity_availability"), // JSON for opportunity availability configuration
     priceLevel: integer("price_level").default(2).notNull(),
     isActive: boolean("is_active").notNull().default(true),
     status: varchar("status", { length: 50 }).default("ativo"),
@@ -581,4 +582,18 @@ export const needApplications = pgTable(
 
 export type NeedApplication = typeof needApplications.$inferSelect;
 export type InsertNeedApplication = typeof needApplications.$inferInsert;
+
+export interface OpportunityAvailability {
+  isAvailable: boolean; // "Estou disponível para oportunidades"
+  categories: string[]; // Categorias que realiza
+  subcategories: string[]; // Subcategorias / Especialidades que realiza
+  cities: string[]; // Cidades ou regiões onde atende
+  maxDistanceKm: number; // Distância máxima que aceita se deslocar (em km)
+  availableDays: string[]; // Dias disponíveis: ["seg", "ter", "qua", "qui", "sex", "sab", "dom"]
+  shifts: string[]; // Horários/Turnos: ["manha", "tarde", "noite"]
+  startTime?: string; // e.g. "08:00"
+  endTime?: string; // e.g. "18:00"
+  notes?: string; // Observações gerais
+  updatedAt?: string;
+}
 

@@ -267,7 +267,7 @@ export const needsRouter = router({
     }),
 
   /**
-   * 4. Buscar / Listar necessidades com filtros flexíveis
+   * 4. Buscar / Listar necessidades com filtros flexíveis e compatibilidade inteligente
    */
   list: publicProcedure
     .input(
@@ -285,15 +285,17 @@ export const needsRouter = router({
         latitude: z.number().optional(),
         longitude: z.number().optional(),
         maxDistanceKm: z.number().optional(),
-        sortBy: z.enum(["recent", "budget_desc", "budget_asc", "distance", "date_asc"]).optional().default("recent"),
+        sortBy: z.enum(["recent", "compatibility", "budget_desc", "budget_asc", "distance", "date_asc"]).optional().default("recent"),
         creatorUserId: z.string().optional(),
+        professionalUserId: z.string().optional(),
+        onlyCompatible: z.boolean().optional(),
         limit: z.number().min(1).max(100).default(50),
         offset: z.number().min(0).default(0),
       }),
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const dbInstance = await db.getDb();
-      if (!dbInstance) return { items: [], total: 0 };
+      if (!dbInstance) return { items: [], total: 0, hasCompatibilityProfile: false };
 
       const conditions = [];
 
@@ -397,7 +399,7 @@ export const needsRouter = router({
 
       const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-      // Ordenação
+      // Ordenação básica no SQL
       let orderExpr: any = desc(needs.createdAt);
       if (input.sortBy === "budget_desc") {
         orderExpr = desc(needs.budget);
@@ -426,11 +428,63 @@ export const needsRouter = router({
         .limit(input.limit)
         .offset(input.offset);
 
+      // Obter dados de disponibilidade do profissional logado
+      const targetUserId = input.professionalUserId || ctx.user?.openId;
+      let providerAvailability: any = null;
+      let providerBaseCoords: { lat: number; lng: number } | null = null;
+
+      if (targetUserId) {
+        const provRows = await dbInstance
+          .select({
+            id: providers.id,
+            category: providers.category,
+            categoryId: providers.categoryId,
+            subcategoryId: providers.subcategoryId,
+            city: providers.city,
+            latitude: providers.latitude,
+            longitude: providers.longitude,
+            opportunityAvailability: providers.opportunityAvailability,
+          })
+          .from(providers)
+          .where(eq(providers.userId, targetUserId))
+          .limit(1);
+
+        if (provRows.length > 0) {
+          const p = provRows[0];
+          if (p.latitude && p.longitude) {
+            providerBaseCoords = {
+              lat: Number(p.latitude),
+              lng: Number(p.longitude),
+            };
+          }
+          if (p.opportunityAvailability) {
+            providerAvailability =
+              typeof p.opportunityAvailability === "string"
+                ? JSON.parse(p.opportunityAvailability)
+                : p.opportunityAvailability;
+          } else {
+            providerAvailability = {
+              isAvailable: true,
+              categories: p.category ? [p.category] : [],
+              subcategories: p.subcategoryId ? [p.subcategoryId] : [],
+              cities: p.city ? [p.city] : ["Bragança Paulista"],
+              maxDistanceKm: 30,
+              availableDays: ["seg", "ter", "qua", "qui", "sex"],
+              shifts: ["manha", "tarde"],
+              startTime: "08:00",
+              endTime: "18:00",
+            };
+          }
+        }
+      }
+
+      const activeUserLat = input.latitude ?? providerBaseCoords?.lat;
+      const activeUserLng = input.longitude ?? providerBaseCoords?.lng;
       const hasUserCoords =
-        input.latitude !== undefined &&
-        input.longitude !== undefined &&
-        !isNaN(input.latitude) &&
-        !isNaN(input.longitude);
+        activeUserLat !== undefined &&
+        activeUserLng !== undefined &&
+        !isNaN(activeUserLat) &&
+        !isNaN(activeUserLng);
 
       // Função auxiliar para cálculo de distância Haversine
       const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -453,8 +507,8 @@ export const needsRouter = router({
 
         if (hasUserCoords && r.need.latitude && r.need.longitude) {
           distanceKm = calculateDistance(
-            input.latitude!,
-            input.longitude!,
+            activeUserLat!,
+            activeUserLng!,
             Number(r.need.latitude),
             Number(r.need.longitude)
           );
@@ -465,6 +519,116 @@ export const needsRouter = router({
           }
         }
 
+        // ── Checagem de Compatibilidade (Etapa 12) ──
+        let isCompatible = false;
+        let compatibilityScore = 0;
+        const compatibilityReasons: string[] = [];
+
+        if (providerAvailability && providerAvailability.isAvailable !== false) {
+          const avail = providerAvailability;
+
+          // 1. Categoria & Serviço
+          let categoryMatch = false;
+          if (!avail.categories || avail.categories.length === 0) {
+            categoryMatch = true;
+          } else {
+            const needCat = (r.need.category || "").toLowerCase();
+            const needCatId = (r.need.categoryId || "").toLowerCase();
+            const needSubId = (r.need.subcategoryId || "").toLowerCase();
+            const needSubName = (r.need.subcategoryName || "").toLowerCase();
+            const needTitle = (r.need.title || "").toLowerCase();
+
+            categoryMatch = avail.categories.some((c: string) => {
+              const lc = c.toLowerCase();
+              return (
+                needCat.includes(lc) ||
+                lc.includes(needCat) ||
+                needCatId === lc ||
+                needTitle.includes(lc)
+              );
+            });
+
+            if (!categoryMatch && avail.subcategories && avail.subcategories.length > 0) {
+              categoryMatch = avail.subcategories.some((s: string) => {
+                const ls = s.toLowerCase();
+                return (
+                  needSubId.includes(ls) ||
+                  ls.includes(needSubId) ||
+                  needSubName.includes(ls) ||
+                  needTitle.includes(ls)
+                );
+              });
+            }
+          }
+
+          // 2. Cidade & Região
+          let cityMatch = false;
+          if (!avail.cities || avail.cities.length === 0 || avail.cities.includes("Todas")) {
+            cityMatch = true;
+          } else {
+            const needCity = (r.need.city || "").toLowerCase().trim();
+            cityMatch = avail.cities.some((c: string) => {
+              const lc = c.toLowerCase().trim();
+              return needCity.includes(lc) || lc.includes(needCity);
+            });
+          }
+
+          // 3. Raio Máximo de Deslocamento
+          let distanceMatch = true;
+          const maxKm = Number(avail.maxDistanceKm) || 30;
+          if (distanceKm !== null) {
+            distanceMatch = distanceKm <= maxKm;
+          } else {
+            distanceMatch = cityMatch;
+          }
+
+          // 4. Data / Dia da Semana
+          let dayMatch = true;
+          if (r.need.startDate && avail.availableDays && avail.availableDays.length > 0) {
+            try {
+              const [y, m, d] = r.need.startDate.split("-").map(Number);
+              const needDate = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+              const dayIndex = needDate.getUTCDay();
+              const dayKeys = ["dom", "seg", "ter", "qua", "qui", "sex", "sab"];
+              const needDayKey = dayKeys[dayIndex];
+              dayMatch = avail.availableDays.includes(needDayKey);
+            } catch {
+              dayMatch = true;
+            }
+          }
+
+          // 5. Horário / Turno
+          let shiftMatch = true;
+          if (avail.shifts && avail.shifts.length > 0 && r.need.startTime) {
+            const startH = parseInt(r.need.startTime.split(":")[0], 10) || 8;
+            let needShift = "manha";
+            if (startH >= 12 && startH < 18) needShift = "tarde";
+            if (startH >= 18) needShift = "noite";
+
+            shiftMatch = avail.shifts.includes(needShift);
+          }
+
+          // Resultado Geral de Compatibilidade
+          if (categoryMatch && (cityMatch || distanceMatch) && dayMatch && shiftMatch) {
+            isCompatible = true;
+            compatibilityScore = 100;
+          } else if (categoryMatch && (cityMatch || distanceMatch)) {
+            compatibilityScore = 70;
+          } else if (categoryMatch) {
+            compatibilityScore = 40;
+          }
+
+          if (isCompatible) {
+            if (categoryMatch) compatibilityReasons.push("Sua categoria");
+            if (cityMatch) compatibilityReasons.push(r.need.city || "Na sua cidade");
+            if (distanceKm !== null && distanceKm <= maxKm) {
+              compatibilityReasons.push(`No seu raio (${distanceKm.toFixed(1)} km)`);
+            }
+            if (dayMatch && r.need.startDate) compatibilityReasons.push("Dia disponível");
+            if (shiftMatch && r.need.startTime) compatibilityReasons.push("No seu horário");
+          }
+        }
+
         return {
           ...r.need,
           creatorName: r.creator?.name || "Cliente XamaJá",
@@ -472,6 +636,9 @@ export const needsRouter = router({
           applicationsCount: r.applicationsCount || 0,
           distanceKm,
           distanceStr,
+          isCompatible,
+          compatibilityScore,
+          compatibilityReasons,
         };
       });
 
@@ -489,11 +656,31 @@ export const needsRouter = router({
           if (b.distanceKm === null) return -1;
           return a.distanceKm - b.distanceKm;
         });
+      } else if (
+        providerAvailability &&
+        providerAvailability.isAvailable !== false &&
+        (input.sortBy === "recent" || input.sortBy === "compatibility")
+      ) {
+        // Boost de compatibilidade: oportunidades compatíveis aparecem primeiro, sem esconder as demais
+        items.sort((a, b) => {
+          if (a.isCompatible && !b.isCompatible) return -1;
+          if (!a.isCompatible && b.isCompatible) return 1;
+          if ((b.compatibilityScore || 0) !== (a.compatibilityScore || 0)) {
+            return (b.compatibilityScore || 0) - (a.compatibilityScore || 0);
+          }
+          return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+        });
+      }
+
+      // Filtro opcional para exibir apenas compatíveis se ativado pelo usuário
+      if (input.onlyCompatible) {
+        items = items.filter((item) => item.isCompatible);
       }
 
       return {
         items,
         total: items.length,
+        hasCompatibilityProfile: !!(providerAvailability && providerAvailability.isAvailable !== false),
       };
     }),
 
@@ -968,5 +1155,135 @@ export const needsRouter = router({
         acceptedApplications: row.acceptedApplications || 0,
         rejectedApplications: row.rejectedApplications || 0,
       }));
+    }),
+
+  // ── 12. Disponibilidade do Profissional para Oportunidades (Etapa 11) ───────────
+
+  getOpportunityAvailability: protectedProcedure.query(async ({ ctx }) => {
+    const dbInstance = await db.getDb();
+    if (!dbInstance) throw new Error("DB not found");
+    const userId = ctx.user.openId;
+
+    const existing = await dbInstance
+      .select()
+      .from(providers)
+      .where(eq(providers.userId, userId))
+      .limit(1);
+
+    if (existing.length > 0 && existing[0].opportunityAvailability) {
+      const saved = typeof existing[0].opportunityAvailability === "string"
+        ? JSON.parse(existing[0].opportunityAvailability)
+        : existing[0].opportunityAvailability;
+
+      return {
+        isAvailable: saved.isAvailable ?? true,
+        categories: Array.isArray(saved.categories) ? saved.categories : (existing[0].category ? [existing[0].category] : []),
+        subcategories: Array.isArray(saved.subcategories) ? saved.subcategories : (existing[0].subcategoryId ? [existing[0].subcategoryId] : []),
+        cities: Array.isArray(saved.cities) && saved.cities.length > 0 ? saved.cities : [existing[0].city || "Bragança Paulista"],
+        maxDistanceKm: Number(saved.maxDistanceKm) || 30,
+        availableDays: Array.isArray(saved.availableDays) && saved.availableDays.length > 0 ? saved.availableDays : ["seg", "ter", "qua", "qui", "sex"],
+        shifts: Array.isArray(saved.shifts) && saved.shifts.length > 0 ? saved.shifts : ["manha", "tarde"],
+        startTime: saved.startTime || "08:00",
+        endTime: saved.endTime || "18:00",
+        notes: saved.notes || "",
+        updatedAt: saved.updatedAt || existing[0].updatedAt?.toISOString(),
+        hasProviderProfile: true,
+        providerId: existing[0].id,
+        providerName: existing[0].name,
+        providerCategory: existing[0].category,
+        providerCity: existing[0].city,
+      };
+    }
+
+    // Default when no configuration exists yet
+    const prov = existing.length > 0 ? existing[0] : null;
+    return {
+      isAvailable: true,
+      categories: prov?.category ? [prov.category] : [],
+      subcategories: prov?.subcategoryId ? [prov.subcategoryId] : [],
+      cities: prov?.city ? [prov.city] : ["Bragança Paulista"],
+      maxDistanceKm: 30,
+      availableDays: ["seg", "ter", "qua", "qui", "sex"],
+      shifts: ["manha", "tarde"],
+      startTime: "08:00",
+      endTime: "18:00",
+      notes: "",
+      updatedAt: null,
+      hasProviderProfile: !!prov,
+      providerId: prov?.id || null,
+      providerName: prov?.name || ctx.user.name || "",
+      providerCategory: prov?.category || "",
+      providerCity: prov?.city || "Bragança Paulista",
+    };
+  }),
+
+  updateOpportunityAvailability: protectedProcedure
+    .input(
+      z.object({
+        isAvailable: z.boolean().default(true),
+        categories: z.array(z.string()).default([]),
+        subcategories: z.array(z.string()).default([]),
+        cities: z.array(z.string()).default([]),
+        maxDistanceKm: z.number().min(1).max(500).default(30),
+        availableDays: z.array(z.string()).default([]),
+        shifts: z.array(z.string()).default([]),
+        startTime: z.string().optional().nullable(),
+        endTime: z.string().optional().nullable(),
+        notes: z.string().optional().nullable(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const dbInstance = await db.getDb();
+      if (!dbInstance) throw new Error("DB not found");
+      const userId = ctx.user.openId;
+
+      const payload = {
+        isAvailable: input.isAvailable,
+        categories: input.categories,
+        subcategories: input.subcategories,
+        cities: input.cities,
+        maxDistanceKm: input.maxDistanceKm,
+        availableDays: input.availableDays,
+        shifts: input.shifts,
+        startTime: input.startTime || "08:00",
+        endTime: input.endTime || "18:00",
+        notes: input.notes || "",
+        updatedAt: new Date().toISOString(),
+      };
+
+      const existing = await dbInstance
+        .select()
+        .from(providers)
+        .where(eq(providers.userId, userId))
+        .limit(1);
+
+      if (existing.length > 0) {
+        await dbInstance
+          .update(providers)
+          .set({
+            opportunityAvailability: payload,
+            updatedAt: new Date(),
+          })
+          .where(eq(providers.userId, userId));
+      } else {
+        const providerId = `prov_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+        await dbInstance.insert(providers).values({
+          id: providerId,
+          userId,
+          name: ctx.user.name || "Profissional",
+          category: input.categories[0] || "Reformas e Reparos",
+          city: input.cities[0] || "Bragança Paulista",
+          opportunityAvailability: payload,
+          isActive: true,
+          status: "ativo",
+          businessType: "servicos",
+          displayOrder: 0,
+        });
+      }
+
+      return {
+        success: true,
+        availability: payload,
+      };
     }),
 });

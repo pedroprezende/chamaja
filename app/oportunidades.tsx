@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { useLocation } from "@/lib/location-context";
+import { useAuth } from "@/lib/auth-context";
 import { vanillaTrpc } from "@/lib/trpc";
 import { categories, subcategoriesByCategory, type Category, type Subcategory } from "@/data/mock";
 
@@ -71,14 +72,16 @@ export default function OportunidadesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const locationCtx = useLocation();
+  const { user } = useAuth();
 
   // Data States
   const [opportunities, setOpportunities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasCompatibilityProfile, setHasCompatibilityProfile] = useState(false);
 
-  // 7 Filter States
+  // 7 Filter States + Compatibility Filter
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("todos");
   const [selectedSubcategory, setSelectedSubcategory] = useState("todos");
@@ -87,7 +90,8 @@ export default function OportunidadesScreen() {
   const [timeFilter, setTimeFilter] = useState<"qualquer" | "manha" | "tarde" | "noite">("qualquer");
   const [minBudgetFilter, setMinBudgetFilter] = useState<number | undefined>(undefined);
   const [maxDistanceFilter, setMaxDistanceFilter] = useState<number | undefined>(undefined);
-  const [sortBy, setSortBy] = useState<"recent" | "budget_desc" | "distance" | "date_asc">("recent");
+  const [sortBy, setSortBy] = useState<"recent" | "compatibility" | "budget_desc" | "distance" | "date_asc">("recent");
+  const [onlyCompatibleFilter, setOnlyCompatibleFilter] = useState(false);
 
   // Bottom Sheet Modal
   const [showFiltersModal, setShowFiltersModal] = useState(false);
@@ -135,11 +139,14 @@ export default function OportunidadesScreen() {
         latitude: userLat,
         longitude: userLng,
         maxDistanceKm: maxDistanceFilter,
+        professionalUserId: user?.id,
+        onlyCompatible: onlyCompatibleFilter ? true : undefined,
         limit: 50,
       });
 
       if (res && Array.isArray(res.items)) {
         setOpportunities(res.items);
+        setHasCompatibilityProfile(!!res.hasCompatibilityProfile);
       } else {
         setOpportunities([]);
       }
@@ -160,9 +167,11 @@ export default function OportunidadesScreen() {
     selectedCity,
     dateFilter,
     timeFilter,
-    sortBy,
     minBudgetFilter,
     maxDistanceFilter,
+    sortBy,
+    onlyCompatibleFilter,
+    user?.id,
     locationCtx.coords?.latitude,
     locationCtx.coords?.longitude,
   ]);
@@ -341,17 +350,52 @@ export default function OportunidadesScreen() {
           </Pressable>
         </View>
 
-        {/* Quick Filter Horizontal Scroll (Categories) */}
+        {/* Quick Filter Horizontal Scroll (Categories & Compatibility) */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.quickChipsRow}
         >
+          {hasCompatibilityProfile && (
+            <Pressable
+              onPress={() => {
+                triggerHaptic();
+                setOnlyCompatibleFilter(!onlyCompatibleFilter);
+              }}
+              style={[
+                styles.quickChip,
+                onlyCompatibleFilter
+                  ? { backgroundColor: "#25D366", borderColor: "#25D366" }
+                  : { backgroundColor: "rgba(37, 211, 102, 0.12)", borderColor: "rgba(37, 211, 102, 0.3)" },
+              ]}
+            >
+              <MaterialIcons
+                name="star"
+                size={14}
+                color={onlyCompatibleFilter ? "#000000" : "#25D366"}
+              />
+              <Text
+                style={[
+                  styles.quickChipText,
+                  {
+                    color: onlyCompatibleFilter ? "#000000" : "#25D366",
+                    fontWeight: "800",
+                  },
+                ]}
+              >
+                Compatíveis comigo
+              </Text>
+            </Pressable>
+          )}
+
           <Pressable
-            onPress={() => handleCategorySelect("todos")}
+            onPress={() => {
+              handleCategorySelect("todos");
+              if (onlyCompatibleFilter) setOnlyCompatibleFilter(false);
+            }}
             style={[
               styles.quickChip,
-              selectedCategory === "todos"
+              selectedCategory === "todos" && !onlyCompatibleFilter
                 ? { backgroundColor: "rgba(37, 211, 102, 0.15)", borderColor: "#25D366" }
                 : { backgroundColor: colors.surface, borderColor: colors.border },
             ]}
@@ -359,7 +403,7 @@ export default function OportunidadesScreen() {
             <Text
               style={[
                 styles.quickChipText,
-                { color: selectedCategory === "todos" ? "#25D366" : colors.muted },
+                { color: selectedCategory === "todos" && !onlyCompatibleFilter ? "#25D366" : colors.muted },
               ]}
             >
               Todas
@@ -409,6 +453,47 @@ export default function OportunidadesScreen() {
           />
         }
       >
+        {/* Availability / Compatibility Banner */}
+        {user && hasCompatibilityProfile ? (
+          <View style={[styles.compatBanner, { backgroundColor: "rgba(37, 211, 102, 0.08)", borderColor: "rgba(37, 211, 102, 0.25)" }]}>
+            <View style={styles.compatBannerLeft}>
+              <MaterialIcons name="auto-awesome" size={18} color="#25D366" />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.compatBannerTitle, { color: colors.foreground }]}>
+                  Destaques ativados para o seu perfil
+                </Text>
+                <Text style={[styles.compatBannerDesc, { color: colors.muted }]}>
+                  Vagas com o selo verde combinam com suas categorias, cidades e turnos.
+                </Text>
+              </View>
+            </View>
+            <Pressable
+              onPress={() => router.push("/disponibilidade" as any)}
+              style={[styles.compatBannerBtn, { borderColor: "rgba(37, 211, 102, 0.4)" }]}
+            >
+              <Text style={styles.compatBannerBtnText}>Ajustar</Text>
+            </Pressable>
+          </View>
+        ) : user ? (
+          <Pressable
+            onPress={() => router.push("/disponibilidade" as any)}
+            style={[styles.compatBanner, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          >
+            <View style={styles.compatBannerLeft}>
+              <MaterialIcons name="tune" size={18} color="#60A5FA" />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.compatBannerTitle, { color: colors.foreground }]}>
+                  Configure sua disponibilidade
+                </Text>
+                <Text style={[styles.compatBannerDesc, { color: colors.muted }]}>
+                  Defina onde e quando você atende para receber destaques personalizados.
+                </Text>
+              </View>
+            </View>
+            <MaterialIcons name="chevron-right" size={20} color={colors.muted} />
+          </Pressable>
+        ) : null}
+
         {loading && !refreshing ? (
           <View style={styles.loadingBox}>
             <ActivityIndicator size="large" color="#25D366" />
@@ -468,8 +553,8 @@ export default function OportunidadesScreen() {
               style={({ pressed }) => [
                 styles.oppCard,
                 {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.border,
+                  backgroundColor: item.isCompatible ? "rgba(37, 211, 102, 0.04)" : colors.surface,
+                  borderColor: item.isCompatible ? "rgba(37, 211, 102, 0.45)" : colors.border,
                 },
                 pressed && {
                   opacity: 0.9,
@@ -477,6 +562,21 @@ export default function OportunidadesScreen() {
                 },
               ]}
             >
+              {/* Highlight badge for compatible opportunities (Etapa 12) */}
+              {item.isCompatible && (
+                <View style={styles.compatibleBadgeContainer}>
+                  <View style={styles.compatibleBadge}>
+                    <MaterialIcons name="check-circle" size={14} color="#000000" />
+                    <Text style={styles.compatibleBadgeText}>✓ Compatível com você</Text>
+                  </View>
+                  {item.compatibilityReasons && item.compatibilityReasons.length > 0 && (
+                    <Text style={[styles.compatibleReasonsText, { color: "#25D366" }]} numberOfLines={1}>
+                      {item.compatibilityReasons.join(" • ")}
+                    </Text>
+                  )}
+                </View>
+              )}
+
               {/* Card Header: Category & Time Ago */}
               <View style={styles.cardTopRow}>
                 <View style={styles.categoryBadgeRow}>
@@ -1362,5 +1462,75 @@ const styles = StyleSheet.create({
     color: "#000000",
     fontSize: 14,
     fontWeight: "900",
+  },
+  compatBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 10,
+    marginBottom: 4,
+  },
+  compatBannerLeft: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  compatBannerTitle: {
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  compatBannerDesc: {
+    fontSize: 10,
+    marginTop: 2,
+    lineHeight: 14,
+  },
+  compatBannerBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    backgroundColor: "rgba(37, 211, 102, 0.15)",
+  },
+  compatBannerBtnText: {
+    color: "#25D366",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  compatibleBadgeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "rgba(37, 211, 102, 0.12)",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "rgba(37, 211, 102, 0.3)",
+  },
+  compatibleBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "#25D366",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  compatibleBadgeText: {
+    color: "#000000",
+    fontSize: 10,
+    fontWeight: "900",
+  },
+  compatibleReasonsText: {
+    fontSize: 10,
+    fontWeight: "700",
+    flex: 1,
+    textAlign: "right",
+    marginLeft: 8,
   },
 });

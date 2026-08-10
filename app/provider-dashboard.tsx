@@ -650,9 +650,39 @@ export default function ProviderDashboard() {
           </View>
         </View>
 
-        {/* Agenda Link */}
+        {/* Agenda & Disponibilidade Links */}
         {!isCommerce && provider.categoryId !== "comercios" && (
-          <View style={{ marginHorizontal: 16, marginBottom: 24 }}>
+          <View style={{ marginHorizontal: 16, marginBottom: 20, gap: 10 }}>
+            {/* Disponibilidade para Oportunidades */}
+            <Pressable
+              style={({ pressed }) => [
+                {
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  backgroundColor: "#fff",
+                  padding: 16,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: "#E5E7EB",
+                },
+                pressed && { opacity: 0.7 },
+              ]}
+              onPress={() => router.push("/disponibilidade" as any)}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#25D36615", alignItems: "center", justifyContent: "center" }}>
+                  <MaterialIcons name="tune" size={20} color="#25D366" />
+                </View>
+                <View>
+                  <Text style={{ fontSize: 16, fontWeight: "700", color: "#111827" }}>Disponibilidade para Oportunidades</Text>
+                  <Text style={{ fontSize: 13, color: "#6B7280" }}>Cidades, categorias e horários</Text>
+                </View>
+              </View>
+              <MaterialIcons name="chevron-right" size={24} color="#9CA3AF" />
+            </Pressable>
+
+            {/* Minha Agenda */}
             <Pressable
               style={({ pressed }) => [
                 {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,6 +34,7 @@ import {
   Settings,
   Gift,
   Calendar,
+  SlidersHorizontal,
 } from "lucide-react";
 import {
   parseWorkingHours,
@@ -149,7 +150,7 @@ export default function Parceiro() {
 
   // Dashboard active tab
   const [activeTab, setActiveTab] = useState<
-    "perfil" | "dados" | "horarios" | "localizacao" | "fotos" | "servicos" | "estatisticas" | "favoritos" | "minhas-avaliacoes" | "indicacoes" | "assinatura" | "configuracoes" | "meus-agendamentos" | "agenda"
+    "perfil" | "dados" | "horarios" | "localizacao" | "fotos" | "servicos" | "estatisticas" | "favoritos" | "minhas-avaliacoes" | "indicacoes" | "assinatura" | "configuracoes" | "meus-agendamentos" | "agenda" | "disponibilidade"
   >("dados");
 
   const [busWorkingHours, setBusWorkingHours] = useState<WorkingHoursMap>(DEFAULT_WORKING_HOURS);
@@ -1812,6 +1813,7 @@ export default function Parceiro() {
                       : [
                           { id: "perfil", label: "Meu Perfil", icon: User },
                           { id: "dados", label: "Meu Negócio", icon: Store },
+                          { id: "disponibilidade", label: "Disponibilidade Oportunidades", icon: SlidersHorizontal },
                           { id: "agenda", label: "Agenda", icon: Calendar },
                           { id: "horarios", label: "Horário de Funcionamento", icon: Clock },
                           { id: "localizacao", label: "Endereço & Localização", icon: MapPin },
@@ -1896,6 +1898,51 @@ export default function Parceiro() {
                               </Button>
                             </div>
                           )}
+                        </div>
+                      )}
+
+                      {/* DISPONIBILIDADE PANEL */}
+                      {activeTab === "disponibilidade" && (
+                        <div className="space-y-6">
+                          <div className="pb-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div>
+                              <h2 className="text-xl font-black text-white flex items-center gap-2">
+                                <SlidersHorizontal className="w-5 h-5 text-primary" />
+                                <span>Disponibilidade para Oportunidades</span>
+                              </h2>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Configure categorias, cidades, raio de deslocamento e horários para receber demandas.
+                              </p>
+                            </div>
+                            <Link href="/disponibilidade">
+                              <Button className="bg-primary text-black font-black hover:bg-primary/90 text-xs px-4 h-9 rounded-xl">
+                                Abrir Painel Completo
+                              </Button>
+                            </Link>
+                          </div>
+
+                          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-6 space-y-4">
+                            <div className="flex items-start gap-4">
+                              <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                                <Sparkles className="h-6 w-6" />
+                              </div>
+                              <div className="space-y-2">
+                                <h3 className="text-base font-bold text-white">
+                                  Receba Oportunidades & Serviços Compatíveis
+                                </h3>
+                                <p className="text-xs text-zinc-400 leading-relaxed">
+                                  Ao configurar sua disponibilidade, você define exatamente quais tipos de trabalhos aceita realizar, onde atende e em quais turnos tem agenda disponível.
+                                </p>
+                                <div className="pt-2">
+                                  <Link href="/disponibilidade">
+                                    <Button className="bg-primary text-black font-black hover:bg-primary/90 text-xs px-5 h-10 rounded-xl">
+                                      Configurar Minha Disponibilidade Agora
+                                    </Button>
+                                  </Link>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       )}
 

@@ -15,6 +15,7 @@ import PublicarNecessidade from "./pages/PublicarNecessidade";
 import DetalheNecessidade from "./pages/DetalheNecessidade";
 import Oportunidades from "./pages/Oportunidades";
 import MinhasNecessidades from "./pages/MinhasNecessidades";
+import DisponibilidadeProfissional from "./pages/DisponibilidadeProfissional";
 
 function Router() {
   return (
@@ -29,6 +30,9 @@ function Router() {
       <Route path={"/minhas-necessidades"} component={MinhasNecessidades} />
       <Route path={"/minhas-oportunidades"} component={MinhasNecessidades} />
       <Route path={"/minhas-publicacoes"} component={MinhasNecessidades} />
+      <Route path={"/disponibilidade"} component={DisponibilidadeProfissional} />
+      <Route path={"/minha-disponibilidade"} component={DisponibilidadeProfissional} />
+      <Route path={"/parceiro/disponibilidade"} component={DisponibilidadeProfissional} />
       <Route path={"/preciso-de-alguem"} component={PublicarNecessidade} />
       <Route path={"/publicar-necessidade"} component={PublicarNecessidade} />
       <Route path={"/necessidade/:id"} component={DetalheNecessidade} />

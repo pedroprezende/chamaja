@@ -593,6 +593,7 @@ export default function ProfileScreen() {
   };
 
   const MENU_ITEMS = [
+    { id: "disponibilidade", label: "Minha disponibilidade de trabalho", icon: "tune" },
     { id: "minhas_necessidades", label: "Minhas publicações de serviços", icon: "assignment" },
     { id: "addresses", label: "Meus endereços", icon: "place" },
     { id: "appointments", label: "Meus agendamentos", icon: "event" },
@@ -643,6 +644,9 @@ export default function ProfileScreen() {
 
   const handleMenuPress = (itemId: string) => {
     switch (itemId) {
+      case "disponibilidade":
+        router.push("/disponibilidade" as any);
+        break;
       case "minhas_necessidades":
         router.push("/minhas-necessidades" as any);
         break;
