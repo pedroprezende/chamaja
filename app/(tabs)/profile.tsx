@@ -593,6 +593,7 @@ export default function ProfileScreen() {
   };
 
   const MENU_ITEMS = [
+    { id: "minhas_necessidades", label: "Minhas publicações de serviços", icon: "assignment" },
     { id: "addresses", label: "Meus endereços", icon: "place" },
     { id: "appointments", label: "Meus agendamentos", icon: "event" },
     {
@@ -642,6 +643,9 @@ export default function ProfileScreen() {
 
   const handleMenuPress = (itemId: string) => {
     switch (itemId) {
+      case "minhas_necessidades":
+        router.push("/minhas-necessidades" as any);
+        break;
       case "addresses":
         setAddressesModalVisible(true);
         break;

@@ -15,6 +15,7 @@ import { paymentsRouter } from "./routers/payments";
 import { utmRouter } from "./routers/utm";
 import { plansRouter } from "./routers/plans";
 import { appointmentsRouter } from "./routers/appointments";
+import { needsRouter } from "./routers/needs";
 
 export const appRouter = router({
   system: systemRouter,
@@ -46,6 +47,8 @@ export const appRouter = router({
   utm: utmRouter,
   plans: plansRouter,
   appointments: appointmentsRouter,
+  needs: needsRouter,
 });
 
 export type AppRouter = typeof appRouter;
+

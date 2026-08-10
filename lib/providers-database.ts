@@ -129,7 +129,7 @@ export const providersDB = {
     updates: Partial<StoredProvider>,
   ): Promise<void> => {
     try {
-      await trpcVanilla.providers.updateProvider.mutate({ userId, updates });
+      await trpcVanilla.providers.updateProvider.mutate({ userId, updates: updates as any });
     } catch (err) {
       console.error("[providersDB] Failed to update", err);
     }

@@ -36,6 +36,13 @@
       "when": 1786099146789,
       "tag": "0004_regular_virginia_dare",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786313030633,
+      "tag": "0005_fixed_pet_avengers",
+      "breakpoints": true
     }
   ]
 }

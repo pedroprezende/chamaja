@@ -11,6 +11,10 @@ import Parceiro from "./pages/Parceiro";
 import Busca from "./pages/Busca";
 import Perfil from "./pages/Perfil";
 import IndiqueGanhe from "./pages/IndiqueGanhe";
+import PublicarNecessidade from "./pages/PublicarNecessidade";
+import DetalheNecessidade from "./pages/DetalheNecessidade";
+import Oportunidades from "./pages/Oportunidades";
+import MinhasNecessidades from "./pages/MinhasNecessidades";
 
 function Router() {
   return (
@@ -19,6 +23,16 @@ function Router() {
       <Route path={"/como-funciona"} component={ConhecerApp} />
       <Route path={"/cadastro"} component={Home} />
       <Route path={"/busca"} component={Busca} />
+      <Route path={"/oportunidades"} component={Oportunidades} />
+      <Route path={"/encontrar-oportunidades"} component={Oportunidades} />
+      <Route path={"/needs"} component={Oportunidades} />
+      <Route path={"/minhas-necessidades"} component={MinhasNecessidades} />
+      <Route path={"/minhas-oportunidades"} component={MinhasNecessidades} />
+      <Route path={"/minhas-publicacoes"} component={MinhasNecessidades} />
+      <Route path={"/preciso-de-alguem"} component={PublicarNecessidade} />
+      <Route path={"/publicar-necessidade"} component={PublicarNecessidade} />
+      <Route path={"/necessidade/:id"} component={DetalheNecessidade} />
+      <Route path={"/needs/:id"} component={DetalheNecessidade} />
       <Route path={"/perfil/:id"} component={Perfil} />
       <Route path={"/prestador/:id"} component={Perfil} />
       <Route path={"/professional/:id"} component={Perfil} />

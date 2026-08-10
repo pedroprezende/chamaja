@@ -1677,6 +1677,185 @@ export default function HomeScreen() {
                   <AdsCarousel ads={ads} />
                 </View>
 
+                {/* 1.5. Cards de Ação: "Preciso de Alguém" e "Encontrar Oportunidades" */}
+                <View style={{ paddingHorizontal: 16, marginVertical: 4, gap: 10 }}>
+                  {/* Card: Preciso de alguém */}
+                  <Pressable
+                    style={({ pressed }) => [
+                      {
+                        borderRadius: 20,
+                        overflow: "hidden",
+                        borderWidth: 1,
+                        borderColor: "rgba(37, 211, 102, 0.35)",
+                        backgroundColor: "#0d1a10",
+                      },
+                      pressed && { opacity: 0.9, transform: [{ scale: 0.99 }] },
+                    ]}
+                    onPress={() => {
+                      if (Platform.OS !== "web") {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      }
+                      router.push("/preciso-de-alguem" as any);
+                    }}
+                  >
+                    <LinearGradient
+                      colors={["#0f2615", "#09120b"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={{
+                        padding: 14,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 12,
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 42,
+                          height: 42,
+                          borderRadius: 14,
+                          backgroundColor: "rgba(37, 211, 102, 0.15)",
+                          borderWidth: 1,
+                          borderColor: "rgba(37, 211, 102, 0.35)",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <MaterialIcons name="campaign" size={24} color="#25D366" />
+                      </View>
+                      <View style={{ flex: 1, gap: 2 }}>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                          <Text style={{ color: "#FFFFFF", fontSize: 14, fontWeight: "800" }}>
+                            Preciso de alguém
+                          </Text>
+                          <View
+                            style={{
+                              backgroundColor: "#25D366",
+                              paddingHorizontal: 6,
+                              paddingVertical: 1,
+                              borderRadius: 8,
+                            }}
+                          >
+                            <Text style={{ color: "#000000", fontSize: 9, fontWeight: "900" }}>
+                              PUBLICAR
+                            </Text>
+                          </View>
+                        </View>
+                        <Text
+                          style={{
+                            color: "#A1A1AA",
+                            fontSize: 11,
+                            lineHeight: 15,
+                          }}
+                          numberOfLines={1}
+                        >
+                          Publique sua necessidade e receba propostas.
+                        </Text>
+                      </View>
+                      <View
+                        style={{
+                          width: 30,
+                          height: 30,
+                          borderRadius: 15,
+                          backgroundColor: "rgba(37, 211, 102, 0.2)",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <MaterialIcons name="arrow-forward" size={16} color="#25D366" />
+                      </View>
+                    </LinearGradient>
+                  </Pressable>
+
+                  {/* Card: Encontrar Oportunidades */}
+                  <Pressable
+                    style={({ pressed }) => [
+                      {
+                        borderRadius: 20,
+                        overflow: "hidden",
+                        borderWidth: 1,
+                        borderColor: "rgba(59, 130, 246, 0.35)",
+                        backgroundColor: "#0a1324",
+                      },
+                      pressed && { opacity: 0.9, transform: [{ scale: 0.99 }] },
+                    ]}
+                    onPress={() => {
+                      if (Platform.OS !== "web") {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      }
+                      router.push("/oportunidades" as any);
+                    }}
+                  >
+                    <LinearGradient
+                      colors={["#0c1e3d", "#08101f"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={{
+                        padding: 14,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 12,
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 42,
+                          height: 42,
+                          borderRadius: 14,
+                          backgroundColor: "rgba(59, 130, 246, 0.15)",
+                          borderWidth: 1,
+                          borderColor: "rgba(59, 130, 246, 0.35)",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <MaterialIcons name="work" size={22} color="#60A5FA" />
+                      </View>
+                      <View style={{ flex: 1, gap: 2 }}>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                          <Text style={{ color: "#FFFFFF", fontSize: 14, fontWeight: "800" }}>
+                            Encontrar oportunidades
+                          </Text>
+                          <View
+                            style={{
+                              backgroundColor: "#3B82F6",
+                              paddingHorizontal: 6,
+                              paddingVertical: 1,
+                              borderRadius: 8,
+                            }}
+                          >
+                            <Text style={{ color: "#FFFFFF", fontSize: 9, fontWeight: "900" }}>
+                              VAGAS
+                            </Text>
+                          </View>
+                        </View>
+                        <Text
+                          style={{
+                            color: "#94A3B8",
+                            fontSize: 11,
+                            lineHeight: 15,
+                          }}
+                          numberOfLines={1}
+                        >
+                          Veja serviços e demandas solicitadas na sua região.
+                        </Text>
+                      </View>
+                      <View
+                        style={{
+                          width: 30,
+                          height: 30,
+                          borderRadius: 15,
+                          backgroundColor: "rgba(59, 130, 246, 0.2)",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <MaterialIcons name="arrow-forward" size={16} color="#60A5FA" />
+                      </View>
+                    </LinearGradient>
+                  </Pressable>
+                </View>
+
                 {/* 2. Categorias Rápidas */}
                 <View style={{ marginTop: 8 }}>
                   <View style={styles.sectionWrapper}>

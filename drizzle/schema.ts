@@ -9,6 +9,7 @@ import {
   timestamp,
   real,
   index,
+  uniqueIndex,
   jsonb,
   uuid,
   date,
@@ -495,3 +496,89 @@ export const referrals = pgTable("referrals", {
 
 export type Referral = typeof referrals.$inferSelect;
 export type InsertReferral = typeof referrals.$inferInsert;
+
+// ── Needs (Necessidades / Demandas de Clientes) ───────────────────────────────
+export const needs = pgTable(
+  "needs",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    userId: varchar("user_id", { length: 64 })
+      .notNull()
+      .references(() => users.openId, { onDelete: "cascade" }),
+    title: varchar("title", { length: 255 }).notNull(),
+    description: text("description").notNull(),
+    category: varchar("category", { length: 255 }),
+    categoryId: varchar("category_id", { length: 64 })
+      .references(() => categories.id, { onDelete: "set null" }),
+    subcategoryId: varchar("subcategory_id", { length: 64 }),
+    subcategoryName: varchar("subcategory_name", { length: 255 }),
+    requiredProfessionals: integer("required_professionals").notNull().default(1),
+    filledSpots: integer("filled_spots").notNull().default(0),
+    startDate: date("start_date", { mode: "string" }).notNull(),
+    endDate: date("end_date", { mode: "string" }),
+    startTime: varchar("start_time", { length: 5 }), // HH:MM
+    endTime: varchar("end_time", { length: 5 }), // HH:MM
+    budget: real("budget"), // Valor oferecido
+    paymentType: varchar("payment_type", { length: 50 }).default("total").notNull(), // 'total', 'diaria', 'hora', 'a_combinar'
+    address: text("address"),
+    neighborhood: varchar("neighborhood", { length: 255 }),
+    city: varchar("city", { length: 255 }).notNull(),
+    latitude: real("latitude"),
+    longitude: real("longitude"),
+    requirements: text("requirements"),
+    notes: text("notes"),
+    photos: text("photos").array(),
+    status: varchar("status", { length: 50 }).default("ativa").notNull(), // 'ativa', 'pausada', 'encerrada', 'cancelada'
+    expiresAt: timestamp("expires_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("needs_user_id_idx").on(table.userId),
+    index("needs_category_id_idx").on(table.categoryId),
+    index("needs_subcategoryId_idx").on(table.subcategoryId),
+    index("needs_status_idx").on(table.status),
+    index("needs_city_idx").on(table.city),
+    index("needs_start_date_idx").on(table.startDate),
+    index("needs_latitude_idx").on(table.latitude),
+    index("needs_longitude_idx").on(table.longitude),
+    index("needs_created_at_idx").on(table.createdAt),
+  ],
+);
+
+export type Need = typeof needs.$inferSelect;
+export type InsertNeed = typeof needs.$inferInsert;
+
+// ── Need Applications (Candidaturas / Propostas de Prestadores) ───────────────
+export const needApplications = pgTable(
+  "need_applications",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    needId: varchar("need_id", { length: 64 })
+      .notNull()
+      .references(() => needs.id, { onDelete: "cascade" }),
+    userId: varchar("user_id", { length: 64 })
+      .notNull()
+      .references(() => users.openId, { onDelete: "cascade" }),
+    providerId: varchar("provider_id", { length: 64 })
+      .references(() => providers.id, { onDelete: "set null" }),
+    message: text("message").notNull(),
+    proposedPrice: real("proposed_price"),
+    estimatedTime: varchar("estimated_time", { length: 100 }),
+    status: varchar("status", { length: 50 }).default("pendente").notNull(), // 'pendente', 'aceita', 'recusada', 'cancelada'
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("need_apps_need_user_idx").on(table.needId, table.userId),
+    index("need_apps_need_id_idx").on(table.needId),
+    index("need_apps_user_id_idx").on(table.userId),
+    index("need_apps_provider_id_idx").on(table.providerId),
+    index("need_apps_status_idx").on(table.status),
+    index("need_apps_created_at_idx").on(table.createdAt),
+  ],
+);
+
+export type NeedApplication = typeof needApplications.$inferSelect;
+export type InsertNeedApplication = typeof needApplications.$inferInsert;
+

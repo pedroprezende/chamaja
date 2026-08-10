@@ -262,7 +262,7 @@ export default function Parceiros() {
             </a>
             {partner && (
               <button
-                onClick={handleLogout}
+                onClick={() => handleLogout()}
                 className="flex items-center gap-2 text-sm font-semibold text-red-400 hover:text-red-300 transition"
               >
                 <LogOut className="h-4 w-4" /> Sair

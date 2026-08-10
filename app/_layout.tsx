@@ -78,13 +78,16 @@ function RootLayoutNav() {
     const path = segments.join("/");
 
     // Rotas públicas que visitantes/não-autenticados podem navegar livremente no PWA
+    const firstSegment = String(segments[0] || "");
     const isPublicRoute =
-      segments[0] === "professional" ||
-      segments[0] === "professionals" ||
-      segments[0] === "categories" ||
-      segments[0] === "reviews" ||
-      segments[0] === "(tabs)" ||
-      !segments[0];
+      firstSegment === "professional" ||
+      firstSegment === "professionals" ||
+      firstSegment === "categories" ||
+      firstSegment === "reviews" ||
+      firstSegment === "preciso-de-alguem" ||
+      firstSegment === "needs" ||
+      firstSegment === "(tabs)" ||
+      !firstSegment;
 
     if (!isSignedIn && !inAuthGroup && !isPublicRoute) {
       if (path !== "oauth/callback" && path !== "") {
@@ -180,6 +183,8 @@ function RootLayoutNav() {
         <Stack.Screen name="appointments" />
         <Stack.Screen name="professional/[id]/schedule" />
         <Stack.Screen name="provider-agenda" />
+        <Stack.Screen name="preciso-de-alguem" />
+        <Stack.Screen name="needs/create" />
       </Stack>
     </>
   );

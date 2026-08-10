@@ -36,6 +36,7 @@ import {
   BadgeCheck,
   Store,
   Users,
+  Megaphone,
 } from "lucide-react";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { getSessionToken } from "@/lib/supabase";
@@ -803,7 +804,21 @@ export default function Home() {
           </div>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
+          <nav className="hidden md:flex items-center gap-5 text-sm font-medium">
+            <a
+              href="/oportunidades"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 font-bold text-xs transition shadow-sm"
+            >
+              <Users className="w-3.5 h-3.5 text-blue-400" />
+              <span>Oportunidades</span>
+            </a>
+            <a
+              href="/preciso-de-alguem"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#25D366]/10 border border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366]/20 font-bold text-xs transition shadow-sm"
+            >
+              <Megaphone className="w-3.5 h-3.5 text-[#25D366]" />
+              <span>Preciso de alguém</span>
+            </a>
             <button
               onClick={() =>
                 document
@@ -859,6 +874,24 @@ export default function Home() {
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-zinc-900 bg-background/95 backdrop-blur-sm py-4 px-6 space-y-4 animate-in slide-in-from-top duration-200">
             <nav className="flex flex-col gap-3">
+              <a
+                href="/oportunidades"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 text-blue-400 font-bold py-2.5 text-base border-b border-zinc-900"
+              >
+                <Users className="w-4 h-4 text-blue-400" />
+                <span>Encontrar oportunidades</span>
+                <span className="bg-blue-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase ml-auto">Vagas</span>
+              </a>
+              <a
+                href="/preciso-de-alguem"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 text-[#25D366] font-bold py-2.5 text-base border-b border-zinc-900"
+              >
+                <Megaphone className="w-4 h-4 text-[#25D366]" />
+                <span>Preciso de alguém</span>
+                <span className="bg-[#25D366] text-black text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase ml-auto">Novo</span>
+              </a>
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
@@ -1167,8 +1200,33 @@ export default function Home() {
                 </button>
               </div>
 
+              {/* ── CTA PRECISO DE ALGUÉM ── */}
+              <div className="bg-gradient-to-r from-zinc-950 via-[#0d1710] to-zinc-950 border border-[#25D366]/30 hover:border-[#25D366]/60 p-4 sm:p-4.5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl backdrop-blur-md transition-all duration-300 group">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#25D366]/15 border border-[#25D366]/30 flex items-center justify-center text-[#25D366] flex-shrink-0 group-hover:scale-105 transition-transform">
+                    <Megaphone className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-bold text-sm flex items-center gap-2">
+                      <span>Preciso de alguém para um serviço</span>
+                      <span className="bg-[#25D366] text-black text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase">Novo</span>
+                    </h3>
+                    <p className="text-zinc-400 text-xs mt-0.5">
+                      Publique seu pedido e receba propostas de profissionais da região.
+                    </p>
+                  </div>
+                </div>
+                <a
+                  href="/preciso-de-alguem"
+                  className="w-full sm:w-auto bg-[#25D366] hover:bg-[#22C55E] text-black font-black text-xs px-4 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 shadow-md shadow-[#25D366]/20 flex-shrink-0 hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <span>Publicar Pedido</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </a>
+              </div>
+
               {/* ── REAL DATABASE STATS CARDS (CARREGADOS DO BANCO SEM FALLBACKS FICTÍCIOS) ── */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
                 {/* Stat 1: Comércios */}
                 <div className="bg-zinc-950/60 border border-white/[0.06] p-4 rounded-2xl flex flex-col justify-center backdrop-blur-md hover:border-[#25D366]/40 transition-colors group">
                   <div className="flex items-center gap-2 mb-1">
