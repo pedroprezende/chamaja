@@ -32,6 +32,8 @@ import {
   CheckCircle,
   XCircle,
   Clock3,
+  Phone,
+  MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -306,6 +308,13 @@ export default function DetalheNecessidade() {
     setCopied(true);
     toast.success("Link da necessidade copiado!");
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleOpenWhatsapp = (phone: string, needTitle: string) => {
+    const cleanPhone = phone.replace(/\D/g, "");
+    const targetPhone = cleanPhone.startsWith("55") ? cleanPhone : `55${cleanPhone}`;
+    const message = `Olá! Vi a sua publicação "${needTitle}" no XamaJá e gostaria de conversar sobre o serviço.`;
+    window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(message)}`, "_blank");
   };
 
   const handleApplyClick = async () => {
@@ -896,6 +905,21 @@ export default function DetalheNecessidade() {
                       {need.city} • Cliente na plataforma
                     </p>
                   </div>
+
+                  {need.allowWhatsappContact && need.whatsappContact ? (
+                    <button
+                      onClick={() => handleOpenWhatsapp(need.whatsappContact, need.title)}
+                      className="px-3.5 py-2 rounded-xl bg-[#25D366]/15 hover:bg-[#25D366]/25 border border-[#25D366]/40 text-[#25D366] text-xs font-bold flex items-center gap-1.5 transition shadow-sm"
+                    >
+                      <Phone className="w-3.5 h-3.5 fill-current" />
+                      <span>WhatsApp</span>
+                    </button>
+                  ) : (
+                    <span className="text-[11px] text-zinc-500 font-semibold px-2.5 py-1 rounded-lg bg-zinc-900 border border-white/5 flex items-center gap-1">
+                      <Lock className="w-3 h-3 text-zinc-500" />
+                      <span>Contato via plataforma</span>
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -1062,13 +1086,31 @@ export default function DetalheNecessidade() {
                     <p className="text-zinc-500 text-[11px]">Todas as vagas foram preenchidas.</p>
                   </div>
                 ) : (
-                  <Button
-                    onClick={handleApplyClick}
-                    className="w-full bg-primary hover:bg-primary/90 text-black font-black h-13 py-3.5 rounded-2xl text-base shadow-xl shadow-primary/20 flex items-center justify-center gap-2 transform active:scale-98 transition duration-150"
-                  >
-                    <ThumbsUp className="h-5 w-5" />
-                    <span>Tenho Interesse</span>
-                  </Button>
+                  <div className="space-y-3">
+                    {/* Botão Chamar no WhatsApp (Etapa 13: Apenas se contratante permitiu) */}
+                    {need.allowWhatsappContact && need.whatsappContact ? (
+                      <button
+                        onClick={() => handleOpenWhatsapp(need.whatsappContact, need.title)}
+                        className="w-full bg-[#166534] hover:bg-[#15803d] border border-[#25D366] text-white font-black h-13 py-3.5 rounded-2xl text-sm shadow-xl shadow-emerald-950/40 flex items-center justify-center gap-2 transform active:scale-98 transition duration-150"
+                      >
+                        <Phone className="h-4.5 w-4.5 fill-current text-white" />
+                        <span>Chamar no WhatsApp</span>
+                      </button>
+                    ) : (
+                      <div className="bg-zinc-900/60 border border-white/[0.06] rounded-xl p-3 flex items-center gap-2.5 text-xs text-zinc-400">
+                        <Lock className="h-4 w-4 text-zinc-500 shrink-0" />
+                        <span>Contato direto por WhatsApp desativado. Envie sua proposta abaixo.</span>
+                      </div>
+                    )}
+
+                    <Button
+                      onClick={handleApplyClick}
+                      className="w-full bg-primary hover:bg-primary/90 text-black font-black h-13 py-3.5 rounded-2xl text-base shadow-xl shadow-primary/20 flex items-center justify-center gap-2 transform active:scale-98 transition duration-150"
+                    >
+                      <ThumbsUp className="h-5 w-5" />
+                      <span>Tenho Interesse</span>
+                    </Button>
+                  </div>
                 )}
 
                 <div className="border-t border-zinc-900 pt-4 space-y-3">

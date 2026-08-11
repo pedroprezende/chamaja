@@ -63,6 +63,8 @@ interface NeedFormData {
   requirements: string;
   notes: string;
   photos: string[]; // Local URIs or uploaded URLs
+  allowWhatsappContact: boolean;
+  whatsappContact: string;
 }
 
 const INITIAL_FORM: NeedFormData = {
@@ -90,6 +92,8 @@ const INITIAL_FORM: NeedFormData = {
   requirements: "",
   notes: "",
   photos: [],
+  allowWhatsappContact: true,
+  whatsappContact: "",
 };
 
 export default function PrecisoDeAlguemScreen() {
@@ -112,7 +116,7 @@ export default function PrecisoDeAlguemScreen() {
   const activeSubcategories =
     subcategoriesByCategory[formData.categoryId] || [];
 
-  // Initialize with user location if available
+  // Initialize with user location & user phone if available
   useEffect(() => {
     if (locationCtx.coords && !formData.latitude) {
       setFormData((prev) => ({
@@ -121,7 +125,13 @@ export default function PrecisoDeAlguemScreen() {
         longitude: locationCtx.coords?.longitude ?? null,
       }));
     }
-  }, [locationCtx.coords]);
+    if (user?.phone && !formData.whatsappContact) {
+      setFormData((prev) => ({
+        ...prev,
+        whatsappContact: user.phone || "",
+      }));
+    }
+  }, [locationCtx.coords, user]);
 
   const triggerHaptic = (
     style: Haptics.ImpactFeedbackStyle = Haptics.ImpactFeedbackStyle.Light
@@ -387,6 +397,8 @@ export default function PrecisoDeAlguemScreen() {
         requirements: formData.requirements.trim() || undefined,
         notes: formData.notes.trim() || undefined,
         photos: uploadedPhotoUrls,
+        allowWhatsappContact: formData.allowWhatsappContact,
+        whatsappContact: formData.whatsappContact.trim() || undefined,
       });
 
       if (result && result.success) {
@@ -1494,6 +1506,113 @@ export default function PrecisoDeAlguemScreen() {
                   />
                 </View>
 
+                {/* ── Contato Direto pelo WhatsApp (Etapa 13) ── */}
+                <View style={styles.fieldGroup}>
+                  <Text style={[styles.fieldLabel, { color: colors.foreground }]}>
+                    Permitir que profissionais entrem em contato pelo WhatsApp *
+                  </Text>
+                  <View style={styles.whatsappOptionContainer}>
+                    {/* Opção Sim */}
+                    <Pressable
+                      onPress={() => {
+                        triggerHaptic();
+                        setFormData((p) => ({ ...p, allowWhatsappContact: true }));
+                      }}
+                      style={[
+                        styles.whatsappOptionCard,
+                        {
+                          backgroundColor: formData.allowWhatsappContact
+                            ? "rgba(37, 211, 102, 0.12)"
+                            : colors.surface,
+                          borderColor: formData.allowWhatsappContact
+                            ? "#25D366"
+                            : colors.border,
+                        },
+                      ]}
+                    >
+                      <View style={styles.whatsappRadioHeader}>
+                        <MaterialIcons
+                          name={formData.allowWhatsappContact ? "radio-button-checked" : "radio-button-unchecked"}
+                          size={20}
+                          color={formData.allowWhatsappContact ? "#25D366" : colors.muted}
+                        />
+                        <Text
+                          style={[
+                            styles.whatsappRadioTitle,
+                            { color: formData.allowWhatsappContact ? "#25D366" : colors.foreground },
+                          ]}
+                        >
+                          Sim
+                        </Text>
+                      </View>
+                      <Text style={[styles.whatsappRadioDesc, { color: colors.muted }]}>
+                        Profissionais poderão ver o botão "Chamar no WhatsApp" para falar diretamente com você.
+                      </Text>
+                    </Pressable>
+
+                    {/* Opção Não */}
+                    <Pressable
+                      onPress={() => {
+                        triggerHaptic();
+                        setFormData((p) => ({ ...p, allowWhatsappContact: false }));
+                      }}
+                      style={[
+                        styles.whatsappOptionCard,
+                        {
+                          backgroundColor: !formData.allowWhatsappContact
+                            ? "rgba(239, 68, 68, 0.08)"
+                            : colors.surface,
+                          borderColor: !formData.allowWhatsappContact
+                            ? "#EF4444"
+                            : colors.border,
+                        },
+                      ]}
+                    >
+                      <View style={styles.whatsappRadioHeader}>
+                        <MaterialIcons
+                          name={!formData.allowWhatsappContact ? "radio-button-checked" : "radio-button-unchecked"}
+                          size={20}
+                          color={!formData.allowWhatsappContact ? "#EF4444" : colors.muted}
+                        />
+                        <Text
+                          style={[
+                            styles.whatsappRadioTitle,
+                            { color: !formData.allowWhatsappContact ? "#EF4444" : colors.foreground },
+                          ]}
+                        >
+                          Não
+                        </Text>
+                      </View>
+                      <Text style={[styles.whatsappRadioDesc, { color: colors.muted }]}>
+                        O WhatsApp não será exibido. Você receberá apenas propostas pela plataforma.
+                      </Text>
+                    </Pressable>
+                  </View>
+
+                  {formData.allowWhatsappContact && (
+                    <View style={{ marginTop: 10 }}>
+                      <Text style={[styles.fieldLabel, { color: colors.muted, fontSize: 12 }]}>
+                        Número de WhatsApp para contato
+                      </Text>
+                      <TextInput
+                        style={[
+                          styles.textInput,
+                          {
+                            backgroundColor: colors.surface,
+                            borderColor: colors.border,
+                            color: colors.foreground,
+                          },
+                        ]}
+                        placeholder="(11) 99999-9999"
+                        placeholderTextColor="#71717A"
+                        value={formData.whatsappContact}
+                        onChangeText={(t) => setFormData((p) => ({ ...p, whatsappContact: t }))}
+                        keyboardType="phone-pad"
+                      />
+                    </View>
+                  )}
+                </View>
+
                 {/* Galeria de Fotos */}
                 <View style={styles.fieldGroup}>
                   <View style={styles.photoHeaderRow}>
@@ -1950,6 +2069,68 @@ export default function PrecisoDeAlguemScreen() {
                     </ScrollView>
                   </View>
                 )}
+
+                {/* Card Resumo do WhatsApp */}
+                <View
+                  style={[
+                    styles.reviewCard,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <View style={styles.reviewSectionHeader}>
+                    <MaterialIcons
+                      name="chat"
+                      size={18}
+                      color={formData.allowWhatsappContact ? "#25D366" : "#71717A"}
+                    />
+                    <Text
+                      style={[
+                        styles.reviewSectionTitle,
+                        { color: colors.foreground },
+                      ]}
+                    >
+                      Contato por WhatsApp
+                    </Text>
+                    <Pressable
+                      onPress={() => setCurrentStep(4)}
+                      style={styles.editStepLink}
+                    >
+                      <Text style={styles.editStepLinkText}>Editar</Text>
+                    </Pressable>
+                  </View>
+
+                  <View style={styles.reviewInfoRow}>
+                    <Text style={[styles.reviewInfoLabel, { color: colors.muted }]}>
+                      Permissão de Contato:
+                    </Text>
+                    <Text
+                      style={[
+                        styles.reviewInfoValue,
+                        {
+                          color: formData.allowWhatsappContact ? "#25D366" : colors.muted,
+                          fontWeight: "700",
+                        },
+                      ]}
+                    >
+                      {formData.allowWhatsappContact
+                        ? "Permitido (Botão 'Chamar no WhatsApp' visível)"
+                        : "Não Permitido (Privado)"}
+                    </Text>
+                  </View>
+                  {formData.allowWhatsappContact && formData.whatsappContact ? (
+                    <View style={styles.reviewInfoRow}>
+                      <Text style={[styles.reviewInfoLabel, { color: colors.muted }]}>
+                        Número Informado:
+                      </Text>
+                      <Text style={[styles.reviewInfoValue, { color: colors.foreground }]}>
+                        {formData.whatsappContact}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
 
                 {/* Card de Transparência e Responsabilidade */}
                 <View
@@ -2764,5 +2945,29 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.1)",
     alignItems: "center",
     justifyContent: "center",
+  },
+  whatsappOptionContainer: {
+    gap: 10,
+    marginTop: 4,
+  },
+  whatsappOptionCard: {
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    gap: 6,
+  },
+  whatsappRadioHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  whatsappRadioTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  whatsappRadioDesc: {
+    fontSize: 12,
+    lineHeight: 17,
+    paddingLeft: 28,
   },
 });

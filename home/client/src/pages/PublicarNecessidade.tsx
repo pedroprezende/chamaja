@@ -60,6 +60,8 @@ interface NeedWebFormData {
   requirements: string;
   notes: string;
   photos: string[];
+  allowWhatsappContact: boolean;
+  whatsappContact: string;
 }
 
 const INITIAL_FORM: NeedWebFormData = {
@@ -87,6 +89,8 @@ const INITIAL_FORM: NeedWebFormData = {
   requirements: "",
   notes: "",
   photos: [],
+  allowWhatsappContact: true,
+  whatsappContact: "",
 };
 
 // Subcategorias expandidas para seleção no Desktop
@@ -172,14 +176,28 @@ export default function PublicarNecessidade() {
         const token = await getSessionToken();
         const savedUser = localStorage.getItem("bp_user_profile");
         if (token && savedUser) {
-          setUserProfile(JSON.parse(savedUser));
+          const parsed = JSON.parse(savedUser);
+          setUserProfile(parsed);
+          if (parsed.phone) {
+            setFormData((prev) => ({
+              ...prev,
+              whatsappContact: prev.whatsappContact || parsed.phone,
+            }));
+          }
         } else if (token) {
           const { data } = await supabase.auth.getUser();
           if (data.user) {
             setUserProfile({
               name: data.user.user_metadata?.name || data.user.email?.split("@")[0],
               email: data.user.email,
+              phone: data.user.user_metadata?.phone,
             });
+            if (data.user.user_metadata?.phone) {
+              setFormData((prev) => ({
+                ...prev,
+                whatsappContact: prev.whatsappContact || data.user.user_metadata.phone,
+              }));
+            }
           }
         } else {
           setUserProfile(null);
@@ -496,6 +514,8 @@ export default function PublicarNecessidade() {
         requirements: formData.requirements.trim() || undefined,
         notes: formData.notes.trim() || undefined,
         photos: formData.photos,
+        allowWhatsappContact: formData.allowWhatsappContact,
+        whatsappContact: formData.whatsappContact.trim() || undefined,
       };
 
       const response = await fetch("/api/trpc/needs.create", {
@@ -1189,6 +1209,89 @@ export default function PublicarNecessidade() {
                   />
                 </div>
 
+                {/* ── Contato direto pelo WhatsApp (Etapa 13) ── */}
+                <div className="space-y-3 pt-2 border-t border-white/[0.08]">
+                  <label className="text-sm font-bold text-zinc-200 block">
+                    Permitir que profissionais entrem em contato pelo WhatsApp *
+                  </label>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    {/* Opção Sim */}
+                    <div
+                      onClick={() => setFormData({ ...formData, allowWhatsappContact: true })}
+                      className={`p-4 rounded-2xl border transition cursor-pointer flex flex-col justify-between gap-2 ${
+                        formData.allowWhatsappContact
+                          ? "bg-[#25D366]/10 border-[#25D366] text-white shadow-lg shadow-[#25D366]/5"
+                          : "bg-zinc-900/40 border-white/[0.08] text-zinc-400 hover:border-white/20"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${
+                            formData.allowWhatsappContact
+                              ? "border-[#25D366] bg-[#25D366] text-black"
+                              : "border-zinc-600"
+                          }`}>
+                            {formData.allowWhatsappContact && <Check className="w-3 h-3" />}
+                          </div>
+                          <span className={`text-sm font-black ${
+                            formData.allowWhatsappContact ? "text-[#25D366]" : "text-white"
+                          }`}>
+                            Sim (Recomendado)
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-xs text-zinc-400 leading-relaxed pl-7">
+                        Profissionais poderão visualizar o botão <strong>"Chamar no WhatsApp"</strong> na necessidade para tirar dúvidas diretamente com você.
+                      </p>
+                    </div>
+
+                    {/* Opção Não */}
+                    <div
+                      onClick={() => setFormData({ ...formData, allowWhatsappContact: false })}
+                      className={`p-4 rounded-2xl border transition cursor-pointer flex flex-col justify-between gap-2 ${
+                        !formData.allowWhatsappContact
+                          ? "bg-red-500/10 border-red-500 text-white shadow-lg shadow-red-500/5"
+                          : "bg-zinc-900/40 border-white/[0.08] text-zinc-400 hover:border-white/20"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${
+                            !formData.allowWhatsappContact
+                              ? "border-red-500 bg-red-500 text-white"
+                              : "border-zinc-600"
+                          }`}>
+                            {!formData.allowWhatsappContact && <Check className="w-3 h-3" />}
+                          </div>
+                          <span className={`text-sm font-black ${
+                            !formData.allowWhatsappContact ? "text-red-400" : "text-white"
+                          }`}>
+                            Não
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-xs text-zinc-400 leading-relaxed pl-7">
+                        Seu WhatsApp não será exibido. Você receberá apenas propostas e candidaturas diretamente pela plataforma.
+                      </p>
+                    </div>
+                  </div>
+
+                  {formData.allowWhatsappContact && (
+                    <div className="space-y-1.5 pt-2 max-w-md">
+                      <label className="text-xs font-bold text-zinc-300 block">
+                        Número de WhatsApp para contato
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="(11) 99999-9999"
+                        value={formData.whatsappContact}
+                        onChange={(e) => setFormData({ ...formData, whatsappContact: e.target.value })}
+                        className="w-full bg-zinc-900 border border-white/[0.1] focus:border-[#25D366] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none transition"
+                      />
+                    </div>
+                  )}
+                </div>
+
                 {/* Upload de Fotos */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -1401,7 +1504,39 @@ export default function PublicarNecessidade() {
                     />
                   </div>
 
-                  {/* Card 4: Fotos */}
+                  {/* Card 4: Contato por WhatsApp */}
+                  <div className="bg-zinc-900/60 border border-white/[0.08] rounded-2xl p-6 space-y-3 md:col-span-2">
+                    <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
+                      <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#25D366]">
+                        <ShieldCheck className="w-4 h-4" />
+                        <span>Contato por WhatsApp</span>
+                      </div>
+                      <button
+                        onClick={() => setCurrentStep(4)}
+                        className="text-xs font-bold text-[#25D366] hover:underline"
+                      >
+                        Editar
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-zinc-400">Permissão de Contato:</span>
+                      <strong className={formData.allowWhatsappContact ? "text-[#25D366]" : "text-zinc-400"}>
+                        {formData.allowWhatsappContact
+                          ? "Permitido (Botão 'Chamar no WhatsApp' visível)"
+                          : "Não Permitido (Privado)"}
+                      </strong>
+                    </div>
+
+                    {formData.allowWhatsappContact && formData.whatsappContact && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-zinc-400">Número Informado:</span>
+                        <strong className="text-white font-mono">{formData.whatsappContact}</strong>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Card 5: Fotos */}
                   {formData.photos.length > 0 && (
                     <div className="bg-zinc-900/60 border border-white/[0.08] rounded-2xl p-6 space-y-4 md:col-span-2">
                       <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">

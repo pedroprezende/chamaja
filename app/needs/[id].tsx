@@ -12,6 +12,7 @@ import {
   Modal,
   TextInput,
   Alert,
+  Linking,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -126,6 +127,29 @@ export default function DetalheNecessidadeScreen() {
     } else {
       router.replace("/oportunidades" as any);
     }
+  };
+
+  const handleOpenWhatsapp = (phone: string, needTitle: string) => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    const cleanPhone = phone.replace(/\D/g, "");
+    const targetPhone = cleanPhone.startsWith("55") ? cleanPhone : `55${cleanPhone}`;
+    const message = `Olá! Vi sua publicação "${needTitle}" no XamaJá e gostaria de conversar sobre o serviço.`;
+    const appUrl = `whatsapp://send?phone=${targetPhone}&text=${encodeURIComponent(message)}`;
+    const webUrl = `https://wa.me/${targetPhone}?text=${encodeURIComponent(message)}`;
+
+    Linking.canOpenURL(appUrl)
+      .then((supported) => {
+        if (supported) {
+          return Linking.openURL(appUrl);
+        } else {
+          return Linking.openURL(webUrl);
+        }
+      })
+      .catch(() => {
+        Linking.openURL(webUrl).catch(() => {
+          Alert.alert("Erro", "Não foi possível abrir o WhatsApp.");
+        });
+      });
   };
 
   const handleAcceptApp = async (appId: string) => {
@@ -790,7 +814,38 @@ export default function DetalheNecessidadeScreen() {
               </View>
             </View>
           ) : (
-            <View style={styles.applyActionBox}>
+            <View style={[styles.applyActionBox, { gap: 10 }]}>
+              {/* Botão Chamar no WhatsApp (Etapa 13: Apenas se contratante permitiu) */}
+              {need.allowWhatsappContact && need.whatsappContact ? (
+                <Pressable
+                  onPress={() =>
+                    handleOpenWhatsapp(need.whatsappContact, need.title)
+                  }
+                  style={({ pressed }) => [
+                    styles.whatsappDirectBtn,
+                    pressed && { opacity: 0.9, transform: [{ scale: 0.99 }] },
+                  ]}
+                >
+                  <MaterialIcons name="phone" size={20} color="#FFFFFF" />
+                  <Text style={styles.whatsappDirectBtnText}>
+                    Chamar no WhatsApp
+                  </Text>
+                </Pressable>
+              ) : (
+                <View
+                  style={[
+                    styles.privacyNoticeCard,
+                    { backgroundColor: colors.surface, borderColor: colors.border },
+                  ]}
+                >
+                  <MaterialIcons name="lock-outline" size={16} color={colors.muted} />
+                  <Text style={[styles.privacyNoticeText, { color: colors.muted }]}>
+                    Contato direto por WhatsApp não habilitado pelo contratante. Envie seu interesse pela plataforma.
+                  </Text>
+                </View>
+              )}
+
+              {/* Botão Tenho Interesse */}
               <Pressable
                 onPress={handleApplyClick}
                 style={({ pressed }) => [
@@ -857,10 +912,22 @@ export default function DetalheNecessidadeScreen() {
                 </Text>
               </View>
 
-              <View style={styles.verifiedTag}>
-                <MaterialIcons name="verified" size={14} color="#25D366" />
-                <Text style={styles.verifiedTagText}>Verificado</Text>
-              </View>
+              {need.allowWhatsappContact && need.whatsappContact ? (
+                <Pressable
+                  onPress={() =>
+                    handleOpenWhatsapp(need.whatsappContact, need.title)
+                  }
+                  style={styles.creatorWhatsappBtn}
+                >
+                  <MaterialIcons name="chat" size={14} color="#25D366" />
+                  <Text style={styles.creatorWhatsappBtnText}>WhatsApp</Text>
+                </Pressable>
+              ) : (
+                <View style={styles.verifiedTag}>
+                  <MaterialIcons name="verified" size={14} color="#25D366" />
+                  <Text style={styles.verifiedTagText}>Verificado</Text>
+                </View>
+              )}
             </View>
           </View>
 
@@ -1607,6 +1674,53 @@ const styles = StyleSheet.create({
   },
   applyActionBox: {
     marginVertical: 2,
+  },
+  whatsappDirectBtn: {
+    backgroundColor: "#166534",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#25D366",
+  },
+  whatsappDirectBtnText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "900",
+    letterSpacing: 0.3,
+  },
+  privacyNoticeCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  privacyNoticeText: {
+    fontSize: 11,
+    lineHeight: 15,
+    flex: 1,
+  },
+  creatorWhatsappBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(37, 211, 102, 0.12)",
+    borderColor: "#25D366",
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  creatorWhatsappBtnText: {
+    color: "#25D366",
+    fontSize: 11,
+    fontWeight: "800",
   },
   tenhoInteresseBtn: {
     borderRadius: 16,

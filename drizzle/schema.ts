@@ -529,6 +529,8 @@ export const needs = pgTable(
     requirements: text("requirements"),
     notes: text("notes"),
     photos: text("photos").array(),
+    allowWhatsappContact: boolean("allow_whatsapp_contact").default(true).notNull(),
+    whatsappContact: varchar("whatsapp_contact", { length: 50 }),
     status: varchar("status", { length: 50 }).default("ativa").notNull(), // 'ativa', 'pausada', 'encerrada', 'cancelada'
     expiresAt: timestamp("expires_at"),
     createdAt: timestamp("created_at").defaultNow().notNull(),

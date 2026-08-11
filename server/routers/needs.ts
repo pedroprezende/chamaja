@@ -43,6 +43,8 @@ const createNeedSchema = z.object({
   requirements: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
   photos: z.array(z.string()).nullable().optional(),
+  allowWhatsappContact: z.boolean().default(true).optional(),
+  whatsappContact: z.string().nullable().optional(),
   expiresAt: z.string().nullable().optional(),
 });
 
@@ -69,6 +71,8 @@ const updateNeedSchema = z.object({
   requirements: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
   photos: z.array(z.string()).nullable().optional(),
+  allowWhatsappContact: z.boolean().optional(),
+  whatsappContact: z.string().nullable().optional(),
   status: z.enum(["ativa", "pausada", "encerrada", "cancelada"]).optional(),
   expiresAt: z.string().nullable().optional(),
 });
@@ -139,6 +143,8 @@ export const needsRouter = router({
         requirements: input.requirements || null,
         notes: input.notes || null,
         photos: input.photos || [],
+        allowWhatsappContact: input.allowWhatsappContact ?? true,
+        whatsappContact: input.whatsappContact || ctx.user.phone || null,
         status: "ativa",
         expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
       });
@@ -210,6 +216,8 @@ export const needsRouter = router({
       if (input.requirements !== undefined) updates.requirements = input.requirements;
       if (input.notes !== undefined) updates.notes = input.notes;
       if (input.photos !== undefined) updates.photos = input.photos;
+      if (input.allowWhatsappContact !== undefined) updates.allowWhatsappContact = input.allowWhatsappContact;
+      if (input.whatsappContact !== undefined) updates.whatsappContact = input.whatsappContact;
       if (input.status !== undefined) updates.status = input.status;
       if (input.expiresAt !== undefined) {
         updates.expiresAt = input.expiresAt ? new Date(input.expiresAt) : null;
@@ -746,11 +754,19 @@ export const needsRouter = router({
         }
       }
 
+      // Lógica de privacidade para WhatsApp:
+      const allowWhatsapp = item.need.allowWhatsappContact !== false;
+      const effectiveWhatsapp = allowWhatsapp
+        ? (item.need.whatsappContact || item.creator?.phone || null)
+        : null;
+
       return {
         ...item.need,
         creatorName: item.creator?.name || "Cliente XamaJá",
         creatorAvatar: item.creator?.avatarUrl || null,
-        creatorPhone: isOwner || isAdmin ? item.creator?.phone || null : null,
+        creatorPhone: isOwner || isAdmin ? item.creator?.phone || null : (allowWhatsapp ? effectiveWhatsapp : null),
+        allowWhatsappContact: allowWhatsapp,
+        whatsappContact: allowWhatsapp ? effectiveWhatsapp : null,
         creatorCreatedAt: item.creator?.createdAt || null,
         applicationsCount: item.applicationsCount || 0,
         myApplication,
