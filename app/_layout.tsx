@@ -86,6 +86,11 @@ function RootLayoutNav() {
       firstSegment === "reviews" ||
       firstSegment === "preciso-de-alguem" ||
       firstSegment === "needs" ||
+      firstSegment === "oportunidades" ||
+      firstSegment === "encontrar-oportunidades" ||
+      firstSegment === "appointments" ||
+      firstSegment === "agendamentos" ||
+      firstSegment === "meus-agendamentos" ||
       firstSegment === "(tabs)" ||
       !firstSegment;
 
@@ -181,10 +186,20 @@ function RootLayoutNav() {
         <Stack.Screen name="notifications" />
         <Stack.Screen name="admin-services/[serviceId]" />
         <Stack.Screen name="appointments" />
+        <Stack.Screen name="agendamentos" />
+        <Stack.Screen name="meus-agendamentos" />
+        <Stack.Screen name="agenda" />
         <Stack.Screen name="professional/[id]/schedule" />
         <Stack.Screen name="provider-agenda" />
         <Stack.Screen name="preciso-de-alguem" />
         <Stack.Screen name="needs/create" />
+        <Stack.Screen name="oportunidades" />
+        <Stack.Screen name="encontrar-oportunidades" />
+        <Stack.Screen name="minhas-necessidades" />
+        <Stack.Screen name="disponibilidade" />
+        <Stack.Screen name="edit-profile" />
+        <Stack.Screen name="checkout" />
+        <Stack.Screen name="register-professional" />
       </Stack>
     </>
   );

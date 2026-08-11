@@ -332,7 +332,16 @@ export default function ProviderAgendaScreen() {
       {/* HEADER */}
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <View style={styles.headerTop}>
-          <Pressable onPress={() => router.back()} style={styles.iconBtn}>
+          <Pressable 
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace("/provider-dashboard" as any);
+              }
+            }} 
+            style={styles.iconBtn}
+          >
             <MaterialIcons name="arrow-back" size={24} color={colors.text} />
           </Pressable>
           <Text style={[styles.title, { color: colors.text }]}>Minha Agenda</Text>

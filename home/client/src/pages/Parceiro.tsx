@@ -196,6 +196,52 @@ export default function Parceiro() {
   const [isLoadingFavs, setIsLoadingFavs] = useState(false);
   const [userReviews, setUserReviews] = useState<any[]>([]);
   const [isLoadingUserReviews, setIsLoadingUserReviews] = useState(false);
+  const [userAppointments, setUserAppointments] = useState<any[]>([]);
+  const [isLoadingUserAppointments, setIsLoadingUserAppointments] = useState(false);
+
+  // Synchronize route/tab from URL on mount
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const path = window.location.pathname.toLowerCase();
+    const searchParams = new URLSearchParams(window.location.search);
+    const tabParam = searchParams.get("tab");
+
+    if (tabParam && ["perfil", "dados", "horarios", "localizacao", "fotos", "servicos", "estatisticas", "favoritos", "minhas-avaliacoes", "indicacoes", "assinatura", "configuracoes", "meus-agendamentos", "agenda", "disponibilidade"].includes(tabParam)) {
+      setActiveTab(tabParam as any);
+    } else if (path.includes("/agenda") || path.includes("/minha-agenda")) {
+      setActiveTab("agenda");
+    } else if (path.includes("/agendamentos") || path.includes("/meus-agendamentos") || path.includes("/appointments")) {
+      setActiveTab(user?.tipo === "cliente" ? "meus-agendamentos" : "agenda");
+    }
+  }, [user]);
+
+  // Load User Appointments for meus-agendamentos tab
+  const loadUserAppointments = async () => {
+    setIsLoadingUserAppointments(true);
+    try {
+      const res = await fetch(`/api/trpc/appointments.getByUser`, {
+        headers: {
+          "Authorization": `Bearer ${sessionToken}`
+        }
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.result && json.result.data) {
+          setUserAppointments(json.result.data);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load user appointments:", e);
+    } finally {
+      setIsLoadingUserAppointments(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "meus-agendamentos" && sessionToken) {
+      loadUserAppointments();
+    }
+  }, [activeTab, sessionToken]);
 
   // Load Statistics
   useEffect(() => {
@@ -2381,31 +2427,132 @@ export default function Parceiro() {
                         </div>
                       )}
 
-                      {/* MEUS AGENDAMENTOS PANEL - DEPRECATED */}
+                      {/* MEUS AGENDAMENTOS PANEL */}
                       {activeTab === "meus-agendamentos" && (
                         <div className="space-y-6">
-                          <div className="pb-4 border-b border-border">
-                            <h2 className="text-xl font-black text-white">Meus Agendamentos</h2>
-                            <p className="text-xs text-muted-foreground">
-                              Acompanhe os horários que você marcou com os profissionais.
-                            </p>
-                          </div>
-                          
-                          <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-6 flex flex-col items-center justify-center text-center space-y-4 min-h-[300px]">
-                            <Calendar className="h-12 w-12 text-zinc-700" />
+                          <div className="pb-4 border-b border-border flex items-center justify-between">
                             <div>
-                              <h3 className="text-lg font-bold text-white">Nenhum agendamento encontrado</h3>
-                              <p className="text-sm text-zinc-500 mt-2 max-w-md mx-auto">
-                                Você ainda não marcou nenhum horário. Encontre um profissional na busca e clique em "Agendar Horário" para começar.
+                              <h2 className="text-xl font-black text-white">Meus Agendamentos</h2>
+                              <p className="text-xs text-muted-foreground">
+                                Acompanhe os horários que você marcou com os profissionais.
                               </p>
                             </div>
-                            <Button 
-                              onClick={() => setLocation("/")}
-                              className="bg-primary text-primary-foreground font-bold hover:bg-primary/90 rounded-xl"
+                            <Button
+                              onClick={() => loadUserAppointments()}
+                              variant="outline"
+                              className="text-xs border-zinc-800 hover:bg-zinc-800 text-zinc-300 rounded-xl h-8 px-3"
                             >
-                              Buscar Profissionais
+                              Atualizar
                             </Button>
                           </div>
+                          
+                          {isLoadingUserAppointments ? (
+                            <div className="flex justify-center py-16">
+                              <span className="loader-btn w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></span>
+                            </div>
+                          ) : userAppointments.length === 0 ? (
+                            <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-8 flex flex-col items-center justify-center text-center space-y-4 min-h-[300px]">
+                              <Calendar className="h-12 w-12 text-zinc-700" />
+                              <div>
+                                <h3 className="text-lg font-bold text-white">Nenhum agendamento encontrado</h3>
+                                <p className="text-sm text-zinc-500 mt-2 max-w-md mx-auto">
+                                  Você ainda não marcou nenhum horário. Encontre um profissional na busca e clique em "Agendar Horário" para começar.
+                                </p>
+                              </div>
+                              <Button 
+                                onClick={() => setLocation("/busca")}
+                                className="bg-primary text-primary-foreground font-bold hover:bg-primary/90 rounded-xl"
+                              >
+                                Buscar Profissionais
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {userAppointments.map((item: any) => {
+                                const appt = item.appointment;
+                                const prov = item.provider;
+                                const [y, m, d] = (appt.date || "").split("-");
+                                const formattedDate = d && m && y ? `${d}/${m}/${y}` : appt.date;
+                                
+                                const statusMap: Record<string, { label: string; color: string; bg: string }> = {
+                                  pending: { label: "Pendente", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
+                                  confirmed: { label: "Confirmado", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
+                                  completed: { label: "Concluído", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
+                                  canceled: { label: "Cancelado", color: "text-red-400", bg: "bg-red-500/10 border-red-500/20" },
+                                };
+                                const st = statusMap[appt.status] || { label: appt.status, color: "text-zinc-400", bg: "bg-zinc-800" };
+
+                                return (
+                                  <div key={appt.id} className="bg-zinc-950 border border-zinc-800 rounded-2xl p-5 space-y-4 hover:border-zinc-700 transition">
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div className="space-y-1">
+                                        <h3 className="font-bold text-white text-base leading-tight">
+                                          {prov?.name || "Prestador"}
+                                        </h3>
+                                        <p className="text-xs text-primary font-semibold">
+                                          {appt.serviceName || "Atendimento"}
+                                        </p>
+                                      </div>
+                                      <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${st.bg} ${st.color}`}>
+                                        {st.label}
+                                      </span>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-2 text-xs text-zinc-400 bg-zinc-900/60 p-3 rounded-xl border border-zinc-800/60">
+                                      <div className="flex items-center gap-1.5">
+                                        <Calendar className="h-3.5 w-3.5 text-zinc-500" />
+                                        <span className="text-zinc-200 font-semibold">{formattedDate}</span>
+                                      </div>
+                                      <div className="flex items-center gap-1.5">
+                                        <Clock className="h-3.5 w-3.5 text-zinc-500" />
+                                        <span className="text-zinc-200 font-semibold">{appt.startTime} às {appt.endTime}</span>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-900">
+                                      {prov?.id && (
+                                        <Link href={`/prestador/${prov.id}`}>
+                                          <Button variant="outline" className="text-xs border-zinc-800 hover:bg-zinc-800 text-zinc-300 rounded-xl h-9 px-3">
+                                            Ver Perfil
+                                          </Button>
+                                        </Link>
+                                      )}
+                                      {(appt.status === "pending" || appt.status === "confirmed") && (
+                                        <Button
+                                          onClick={async () => {
+                                            if (confirm("Tem certeza que deseja cancelar este agendamento?")) {
+                                              try {
+                                                const res = await fetch("/api/trpc/appointments.updateStatus", {
+                                                  method: "POST",
+                                                  headers: {
+                                                    "Content-Type": "application/json",
+                                                    "Authorization": `Bearer ${sessionToken}`
+                                                  },
+                                                  body: JSON.stringify({ id: appt.id, status: "canceled" })
+                                                });
+                                                if (res.ok) {
+                                                  toast.success("Agendamento cancelado com sucesso!");
+                                                  loadUserAppointments();
+                                                } else {
+                                                  toast.error("Erro ao cancelar agendamento.");
+                                                }
+                                              } catch (e) {
+                                                toast.error("Erro ao conectar com o servidor.");
+                                              }
+                                            }
+                                          }}
+                                          variant="ghost"
+                                          className="text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl h-9 px-3"
+                                        >
+                                          Cancelar
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
                       )}
 

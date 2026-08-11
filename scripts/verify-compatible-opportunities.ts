@@ -98,7 +98,6 @@ async function verifyCompatibleOpportunities() {
     paymentType: "total",
     startDate: "2026-08-10", // Segunda-feira (seg)
     startTime: "09:00", // Manhã
-    status: "ativa",
   });
   const needAId = needARes.id;
 
@@ -117,7 +116,6 @@ async function verifyCompatibleOpportunities() {
     paymentType: "diaria",
     startDate: "2026-08-15", // Sábado (sab)
     startTime: "08:00", // Manhã
-    status: "ativa",
   });
   const needBId = needBRes.id;
 
@@ -136,7 +134,6 @@ async function verifyCompatibleOpportunities() {
     paymentType: "total",
     startDate: "2026-08-12", // Quarta-feira
     startTime: "21:00", // Noite
-    status: "ativa",
   });
   const needCId = needCRes.id;
 

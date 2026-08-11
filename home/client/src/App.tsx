@@ -45,6 +45,11 @@ function Router() {
       <Route path={"/parceiros/dashboard"} component={Parceiro} />
       <Route path={"/parceiro"} component={Parceiro} />
       <Route path={"/parceiro/dashboard"} component={Parceiro} />
+      <Route path={"/agendamentos"} component={Parceiro} />
+      <Route path={"/meus-agendamentos"} component={Parceiro} />
+      <Route path={"/appointments"} component={Parceiro} />
+      <Route path={"/agenda"} component={Parceiro} />
+      <Route path={"/minha-agenda"} component={Parceiro} />
       <Route path={"/indique"} component={Parceiro} />
       <Route path={"/indique-e-ganhe"} component={IndiqueGanhe} />
       <Route path={"/indicacoes"} component={Parceiro} />
