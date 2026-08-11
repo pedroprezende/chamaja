@@ -91,6 +91,7 @@ function RootLayoutNav() {
       firstSegment === "appointments" ||
       firstSegment === "agendamentos" ||
       firstSegment === "meus-agendamentos" ||
+      firstSegment === "ointments" ||
       firstSegment === "(tabs)" ||
       !firstSegment;
 
@@ -188,6 +189,7 @@ function RootLayoutNav() {
         <Stack.Screen name="appointments" />
         <Stack.Screen name="agendamentos" />
         <Stack.Screen name="meus-agendamentos" />
+        <Stack.Screen name="ointments" />
         <Stack.Screen name="agenda" />
         <Stack.Screen name="professional/[id]/schedule" />
         <Stack.Screen name="provider-agenda" />

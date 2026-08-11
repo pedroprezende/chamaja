@@ -195,6 +195,8 @@ export const appointmentsRouter = router({
           name: providers.name,
           category: providers.category,
           avatarUri: providers.avatarUri,
+          whatsapp: providers.whatsapp,
+          phone: providers.phone,
         }
       })
       .from(appointments)

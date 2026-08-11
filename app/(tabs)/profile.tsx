@@ -596,7 +596,7 @@ export default function ProfileScreen() {
     { id: "disponibilidade", label: "Minha disponibilidade de trabalho", icon: "tune" },
     { id: "minhas_necessidades", label: "Minhas publicações de serviços", icon: "assignment" },
     { id: "addresses", label: "Meus endereços", icon: "place" },
-    { id: "appointments", label: "Meus agendamentos", icon: "event" },
+    { id: "agendamentos", label: "Meus agendamentos", icon: "event" },
     {
       id: "favorites",
       label: "Favoritos",
@@ -653,8 +653,9 @@ export default function ProfileScreen() {
       case "addresses":
         setAddressesModalVisible(true);
         break;
+      case "agendamentos":
       case "appointments":
-        router.push("/appointments" as any);
+        router.push("/agendamentos" as any);
         break;
       case "favorites":
         router.push("/favorites" as any);
