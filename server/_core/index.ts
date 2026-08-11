@@ -510,14 +510,8 @@ async function startServer() {
   const projectAssetsPath = path.resolve(rootDir, "assets");
   app.use("/assets", express.static(projectAssetsPath));
 
-  // Servir Expo Web do aplicativo
-  const webDistPath = path.resolve(rootDir, "dist", "web");
-  app.use("/app", express.static(webDistPath));
-
   // Servir arquivos do Expo Web a partir da raiz para evitar que requisições retornem 404 e quebrem o app
-  app.use("/_expo", express.static(path.resolve(webDistPath, "_expo")));
-  app.use("/assets", express.static(path.resolve(webDistPath, "assets")));
-  app.get("/service-worker.js", (req, res) => {
+  app.get(["/service-worker.js", "/app/service-worker.js"], (req, res) => {
     // O Service Worker NUNCA deve ser cacheado pelo browser.
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     res.setHeader("Pragma", "no-cache");
@@ -537,6 +531,13 @@ async function startServer() {
       });
     `);
   });
+
+  // Servir Expo Web do aplicativo
+  const webDistPath = path.resolve(rootDir, "dist", "web");
+  app.use("/app", express.static(webDistPath));
+
+  app.use("/_expo", express.static(path.resolve(webDistPath, "_expo")));
+  app.use("/assets", express.static(path.resolve(webDistPath, "assets")));
   app.get("/manifest.json", (req, res) => {
     // O manifest também não deve ser cacheado agressivamente,
     // para que mudanças de start_url, scope e ícones sejam detectadas.
