@@ -1127,17 +1127,17 @@ export default function Home() {
               </div>
 
               {/* Integrated Search Bar */}
-              <div className="bg-zinc-950/80 backdrop-blur-xl border border-white/[0.08] hover:border-[#25D366]/40 p-2.5 rounded-2xl flex flex-col md:flex-row items-center gap-2 shadow-[0_20px_50px_rgba(0,0,0,0.8)] w-full max-w-2xl transition-all duration-300 focus-within:border-[#25D366]/60 focus-within:ring-2 focus-within:ring-[#25D366]/20">
+              <div className="bg-zinc-950/80 backdrop-blur-xl border border-zinc-800 hover:border-[#25D366]/40 p-1.5 rounded-2xl flex flex-col md:flex-row items-stretch shadow-[0_20px_50px_rgba(0,0,0,0.8)] w-full max-w-2xl transition-all duration-300 focus-within:border-[#25D366]/50">
                 {/* Input 1: Search query */}
-                <div className="flex-1 flex items-center px-3.5 gap-3 w-full group">
-                  <Search className="text-zinc-500 group-focus-within:text-[#25D366] h-4.5 w-4.5 flex-shrink-0 transition-colors" />
+                <div className="flex-1 flex items-center px-4 py-2.5 border-b md:border-b-0 md:border-r border-zinc-800 group">
+                  <Search className="text-zinc-500 group-focus-within:text-[#25D366] h-5 w-5 flex-shrink-0 transition-colors mr-3" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     onKeyDown={e => { if (e.key === "Enter") handleSearchSubmit(); }}
-                    className="bg-transparent border-none focus:outline-none focus:ring-0 text-white w-full text-xs sm:text-sm py-2.5 placeholder:text-zinc-500 font-medium"
-                    placeholder="O que você procura? Ex: pizzaria, eletricista..."
+                    className="bg-transparent border-none focus:outline-none focus:ring-0 text-white w-full text-xs sm:text-sm py-0 placeholder:text-zinc-600 font-medium"
+                    placeholder="O que você precisa? Ex: eletricista, encanador, designer..."
                   />
                   {searchQuery && (
                     <button type="button" onClick={() => setSearchQuery("")} className="text-zinc-500 hover:text-white">
@@ -1145,34 +1145,26 @@ export default function Home() {
                     </button>
                   )}
                 </div>
-                
-                <div className="hidden md:block h-7 w-px bg-white/[0.08]"></div>
 
                 {/* Input 2: Location */}
-                <div className="flex-1 flex items-center px-3.5 gap-3 w-full group">
-                  <MapPin className="text-zinc-500 group-focus-within:text-[#25D366] h-4.5 w-4.5 flex-shrink-0 transition-colors" />
+                <div className="flex-[0.7] flex items-center px-4 py-2.5 group">
+                  <MapPin className="text-zinc-500 group-focus-within:text-[#25D366] h-5 w-5 flex-shrink-0 transition-colors mr-3" />
                   <input
                     type="text"
                     value={searchLocation}
                     onChange={e => setSearchLocation(e.target.value)}
                     onKeyDown={e => { if (e.key === "Enter") handleSearchSubmit(); }}
-                    className="bg-transparent border-none focus:outline-none focus:ring-0 text-white w-full text-xs sm:text-sm py-2.5 placeholder:text-zinc-500 font-medium"
+                    className="bg-transparent border-none focus:outline-none focus:ring-0 text-white w-full text-xs sm:text-sm py-0 placeholder:text-zinc-500 font-medium"
                     placeholder="Cidade, bairro ou CEP"
                   />
-                  {searchLocation && (
-                    <button type="button" onClick={() => setSearchLocation("")} className="text-zinc-500 hover:text-white">
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
                 </div>
 
                 {/* Search Button */}
                 <Button
                   onClick={handleSearchSubmit}
-                  className="bg-[#25D366] hover:bg-[#22C55E] text-black font-black px-7 py-3 h-11 rounded-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-[#25D366]/20 w-full md:w-auto text-xs sm:text-sm flex items-center justify-center gap-1.5"
+                  className="bg-[#25D366] hover:bg-[#22C55E] text-black font-extrabold px-8 py-3 h-auto rounded-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-[#25D366]/20 w-full md:w-auto text-xs sm:text-sm flex items-center justify-center gap-1.5"
                 >
                   <span>Buscar</span>
-                  <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
 
@@ -1186,14 +1178,14 @@ export default function Home() {
                       setSearchQuery(tag);
                       window.location.href = `/busca?q=${encodeURIComponent(tag)}`;
                     }}
-                    className="px-3.5 py-1.5 bg-zinc-900/60 border border-white/[0.06] hover:bg-[#25D366] hover:text-black hover:border-[#25D366] text-zinc-300 hover:font-bold rounded-xl transition-all duration-200 shadow-md text-xs"
+                    className="px-3.5 py-1.5 bg-zinc-900/60 border border-white/[0.06] hover:bg-[#25D366] hover:text-black hover:border-[#25D366] text-zinc-300 hover:font-bold rounded-full transition-all duration-200 shadow-md text-xs"
                   >
                     {tag}
                   </button>
                 ))}
                 <button
                   onClick={() => window.location.href = "/busca"}
-                  className="px-3.5 py-1.5 bg-zinc-900/60 border border-white/[0.06] hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-xl transition-all duration-200 flex items-center gap-1 text-xs"
+                  className="px-3.5 py-1.5 bg-zinc-900/60 border border-white/[0.06] hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-full transition-all duration-200 flex items-center gap-1 text-xs"
                 >
                   <Grid className="w-3.5 h-3.5" />
                   <span>Ver todas</span>
@@ -1550,34 +1542,35 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Categories Modern Cards Grid (Redesigned per Reference) */}
-      <section className="bg-black py-8 md:py-10 border-b border-zinc-900 select-none">
+      {/* Categories Horizontal Chips (Redesigned per Reference) */}
+      <section className="bg-black py-6 md:py-8 border-b border-zinc-900 select-none">
         <div className="container mx-auto px-4 max-w-7xl">
-          <div className="text-center mb-6 md:mb-8">
+          <div className="text-center mb-5 md:mb-6">
             <p className="text-zinc-400 text-xs md:text-sm font-medium tracking-wide">
               Encontre comércios ou prestadores de serviço por especialidade
             </p>
           </div>
 
-          {/* Horizontal row on desktop (10 columns), smooth scroll on mobile */}
-          <div className="flex md:grid md:grid-cols-10 overflow-x-auto gap-2.5 sm:gap-3 lg:gap-3.5 pb-2 md:pb-0 scrollbar-none no-scrollbar">
+          {/* Horizontal scroll chips */}
+          <div className="flex overflow-x-auto gap-2 pb-1 scrollbar-none no-scrollbar justify-center flex-wrap">
             {[
-              { id: "all", name: "Todas", icon: Grid },
+              { id: "all", name: "Todos", icon: Grid },
               { id: "comercios", name: "Alimentação", icon: Utensils },
-              { id: "beleza-estetica", name: "Beleza", icon: Scissors },
-              { id: "saude", name: "Saúde", icon: HeartPulse },
-              { id: "reformas-reparos", name: "Serviços", icon: Wrench },
-              { id: "servicos-domesticos", name: "Casa", icon: HomeIcon },
+              { id: "beleza-estetica", name: "Beleza e Estética", icon: Scissors },
+              { id: "saude", name: "Saúde e Bem-estar", icon: HeartPulse },
+              { id: "reformas-reparos", name: "Reformas e Reparos", icon: Wrench },
+              { id: "servicos-domesticos", name: "Serviços Domésticos", icon: HomeIcon },
               { id: "construcao", name: "Construção", icon: Hammer },
               { id: "automotivo", name: "Automotivo", icon: Car },
               { id: "educacao", name: "Educação", icon: GraduationCap },
               { id: "mais", name: "Mais", icon: MoreHorizontal },
             ].map(cat => {
               const Icon = cat.icon;
-              const isActive = cat.id === "all"; // Make "Todas" active by default
+              const isActive = cat.id === "all";
               return (
-                <div
+                <button
                   key={cat.id}
+                  type="button"
                   onClick={() => {
                     if (cat.id === "all" || cat.id === "mais") {
                       window.location.href = "/busca";
@@ -1585,25 +1578,16 @@ export default function Home() {
                       window.location.href = `/busca?category=${cat.id}`;
                     }
                   }}
-                  className={`group flex flex-col items-center justify-center gap-2.5 h-[98px] md:h-[108px] min-w-[86px] sm:min-w-[94px] md:min-w-0 flex-shrink-0 md:flex-shrink rounded-2xl cursor-pointer transition-all duration-200 ${
-                    isActive 
-                      ? "bg-[#09090b] border-2 border-primary text-primary shadow-[0_0_20px_rgba(132,204,22,0.12)]" 
-                      : "bg-[#0e0e11] border border-zinc-800/80 text-zinc-400 hover:text-white hover:border-zinc-700 hover:bg-[#141418]"
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-full whitespace-nowrap text-sm font-semibold transition-all duration-200 flex-shrink-0 ${
+                    isActive
+                      ? "bg-zinc-900 border border-primary/40 text-primary"
+                      : "bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
                   }`}
                 >
-                  <div className={`w-11 h-11 md:w-12 md:h-12 rounded-xl flex items-center justify-center transition-all duration-200 ${
-                    isActive 
-                      ? "bg-zinc-900/90 border border-primary/30 text-primary" 
-                      : "bg-zinc-900/60 border border-white/[0.04] text-zinc-400 group-hover:text-zinc-200 group-hover:bg-zinc-800/60"
-                  }`}>
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <span className={`text-[11px] md:text-xs tracking-tight text-center leading-none ${
-                    isActive ? "font-semibold text-primary" : "font-medium text-zinc-400 group-hover:text-zinc-200"
-                  }`}>
-                    {cat.name}
-                  </span>
-                </div>
+                  <Icon className="h-4 w-4" />
+                  <span>{cat.name}</span>
+                  {cat.id === "mais" && <ChevronDown className="h-3 w-3 ml-0.5" />}
+                </button>
               );
             })}
           </div>
@@ -1835,21 +1819,22 @@ export default function Home() {
                       key={p.id}
                       id={`provider-card-${p.id}`}
                       onClick={() => selectProvider(p.id)}
-                      className={`flex flex-col sm:flex-row gap-3 bg-zinc-950/70 border p-3 rounded-2xl transition-all duration-300 cursor-pointer ${
+                      className={`flex gap-3 bg-zinc-950/70 border p-3 rounded-2xl transition-all duration-300 cursor-pointer ${
                         isSelected 
                           ? "border-primary bg-zinc-900/40 shadow-[0_0_20px_rgba(132,204,22,0.1)]" 
                           : "border-zinc-900 hover:border-zinc-800"
                       }`}
                     >
-                      {/* Left side cover img */}
-                      <div className="relative w-full sm:w-24 h-20 sm:h-24 rounded-xl overflow-hidden flex-shrink-0 bg-zinc-900">
-                        <img src={p.coverUri || p.avatarUri || "https://images.unsplash.com/photo-1521791136368-1a868270f63b?w=200&q=80"} alt={p.name} className="w-full h-full object-cover" />
-                        
+                      {/* Avatar circle */}
+                      <div className="relative flex-shrink-0">
+                        <div className="w-14 h-14 rounded-full border-2 border-primary/50 overflow-hidden bg-zinc-900">
+                          <img src={p.avatarUri || p.coverUri || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=84cc16&color=fff&size=100`} alt={p.name} className="w-full h-full object-cover" />
+                        </div>
                         <button 
                           onClick={(e) => toggleFavorite(p.id, e)}
-                          className="absolute top-1.5 right-1.5 p-1 bg-black/60 rounded-full hover:bg-zinc-900 transition shadow"
+                          className="absolute -top-1 -right-1 p-0.5 bg-black/80 rounded-full hover:bg-zinc-900 transition"
                         >
-                          <Heart className={`h-3 w-3 ${isFav ? 'text-red-500 fill-current' : 'text-white'}`} />
+                          <Heart className={`h-2.5 w-2.5 ${isFav ? 'text-red-500 fill-current' : 'text-white'}`} />
                         </button>
                       </div>
 
@@ -1857,35 +1842,31 @@ export default function Home() {
                       <div className="flex-1 flex flex-col justify-between min-w-0">
                         <div>
                           <div className="flex justify-between items-start gap-1">
-                            <h4 className="font-extrabold text-[11px] sm:text-sm text-white truncate">{p.name}</h4>
-                            <span className="text-yellow-500 text-[9px] sm:text-[11px] font-bold flex-shrink-0 flex items-center gap-0.5">
-                              ★ {Number(p.rating || 5.0).toFixed(1)}
-                            </span>
+                            <h4 className="font-bold text-[11px] sm:text-sm text-white truncate">{p.name}</h4>
+                            <div className="flex items-center gap-1 text-[9px] text-zinc-400 flex-shrink-0">
+                              <MapPin className="w-2.5 h-2.5 text-zinc-500" />
+                              <span>{p.distanceStr || p.neighborhood || p.city}</span>
+                            </div>
                           </div>
-                          <span className="text-[8px] sm:text-[10px] font-black text-primary uppercase block mt-0.5">{p.category || 'Parceiro'}</span>
-                          
-                          <p className="text-zinc-500 text-[10px] sm:text-[11px] line-clamp-1 mt-1 leading-relaxed">
-                            {p.description || "Prestador qualificado disponível."}
-                          </p>
+                          <span className="text-[9px] sm:text-[10px] font-semibold text-zinc-500 block mt-0.5">{p.category || 'Parceiro'}</span>
                         </div>
 
-                        <div className="flex justify-between items-center mt-2 pt-2 border-t border-zinc-900/60">
-                          <div className="flex items-center gap-1 text-[9px] sm:text-[10px] text-zinc-400">
-                            <MapPin className="w-3 h-3 text-primary" />
-                            <span className="truncate">{p.distanceStr || p.neighborhood || p.city}</span>
+                        <div className="flex justify-between items-center mt-1.5 pt-1.5 border-t border-zinc-900/60">
+                          <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px]">
+                            <Star className="w-3 h-3 text-primary fill-primary" />
+                            <span className="text-white font-bold">{Number(p.rating || 5.0).toFixed(1)}</span>
+                            <span className={`font-bold ${p.onlineStatus === true ? 'text-emerald-500' : 'text-zinc-500'}`}>
+                              · {statusLabel}
+                            </span>
                           </div>
                           
-                          <div className="flex items-center gap-2">
-                            <span className={`text-[8px] sm:text-[10px] font-bold ${p.onlineStatus === true ? 'text-emerald-500' : 'text-zinc-500'}`}>
-                              ● {statusLabel}
-                            </span>
-                            <a
-                              href={`/perfil/${p.id}`}
-                              className="text-[9px] sm:text-[10px] font-extrabold text-[#84cc16] hover:underline"
-                            >
-                              Perfil
-                            </a>
-                          </div>
+                          <a
+                            href={`/perfil/${p.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-[9px] sm:text-[10px] font-bold text-primary bg-zinc-900 border border-zinc-800 hover:border-primary/40 px-2.5 py-1 rounded-lg transition-colors"
+                          >
+                            Ver perfil
+                          </a>
                         </div>
                       </div>
                     </div>

@@ -28,6 +28,13 @@ import {
   Car,
   GraduationCap,
   MoreHorizontal,
+  Crosshair,
+  Users,
+  ThumbsUp,
+  Megaphone,
+  Clock,
+  BadgeCheck,
+  MessageCircle,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { getSessionToken } from "@/lib/supabase";
@@ -103,6 +110,8 @@ export default function Busca() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileShowMap, setMobileShowMap] = useState(false);
   const [userProfile, setUserProfile] = useState<any | null>(null);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "map">("list");
 
   // Search & Filters States
   const [providersList, setProvidersList] = useState<any[]>([]);
@@ -115,21 +124,26 @@ export default function Busca() {
   const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [favoritesList, setFavoritesList] = useState<string[]>([]);
 
+  // Filter UI States
+  const [sortBy, setSortBy] = useState("relevance");
+  const [maxDistance, setMaxDistance] = useState(50);
+  const [minRating, setMinRating] = useState(0);
+  const [availability, setAvailability] = useState<string[]>([]);
+
   // Leaflet Map States
   const [mapInstance, setMapInstance] = useState<any>(null);
   const [markersList, setMarkersList] = useState<any[]>([]);
   const mapRef = useRef<any>(null);
 
   const displayCategories = [
-    { id: "todos", name: "Todas", icon: Grid },
-    { id: "comercios", name: "Alimentação", icon: Utensils },
-    { id: "beleza-estetica", name: "Beleza", icon: Scissors },
-    { id: "saude", name: "Saúde", icon: HeartPulse },
-    { id: "reformas-reparos", name: "Serviços", icon: Wrench },
-    { id: "servicos-domesticos", name: "Casa", icon: HomeIcon },
-    { id: "construcao", name: "Construção", icon: Hammer },
+    { id: "todos", name: "Todos", icon: Grid },
+    { id: "reformas-reparos", name: "Reformas e Reparos", icon: Hammer },
+    { id: "assistencia-tecnica", name: "Assistência Técnica", icon: Wrench },
+    { id: "servicos-domesticos", name: "Serviços Domésticos", icon: HomeIcon },
     { id: "automotivo", name: "Automotivo", icon: Car },
-    { id: "educacao", name: "Educação", icon: GraduationCap },
+    { id: "beleza-estetica", name: "Beleza e Estética", icon: Scissors },
+    { id: "saude", name: "Saúde e Bem-estar", icon: HeartPulse },
+    { id: "educacao", name: "Eventos", icon: GraduationCap },
     { id: "mais", name: "Mais", icon: MoreHorizontal },
   ];
 
@@ -613,6 +627,120 @@ export default function Busca() {
     window.open(`https://wa.me/${targetPhone}?text=${message}`, "_blank");
   };
 
+  const toggleAvailability = (value: string) => {
+    setAvailability(prev =>
+      prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]
+    );
+  };
+
+  const clearFilters = () => {
+    setSortBy("relevance");
+    setMaxDistance(50);
+    setMinRating(0);
+    setAvailability([]);
+  };
+
+  // ── FILTER SIDEBAR CONTENT (reused in desktop sidebar and mobile drawer) ──
+  const renderFilters = () => (
+    <div className="space-y-7">
+      {/* Ordenar por */}
+      <div className="space-y-3">
+        <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Ordenar por</label>
+        <div className="relative">
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white font-semibold appearance-none focus:outline-none focus:border-primary/50 transition-colors cursor-pointer"
+          >
+            <option value="relevance">Mais bem avaliados</option>
+            <option value="distance">Mais próximos</option>
+            <option value="recent">Mais recentes</option>
+          </select>
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 pointer-events-none" />
+        </div>
+      </div>
+
+      {/* Distância */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Distância</label>
+          <span className="text-xs font-bold text-white">Até {maxDistance} km</span>
+        </div>
+        <input
+          type="range"
+          min="1"
+          max="100"
+          value={maxDistance}
+          onChange={(e) => setMaxDistance(Number(e.target.value))}
+          className="busca-range w-full"
+          style={{ "--range-pct": `${maxDistance}%` } as React.CSSProperties}
+        />
+      </div>
+
+      {/* Avaliação mínima */}
+      <div className="space-y-3">
+        <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Avaliação mínima</label>
+        <div className="flex items-center gap-1">
+          {[1, 2, 3, 4].map((star) => (
+            <button
+              key={star}
+              type="button"
+              onClick={() => setMinRating(minRating === star ? 0 : star)}
+              className="busca-star"
+            >
+              <Star
+                className={`h-6 w-6 transition-colors ${
+                  star <= minRating
+                    ? "text-primary fill-primary"
+                    : "text-zinc-700"
+                }`}
+              />
+            </button>
+          ))}
+          <ChevronDown className="h-4 w-4 text-zinc-600 ml-1" />
+          <span className="text-xs text-zinc-400 font-semibold ml-1">ou mais</span>
+        </div>
+      </div>
+
+      {/* Disponibilidade */}
+      <div className="space-y-3">
+        <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Disponibilidade</label>
+        <div className="space-y-2.5">
+          {[
+            { value: "now", label: "Disponível agora" },
+            { value: "today", label: "Disponível hoje" },
+            { value: "week", label: "Disponível esta semana" },
+          ].map((opt) => (
+            <label key={opt.value} className="flex items-center gap-3 cursor-pointer group">
+              <input
+                type="checkbox"
+                className="busca-checkbox"
+                checked={availability.includes(opt.value)}
+                onChange={() => toggleAvailability(opt.value)}
+              />
+              <span className="text-sm text-zinc-300 font-medium group-hover:text-white transition-colors">
+                {opt.label}
+              </span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Aplicar filtros */}
+      <button
+        type="button"
+        onClick={() => {
+          fetchProviders(searchTerm, selectedCategory, profileType, userCoords);
+          setMobileFiltersOpen(false);
+        }}
+        className="w-full py-3 bg-primary/10 border border-primary/30 text-primary font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-primary/20 transition-colors"
+      >
+        <SlidersHorizontal className="h-4 w-4" />
+        <span>Aplicar filtros</span>
+      </button>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-[#050505] text-white select-none selection:bg-primary/30 selection:text-white antialiased overflow-x-hidden font-sans flex flex-col">
       {/* ── HEADER ── */}
@@ -741,83 +869,105 @@ export default function Busca() {
         )}
       </header>
 
-      {/* ── SEARCH & FILTER CONTROLS BAR ── */}
-      <section className="bg-[#050505] border-b border-zinc-900 py-6 flex-shrink-0 z-30 shadow-md">
-        <div className="container mx-auto px-4 lg:px-8 space-y-6">
-          <form
-            onSubmit={handleSearch}
-            className="flex flex-col md:flex-row items-stretch bg-zinc-950 border border-zinc-900 rounded-2xl md:rounded-full p-1.5 shadow-2xl backdrop-blur-md max-w-4xl focus-within:border-primary/40 transition-all duration-300"
-          >
-            {/* Search query */}
-            <div className="flex-1 flex items-center px-4 py-2 border-b md:border-b-0 md:border-r border-zinc-900">
-              <Search className="h-5 w-5 text-zinc-500 mr-3 flex-shrink-0 focus-within:text-primary" />
-              <input
-                type="text"
-                placeholder="Buscar profissionais ou comércios..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-transparent text-white placeholder-zinc-500 focus:outline-none text-sm font-semibold"
-              />
+      {/* ── HERO SECTION WITH STATS ── */}
+      <section className="bg-[#050505] py-8 md:py-10 flex-shrink-0 border-b border-zinc-900">
+        <div className="container mx-auto px-4 lg:px-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            {/* Left: Title */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-primary text-sm font-bold">
+                <MapPin className="h-4 w-4" />
+                <span>Encontre os melhores</span>
+              </div>
+              <h1 className="text-3xl md:text-4xl font-black text-white leading-tight tracking-tight">
+                Profissionais <span className="italic">perto de você</span>
+              </h1>
+              <p className="text-zinc-500 text-sm max-w-md">
+                Busque por serviços, categorias ou profissionais na sua região e encontre exatamente o que precisa.
+              </p>
             </div>
 
-            {/* Location query */}
-            <div className="flex-[0.8] flex items-center px-4 py-2">
-              <MapPin className="h-5 w-5 text-zinc-500 mr-3 flex-shrink-0" />
-              <input
-                type="text"
-                placeholder="CEP, Cidade ou Bairro"
-                value={locationTerm}
-                onChange={(e) => setLocationTerm(e.target.value)}
-                className="w-full bg-transparent text-white placeholder-zinc-500 focus:outline-none text-sm font-semibold"
-              />
-              <ChevronDown className="h-4 w-4 text-zinc-500 ml-2" />
-            </div>
-
-            {/* Submit */}
-            <button
-              type="submit"
-              className="bg-primary hover:bg-primary/95 text-primary-foreground font-extrabold px-8 py-3.5 rounded-xl md:rounded-full shadow-lg shadow-primary/10 hover:shadow-primary/25 transition flex items-center justify-center gap-2"
-            >
-              <Search className="h-4 w-4" />
-              <span>Buscar</span>
-            </button>
-          </form>
-
-          {/* Quick Filters: Profile type toggles */}
-          <div className="flex items-center justify-between border-t border-zinc-900/60 pt-4 flex-wrap gap-4">
-            <div className="flex bg-zinc-950 border border-zinc-900 rounded-xl p-1">
-              {[
-                { type: "all", label: "Todos" },
-                { type: "professional", label: "Prestadores" },
-                { type: "comercio", label: "Comércios" },
-              ].map((btn) => (
-                <button
-                  key={btn.type}
-                  type="button"
-                  onClick={() => handleProfileTypeChange(btn.type as any)}
-                  className={`px-5 py-2 text-xs font-bold rounded-lg transition-all ${
-                    profileType === btn.type
-                      ? "bg-primary text-primary-foreground font-black shadow-md shadow-primary/10"
-                      : "text-zinc-400 hover:text-white"
-                  }`}
-                >
-                  {btn.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="text-zinc-500 text-xs font-semibold flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-primary" />
-              <span>Região de Busca: <strong className="text-zinc-300 font-bold">{currentLocationText}</strong></span>
+            {/* Right: Stats Pills */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2.5 bg-zinc-900/80 border border-zinc-800 rounded-full px-4 py-2.5">
+                <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center">
+                  <Users className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <div className="text-white font-black text-sm leading-none">+ {providersList.length > 0 ? providersList.length : "..."}</div>
+                  <div className="text-zinc-500 text-[10px] font-semibold">Profissionais ativos</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2.5 bg-zinc-900/80 border border-zinc-800 rounded-full px-4 py-2.5">
+                <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center">
+                  <Grid className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <div className="text-white font-black text-sm leading-none">+ 50</div>
+                  <div className="text-zinc-500 text-[10px] font-semibold">Categorias de serviços</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2.5 bg-zinc-900/80 border border-zinc-800 rounded-full px-4 py-2.5">
+                <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center">
+                  <ThumbsUp className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <div className="text-white font-black text-sm leading-none">+ 3.500</div>
+                  <div className="text-zinc-500 text-[10px] font-semibold">Avaliações positivas</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── CATEGORIES BAR (REDESIGNED PER REFERENCE) ── */}
-      <section className="bg-black border-b border-zinc-900 py-3.5 flex-shrink-0 z-40 select-none">
+      {/* ── SEARCH BAR ── */}
+      <section className="bg-[#050505] pt-2 pb-4 flex-shrink-0 z-30">
         <div className="container mx-auto px-4 lg:px-8">
-          <div className="flex md:grid md:grid-cols-10 overflow-x-auto gap-2.5 sm:gap-3 lg:gap-3.5 pb-1 md:pb-0 scrollbar-none no-scrollbar">
+          <form
+            onSubmit={handleSearch}
+            className="flex flex-col md:flex-row items-stretch bg-zinc-950 border border-zinc-800 rounded-2xl p-1.5 max-w-5xl focus-within:border-primary/40 transition-all duration-300"
+          >
+            {/* Search query */}
+            <div className="flex-1 flex items-center px-4 py-2.5 border-b md:border-b-0 md:border-r border-zinc-800">
+              <Search className="h-5 w-5 text-zinc-500 mr-3 flex-shrink-0" />
+              <input
+                type="text"
+                placeholder="O que você precisa? Ex: eletricista, encanador, designer..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-transparent text-white placeholder-zinc-600 focus:outline-none text-sm font-medium"
+              />
+            </div>
+
+            {/* Location query */}
+            <div className="flex-[0.7] flex items-center px-4 py-2.5">
+              <MapPin className="h-5 w-5 text-zinc-500 mr-3 flex-shrink-0" />
+              <input
+                type="text"
+                placeholder={currentLocationText}
+                value={locationTerm}
+                onChange={(e) => setLocationTerm(e.target.value)}
+                className="w-full bg-transparent text-white placeholder-zinc-500 focus:outline-none text-sm font-medium"
+              />
+              <Crosshair className="h-4 w-4 text-zinc-600 ml-2 flex-shrink-0 cursor-pointer hover:text-primary transition-colors" />
+            </div>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold px-8 py-3 rounded-xl md:rounded-xl shadow-lg shadow-primary/10 hover:shadow-primary/25 transition flex items-center justify-center gap-2 text-sm"
+            >
+              <span>Buscar</span>
+            </button>
+          </form>
+        </div>
+      </section>
+
+      {/* ── CATEGORIES BAR ── */}
+      <section className="bg-[#050505] pb-4 flex-shrink-0 z-40 select-none border-b border-zinc-900">
+        <div className="container mx-auto px-4 lg:px-8">
+          <div className="flex overflow-x-auto gap-2 pb-1 scrollbar-none no-scrollbar">
             {displayCategories.map((cat) => {
               const Icon = cat.icon;
               const isSelected = selectedCategory === cat.id || (selectedCategory === "all" && cat.id === "todos");
@@ -826,24 +976,15 @@ export default function Busca() {
                   key={cat.id}
                   type="button"
                   onClick={() => handleCategoryClick(cat.id)}
-                  className={`group flex flex-col items-center justify-center gap-2.5 h-[98px] md:h-[108px] min-w-[86px] sm:min-w-[94px] md:min-w-0 flex-shrink-0 md:flex-shrink rounded-2xl cursor-pointer transition-all duration-200 ${
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-full whitespace-nowrap text-sm font-semibold transition-all duration-200 flex-shrink-0 ${
                     isSelected
-                      ? "bg-[#09090b] border-2 border-primary text-primary shadow-[0_0_20px_rgba(132,204,22,0.12)]"
-                      : "bg-[#0e0e11] border border-zinc-800/80 text-zinc-400 hover:text-white hover:border-zinc-700 hover:bg-[#141418]"
+                      ? "bg-zinc-900 border border-primary/40 text-primary"
+                      : "bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
                   }`}
                 >
-                  <div className={`w-11 h-11 md:w-12 md:h-12 rounded-xl flex items-center justify-center transition-all duration-200 ${
-                    isSelected
-                      ? "bg-zinc-900/90 border border-primary/30 text-primary"
-                      : "bg-zinc-900/60 border border-white/[0.04] text-zinc-400 group-hover:text-zinc-200 group-hover:bg-zinc-800/60"
-                  }`}>
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <span className={`text-[11px] md:text-xs tracking-tight text-center leading-none ${
-                    isSelected ? "font-semibold text-primary" : "font-medium text-zinc-400 group-hover:text-zinc-200"
-                  }`}>
-                    {cat.name}
-                  </span>
+                  <Icon className="h-4 w-4" />
+                  <span>{cat.name}</span>
+                  {cat.id === "mais" && <ChevronDown className="h-3 w-3 ml-0.5" />}
                 </button>
               );
             })}
@@ -851,197 +992,315 @@ export default function Busca() {
         </div>
       </section>
 
-      {/* ── MAIN SPLIT CONTENT: LIST + MAP ── */}
-      <main className="flex-1 flex flex-row relative h-[calc(100vh-250px)] overflow-hidden">
-        {/* Left Column: Results List */}
+      {/* ── MAIN SPLIT CONTENT: FILTERS + LIST + MAP ── */}
+      <main className="flex-1 flex flex-row relative overflow-hidden" style={{ height: "calc(100vh - 280px)", minHeight: "500px" }}>
+
+        {/* ── LEFT COLUMN: FILTERS (desktop) ── */}
+        <aside className="hidden lg:block w-[260px] flex-shrink-0 h-full overflow-y-auto border-r border-zinc-900 bg-[#050505] p-5 busca-scrollbar">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-base font-black text-white">Filtros</h3>
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="text-xs font-semibold text-zinc-500 hover:text-primary transition-colors"
+            >
+              Limpar
+            </button>
+          </div>
+          {renderFilters()}
+        </aside>
+
+        {/* ── Mobile Filter Drawer ── */}
+        <div
+          className={`busca-filter-overlay lg:hidden ${mobileFiltersOpen ? "open" : ""}`}
+          onClick={() => setMobileFiltersOpen(false)}
+        />
+        <div className={`busca-filter-drawer lg:hidden ${mobileFiltersOpen ? "open" : ""}`}>
+          <div className="p-5">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-base font-black text-white">Filtros</h3>
+              <button
+                type="button"
+                onClick={() => setMobileFiltersOpen(false)}
+                className="p-1.5 text-zinc-400 hover:text-white transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            {renderFilters()}
+          </div>
+        </div>
+
+        {/* ── CENTER COLUMN: RESULTS LIST ── */}
         <div
           id="results"
           className={`${
             mobileShowMap ? "hidden" : "block"
-          } lg:block w-full lg:w-[55%] xl:w-[60%] h-full overflow-y-auto p-4 md:p-6 space-y-6 scrollbar-thin scrollbar-thumb-zinc-800`}
+          } lg:block flex-1 h-full overflow-y-auto busca-scrollbar`}
         >
-          {/* Header count */}
-          <div className="flex items-center justify-between border-b border-zinc-900/60 pb-4">
-            <h2 className="text-lg font-black text-white flex items-center gap-2">
-              <span>Resultados Encontrados</span>
-              <span className="bg-zinc-900 text-zinc-400 text-xs font-bold px-2 py-0.5 rounded-full font-mono">
-                {providersList.length}
-              </span>
-            </h2>
-          </div>
-
-          {/* List of cards */}
-          {isLoadingProviders ? (
-            <div className="flex flex-col items-center justify-center py-20 gap-4">
-              <div className="w-10 h-10 border-4 border-zinc-800 border-t-primary rounded-full animate-spin"></div>
-              <span className="text-zinc-500 text-xs font-semibold">Carregando prestadores...</span>
-            </div>
-          ) : providersList.length === 0 ? (
-            <div className="text-center py-16 bg-zinc-950/20 rounded-3xl border border-dashed border-zinc-900 p-8 space-y-4">
-              <Compass className="h-10 w-10 text-primary mx-auto opacity-50" />
-              <h3 className="text-lg font-bold text-white">Nenhum parceiro nesta busca</h3>
-              <p className="text-zinc-500 text-xs max-w-xs mx-auto">
-                Não encontramos prestadores para os critérios selecionados nesta região. Tente alterar o termo ou filtre por outra categoria.
-              </p>
+          {/* Results header */}
+          <div className="sticky top-0 z-20 bg-[#050505]/95 backdrop-blur-sm border-b border-zinc-900 px-4 md:px-6 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {/* Mobile filter toggle */}
               <button
-                onClick={() => {
-                  setSearchTerm("");
-                  setSelectedCategory("todos");
-                  setProfileType("all");
-                  fetchProviders("", "todos", "all", userCoords);
-                }}
-                className="text-xs font-bold text-primary hover:underline"
+                type="button"
+                onClick={() => setMobileFiltersOpen(true)}
+                className="lg:hidden p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors"
               >
-                Limpar filtros e ver todos
+                <SlidersHorizontal className="h-4 w-4" />
+              </button>
+              <span className="text-sm font-bold text-white">
+                {providersList.length} profissionais encontrados
+              </span>
+            </div>
+            <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-0.5">
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                  viewMode === "list"
+                    ? "bg-zinc-800 text-white"
+                    : "text-zinc-500 hover:text-white"
+                }`}
+              >
+                <ListIcon className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Lista</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("map")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                  viewMode === "map"
+                    ? "bg-zinc-800 text-white"
+                    : "text-zinc-500 hover:text-white"
+                }`}
+              >
+                <MapIcon className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Mapa</span>
               </button>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
-              {providersList.map((provider) => {
+          </div>
+
+          {/* Cards list */}
+          <div className="p-4 md:p-5 space-y-3">
+            {isLoadingProviders ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-4">
+                <div className="w-10 h-10 border-4 border-zinc-800 border-t-primary rounded-full animate-spin"></div>
+                <span className="text-zinc-500 text-xs font-semibold">Carregando prestadores...</span>
+              </div>
+            ) : providersList.length === 0 ? (
+              <div className="text-center py-16 bg-zinc-950/20 rounded-2xl border border-dashed border-zinc-900 p-8 space-y-4">
+                <Compass className="h-10 w-10 text-primary mx-auto opacity-50" />
+                <h3 className="text-lg font-bold text-white">Nenhum parceiro nesta busca</h3>
+                <p className="text-zinc-500 text-xs max-w-xs mx-auto">
+                  Não encontramos prestadores para os critérios selecionados nesta região. Tente alterar o termo ou filtre por outra categoria.
+                </p>
+                <button
+                  onClick={() => {
+                    setSearchTerm("");
+                    setSelectedCategory("todos");
+                    setProfileType("all");
+                    fetchProviders("", "todos", "all", userCoords);
+                  }}
+                  className="text-xs font-bold text-primary hover:underline"
+                >
+                  Limpar filtros e ver todos
+                </button>
+              </div>
+            ) : (
+              providersList.map((provider, idx) => {
                 const isFavorite = favoritesList.includes(provider.id);
+                const hasRating = provider.ratingCount && Number(provider.ratingCount) > 0;
+                const tags = provider.tags
+                  ? (Array.isArray(provider.tags)
+                      ? provider.tags
+                      : typeof provider.tags === "string"
+                        ? provider.tags.split(",").map((t: string) => t.trim())
+                        : [])
+                  : [];
 
                 return (
                   <div
                     key={provider.id}
                     onClick={() => (window.location.href = `/perfil/${provider.id}`)}
-                    className="group relative rounded-3xl bg-zinc-950/80 border border-zinc-900 hover:border-primary/45 overflow-hidden shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between cursor-pointer"
+                    className="busca-card-animate group bg-zinc-950/60 border border-zinc-900 hover:border-primary/30 rounded-2xl p-4 cursor-pointer transition-all duration-200 hover:bg-zinc-950"
+                    style={{ animationDelay: `${Math.min(idx * 40, 300)}ms` }}
                   >
-                    <div>
-                      {/* Cover Image Container */}
-                      <div className="relative h-40 overflow-hidden bg-zinc-900">
-                        <img
-                          src={provider.coverUri || "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=500&q=80"}
-                          alt={provider.name}
-                          className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
-                        />
-
-                        {/* Favorite button */}
-                        <button
-                          onClick={(e) => toggleFavorite(provider.id, e)}
-                          className="absolute top-3.5 right-3.5 p-2 bg-black/75 backdrop-blur-md border border-white/10 hover:bg-zinc-800 text-white rounded-full transition-all duration-300 z-30"
-                        >
-                          <Heart
-                            className={`h-4.5 w-4.5 transition-colors ${isFavorite ? "fill-primary text-primary" : "text-white"}`}
+                    <div className="flex gap-4">
+                      {/* Avatar */}
+                      <div className="relative flex-shrink-0">
+                        <div className="w-16 h-16 rounded-full border-2 border-primary/60 overflow-hidden bg-zinc-900">
+                          <img
+                            src={provider.avatarUri || `https://ui-avatars.com/api/?name=${encodeURIComponent(provider.name)}&background=84cc16&color=fff&size=150`}
+                            alt={provider.name}
+                            className="w-full h-full object-cover"
                           />
-                        </button>
+                        </div>
+                        {provider.isVerified && (
+                          <div className="absolute -bottom-0.5 -right-0.5 bg-primary text-zinc-950 p-0.5 rounded-full border-2 border-zinc-950">
+                            <BadgeCheck className="h-3 w-3" />
+                          </div>
+                        )}
                       </div>
 
-                      {/* Provider Info Grid Layout */}
-                      <div className="p-5 space-y-4">
-                        <div className="flex gap-4">
-                          {/* Left: Avatar with Verified Badge Overlay */}
-                          <div className="relative w-20 h-20 flex-shrink-0">
-                            <div className="w-full h-full rounded-full border-2 border-primary overflow-hidden shadow-xl bg-zinc-900">
-                              <img
-                                src={provider.avatarUri || `https://ui-avatars.com/api/?name=${encodeURIComponent(provider.name)}&background=25D366&color=fff&size=150`}
-                                alt={provider.name}
-                                className="w-full h-full object-cover"
-                              />
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <h3 className="font-bold text-white text-sm group-hover:text-primary transition-colors truncate">
+                                {provider.name}
+                              </h3>
+                              {provider.isVerified && (
+                                <BadgeCheck className="h-4 w-4 text-primary flex-shrink-0" />
+                              )}
                             </div>
-                            {provider.isVerified && (
-                              <div className="absolute -bottom-1 -right-1 bg-primary text-zinc-950 p-1 rounded-full border-2 border-zinc-950 flex items-center justify-center">
-                                <CheckCircle className="h-3 w-3 fill-current" />
-                              </div>
-                            )}
+                            <p className="text-zinc-500 text-xs font-medium mt-0.5">
+                              {provider.category || "Profissional"}
+                            </p>
                           </div>
 
-                          {/* Right: Info Text */}
-                          <div className="flex-1 space-y-1">
-                            <h3 className="font-extrabold text-xl text-white group-hover:text-primary transition-colors leading-snug line-clamp-1">
-                              {provider.name}
-                            </h3>
-                            
-                            <div className="flex items-center gap-1.5 text-xs flex-wrap">
-                              <span className="text-primary font-bold">
-                                {provider.category || "Profissional"}
-                              </span>
-                              <span className="text-zinc-650">|</span>
-                              <span className="text-zinc-400">
-                                {getDisplayCategory(provider.categoryId, provider.category)}
-                              </span>
+                          {/* Distance + Availability */}
+                          <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                            <div className="flex items-center gap-1 text-zinc-400 text-xs">
+                              <MapPin className="h-3 w-3 text-zinc-500" />
+                              <span className="font-semibold">{provider.distanceStr || "Região local"}</span>
                             </div>
+                            <span className="text-[10px] font-bold text-primary">
+                              {provider.onlineStatus === true ? "Disponível agora" : "Disponível hoje"}
+                            </span>
+                          </div>
+                        </div>
 
-                            {provider.description && (
-                              <p className="text-zinc-400 text-xs line-clamp-2 leading-relaxed pt-0.5">
-                                {provider.description}
-                              </p>
+                        {/* Rating row */}
+                        <div className="flex items-center gap-2 mt-2 text-xs">
+                          <div className="flex items-center gap-1">
+                            <Star className="h-3.5 w-3.5 text-primary fill-primary" />
+                            {hasRating ? (
+                              <>
+                                <span className="text-white font-bold">{Number(provider.rating).toFixed(1)}</span>
+                                <span className="text-zinc-500">({provider.ratingCount} avaliações)</span>
+                              </>
+                            ) : (
+                              <span className="text-zinc-400 font-semibold">Novo</span>
                             )}
-
-                            {/* Ratings, location/distance */}
-                            <div className="flex items-center gap-3 pt-2 text-xs text-zinc-400">
-                              <div className="flex items-center gap-1">
-                                <Star className="h-3.5 w-3.5 text-primary fill-current" />
-                                {provider.ratingCount && Number(provider.ratingCount) > 0 ? (
-                                  <>
-                                    <span className="text-white font-extrabold">{Number(provider.rating).toFixed(1)}</span>
-                                    <span className="text-zinc-500">({provider.ratingCount})</span>
-                                  </>
-                                ) : (
-                                  <span className="text-zinc-400 font-semibold">Novo</span>
-                                )}
-                              </div>
+                          </div>
+                          {provider.experienceYears && (
+                            <>
                               <span className="text-zinc-700">•</span>
-                              <div className="flex items-center gap-1">
-                                <MapPin className="h-3.5 w-3.5 text-primary" />
-                                <span className="text-zinc-300">
-                                  {provider.distanceStr || "75 m de você"}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
+                              <span className="text-zinc-500">{provider.experienceYears} anos de experiência</span>
+                            </>
+                          )}
                         </div>
 
-                        {/* Badges Section */}
-                        <div className="flex items-center gap-2 pt-2 border-t border-zinc-900">
-                          {provider.isVerified && (
-                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-zinc-900 border border-emerald-500/20 text-[10px] font-black text-emerald-400 rounded-full uppercase tracking-wider">
-                              <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />
-                              Verificado
-                            </span>
-                          )}
-                          {provider.plan === "premium" && (
-                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-zinc-900 border border-amber-500/20 text-[10px] font-black text-amber-400 rounded-full uppercase tracking-wider">
-                              <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-                              Premium
-                            </span>
-                          )}
+                        {/* Tags */}
+                        {tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mt-2.5">
+                            {tags.slice(0, 3).map((tag: string, i: number) => (
+                              <span
+                                key={i}
+                                className="text-[11px] font-medium text-zinc-400 bg-zinc-900 border border-zinc-800 px-2.5 py-1 rounded-lg"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-2 mt-3">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.location.href = `/perfil/${provider.id}`;
+                            }}
+                            className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-lg text-xs font-bold text-white transition-colors flex items-center gap-1.5"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                            <span>Ver perfil</span>
+                          </button>
+                          <button
+                            onClick={(e) => handleContactWhatsApp(provider, e)}
+                            className="w-9 h-9 bg-primary/15 hover:bg-primary/25 border border-primary/30 rounded-lg flex items-center justify-center transition-colors"
+                          >
+                            <MessageCircle className="h-4 w-4 text-primary" />
+                          </button>
+                          <button
+                            onClick={(e) => toggleFavorite(provider.id, e)}
+                            className="w-9 h-9 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-lg flex items-center justify-center transition-colors ml-auto"
+                          >
+                            <Heart
+                              className={`h-4 w-4 transition-colors ${isFavorite ? "fill-primary text-primary" : "text-zinc-500"}`}
+                            />
+                          </button>
                         </div>
                       </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="p-5 pt-0 space-y-2">
-                      <button
-                        onClick={() => (window.location.href = `/perfil/${provider.id}`)}
-                        className="w-full py-3 bg-primary hover:bg-primary/90 text-zinc-950 rounded-xl flex items-center justify-center gap-2 font-black text-xs uppercase tracking-wider transition-all duration-300 active:scale-98"
-                      >
-                        <Eye className="w-4 h-4" />
-                        <span>Ver Perfil</span>
-                      </button>
-                      <button
-                        onClick={(e) => handleContactWhatsApp(provider, e)}
-                        className="w-full py-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-xl flex items-center justify-center gap-2 font-bold text-xs text-zinc-300 transition-all duration-300 active:scale-98"
-                      >
-                        <Phone className="w-3.5 h-3.5 text-primary" />
-                        <span>Chamar no WhatsApp</span>
-                      </button>
                     </div>
                   </div>
                 );
-              })}
-            </div>
-          )}
+              })
+            )}
+          </div>
         </div>
 
-        {/* Right Column: Interactive Leaflet Map */}
+        {/* ── RIGHT COLUMN: MAP ── */}
         <div
           id="map-container"
           className={`${
             mobileShowMap ? "block w-full h-full" : "hidden"
-          } lg:block lg:w-[45%] xl:w-[40%] h-full sticky top-0 bg-zinc-900/40`}
-          style={{ height: "100%", minHeight: "650px" }}
+          } lg:block lg:w-[45%] xl:w-[42%] h-full bg-zinc-900/40 relative flex-shrink-0`}
+          style={{ height: "100%", minHeight: "500px" }}
         >
-          <div id="busca-map" className="w-full h-full bg-[#09090b]" style={{ height: "100%", minHeight: "650px" }}></div>
+          {/* Map header */}
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30">
+            <button
+              type="button"
+              onClick={() => {
+                if (mapInstance) {
+                  const center = mapInstance.getCenter();
+                  const coords = { latitude: center.lat, longitude: center.lng };
+                  setUserCoords(coords);
+                  fetchProviders(searchTerm, selectedCategory, profileType, coords);
+                }
+              }}
+              className="px-4 py-2 bg-zinc-950/90 backdrop-blur-md border border-zinc-800 rounded-full text-xs font-bold text-white hover:border-primary/40 transition-colors shadow-xl"
+            >
+              Buscar nesta área
+            </button>
+          </div>
+
+          <div id="busca-map" className="w-full h-full bg-[#09090b]" style={{ height: "100%", minHeight: "500px" }}></div>
+
+          {/* CTA: Não encontrou? */}
+          <div className="absolute bottom-4 left-4 right-4 z-30">
+            <div className="bg-zinc-950/95 backdrop-blur-md border border-zinc-800 rounded-2xl p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center flex-shrink-0">
+                <Megaphone className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-white text-xs font-bold leading-tight">Não encontrou o que precisa?</p>
+                <p className="text-zinc-500 text-[11px] mt-0.5">
+                  Publique uma solicitação e receba orçamentos de profissionais interessados.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  if (typeof window !== "undefined") {
+                    window.location.href = "/preciso-de-alguem";
+                  }
+                }}
+                className="flex-shrink-0"
+              >
+                <X className="h-4 w-4 text-zinc-600 hover:text-white transition-colors absolute top-3 right-3" />
+              </button>
+            </div>
+            <a
+              href="/preciso-de-alguem"
+              className="mt-2 block w-full py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs rounded-xl text-center transition-colors"
+            >
+              Publicar solicitação
+            </a>
+          </div>
         </div>
 
         {/* Mobile View Toggle Floating Action Button */}

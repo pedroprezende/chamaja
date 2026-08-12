@@ -264,3 +264,159 @@
 .animate-badge-glow {
   animation: shimmer-badge 2.5s ease-in-out infinite;
 }
+
+/* ── Search Redesign: Custom Range Slider ── */
+input[type="range"].busca-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 9999px;
+  background: linear-gradient(to right, #84cc16 0%, #84cc16 var(--range-pct, 50%), #27272a var(--range-pct, 50%), #27272a 100%);
+  outline: none;
+  cursor: pointer;
+}
+
+input[type="range"].busca-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #84cc16;
+  border: 3px solid #09090b;
+  box-shadow: 0 0 8px rgba(132, 204, 22, 0.4);
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+input[type="range"].busca-range::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 14px rgba(132, 204, 22, 0.6);
+}
+
+input[type="range"].busca-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #84cc16;
+  border: 3px solid #09090b;
+  box-shadow: 0 0 8px rgba(132, 204, 22, 0.4);
+  cursor: pointer;
+}
+
+/* ── Search Redesign: Filter Drawer Overlay (Mobile) ── */
+.busca-filter-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 60;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.busca-filter-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.busca-filter-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 300px;
+  max-width: 85vw;
+  background: #09090b;
+  border-right: 1px solid #1c1c1e;
+  z-index: 61;
+  transform: translateX(-100%);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-y: auto;
+}
+
+.busca-filter-drawer.open {
+  transform: translateX(0);
+}
+
+/* ── Search Redesign: Card Animations ── */
+@keyframes busca-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.busca-card-animate {
+  animation: busca-card-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── Search Redesign: Thin Scrollbar for Results ── */
+.busca-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.busca-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.busca-scrollbar::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 9999px;
+}
+
+.busca-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}
+
+.busca-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #27272a transparent;
+}
+
+/* ── Search Redesign: Star Rating Interactive ── */
+.busca-star {
+  cursor: pointer;
+  transition: color 0.15s, transform 0.15s;
+}
+
+.busca-star:hover {
+  transform: scale(1.15);
+}
+
+/* ── Search Redesign: Availability Checkbox ── */
+.busca-checkbox {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #3f3f46;
+  border-radius: 4px;
+  background: #09090b;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.busca-checkbox:checked {
+  border-color: #84cc16;
+  background-color: #84cc16;
+}
+
+.busca-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 5px;
+  width: 5px;
+  height: 9px;
+  border: solid #000;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
