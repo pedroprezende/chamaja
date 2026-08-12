@@ -951,7 +951,7 @@ export default function Home() {
       </header>
 
       {/* ── HERO SECTION WITH TECH MAP BACKGROUND & REAL CARDS ── */}
-      <section className="relative py-16 md:py-24 lg:py-32 overflow-hidden border-b border-white/[0.06] bg-[#030508] select-none">
+      <section className="relative py-20 md:py-28 lg:py-36 overflow-hidden border-b border-white/[0.06] bg-[#030508] select-none">
         {/* Custom Keyframes and Modern CSS Styles */}
         <style dangerouslySetInnerHTML={{ __html: `
           @keyframes float-card-1 {
@@ -1006,9 +1006,9 @@ export default function Home() {
         <div className="absolute inset-0 tech-grid-overlay pointer-events-none z-0" />
 
         {/* Radial ambient glows */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-[#25D366]/[0.05] rounded-full blur-[160px] pointer-events-none z-0" />
-        <div className="absolute top-1/4 right-1/4 w-[600px] h-[600px] bg-emerald-500/[0.04] rounded-full blur-[140px] pointer-events-none z-0" />
-        <div className="absolute bottom-10 left-10 w-[500px] h-[500px] bg-lime-500/[0.03] rounded-full blur-[120px] pointer-events-none z-0" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1200px] h-[1200px] bg-[#25D366]/[0.06] rounded-full blur-[180px] pointer-events-none z-0" />
+        <div className="absolute top-1/4 right-1/4 w-[800px] h-[800px] bg-emerald-500/[0.05] rounded-full blur-[160px] pointer-events-none z-0" />
+        <div className="absolute bottom-10 left-10 w-[700px] h-[700px] bg-lime-500/[0.04] rounded-full blur-[140px] pointer-events-none z-0" />
 
         {/* SVG TECHNOLOGICAL STREET MAP NETWORK */}
         <svg
@@ -1080,7 +1080,7 @@ export default function Home() {
 
         {/* Floating Particles */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-          {[...Array(12)].map((_, i) => (
+          {[...Array(16)].map((_, i) => (
             <div
               key={i}
               className="absolute bg-[#25D366]/40 rounded-full blur-[1px]"
@@ -1096,11 +1096,11 @@ export default function Home() {
           ))}
         </div>
 
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="flex flex-col lg:grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+        <div className="container mx-auto px-4 max-w-[1440px] relative z-10">
+          <div className="flex flex-col lg:grid lg:grid-cols-12 gap-12 lg:gap-10 items-center">
 
             {/* ── LEFT COLUMN: HEADLINE, SEARCH & STATS ── */}
-            <div className="space-y-8 relative w-full z-15 lg:col-span-6 text-left">
+            <div className="space-y-8 relative w-full z-15 lg:col-span-5 text-left">
 
               {/* Location Badge */}
               <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-zinc-900/80 border border-white/[0.08] text-xs text-zinc-300 font-semibold backdrop-blur-md shadow-lg">
@@ -1281,40 +1281,40 @@ export default function Home() {
               </div>
             </div>
 
-            {/* ── RIGHT COLUMN: SMARTPHONE MOCKUP & FLOATING REAL PROVIDER CARDS ── */}
-            <div className="flex justify-center relative w-full h-[580px] md:h-[680px] lg:h-[760px] items-center z-10 select-none lg:col-span-6">
+            {/* ── RIGHT COLUMN: SMARTPHONE MOCKUP & FLOATING REAL PROVIDER CARDS (1.5X LARGER) ── */}
+            <div className="flex justify-center relative w-full h-[680px] md:h-[820px] lg:h-[920px] items-center z-10 select-none lg:col-span-7">
               
-              {/* Central Phone Mockup */}
-              <div className="relative z-20 w-[270px] md:w-[340px] lg:w-[390px] aspect-[9/18.5] flex items-center justify-center animate-float-phone-hero">
+              {/* Central Phone Mockup (1.5x scaled) */}
+              <div className="relative z-20 w-[320px] sm:w-[420px] md:w-[500px] lg:w-[570px] aspect-[9/18.5] flex items-center justify-center animate-float-phone-hero">
                 <img
                   src="/assets/images/hero_mockup_right.png"
                   alt="XamaJá App Interface"
-                  className="w-full h-full object-contain filter drop-shadow-[0_25px_60px_rgba(37,211,102,0.25)]"
+                  className="w-full h-full object-contain filter drop-shadow-[0_30px_70px_rgba(37,211,102,0.3)]"
                 />
 
-                {/* Mascot Avatar (Xará) floating near phone */}
-                <div className="absolute bottom-[6%] left-[-12%] z-30 w-20 h-20 md:w-28 md:h-28 select-none pointer-events-none">
+                {/* Mascot Avatar (Xará) floating near phone (1.5x scaled) */}
+                <div className="absolute bottom-[4%] left-[-10%] md:left-[-12%] z-30 w-28 h-28 md:w-36 md:h-36 lg:w-44 lg:h-44 select-none pointer-events-none">
                   <img
                     src="/assets/images/mascote-xara.png"
                     alt="Xará Mascot"
-                    className="w-full h-full object-contain filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.6)]"
+                    className="w-full h-full object-contain filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.6)]"
                   />
                 </div>
               </div>
 
-              {/* ── DYNAMIC FLOATING CARDS (SHOWING ONLY REAL DATABASE PROVIDERS) ── */}
+              {/* ── DYNAMIC FLOATING CARDS (SHOWING ONLY REAL DATABASE PROVIDERS - 1.5X PROPORTIONAL) ── */}
               {(() => {
                 const realProviders = featuredProviders.length > 0 ? featuredProviders : nearbyProviders;
                 if (!realProviders || realProviders.length === 0) return null;
 
-                // Card positions configuration (Top-Right, Middle-Left, Bottom-Right, Top-Left, Middle-Right, Bottom-Left)
+                // Card positions configuration with expanded bounds across the larger hero canvas
                 const positions = [
-                  "top-[5%] right-[-4%] md:right-[2%] animate-float-c1",
-                  "top-[38%] left-[-6%] md:left-[-2%] animate-float-c2",
-                  "bottom-[14%] right-[0%] md:right-[4%] animate-float-c3",
-                  "top-[18%] left-[2%] md:left-[8%] animate-float-c4",
-                  "top-[58%] right-[-8%] md:right-[-4%] animate-float-c1",
-                  "bottom-[6%] left-[-4%] md:left-[2%] animate-float-c2",
+                  "top-[2%] right-[-2%] md:right-[0%] lg:right-[2%] animate-float-c1",
+                  "top-[32%] left-[-6%] md:left-[-4%] lg:left-[-6%] animate-float-c2",
+                  "bottom-[12%] right-[-2%] md:right-[2%] lg:right-[4%] animate-float-c3",
+                  "top-[12%] left-[0%] md:left-[4%] lg:left-[2%] animate-float-c4",
+                  "top-[54%] right-[-6%] md:right-[-2%] lg:right-[-2%] animate-float-c1",
+                  "bottom-[4%] left-[-4%] md:left-[0%] lg:left-[-2%] animate-float-c2",
                 ];
 
                 return realProviders.slice(0, 6).map((provider, idx) => {
@@ -1330,38 +1330,38 @@ export default function Home() {
                     <a
                       key={provider.id}
                       href={`/perfil/${provider.id}`}
-                      className={`absolute z-30 ${posClass} bg-[#08090d]/85 backdrop-blur-xl border border-white/[0.08] hover:border-[#25D366]/60 p-3 rounded-2xl flex items-center gap-3 shadow-[0_15px_35px_rgba(0,0,0,0.8),0_0_20px_rgba(37,211,102,0.12)] min-w-[200px] max-w-[240px] transition-all duration-300 hover:scale-105 group`}
+                      className={`absolute z-30 ${posClass} bg-[#08090d]/85 backdrop-blur-xl border border-white/[0.08] hover:border-[#25D366]/60 p-3.5 sm:p-4 rounded-2xl flex items-center gap-3.5 shadow-[0_20px_45px_rgba(0,0,0,0.85),0_0_25px_rgba(37,211,102,0.15)] min-w-[230px] max-w-[280px] sm:min-w-[260px] sm:max-w-[310px] transition-all duration-300 hover:scale-105 group`}
                     >
                       {/* Avatar / Profile Image */}
-                      <div className="relative w-11 h-11 rounded-xl overflow-hidden bg-zinc-900 border border-white/10 flex-shrink-0">
+                      <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-2xl overflow-hidden bg-zinc-900 border border-white/10 flex-shrink-0">
                         <img
                           src={avatar}
                           alt={provider.name}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                         />
                         {isOnline && (
-                          <span className="absolute bottom-0.5 right-0.5 w-2.5 h-2.5 bg-[#25D366] rounded-full border-2 border-black animate-pulse" />
+                          <span className="absolute bottom-0.5 right-0.5 w-3 h-3 bg-[#25D366] rounded-full border-2 border-black animate-pulse" />
                         )}
                       </div>
 
                       {/* Info Details */}
                       <div className="text-left overflow-hidden min-w-0 flex-1">
                         <div className="flex items-center gap-1">
-                          <span className="text-white font-extrabold text-xs truncate leading-tight group-hover:text-[#25D366] transition-colors">
+                          <span className="text-white font-extrabold text-xs sm:text-sm truncate leading-tight group-hover:text-[#25D366] transition-colors">
                             {provider.name}
                           </span>
                           {isVerified && (
-                            <BadgeCheck className="w-3.5 h-3.5 text-[#25D366] flex-shrink-0" />
+                            <BadgeCheck className="w-4 h-4 text-[#25D366] flex-shrink-0" />
                           )}
                         </div>
 
-                        <p className="text-zinc-400 text-[10px] truncate mt-0.5 font-medium">
+                        <p className="text-zinc-400 text-[11px] sm:text-xs truncate mt-0.5 font-medium">
                           {categoryName}
                         </p>
 
-                        <div className="flex items-center gap-2 mt-1 text-[10px]">
+                        <div className="flex items-center gap-2 mt-1 text-[11px] sm:text-xs">
                           <div className="flex items-center gap-0.5 text-amber-400 font-bold">
-                            <Star className="w-3 h-3 fill-current" />
+                            <Star className="w-3.5 h-3.5 fill-current" />
                             <span className="text-white font-extrabold">{rating}</span>
                           </div>
                           {distance && (
