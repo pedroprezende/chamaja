@@ -51,6 +51,7 @@ const adminProviderSchema = z.object({
   isActive: z.boolean().optional(),
   isVerified: z.boolean().optional(),
   destaque: z.boolean().optional(),
+  is24Hours: z.boolean().optional(),
   onlineStatus: z.boolean().optional(),
   responseTime: z.string().nullable().optional(),
   clientsServed: z.number().optional(),
@@ -97,6 +98,7 @@ const ProviderUpsertSchema = z.object({
   coverUri: z.string().nullable().optional(),
   coverThumbnailUri: z.string().nullable().optional(),
   isVerified: z.boolean().optional(),
+  is24Hours: z.boolean().optional(),
   onlineStatus: z.boolean().optional(),
   responseTime: z.string().nullable().optional(),
   clientsServed: z.number().nullable().optional(),
@@ -132,6 +134,7 @@ const ProviderUpdateSchema = z.object({
     plan: z.string().nullable().optional(),
     planExpiresAt: z.string().nullable().optional(),
     isActive: z.boolean().optional(),
+    is24Hours: z.boolean().optional(),
     latitude: z.number().nullable().optional(),
     longitude: z.number().nullable().optional(),
     coverUri: z.string().nullable().optional(),
@@ -285,6 +288,7 @@ export const providersRouter = router({
             coverUri: input.coverUri,
             coverThumbnailUri: input.coverThumbnailUri,
             isVerified: input.isVerified ?? false,
+            is24Hours: input.is24Hours ?? false,
             onlineStatus: input.onlineStatus ?? false,
             responseTime: input.responseTime,
             clientsServed: input.clientsServed || 0,
@@ -334,6 +338,7 @@ export const providersRouter = router({
           coverUri: input.coverUri || null,
           coverThumbnailUri: input.coverThumbnailUri || null,
           isVerified: input.isVerified ?? false,
+          is24Hours: input.is24Hours ?? false,
           onlineStatus: input.onlineStatus ?? false,
           responseTime: input.responseTime || null,
           clientsServed: input.clientsServed || 0,
@@ -433,6 +438,8 @@ export const providersRouter = router({
         mappedUpdates.coverThumbnailUri = input.updates.coverThumbnailUri;
       if (input.updates.isVerified !== undefined)
         mappedUpdates.isVerified = input.updates.isVerified;
+      if (input.updates.is24Hours !== undefined)
+        mappedUpdates.is24Hours = input.updates.is24Hours;
       if (input.updates.onlineStatus !== undefined)
         mappedUpdates.onlineStatus = input.updates.onlineStatus;
       if (input.updates.responseTime !== undefined)
@@ -482,27 +489,14 @@ export const providersRouter = router({
           (input.updates.latitude === undefined ||
             input.updates.latitude === null)
         ) {
-          const coords = await geocodeAddress(
-            input.updates.address !== undefined
-              ? input.updates.address
-              : existing[0].address,
-            input.updates.neighborhood !== undefined
-              ? input.updates.neighborhood
-              : existing[0].neighborhood,
-            input.updates.city !== undefined
-              ? input.updates.city
-              : existing[0].city,
-            input.updates.cep !== undefined
-              ? input.updates.cep
-              : existing[0].cep,
-            true
-          );
+          const addr = input.updates.address ?? existing[0].address;
+          const neigh = input.updates.neighborhood ?? existing[0].neighborhood;
+          const city = input.updates.city ?? existing[0].city;
+          const cep = input.updates.cep ?? existing[0].cep;
+          const coords = await geocodeAddress(addr, neigh, city, cep, true);
           if (coords) {
             mappedUpdates.latitude = coords.latitude;
             mappedUpdates.longitude = coords.longitude;
-          } else {
-            mappedUpdates.latitude = null;
-            mappedUpdates.longitude = null;
           }
         }
       }
@@ -516,16 +510,20 @@ export const providersRouter = router({
 
   removeProvider: protectedProcedure
     .input(z.string())
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input: userId, ctx }) => {
       const dbInstance = await db.getDb();
       if (!dbInstance) return;
 
       // Apenas o próprio usuário ou um admin pode remover
-      if (ctx.user.openId !== input && ctx.user.role !== "admin") {
-        throw new Error("Forbidden: You can only delete your own profile");
+      if (ctx.user.openId !== userId && ctx.user.role !== "admin") {
+        throw new Error("Forbidden: You can only remove your own profile");
       }
 
-      await dbInstance.delete(providers).where(eq(providers.userId, input));
+      // Soft delete: marcar como inativo
+      await dbInstance
+        .update(providers)
+        .set({ isActive: false, updatedAt: new Date() })
+        .where(eq(providers.userId, userId));
       return { success: true };
     }),
 
@@ -538,37 +536,39 @@ export const providersRouter = router({
         .select()
         .from(providers)
         .where(
-          or(
-            eq(providers.category, input),
-            eq(providers.categoryId, input),
-            ilike(providers.subcategoryId, `%${input}%`),
-            ilike(providers.subcategoryName, `%${input}%`),
-            eq(providers.serviceId, input),
-            ilike(providers.serviceName, `%${input}%`),
-          ),
+          and(
+            eq(providers.isActive, true),
+            or(
+              eq(providers.categoryId, input),
+              eq(providers.category, input),
+              eq(providers.subcategoryId, input)
+            )
+          )
         );
       return sanitizeProvidersForUser(results, ctx.user);
     }),
 
-  search: publicProcedure.input(z.string()).query(async ({ input, ctx }) => {
-    const dbInstance = await db.getDb();
-    if (!dbInstance) return [];
-    const lower = `%${input.toLowerCase()}%`;
-    const results = await dbInstance
-      .select()
-      .from(providers)
-      .where(
-        or(
-          ilike(providers.name, lower),
-          ilike(providers.category, lower),
-          ilike(providers.subcategoryName, lower),
-          ilike(providers.city, lower),
-          ilike(providers.neighborhood, lower),
-          ilike(providers.description, lower),
-        ),
-      );
-    return sanitizeProvidersForUser(results, ctx.user);
-  }),
+  search: publicProcedure
+    .input(z.string().max(200))
+    .query(async ({ input, ctx }) => {
+      const dbInstance = await db.getDb();
+      if (!dbInstance) return [];
+      const lower = `%${input.toLowerCase()}%`;
+      const results = await dbInstance
+        .select()
+        .from(providers)
+        .where(
+          or(
+            ilike(providers.name, lower),
+            ilike(providers.category, lower),
+            ilike(providers.subcategoryName, lower),
+            ilike(providers.city, lower),
+            ilike(providers.neighborhood, lower),
+            ilike(providers.description, lower),
+          ),
+        );
+      return sanitizeProvidersForUser(results, ctx.user);
+    }),
 
   searchFiltered: publicProcedure
     .input(
@@ -586,8 +586,11 @@ export const providersRouter = router({
         maxDistanceKm: z.number().min(1).max(500).optional(),
         minRating: z.number().min(0).max(5).optional(),
         onlyOnline: z.boolean().optional(),
+        is24Hours: z.boolean().optional(),
         priceLevel: z.number().min(1).max(4).optional(),
         availability: z.enum(["any", "now", "today", "scheduled"]).optional(),
+        page: z.number().min(1).default(1).optional(),
+        limit: z.number().min(1).max(100).default(12).optional(),
         sortBy: z
           .enum([
             "relevance",
@@ -602,7 +605,16 @@ export const providersRouter = router({
     )
     .query(async ({ input, ctx }) => {
       const dbInstance = await db.getDb();
-      if (!dbInstance) return [];
+      if (!dbInstance) {
+        return {
+          items: [],
+          total: 0,
+          page: input.page ?? 1,
+          limit: input.limit ?? 12,
+          totalPages: 1,
+          hasMore: false,
+        };
+      }
 
       const {
         query,
@@ -614,6 +626,7 @@ export const providersRouter = router({
         maxDistanceKm,
         minRating,
         onlyOnline,
+        is24Hours,
         priceLevel,
         availability,
         sortBy,
@@ -671,12 +684,17 @@ export const providersRouter = router({
         conditions.push(eq(providers.onlineStatus, true));
       }
 
-      // 8. Nível de Preço
+      // 8. Atendimento 24 Horas
+      if (is24Hours) {
+        conditions.push(eq(providers.is24Hours, true));
+      }
+
+      // 9. Nível de Preço
       if (priceLevel && priceLevel > 0) {
         conditions.push(eq(providers.priceLevel, priceLevel));
       }
 
-      // 9. Bounding Box para filtro geográfico rápido utilizando índices
+      // 10. Bounding Box para filtro geográfico rápido utilizando índices
       const hasCoords =
         userLatitude !== undefined && userLongitude !== undefined;
       const limitDistance = maxDistanceKm !== undefined && maxDistanceKm > 0;
@@ -693,7 +711,7 @@ export const providersRouter = router({
         );
       }
 
-      // 10. Seleção de campos leves (incluindo cálculo de distância em SQL se houver coordenadas)
+      // 11. Seleção de campos leves (incluindo cálculo de distância em SQL se houver coordenadas)
       let selectFields: any = {
         id: providers.id,
         userId: providers.userId,
@@ -714,6 +732,7 @@ export const providersRouter = router({
         coverUri: providers.coverUri,
         coverThumbnailUri: providers.coverThumbnailUri,
         isVerified: providers.isVerified,
+        is24Hours: providers.is24Hours,
         onlineStatus: providers.onlineStatus,
         responseTime: providers.responseTime,
         topBadge: providers.topBadge,
@@ -744,7 +763,7 @@ export const providersRouter = router({
         .from(providers)
         .where(and(...conditions));
 
-      // 11. Ordenação
+      // 12. Ordenação
       const orderByExprs = [];
       if (sortBy === "rating") {
         orderByExprs.push(desc(providers.rating), desc(providers.ratingCount));
@@ -761,7 +780,6 @@ export const providersRouter = router({
         orderByExprs.push(asc(providers.name));
       } else {
         // relevance: Destaques/Premium primeiro, depois displayOrder/distância
-        // We'll sort post-query using benefit keys
       }
 
       queryBuilder.orderBy(...orderByExprs);
@@ -806,7 +824,21 @@ export const providersRouter = router({
         });
       }
 
-      return sanitizeProvidersForUser(mapped, ctx.user);
+      const total = mapped.length;
+      const pageNum = input.page ?? 1;
+      const limitNum = input.limit ?? 12;
+      const totalPages = Math.max(1, Math.ceil(total / limitNum));
+      const paginated = mapped.slice((pageNum - 1) * limitNum, pageNum * limitNum);
+      const sanitizedItems = sanitizeProvidersForUser(paginated, ctx.user);
+
+      return {
+        items: sanitizedItems,
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages,
+        hasMore: pageNum * limitNum < total,
+      };
     }),
 
   smartSearch: publicProcedure

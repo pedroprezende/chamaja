@@ -678,7 +678,13 @@ export default function Perfil({ params }: { params: { id: string } }) {
   })();
 
   const parsedHours = parseWorkingHours(provider.workingHours);
-  const realTimeStatus = calculateRealTimeStatus(parsedHours);
+  const realTimeStatus = provider.is24Hours
+    ? {
+        isOpen: true,
+        badge: "Aberto agora",
+        detailMessage: "Atendimento 24 horas",
+      }
+    : calculateRealTimeStatus(parsedHours);
 
   // Gallery List
   const galleryList = parseJsonArray(provider.gallery);
@@ -827,6 +833,11 @@ export default function Perfil({ params }: { params: { id: string } }) {
                 {provider.isVerified && (
                   <span className="flex items-center gap-1 px-2.5 py-0.5 bg-[#25D366] text-black text-[9px] font-black uppercase tracking-wider rounded-md">
                     <CheckCircle2 className="w-3 h-3 fill-current" /> VERIFICADO
+                  </span>
+                )}
+                {provider.is24Hours && (
+                  <span className="flex items-center gap-1 px-2.5 py-0.5 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[9px] font-black uppercase tracking-wider rounded-md">
+                    <Clock className="w-3 h-3" /> 24 HORAS
                   </span>
                 )}
               </div>

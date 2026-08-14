@@ -787,12 +787,20 @@ export default function ProfessionalDetailScreen() {
             >
               {prof.name}
             </Text>
-            {prof.isVerified && (
-              <View style={styles.heroVerifiedPill}>
-                <MaterialIcons name="check-circle" size={11} color="#25D366" />
-                <Text style={styles.heroVerifiedPillText}>VERIFICADO</Text>
-              </View>
-            )}
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 6 }}>
+              {prof.isVerified && (
+                <View style={styles.heroVerifiedPill}>
+                  <MaterialIcons name="check-circle" size={11} color="#25D366" />
+                  <Text style={styles.heroVerifiedPillText}>VERIFICADO</Text>
+                </View>
+              )}
+              {prof.is24Hours && (
+                <View style={[styles.heroVerifiedPill, { backgroundColor: "rgba(16,185,129,0.15)", borderColor: "rgba(16,185,129,0.35)", borderWidth: 1 }]}>
+                  <MaterialIcons name="schedule" size={11} color="#10B981" />
+                  <Text style={[styles.heroVerifiedPillText, { color: "#10B981" }]}>24 HORAS</Text>
+                </View>
+              )}
+            </View>
             <Text style={[styles.profileCategory, { color: colors.primary }]}>
               {prof.subcategoryName || prof.category}
             </Text>
@@ -827,8 +835,21 @@ export default function ProfessionalDetailScreen() {
             </View>
 
             {/* Info Pills */}
-            {(prof.onlineStatus || prof.topBadge || prof.responseTime) && (
+            {(prof.onlineStatus || prof.topBadge || prof.responseTime || prof.is24Hours) && (
               <View style={[styles.heroPillsRow, { justifyContent: "center", marginTop: 6 }]}>
+                {prof.is24Hours && (
+                  <View
+                    style={[
+                      styles.heroPill,
+                      { backgroundColor: "rgba(16,185,129,0.15)", borderColor: "rgba(16,185,129,0.3)", borderWidth: 1 },
+                    ]}
+                  >
+                    <MaterialIcons name="schedule" size={13} color="#10B981" />
+                    <Text style={[styles.heroPillText, { color: "#10B981", fontWeight: "800" }]}>
+                      Atendimento 24h
+                    </Text>
+                  </View>
+                )}
                 {prof.onlineStatus && (
                   <View
                     style={[

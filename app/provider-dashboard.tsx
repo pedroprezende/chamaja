@@ -76,6 +76,7 @@ export default function ProviderDashboard() {
     avatar: "",
     coverUri: "",
     workingHours: "",
+    is24Hours: false,
     businessType: "servicos",
     deliveryTime: "",
     socialLinks: {} as Record<string, string>,
@@ -270,6 +271,7 @@ export default function ProviderDashboard() {
         avatar: profileForm.avatar,
         coverUri: profileForm.coverUri,
         workingHours: workingHoursValue.trim(),
+        is24Hours: profileForm.is24Hours,
         businessType: profileForm.businessType,
         deliveryTime:
           profileForm.businessType === "alimentacao"
@@ -575,6 +577,7 @@ export default function ProviderDashboard() {
                   avatar: provider.avatar || "",
                   coverUri: provider.coverUri || "",
                   workingHours: rawValue,
+                  is24Hours: Boolean(provider.is24Hours),
                   businessType: provider.businessType || "servicos",
                   deliveryTime: provider.deliveryTime || "",
                   socialLinks: provider.socialLinks || {},
@@ -1306,6 +1309,41 @@ export default function ProviderDashboard() {
                     setProfileForm({ ...profileForm, phone: t })
                   }
                 />
+              </View>
+
+              {/* Atendimento 24h Switch */}
+              <View style={styles.card24hToggleContainer}>
+                <View style={{ flex: 1, marginRight: 12 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <MaterialIcons name="schedule" size={18} color="#10B981" />
+                    <Text style={styles.card24hToggleTitle}>Atendimento 24 horas</Text>
+                    <View style={styles.badge24hPillSmall}>
+                      <Text style={styles.badge24hPillSmallText}>24h</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.card24hToggleSubtitle}>
+                    Ative se seu negócio ou serviço funciona 24 horas por dia.
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={() =>
+                    setProfileForm((prev) => ({
+                      ...prev,
+                      is24Hours: !prev.is24Hours,
+                    }))
+                  }
+                  style={[
+                    styles.switchToggle,
+                    profileForm.is24Hours && styles.switchToggleActive,
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.switchThumb,
+                      profileForm.is24Hours && styles.switchThumbActive,
+                    ]}
+                  />
+                </Pressable>
               </View>
 
               <Text style={styles.fieldLabel}>Horário de Funcionamento</Text>
@@ -2414,5 +2452,64 @@ const styles = StyleSheet.create({
   },
   typeButtonTextSelected: {
     color: "#FFFFFF",
+  },
+  card24hToggleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#F9FAFB",
+    borderWidth: 1.5,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+  },
+  card24hToggleTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  card24hToggleSubtitle: {
+    fontSize: 11,
+    color: "#6B7280",
+    marginTop: 2,
+  },
+  badge24hPillSmall: {
+    backgroundColor: "rgba(16, 185, 129, 0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(16, 185, 129, 0.3)",
+    borderRadius: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  badge24hPillSmallText: {
+    color: "#10B981",
+    fontSize: 10,
+    fontWeight: "900",
+  },
+  switchToggle: {
+    width: 44,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#E5E7EB",
+    padding: 2,
+    justifyContent: "center",
+  },
+  switchToggleActive: {
+    backgroundColor: "#10B981",
+  },
+  switchThumb: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
+    elevation: 2,
+  },
+  switchThumbActive: {
+    alignSelf: "flex-end",
   },
 });

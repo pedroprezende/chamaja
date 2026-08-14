@@ -1306,6 +1306,7 @@ async function startServer() {
                 coverUri: businessProfile.coverUri,
                 gallery: businessProfile.gallery,
                 isActive: businessProfile.isActive,
+                is24Hours: Boolean(businessProfile.is24Hours),
                 status: businessProfile.status,
                 services: businessProfile.services
                   ? JSON.parse(businessProfile.services)
@@ -1474,6 +1475,7 @@ async function startServer() {
               coverUri: businessProfile.coverUri,
               gallery: businessProfile.gallery || [],
               isActive: businessProfile.isActive,
+              is24Hours: Boolean(businessProfile.is24Hours),
               status: businessProfile.status,
               services: businessProfile.services
                 ? JSON.parse(businessProfile.services)
@@ -1918,6 +1920,7 @@ async function startServer() {
         services,
         socialLinks,
         workingHours,
+        is24Hours,
         scheduleSettings,
       } = req.body;
 
@@ -2014,6 +2017,10 @@ async function startServer() {
           typeof workingHours === "object"
             ? JSON.stringify(workingHours)
             : workingHours;
+      }
+
+      if (is24Hours !== undefined) {
+        updates.is24Hours = Boolean(is24Hours);
       }
 
       if (req.body.scheduleSettings !== undefined) {

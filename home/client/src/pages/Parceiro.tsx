@@ -154,6 +154,7 @@ export default function Parceiro() {
   >("dados");
 
   const [busWorkingHours, setBusWorkingHours] = useState<WorkingHoursMap>(DEFAULT_WORKING_HOURS);
+  const [busIs24Hours, setBusIs24Hours] = useState(false);
 
   // Profile Form States
   const [busName, setBusName] = useState("");
@@ -461,6 +462,7 @@ export default function Parceiro() {
           setBusGallery(result.business.gallery || []);
           setServicesList(result.business.services || []);
           setBusWorkingHours(parseWorkingHours(result.business.workingHours));
+          setBusIs24Hours(Boolean(result.business.is24Hours));
 
           const links = result.business.socialLinks || {};
           setSocialInstagram(links.instagram || "");
@@ -663,6 +665,7 @@ export default function Parceiro() {
               gallery: busGallery,
               services: servicesList,
               workingHours: busWorkingHours,
+              is24Hours: busIs24Hours,
               socialLinks: {
                 instagram: socialInstagram || "",
                 facebook: socialFacebook || "",
@@ -2023,6 +2026,40 @@ export default function Parceiro() {
                               <Copy className="h-3.5 w-3.5" />
                               <span>Copiar Seg. para Seg-Sex</span>
                             </Button>
+                          </div>
+
+                          {/* Master 24h Attendance Switch */}
+                          <div className="bg-[#0b0b0d] border border-zinc-800 hover:border-emerald-500/40 rounded-2xl p-5 transition-all">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <Clock className="w-5 h-5 text-emerald-400" />
+                                  <h3 className="text-base font-black text-white">Atendimento 24 Horas</h3>
+                                  <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-wider border border-emerald-500/30">
+                                    Selo 24h
+                                  </span>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                  Ative se o seu negócio ou prestação de serviços realiza atendimento 24 horas por dia (incluindo fins de semana/plantão). O selo 24h será exibido no seu perfil e nas buscas.
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const nextVal = !busIs24Hours;
+                                  setBusIs24Hours(nextVal);
+                                  toast.info(nextVal ? "Atendimento 24h ativado. Clique em 'Salvar' para confirmar." : "Atendimento 24h desativado.");
+                                }}
+                                className={`px-4 py-2.5 rounded-xl text-xs font-black border transition-all flex items-center justify-center gap-2 flex-shrink-0 ${
+                                  busIs24Hours
+                                    ? "bg-emerald-500 text-zinc-950 border-emerald-400 shadow-lg shadow-emerald-500/20"
+                                    : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
+                                }`}
+                              >
+                                <Clock className="w-4 h-4" />
+                                <span>{busIs24Hours ? "Atendimento 24h Ativado" : "Ativar Atendimento 24h"}</span>
+                              </button>
+                            </div>
                           </div>
 
                           <div className="space-y-4">

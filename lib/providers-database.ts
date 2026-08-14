@@ -32,6 +32,7 @@ export interface StoredProvider {
   maxServicos?: number;
   permissionsStatus?: string;
   workingHours?: any;
+  is24Hours?: boolean;
   hasCatalog?: boolean;
   status?: string;
   businessType?: string;
@@ -102,6 +103,7 @@ function mapToStoredProvider(dbProvider: any): StoredProvider {
         : undefined,
     permissionsStatus: dbProvider.permissionsStatus || undefined,
     workingHours: dbProvider.workingHours || undefined,
+    is24Hours: Boolean(dbProvider.is24Hours),
     hasCatalog: dbProvider.hasCatalog ?? false,
     status: dbProvider.status || "pendente",
     businessType: dbProvider.businessType || "servicos",

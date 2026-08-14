@@ -380,12 +380,14 @@ export default function Home() {
           }
         }
 
-        const input = { sortBy: "distance", profileType: "all", userLatitude: coords.latitude, userLongitude: coords.longitude };
+        const input = { sortBy: "distance", profileType: "all", userLatitude: coords.latitude, userLongitude: coords.longitude, limit: 50 };
         const url = `/api/trpc/providers.searchFiltered?input=${encodeURIComponent(JSON.stringify(input))}`;
         const res = await fetch(url);
         if (res.ok) {
           const json = await res.json();
-          if (json.result?.data) setNearbyProviders(json.result.data);
+          const data = json.result?.data;
+          const list = Array.isArray(data) ? data : data?.items || [];
+          setNearbyProviders(list);
         }
       } catch (e) {
         console.error("Failed to load nearby providers:", e);
@@ -598,14 +600,15 @@ export default function Home() {
         const input = {
           sortBy: "relevance",
           profileType: "all",
+          limit: 12,
         };
         const url = `/api/trpc/providers.searchFiltered?input=${encodeURIComponent(JSON.stringify(input))}`;
         const res = await fetch(url);
         if (res.ok) {
           const json = await res.json();
-          if (json.result && json.result.data) {
-            setFeaturedProviders(json.result.data.slice(0, 8));
-          }
+          const data = json.result?.data;
+          const list = Array.isArray(data) ? data : data?.items || [];
+          setFeaturedProviders(list.slice(0, 8));
         }
       } catch (e) {
         console.error("Failed to load featured providers:", e);

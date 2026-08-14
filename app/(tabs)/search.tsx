@@ -132,7 +132,9 @@ export default function SearchScreen() {
   const [activePriceLevel, setActivePriceLevel] = useState<
     "all" | "1" | "2" | "3" | "4"
   >("all");
-  const [onlyOnlineFilter, setOnlyOnlineFilter] = useState(false); // keep for toggle option backward compatibility
+  const [onlyOnlineFilter, setOnlyOnlineFilter] = useState(false);
+  const [active24hFilter, setActive24hFilter] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Estados temporários do modal de filtros
   const [tempSort, setTempSort] = useState<
@@ -155,8 +157,10 @@ export default function SearchScreen() {
   >("all");
   const [tempCategory, setTempCategory] = useState<string>("todos");
   const [tempOnlyOnline, setTempOnlyOnline] = useState(false);
+  const [temp24hFilter, setTemp24hFilter] = useState(false);
 
   const [cachedProviders, setCachedProviders] = useState<any[]>([]);
+  const [accumulatedList, setAccumulatedList] = useState<any[]>([]);
 
   // Estados para Busca Inteligente
   const [smartMatch, setSmartMatch] = useState<{
@@ -233,8 +237,9 @@ export default function SearchScreen() {
 
   // tRPC query para busca filtrada otimizada no servidor
   const {
-    data: dbProviders = cachedProviders,
+    data: searchResponse,
     isLoading: loadingProviders,
+    isFetching: fetchingProviders,
     refetch,
   } = trpc.providers.searchFiltered.useQuery(
     {
@@ -257,18 +262,57 @@ export default function SearchScreen() {
       minRating:
         activeRatingFilter === "all" ? undefined : Number(activeRatingFilter),
       onlyOnline: activeAvailability === "now" || onlyOnlineFilter,
+      is24Hours: active24hFilter ? true : undefined,
       priceLevel:
         activePriceLevel === "all" ? undefined : Number(activePriceLevel),
       availability: activeAvailability,
       sortBy: activeSort,
+      page: currentPage,
+      limit: 12,
     },
     {
       placeholderData: (prev) => prev,
     },
   );
 
+  const rawItems: any[] = useMemo(() => {
+    if (!searchResponse) return cachedProviders;
+    if (Array.isArray(searchResponse)) return searchResponse;
+    return (searchResponse as any)?.items || [];
+  }, [searchResponse, cachedProviders]);
+
+  const totalCount: number = useMemo(() => {
+    if (!searchResponse) return rawItems.length;
+    if (Array.isArray(searchResponse)) return searchResponse.length;
+    return (searchResponse as any)?.total ?? rawItems.length;
+  }, [searchResponse, rawItems]);
+
+  const totalPages: number = useMemo(() => {
+    if (!searchResponse) return 1;
+    if (Array.isArray(searchResponse)) return Math.max(1, Math.ceil(totalCount / 12));
+    return (searchResponse as any)?.totalPages ?? 1;
+  }, [searchResponse, totalCount]);
+
+  const hasMore: boolean = useMemo(() => {
+    if (!searchResponse) return false;
+    if (Array.isArray(searchResponse)) return false;
+    return Boolean((searchResponse as any)?.hasMore ?? (currentPage < totalPages));
+  }, [searchResponse, currentPage, totalPages]);
+
+  useEffect(() => {
+    if (currentPage === 1) {
+      setAccumulatedList(rawItems);
+    } else if (rawItems.length > 0) {
+      setAccumulatedList((prev) => {
+        const existingIds = new Set(prev.map((p) => p.id));
+        const newItems = rawItems.filter((p: any) => !existingIds.has(p.id));
+        return [...prev, ...newItems];
+      });
+    }
+  }, [searchResponse, currentPage, rawItems]);
+
   // Preview query executada em tempo real enquanto o modal de filtros está aberto
-  const { data: previewProviders = [], isLoading: loadingPreview } =
+  const { data: previewResponse, isLoading: loadingPreview } =
     trpc.providers.searchFiltered.useQuery(
       {
         query: query.trim() || undefined,
@@ -287,6 +331,7 @@ export default function SearchScreen() {
           tempProximity === "all" ? undefined : Number(tempProximity),
         minRating: tempRating === "all" ? undefined : Number(tempRating),
         onlyOnline: tempAvailability === "now" || tempOnlyOnline,
+        is24Hours: temp24hFilter ? true : undefined,
         priceLevel:
           tempPriceLevel === "all" ? undefined : Number(tempPriceLevel),
         availability: tempAvailability,
@@ -298,18 +343,20 @@ export default function SearchScreen() {
       },
     );
 
+  const previewProviders = useMemo(() => {
+    if (!previewResponse) return [];
+    if (Array.isArray(previewResponse)) return previewResponse;
+    return (previewResponse as any)?.items || [];
+  }, [previewResponse]);
+
   useEffect(() => {
-    if (
-      dbProviders &&
-      dbProviders.length > 0 &&
-      dbProviders !== cachedProviders
-    ) {
+    if (rawItems && rawItems.length > 0 && rawItems !== cachedProviders) {
       AsyncStorage.setItem(
         "@chamaja_cached_providers_filtered",
-        JSON.stringify(dbProviders),
+        JSON.stringify(rawItems),
       ).catch(console.error);
     }
-  }, [dbProviders, cachedProviders]);
+  }, [rawItems, cachedProviders]);
 
   // Busca Inteligente tRPC Query
   const { refetch: fetchSmartSearch } = trpc.providers.smartSearch.useQuery(
@@ -420,6 +467,7 @@ export default function SearchScreen() {
     setTempPriceLevel(activePriceLevel);
     setTempCategory(selectedPill);
     setTempOnlyOnline(onlyOnlineFilter);
+    setTemp24hFilter(active24hFilter);
     setFilterModalVisible(true);
   };
 
@@ -432,6 +480,8 @@ export default function SearchScreen() {
     setActivePriceLevel(tempPriceLevel);
     setSelectedPill(tempCategory);
     setOnlyOnlineFilter(tempOnlyOnline);
+    setActive24hFilter(temp24hFilter);
+    setCurrentPage(1);
     setFilterModalVisible(false);
   };
 
@@ -444,6 +494,7 @@ export default function SearchScreen() {
     setTempPriceLevel("all");
     setTempCategory("todos");
     setTempOnlyOnline(false);
+    setTemp24hFilter(false);
   };
 
   const activeFiltersCount = useMemo(() => {
@@ -456,6 +507,7 @@ export default function SearchScreen() {
     if (activePriceLevel !== "all") count++;
     if (selectedPill !== "todos") count++;
     if (onlyOnlineFilter) count++;
+    if (active24hFilter) count++;
     return count;
   }, [
     activeSort,
@@ -466,10 +518,11 @@ export default function SearchScreen() {
     activePriceLevel,
     selectedPill,
     onlyOnlineFilter,
+    active24hFilter,
   ]);
 
   // A filtragem é totalmente delegada ao backend para performance e escalabilidade
-  const providersList = dbProviders;
+  const providersList = accumulatedList.length > 0 ? accumulatedList : rawItems;
 
   // Prestador selecionado no mapa
   const selectedProvider = useMemo(() => {
@@ -546,7 +599,7 @@ export default function SearchScreen() {
         : combinedMorePills
     : morePills;
 
-  const currentCount = providersList.length;
+  const currentCount = totalCount;
   const countLabel =
     activeProfileType === "professional"
       ? `${currentCount} profissionais encontrados`
@@ -909,7 +962,15 @@ export default function SearchScreen() {
                       ) : null}
                     </View>
 
-                    <Text style={styles.cardOpenStatus}>Aberto agora</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 }}>
+                      <Text style={styles.cardOpenStatus}>Aberto agora</Text>
+                      {selectedProvider.is24Hours && (
+                        <View style={styles.badge24hTag}>
+                          <MaterialIcons name="schedule" size={11} color="#10B981" />
+                          <Text style={styles.badge24hTagText}>24h</Text>
+                        </View>
+                      )}
+                    </View>
                   </View>
                 </View>
 
@@ -1034,6 +1095,12 @@ export default function SearchScreen() {
                             style={{ marginLeft: 4 }}
                           />
                         )}
+                        {item.is24Hours && (
+                          <View style={styles.badge24hTag}>
+                            <MaterialIcons name="schedule" size={11} color="#10B981" />
+                            <Text style={styles.badge24hTagText}>24h</Text>
+                          </View>
+                        )}
                       </View>
 
                       {/* Botão de Favoritar */}
@@ -1113,6 +1180,32 @@ export default function SearchScreen() {
                 </Pressable>
               );
             }}
+            ListFooterComponent={
+              <View style={styles.listFooter}>
+                {fetchingProviders && currentPage > 1 ? (
+                  <View style={styles.loadingMoreContainer}>
+                    <ActivityIndicator size="small" color="#22C55E" />
+                    <Text style={styles.loadingMoreText}>Carregando mais resultados...</Text>
+                  </View>
+                ) : hasMore ? (
+                  <Pressable
+                    onPress={() => setCurrentPage((prev) => prev + 1)}
+                    style={styles.loadMoreBtn}
+                  >
+                    <Text style={styles.loadMoreBtnText}>
+                      Carregar mais ({providersList.length} de {totalCount})
+                    </Text>
+                    <MaterialIcons name="expand-more" size={20} color="#FFFFFF" />
+                  </Pressable>
+                ) : providersList.length > 0 ? (
+                  <View style={styles.endOfResultsContainer}>
+                    <Text style={styles.endOfResultsText}>
+                      Exibindo todos os {totalCount} parceiros encontrados
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+            }
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <MaterialIcons name="search-off" size={60} color="#9CA3AF" />
@@ -1597,6 +1690,53 @@ export default function SearchScreen() {
                   );
                 })}
               </View>
+              {/* Seção Atendimento 24h */}
+              <Text style={[styles.filterSectionTitle, { marginTop: 22 }]}>
+                Atendimento Especial
+              </Text>
+              <Pressable
+                onPress={() => setTemp24hFilter(!temp24hFilter)}
+                style={[
+                  styles.toggleCard24h,
+                  temp24hFilter && styles.toggleCard24hActive,
+                ]}
+              >
+                <View style={styles.toggleCard24hLeft}>
+                  <View style={styles.toggleCard24hIcon}>
+                    <MaterialIcons
+                      name="schedule"
+                      size={20}
+                      color={temp24hFilter ? "#10B981" : "#9CA3AF"}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                      <Text style={[styles.toggleCard24hTitle, temp24hFilter && { color: "#FFFFFF" }]}>
+                        Atendimento 24 horas
+                      </Text>
+                      <View style={styles.badge24hPill}>
+                        <Text style={styles.badge24hPillText}>24h</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.toggleCard24hSubtitle}>
+                      Mostrar apenas parceiros com atendimento 24h
+                    </Text>
+                  </View>
+                </View>
+                <View
+                  style={[
+                    styles.toggleSwitch,
+                    temp24hFilter && styles.toggleSwitchActive,
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.toggleSwitchCircle,
+                      temp24hFilter && styles.toggleSwitchCircleActive,
+                    ]}
+                  />
+                </View>
+              </Pressable>
             </ScrollView>
 
             <View style={styles.filterFooter}>
@@ -3185,6 +3325,144 @@ function createStyles(colors: ThemeColorPalette) {
     color: "#FFFFFF",
     fontSize: 15,
     fontWeight: "800",
+  },
+  badge24hTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(16, 185, 129, 0.12)",
+    borderColor: "rgba(16, 185, 129, 0.3)",
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    marginLeft: 6,
+    gap: 2,
+  },
+  badge24hTagText: {
+    color: "#10B981",
+    fontSize: 10,
+    fontWeight: "900",
+  },
+  badge24hPill: {
+    backgroundColor: "rgba(16, 185, 129, 0.2)",
+    borderColor: "rgba(16, 185, 129, 0.35)",
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  badge24hPillText: {
+    color: "#10B981",
+    fontSize: 10,
+    fontWeight: "900",
+  },
+  toggleCard24h: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: colors.background,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: 16,
+    padding: 14,
+    marginTop: 8,
+  },
+  toggleCard24hActive: {
+    borderColor: "rgba(16, 185, 129, 0.5)",
+    backgroundColor: "rgba(16, 185, 129, 0.05)",
+  },
+  toggleCard24hLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    gap: 12,
+    marginRight: 10,
+  },
+  toggleCard24hIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  toggleCard24hTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.foreground,
+  },
+  toggleCard24hSubtitle: {
+    fontSize: 11,
+    color: colors.muted,
+    marginTop: 2,
+  },
+  toggleSwitch: {
+    width: 44,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 2,
+    justifyContent: "center",
+  },
+  toggleSwitchActive: {
+    backgroundColor: "#10B981",
+    borderColor: "#10B981",
+  },
+  toggleSwitchCircle: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "#9CA3AF",
+  },
+  toggleSwitchCircleActive: {
+    backgroundColor: "#FFFFFF",
+    alignSelf: "flex-end",
+  },
+  listFooter: {
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 16,
+  },
+  loadMoreBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#22C55E",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 14,
+    gap: 6,
+    width: "100%",
+  },
+  loadMoreBtnText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  loadingMoreContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 10,
+  },
+  loadingMoreText: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  endOfResultsContainer: {
+    paddingVertical: 8,
+    alignItems: "center",
+  },
+  endOfResultsText: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "600",
   },
 });
 }

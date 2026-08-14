@@ -43,6 +43,7 @@ export interface ProviderProfile {
   permissionsStatus?: string;
   hasCatalog?: boolean;
   status?: string;
+  is24Hours?: boolean;
   businessType?: string;
   deliveryTime?: string | null;
   socialLinks?: Record<string, string>;
@@ -167,6 +168,7 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
             latitude: dbProvider.latitude,
             longitude: dbProvider.longitude,
             workingHours: dbProvider.workingHours,
+            is24Hours: Boolean(dbProvider.is24Hours),
             gallery: dbProvider.gallery,
             maxServicos: dbProvider.maxServicos,
             permissionsStatus: dbProvider.permissionsStatus,
@@ -285,6 +287,7 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
       latitude: data.latitude,
       longitude: data.longitude,
       workingHours: data.workingHours,
+      is24Hours: data.is24Hours ?? false,
       businessType: data.businessType,
       deliveryTime: data.deliveryTime,
       socialLinks: data.socialLinks,
@@ -339,6 +342,7 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
       latitude: updated.latitude,
       longitude: updated.longitude,
       workingHours: updated.workingHours,
+      is24Hours: updated.is24Hours,
       gallery: updated.gallery,
       businessType: updated.businessType,
       deliveryTime: updated.deliveryTime,

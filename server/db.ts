@@ -559,6 +559,7 @@ export async function getProvidersLightweight(activeOnly = true) {
       isActive: providers.isActive,
       displayOrder: providers.displayOrder,
       destaque: providers.destaque,
+      is24Hours: providers.is24Hours,
       businessType: providers.businessType,
       deliveryTime: providers.deliveryTime,
     })

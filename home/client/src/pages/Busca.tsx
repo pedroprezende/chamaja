@@ -35,6 +35,8 @@ import {
   Clock,
   BadgeCheck,
   MessageCircle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { getSessionToken } from "@/lib/supabase";
@@ -124,11 +126,18 @@ export default function Busca() {
   const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [favoritesList, setFavoritesList] = useState<string[]>([]);
 
+  // Pagination States
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [pageSize] = useState(12);
+
   // Filter UI States
   const [sortBy, setSortBy] = useState("relevance");
   const [maxDistance, setMaxDistance] = useState(50);
   const [minRating, setMinRating] = useState(0);
   const [availability, setAvailability] = useState<string[]>([]);
+  const [only24h, setOnly24h] = useState(false);
 
   // Leaflet Map States
   const [mapInstance, setMapInstance] = useState<any>(null);
@@ -271,7 +280,7 @@ export default function Busca() {
             console.error("Nominatim geocoding error:", err);
           }
         }
-        fetchProviders(initialQ, initialCategory, profileType, coords || defaultCoords);
+        fetchProviders(initialQ, initialCategory, profileType, coords || defaultCoords, 1);
       };
       geocodeAndFetch();
     } else if (navigator.geolocation) {
@@ -303,16 +312,16 @@ export default function Busca() {
           }
 
           // Initial load sorted by proximity
-          fetchProviders(initialQ, initialCategory, profileType, coords);
+          fetchProviders(initialQ, initialCategory, profileType, coords, 1);
         },
         (error) => {
           console.log("[Audit Busca] Geolocalização falhou/negada. Usando padrão Bragança Paulista - SP:", error.message);
-          fetchProviders(initialQ, initialCategory, profileType, defaultCoords);
+          fetchProviders(initialQ, initialCategory, profileType, defaultCoords, 1);
         }
       );
     } else {
       console.log("[Audit Busca] Geolocalização não suportada pelo navegador. Usando padrão Bragança Paulista - SP.");
-      fetchProviders(initialQ, initialCategory, profileType, defaultCoords);
+      fetchProviders(initialQ, initialCategory, profileType, defaultCoords, 1);
     }
 
     return () => {
@@ -332,16 +341,23 @@ export default function Busca() {
 
   // Fetch Providers list from DB or Fallbacks
   const fetchProviders = async (
-    queryVal = "",
-    categoryVal = "todos",
-    typeVal: "all" | "professional" | "comercio" = "all",
-    coords: { latitude: number; longitude: number } | null = null
+    queryVal = searchTerm,
+    categoryVal = selectedCategory,
+    typeVal: "all" | "professional" | "comercio" = profileType,
+    coords: { latitude: number; longitude: number } | null = userCoords,
+    pageVal: number = 1,
+    only24hVal: boolean = only24h,
+    sortByVal: string = sortBy,
+    minRatingVal: number = minRating,
+    maxDistanceVal: number = maxDistance
   ) => {
     setIsLoadingProviders(true);
     try {
       const input: any = {
-        sortBy: "relevance",
+        sortBy: sortByVal || "relevance",
         profileType: typeVal,
+        page: pageVal,
+        limit: pageSize,
       };
 
       if (queryVal && queryVal.trim()) {
@@ -355,29 +371,67 @@ export default function Busca() {
       if (coords) {
         input.userLatitude = coords.latitude;
         input.userLongitude = coords.longitude;
-        input.maxDistanceKm = 50;
-        input.sortBy = "distance";
+        input.maxDistanceKm = maxDistanceVal || 50;
+        if (sortByVal === "distance") {
+          input.sortBy = "distance";
+        }
+      }
+
+      if (minRatingVal > 0) {
+        input.minRating = minRatingVal;
+      }
+
+      if (only24hVal) {
+        input.is24Hours = true;
+      }
+
+      if (availability.includes("now")) {
+        input.onlyOnline = true;
       }
 
       const url = `/api/trpc/providers.searchFiltered?input=${encodeURIComponent(JSON.stringify(input))}`;
       const res = await fetch(url);
       if (res.ok) {
         const json = await res.json();
-        if (json.result && json.result.data) {
-          if (json.result.data.length > 0 || queryVal || categoryVal !== "todos" || coords || typeVal !== "all") {
-            setProvidersList(json.result.data);
-            setIsLoadingProviders(false);
-            return;
-          }
+        const data = json.result?.data;
+        if (data) {
+          const items = Array.isArray(data) ? data : data.items || [];
+          const total = Array.isArray(data) ? data.length : data.total ?? items.length;
+          const pages = Array.isArray(data) ? Math.max(1, Math.ceil(total / pageSize)) : data.totalPages ?? 1;
+          setProvidersList(items);
+          setTotalCount(total);
+          setTotalPages(Math.max(1, pages));
+          setCurrentPage(pageVal);
+          setIsLoadingProviders(false);
+          return;
         }
       }
     } catch (e) {
       console.error("Failed fetching providers via tRPC:", e);
     }
 
-    // If we reach here, it means tRPC failed or returned empty results
     setProvidersList([]);
+    setTotalCount(0);
+    setTotalPages(1);
+    setCurrentPage(1);
     setIsLoadingProviders(false);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages || newPage === currentPage) return;
+    setCurrentPage(newPage);
+    fetchProviders(
+      searchTerm,
+      selectedCategory,
+      profileType,
+      userCoords,
+      newPage,
+      only24h,
+      sortBy,
+      minRating,
+      maxDistance
+    );
+    document.getElementById("results")?.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   // Map Initialization
@@ -585,17 +639,19 @@ export default function Busca() {
       }
     }
 
-    fetchProviders(searchTerm, selectedCategory, profileType, coords);
+    fetchProviders(searchTerm, selectedCategory, profileType, coords, 1, only24h, sortBy, minRating, maxDistance);
   };
 
   const handleCategoryClick = (catId: string) => {
     setSelectedCategory(catId);
-    fetchProviders(searchTerm, catId, profileType, userCoords);
+    setCurrentPage(1);
+    fetchProviders(searchTerm, catId, profileType, userCoords, 1, only24h, sortBy, minRating, maxDistance);
   };
 
   const handleProfileTypeChange = (type: "all" | "professional" | "comercio") => {
     setProfileType(type);
-    fetchProviders(searchTerm, selectedCategory, type, userCoords);
+    setCurrentPage(1);
+    fetchProviders(searchTerm, selectedCategory, type, userCoords, 1, only24h, sortBy, minRating, maxDistance);
   };
 
   const toggleFavorite = (id: string, e: React.MouseEvent) => {
@@ -638,6 +694,9 @@ export default function Busca() {
     setMaxDistance(50);
     setMinRating(0);
     setAvailability([]);
+    setOnly24h(false);
+    setCurrentPage(1);
+    fetchProviders(searchTerm, selectedCategory, profileType, userCoords, 1, false, "relevance", 0, 50);
   };
 
   // ── FILTER SIDEBAR CONTENT (reused in desktop sidebar and mobile drawer) ──
@@ -658,6 +717,29 @@ export default function Busca() {
           </select>
           <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 pointer-events-none" />
         </div>
+      </div>
+
+      {/* Atendimento 24h */}
+      <div className="space-y-3">
+        <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Atendimento</label>
+        <label className="flex items-center gap-3 cursor-pointer group bg-zinc-900/60 hover:bg-zinc-900 p-3 rounded-xl border border-zinc-800 hover:border-emerald-500/40 transition-colors">
+          <input
+            type="checkbox"
+            className="busca-checkbox"
+            checked={only24h}
+            onChange={(e) => {
+              setOnly24h(e.target.checked);
+            }}
+          />
+          <div className="flex items-center justify-between flex-1">
+            <span className="text-sm text-zinc-300 font-medium group-hover:text-white transition-colors">
+              Atendimento 24 horas
+            </span>
+            <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-black tracking-wider uppercase border border-emerald-500/30">
+              24h
+            </span>
+          </div>
+        </label>
       </div>
 
       {/* Distância */}
@@ -727,17 +809,37 @@ export default function Busca() {
       </div>
 
       {/* Aplicar filtros */}
-      <button
-        type="button"
-        onClick={() => {
-          fetchProviders(searchTerm, selectedCategory, profileType, userCoords);
-          setMobileFiltersOpen(false);
-        }}
-        className="w-full py-3 bg-primary/10 border border-primary/30 text-primary font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-primary/20 transition-colors"
-      >
-        <SlidersHorizontal className="h-4 w-4" />
-        <span>Aplicar filtros</span>
-      </button>
+      <div className="flex flex-col gap-2 pt-2">
+        <button
+          type="button"
+          onClick={() => {
+            setCurrentPage(1);
+            fetchProviders(
+              searchTerm,
+              selectedCategory,
+              profileType,
+              userCoords,
+              1,
+              only24h,
+              sortBy,
+              minRating,
+              maxDistance
+            );
+            setMobileFiltersOpen(false);
+          }}
+          className="w-full py-3 bg-primary hover:bg-primary/90 text-zinc-950 font-extrabold text-sm rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-primary/10"
+        >
+          <SlidersHorizontal className="h-4 w-4" />
+          <span>Aplicar filtros</span>
+        </button>
+        <button
+          type="button"
+          onClick={clearFilters}
+          className="w-full py-2.5 bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white font-semibold text-xs rounded-xl transition-colors"
+        >
+          Limpar filtros
+        </button>
+      </div>
     </div>
   );
 
@@ -1050,7 +1152,7 @@ export default function Busca() {
                 <SlidersHorizontal className="h-4 w-4" />
               </button>
               <span className="text-sm font-bold text-white">
-                {providersList.length} profissionais encontrados
+                {totalCount} {totalCount === 1 ? "parceiro encontrado" : "parceiros encontrados"}
               </span>
             </div>
             <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-0.5">
@@ -1100,7 +1202,8 @@ export default function Busca() {
                     setSearchTerm("");
                     setSelectedCategory("todos");
                     setProfileType("all");
-                    fetchProviders("", "todos", "all", userCoords);
+                    setOnly24h(false);
+                    fetchProviders("", "todos", "all", userCoords, 1, false);
                   }}
                   className="text-xs font-bold text-primary hover:underline"
                 >
@@ -1147,12 +1250,17 @@ export default function Busca() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex flex-wrap items-center gap-1.5">
                               <h3 className="font-bold text-white text-sm group-hover:text-primary transition-colors truncate">
                                 {provider.name}
                               </h3>
                               {provider.isVerified && (
                                 <BadgeCheck className="h-4 w-4 text-primary flex-shrink-0" />
+                              )}
+                              {provider.is24Hours && (
+                                <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-black rounded-md uppercase tracking-wider flex-shrink-0">
+                                  <Clock className="w-3 h-3" /> 24h
+                                </span>
                               )}
                             </div>
                             <p className="text-zinc-500 text-xs font-medium mt-0.5">
@@ -1239,6 +1347,61 @@ export default function Busca() {
                   </div>
                 );
               })
+            )}
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 pb-2 border-t border-zinc-900 mt-6">
+                <div className="text-xs text-zinc-400 font-semibold">
+                  Página <span className="text-white font-bold">{currentPage}</span> de{" "}
+                  <span className="text-white font-bold">{totalPages}</span> ({totalCount}{" "}
+                  {totalCount === 1 ? "resultado" : "resultados"})
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage <= 1}
+                    className="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-bold text-zinc-300 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-1"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" /> Anterior
+                  </button>
+
+                  {/* Page Numbers */}
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+                      .map((p, index, array) => {
+                        const showEllipsis = index > 0 && p - array[index - 1] > 1;
+                        return (
+                          <div key={p} className="flex items-center gap-1">
+                            {showEllipsis && <span className="text-zinc-600 px-1 text-xs">...</span>}
+                            <button
+                              type="button"
+                              onClick={() => handlePageChange(p)}
+                              className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${
+                                currentPage === p
+                                  ? "bg-primary text-zinc-950 shadow-sm"
+                                  : "bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800"
+                              }`}
+                            >
+                              {p}
+                            </button>
+                          </div>
+                        );
+                      })}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage >= totalPages}
+                    className="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-bold text-zinc-300 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-1"
+                  >
+                    Próxima <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>
