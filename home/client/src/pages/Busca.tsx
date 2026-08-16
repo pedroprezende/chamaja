@@ -37,8 +37,31 @@ import {
   MessageCircle,
   ChevronLeft,
   ChevronRight,
+  Dog,
+  Dumbbell,
+  Shield,
+  Camera,
+  Scale,
+  Calculator,
+  TrendingUp,
+  Plane,
+  Building,
+  Shirt,
+  Palette,
+  Sprout,
+  Flower2,
+  Music,
+  Brush,
+  Laptop,
+  Truck,
+  Package,
+  PartyPopper,
+  Briefcase,
+  BookOpen,
+  Layers,
+  Check,
 } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { getSessionToken } from "@/lib/supabase";
 
 function getDisplayCategory(categoryId?: string | null, categoryName?: string | null): string {
@@ -144,17 +167,107 @@ export default function Busca() {
   const [markersList, setMarkersList] = useState<any[]>([]);
   const mapRef = useRef<any>(null);
 
-  const displayCategories = [
+  // Category Exploration Modal States
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [categorySearchTerm, setCategorySearchTerm] = useState("");
+
+  const primaryCategories = useMemo(() => [
     { id: "todos", name: "Todos", icon: Grid },
-    { id: "reformas-reparos", name: "Reformas e Reparos", icon: Hammer },
+    { id: "reformas-reparos", name: "Reformas", icon: Hammer },
     { id: "assistencia-tecnica", name: "Assistência Técnica", icon: Wrench },
     { id: "servicos-domesticos", name: "Serviços Domésticos", icon: HomeIcon },
     { id: "automotivo", name: "Automotivo", icon: Car },
     { id: "beleza-estetica", name: "Beleza e Estética", icon: Scissors },
-    { id: "saude", name: "Saúde e Bem-estar", icon: HeartPulse },
-    { id: "educacao", name: "Eventos", icon: GraduationCap },
-    { id: "mais", name: "Mais", icon: MoreHorizontal },
-  ];
+    { id: "saude", name: "Saúde", icon: HeartPulse },
+    { id: "comercios", name: "Comércios & Alimentação", icon: Utensils },
+    { id: "pets", name: "Pet", icon: Dog },
+  ], []);
+
+  const allCategories = useMemo(() => [
+    // ── 1. Construção, Reparos & Manutenção ──
+    { id: "reformas-reparos", name: "Reformas e Reparos", icon: Hammer, group: "reparos", description: "Pedreiros, eletricistas, encanadores, pintores" },
+    { id: "manutencao", name: "Manutenção", icon: Wrench, group: "reparos", description: "Manutenção predial, residencial e industrial" },
+
+    // ── 2. Casa, Limpeza & Jardinagem ──
+    { id: "servicos-domesticos", name: "Serviços Domésticos", icon: HomeIcon, group: "casa", description: "Diaristas, passadeiras, cozinheiras" },
+    { id: "limpeza", name: "Limpeza", icon: Sparkles, group: "casa", description: "Limpeza pós-obra, estofados, especializada" },
+    { id: "jardinagem", name: "Jardinagem", icon: Flower2, group: "casa", description: "Paisagismo, poda, manutenção de jardins" },
+    { id: "seguranca", name: "Segurança", icon: Shield, group: "casa", description: "Câmeras, alarmes, portaria, vigilância" },
+
+    // ── 3. Tecnologia, Informática & Design ──
+    { id: "assistencia-tecnica", name: "Assistência Técnica", icon: Wrench, group: "tech", description: "Celulares, computadores, eletrodomésticos" },
+    { id: "tecnologia", name: "Tecnologia", icon: Laptop, group: "tech", description: "Sistemas, automação, redes e soluções tech" },
+    { id: "informatica", name: "Informática", icon: Laptop, group: "tech", description: "Manutenção de PCs, notebooks, impressoras" },
+    { id: "design", name: "Design", icon: Brush, group: "tech", description: "Design gráfico, branding, UI/UX e criação" },
+    { id: "marketing", name: "Marketing", icon: Megaphone, group: "tech", description: "Marketing digital, redes sociais, tráfego pago" },
+
+    // ── 4. Saúde, Beleza & Fitness ──
+    { id: "saude", name: "Saúde", icon: HeartPulse, group: "saude", description: "Médicos, dentistas, clínicas, fisioterapia" },
+    { id: "beleza-estetica", name: "Beleza e Estética", icon: Scissors, group: "saude", description: "Salões, barbearias, manicures, estética" },
+    { id: "academias", name: "Academias e Fitness", icon: Dumbbell, group: "saude", description: "Personal trainers, academias, pilates" },
+
+    // ── 5. Pets & Animais ──
+    { id: "pets", name: "Pet", icon: Dog, group: "pets", description: "Pet shops, veterinários, banho e tosa" },
+
+    // ── 6. Veículos, Transporte & Logística ──
+    { id: "automotivo", name: "Automotivo", icon: Car, group: "auto", description: "Mecânicas, auto elétricas, lava-rápido" },
+    { id: "transporte", name: "Transporte", icon: Truck, group: "auto", description: "Motoristas particulares, vans, transporte" },
+    { id: "entregas", name: "Entregas", icon: Package, group: "auto", description: "Motoboys, carretos, fretes rápidos" },
+    { id: "logistica", name: "Logística", icon: Package, group: "auto", description: "Mudanças, armazenagem, fretes" },
+
+    // ── 7. Serviços Profissionais & Gestão ──
+    { id: "juridico", name: "Jurídico", icon: Scale, group: "profissionais", description: "Advogados, assessoria jurídica, contratos" },
+    { id: "contabilidade", name: "Contabilidade", icon: Calculator, group: "profissionais", description: "Contadores, abertura de empresas, impostos" },
+    { id: "consultoria", name: "Consultoria", icon: TrendingUp, group: "profissionais", description: "Consultoria empresarial, financeira e gestão" },
+    { id: "imobiliario", name: "Imobiliário", icon: Building, group: "profissionais", description: "Corretores, imobiliárias, administração de imóveis" },
+
+    // ── 8. Educação, Música & Eventos ──
+    { id: "educacao", name: "Aulas Particulares", icon: GraduationCap, group: "educacao", description: "Professores particulares, reforço, idiomas" },
+    { id: "musica", name: "Música", icon: Music, group: "educacao", description: "Aulas de música, bandas, DJs, instrumentos" },
+    { id: "fotografia", name: "Fotografia", icon: Camera, group: "eventos", description: "Fotógrafos, filmagem, ensaios, coberturas" },
+    { id: "eventos", name: "Eventos", icon: PartyPopper, group: "eventos", description: "Festas, buffets, decoração, assessoria" },
+    { id: "turismo", name: "Turismo", icon: Plane, group: "eventos", description: "Agências de viagem, passeios, hospedagem" },
+
+    // ── 9. Comércio, Moda, Artesanato & Agro ──
+    { id: "comercios", name: "Alimentação e Comércios", icon: Utensils, group: "comercio", description: "Restaurantes, lanchonetes, mercados, lojas" },
+    { id: "moda", name: "Moda", icon: Shirt, group: "comercio", description: "Lojas de roupas, calçados, costura" },
+    { id: "artesanato", name: "Artesanato", icon: Palette, group: "comercio", description: "Produtos artesanais, decoração manual" },
+    { id: "agricultura", name: "Agricultura", icon: Sprout, group: "agro", description: "Produtos rurais, insumos agrícolas" },
+    { id: "outros", name: "Outros", icon: MoreHorizontal, group: "outros", description: "Outros serviços e especialidades" },
+  ], []);
+
+  const categoryGroups = useMemo(() => [
+    { id: "reparos", title: "Construção & Reparos", icon: Hammer },
+    { id: "casa", title: "Casa, Limpeza & Segurança", icon: HomeIcon },
+    { id: "tech", title: "Tecnologia, Informática & Design", icon: Laptop },
+    { id: "saude", title: "Saúde, Beleza & Fitness", icon: HeartPulse },
+    { id: "pets", title: "Pets & Animais", icon: Dog },
+    { id: "auto", title: "Veículos, Transporte & Entregas", icon: Car },
+    { id: "profissionais", title: "Serviços Profissionais & Gestão", icon: Scale },
+    { id: "educacao", title: "Aulas, Música & Educação", icon: GraduationCap },
+    { id: "eventos", title: "Eventos, Fotografia & Turismo", icon: PartyPopper },
+    { id: "comercio", title: "Comércios, Moda & Artesanato", icon: Utensils },
+    { id: "outros", title: "Agro & Outras Categorias", icon: MoreHorizontal },
+  ], []);
+
+  const activeCategoryObject = useMemo(() => {
+    return allCategories.find((c) => c.id === selectedCategory);
+  }, [allCategories, selectedCategory]);
+
+  const isSelectedCategoryPrimary = useMemo(() => {
+    return primaryCategories.some((c) => c.id === selectedCategory) || selectedCategory === "all";
+  }, [primaryCategories, selectedCategory]);
+
+  const filteredModalCategories = useMemo(() => {
+    if (!categorySearchTerm.trim()) return allCategories;
+    const term = categorySearchTerm.toLowerCase().trim();
+    return allCategories.filter(
+      (c) =>
+        c.name.toLowerCase().includes(term) ||
+        c.description.toLowerCase().includes(term) ||
+        c.id.toLowerCase().includes(term)
+    );
+  }, [allCategories, categorySearchTerm]);
 
   // Load favorites, request geolocation, and load leaflet
   useEffect(() => {
@@ -650,8 +763,14 @@ export default function Busca() {
   };
 
   const handleCategoryClick = (catId: string) => {
+    if (catId === "mais") {
+      setCategorySearchTerm("");
+      setCategoryModalOpen(true);
+      return;
+    }
     setSelectedCategory(catId);
     setCurrentPage(1);
+    setCategoryModalOpen(false);
     fetchProviders(searchTerm, catId, profileType, userCoords, 1, only24h, sortBy, minRating, maxDistance);
   };
 
@@ -1076,10 +1195,12 @@ export default function Busca() {
       {/* ── CATEGORIES BAR ── */}
       <section className="bg-[#050505] pb-4 flex-shrink-0 z-40 select-none border-b border-zinc-900">
         <div className="container mx-auto px-4 lg:px-8">
-          <div className="flex overflow-x-auto gap-2 pb-1 scrollbar-none no-scrollbar">
-            {displayCategories.map((cat) => {
+          <div className="flex overflow-x-auto gap-2 pb-1 scrollbar-none no-scrollbar items-center">
+            {primaryCategories.map((cat) => {
               const Icon = cat.icon;
-              const isSelected = selectedCategory === cat.id || (selectedCategory === "all" && cat.id === "todos");
+              const isSelected =
+                selectedCategory === cat.id ||
+                (selectedCategory === "all" && cat.id === "todos");
               return (
                 <button
                   key={cat.id}
@@ -1087,16 +1208,51 @@ export default function Busca() {
                   onClick={() => handleCategoryClick(cat.id)}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-full whitespace-nowrap text-sm font-semibold transition-all duration-200 flex-shrink-0 ${
                     isSelected
-                      ? "bg-zinc-900 border border-primary/40 text-primary"
+                      ? "bg-zinc-900 border border-primary/40 text-primary shadow-[0_0_12px_rgba(37,211,102,0.15)]"
                       : "bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
                   }`}
                 >
                   <Icon className="h-4 w-4" />
                   <span>{cat.name}</span>
-                  {cat.id === "mais" && <ChevronDown className="h-3 w-3 ml-0.5" />}
                 </button>
               );
             })}
+
+            {/* If a category from "Mais" is active, show it as an active pill with clear button */}
+            {!isSelectedCategoryPrimary && activeCategoryObject && (
+              <div className="flex items-center gap-1.5 px-4 py-2.5 rounded-full whitespace-nowrap text-sm font-bold bg-primary/15 border border-primary/60 text-primary flex-shrink-0 shadow-[0_0_15px_rgba(37,211,102,0.2)] animate-in fade-in">
+                {(() => {
+                  const ActiveIcon = activeCategoryObject.icon || MoreHorizontal;
+                  return <ActiveIcon className="h-4 w-4 text-primary" />;
+                })()}
+                <span>{activeCategoryObject.name}</span>
+                <button
+                  type="button"
+                  title="Remover filtro de categoria"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCategoryClick("todos");
+                  }}
+                  className="ml-1 p-0.5 hover:bg-primary/20 rounded-full transition-colors"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+
+            {/* "Mais" Menu Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setCategorySearchTerm("");
+                setCategoryModalOpen(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-full whitespace-nowrap text-sm font-semibold bg-zinc-900/90 border border-zinc-700 text-zinc-200 hover:text-primary hover:border-primary/50 hover:bg-zinc-800 transition-all duration-200 flex-shrink-0 shadow-sm group"
+            >
+              <Grid className="h-4 w-4 text-primary group-hover:scale-110 transition-transform" />
+              <span>Mais</span>
+              <ChevronDown className="h-3.5 w-3.5 ml-0.5 text-zinc-400 group-hover:text-primary transition-colors" />
+            </button>
           </div>
         </div>
       </section>
@@ -1491,6 +1647,240 @@ export default function Busca() {
           )}
         </button>
       </main>
+
+      {/* ── MODAL "MAIS CATEGORIAS" ── */}
+      {categoryModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={() => setCategoryModalOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-4xl max-h-[85vh] bg-[#09090b] border border-zinc-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="p-5 sm:p-6 border-b border-zinc-800 flex items-center justify-between bg-zinc-950/80 sticky top-0 z-10 backdrop-blur-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary">
+                  <Grid className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg sm:text-xl font-black text-white leading-tight">
+                    Explorar Categorias
+                  </h3>
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    Selecione uma categoria para filtrar profissionais e comércios
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setCategoryModalOpen(false)}
+                className="w-9 h-9 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 flex items-center justify-center transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Search Input inside Modal */}
+            <div className="px-5 sm:px-6 pt-4 pb-2 bg-[#09090b]">
+              <div className="relative flex items-center bg-zinc-950 border border-zinc-800 rounded-2xl px-4 py-2.5 focus-within:border-primary/50 transition-colors">
+                <Search className="w-4 h-4 text-zinc-500 mr-2.5 flex-shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Buscar categoria ou serviço (ex: fotografia, jurídico, jardinagem...)"
+                  value={categorySearchTerm}
+                  onChange={(e) => setCategorySearchTerm(e.target.value)}
+                  className="w-full bg-transparent text-sm text-white placeholder-zinc-500 focus:outline-none"
+                  autoFocus
+                />
+                {categorySearchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setCategorySearchTerm("")}
+                    className="p-1 text-zinc-500 hover:text-white"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Body / Categorias */}
+            <div className="p-5 sm:p-6 overflow-y-auto busca-scrollbar flex-1 space-y-6">
+              {categorySearchTerm.trim() ? (
+                /* Busca ativa: Lista em Grade dos Resultados */
+                <div>
+                  <div className="text-xs font-bold text-zinc-400 mb-3 uppercase tracking-wider">
+                    Resultados ({filteredModalCategories.length})
+                  </div>
+                  {filteredModalCategories.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Search className="w-10 h-10 text-zinc-600 mx-auto mb-3 opacity-50" />
+                      <p className="text-sm font-bold text-zinc-400">Nenhuma categoria encontrada</p>
+                      <p className="text-xs text-zinc-600 mt-1">Tente pesquisar com outros termos.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {filteredModalCategories.map((cat) => {
+                        const Icon = cat.icon || MoreHorizontal;
+                        const isSelected = selectedCategory === cat.id;
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => handleCategoryClick(cat.id)}
+                            className={`p-3.5 rounded-2xl border transition-all text-left flex items-start gap-3.5 group cursor-pointer ${
+                              isSelected
+                                ? "bg-primary/10 border-primary text-white shadow-[0_0_15px_rgba(37,211,102,0.15)]"
+                                : "bg-zinc-950/60 border-zinc-800/80 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900"
+                            }`}
+                          >
+                            <div
+                              className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
+                                isSelected
+                                  ? "bg-primary text-zinc-950 shadow-sm"
+                                  : "bg-zinc-900 border border-zinc-800 text-zinc-400 group-hover:border-primary/40 group-hover:text-primary"
+                              }`}
+                            >
+                              <Icon className="w-5 h-5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between">
+                                <span
+                                  className={`text-sm font-bold truncate ${
+                                    isSelected
+                                      ? "text-primary"
+                                      : "text-white group-hover:text-white"
+                                  }`}
+                                >
+                                  {cat.name}
+                                </span>
+                                {isSelected && (
+                                  <span className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
+                                )}
+                              </div>
+                              <p className="text-xs text-zinc-500 line-clamp-1 mt-0.5">
+                                {cat.description}
+                              </p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Sem busca: Exibir por Grupos Temáticos */
+                <div className="space-y-7">
+                  {/* Botão "Ver Todos" no topo */}
+                  <div className="flex items-center justify-between bg-zinc-950 border border-zinc-800/80 rounded-2xl p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-primary">
+                        <Grid className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-bold text-white">Todas as Categorias</div>
+                        <div className="text-xs text-zinc-500">Limpar filtro de categoria e exibir tudo</div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleCategoryClick("todos")}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                        selectedCategory === "todos" || selectedCategory === "all"
+                          ? "bg-primary text-zinc-950 shadow-sm"
+                          : "bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800"
+                      }`}
+                    >
+                      {selectedCategory === "todos" || selectedCategory === "all" ? "Selecionado" : "Ver Todos"}
+                    </button>
+                  </div>
+
+                  {categoryGroups.map((group) => {
+                    const groupCategories = allCategories.filter(
+                      (c) =>
+                        c.group === group.id ||
+                        (group.id === "outros" && (c.group === "agro" || c.group === "outros"))
+                    );
+                    if (groupCategories.length === 0) return null;
+                    const GroupIcon = group.icon || Layers;
+
+                    return (
+                      <div key={group.id} className="space-y-3">
+                        <div className="flex items-center gap-2 text-xs font-bold text-zinc-400 uppercase tracking-wider">
+                          <GroupIcon className="w-4 h-4 text-primary" />
+                          <span>{group.title}</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                          {groupCategories.map((cat) => {
+                            const Icon = cat.icon || MoreHorizontal;
+                            const isSelected = selectedCategory === cat.id;
+                            return (
+                              <button
+                                key={cat.id}
+                                type="button"
+                                onClick={() => handleCategoryClick(cat.id)}
+                                className={`p-3 rounded-2xl border transition-all text-left flex items-start gap-3 group cursor-pointer ${
+                                  isSelected
+                                    ? "bg-primary/10 border-primary text-white shadow-[0_0_15px_rgba(37,211,102,0.15)]"
+                                    : "bg-zinc-950/60 border-zinc-800/80 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900"
+                                }`}
+                              >
+                                <div
+                                  className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
+                                    isSelected
+                                      ? "bg-primary text-zinc-950 shadow-sm"
+                                      : "bg-zinc-900 border border-zinc-800 text-zinc-400 group-hover:border-primary/40 group-hover:text-primary"
+                                  }`}
+                                >
+                                  <Icon className="w-4.5 h-4.5" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between">
+                                    <span
+                                      className={`text-xs font-bold truncate ${
+                                        isSelected
+                                          ? "text-primary font-extrabold"
+                                          : "text-zinc-200 group-hover:text-white"
+                                      }`}
+                                    >
+                                      {cat.name}
+                                    </span>
+                                    {isSelected && (
+                                      <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                                    )}
+                                  </div>
+                                  <p className="text-[11px] text-zinc-500 line-clamp-1 mt-0.5">
+                                    {cat.description}
+                                  </p>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-zinc-950 border-t border-zinc-800/80 flex items-center justify-between text-xs text-zinc-500">
+              <span>{allCategories.length} categorias disponíveis</span>
+              <button
+                type="button"
+                onClick={() => setCategoryModalOpen(false)}
+                className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold rounded-xl border border-zinc-800 transition-colors"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Styles for Leaflet customization in dark mode */}
       <style>{`

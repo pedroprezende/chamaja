@@ -28,6 +28,11 @@ import {
   formatDistancePtBr,
 } from "@/lib/location-utils";
 import { trpc } from "@/lib/trpc";
+import {
+  COMPREHENSIVE_CATEGORIES,
+  CATEGORY_GROUPS,
+  getCategoryById,
+} from "@/lib/constants/categories";
 
 // Categoria Pills para Prestadores
 const PRESTADORES_PILLS = [
@@ -110,8 +115,20 @@ export default function SearchScreen() {
     null,
   );
   const [showMoreModal, setShowMoreModal] = useState(false);
+  const [modalCategorySearch, setModalCategorySearch] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
+
+  const filteredPwaCategories = useMemo(() => {
+    if (!modalCategorySearch.trim()) return COMPREHENSIVE_CATEGORIES;
+    const term = modalCategorySearch.toLowerCase().trim();
+    return COMPREHENSIVE_CATEGORIES.filter(
+      (c) =>
+        (c.name || c.label).toLowerCase().includes(term) ||
+        (c.description || "").toLowerCase().includes(term) ||
+        c.id.toLowerCase().includes(term)
+    );
+  }, [modalCategorySearch]);
 
   // Filtros ativos
   const [activeSort, setActiveSort] = useState<
@@ -245,14 +262,7 @@ export default function SearchScreen() {
     {
       query: query.trim() || undefined,
       profileType: activeProfileType === "all" ? undefined : activeProfileType,
-      categoryId:
-        selectedPill !== "todos" && isPrestadorCategory(selectedPill)
-          ? selectedPill
-          : undefined,
-      subcategoryId:
-        selectedPill !== "todos" && isComercioCategory(selectedPill)
-          ? selectedPill
-          : undefined,
+      categoryId: selectedPill !== "todos" ? selectedPill : undefined,
       userLatitude: userCoords.latitude,
       userLongitude: userCoords.longitude,
       maxDistanceKm:
@@ -317,14 +327,7 @@ export default function SearchScreen() {
       {
         query: query.trim() || undefined,
         profileType: tempProfileType === "all" ? undefined : tempProfileType,
-        categoryId:
-          tempCategory !== "todos" && isPrestadorCategory(tempCategory)
-            ? tempCategory
-            : undefined,
-        subcategoryId:
-          tempCategory !== "todos" && isComercioCategory(tempCategory)
-            ? tempCategory
-            : undefined,
+        categoryId: tempCategory !== "todos" ? tempCategory : undefined,
         userLatitude: userCoords.latitude,
         userLongitude: userCoords.longitude,
         maxDistanceKm:
@@ -832,8 +835,34 @@ export default function SearchScreen() {
               </Pressable>
             );
           })}
+
+          {/* Pill ativa se selecionada pelo menu "Mais" */}
+          {selectedPill !== "todos" &&
+            !currentPills.some((p) => p.id === selectedPill) && (
+              <Pressable
+                onPress={() => {
+                  setSelectedPill("todos");
+                  setSelectedProviderId(null);
+                }}
+                style={[
+                  styles.pillButton,
+                  styles.pillButtonActive,
+                  { flexDirection: "row", alignItems: "center", gap: 5 },
+                ]}
+              >
+                <Text style={[styles.pillText, styles.pillTextActive]}>
+                  {getCategoryById(selectedPill).name ||
+                    getCategoryById(selectedPill).label}
+                </Text>
+                <MaterialIcons name="close" size={14} color="#FFFFFF" />
+              </Pressable>
+            )}
+
           <Pressable
-            onPress={() => setShowMoreModal(true)}
+            onPress={() => {
+              setModalCategorySearch("");
+              setShowMoreModal(true);
+            }}
             style={styles.pillButtonMore}
           >
             <MaterialIcons
@@ -2267,6 +2296,218 @@ export default function SearchScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* =================== MODAL "MAIS CATEGORIAS" =================== */}
+      <Modal
+        visible={showMoreModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowMoreModal(false)}
+      >
+        <View style={styles.catModalOverlay}>
+          <View style={styles.catModalContent}>
+            {/* Header */}
+            <View style={styles.catModalHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.catModalTitle}>Explorar Categorias</Text>
+                <Text style={styles.catModalSubtitle}>
+                  Todas as categorias e especialidades do XamaJá
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => setShowMoreModal(false)}
+                style={styles.catModalCloseBtn}
+              >
+                <MaterialIcons name="close" size={22} color={colors.foreground} />
+              </Pressable>
+            </View>
+
+            {/* Campo de Busca de Categoria */}
+            <View style={styles.catModalSearchWrapper}>
+              <View style={styles.catModalSearchBar}>
+                <MaterialIcons name="search" size={20} color="#9CA3AF" />
+                <TextInput
+                  style={styles.catModalSearchInput}
+                  placeholder="Buscar categoria ou serviço..."
+                  placeholderTextColor="#9CA3AF"
+                  value={modalCategorySearch}
+                  onChangeText={setModalCategorySearch}
+                />
+                {modalCategorySearch.length > 0 && (
+                  <Pressable onPress={() => setModalCategorySearch("")}>
+                    <MaterialIcons name="close" size={18} color="#9CA3AF" />
+                  </Pressable>
+                )}
+              </View>
+            </View>
+
+            {/* Lista / Grade de Categorias */}
+            <ScrollView
+              style={styles.catModalScroll}
+              contentContainerStyle={{ paddingBottom: 28 }}
+              showsVerticalScrollIndicator={false}
+            >
+              {modalCategorySearch.trim() ? (
+                /* Busca ativa */
+                <View>
+                  <Text style={styles.catGroupTitle}>
+                    Resultados ({filteredPwaCategories.length})
+                  </Text>
+                  {filteredPwaCategories.length === 0 ? (
+                    <View style={styles.emptyCatContainer}>
+                      <MaterialIcons name="search-off" size={36} color="#6B7280" />
+                      <Text style={styles.emptyCatText}>
+                        Nenhuma categoria encontrada
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={styles.catGrid}>
+                      {filteredPwaCategories.map((cat) => {
+                        const isSel = selectedPill === cat.id;
+                        return (
+                          <Pressable
+                            key={cat.id}
+                            onPress={() => {
+                              setSelectedPill(cat.id);
+                              setCurrentPage(1);
+                              setSelectedProviderId(null);
+                              setShowMoreModal(false);
+                            }}
+                            style={[
+                              styles.catCard,
+                              isSel && styles.catCardActive,
+                            ]}
+                          >
+                            <View
+                              style={[
+                                styles.catCardIcon,
+                                isSel && styles.catCardIconActive,
+                              ]}
+                            >
+                              <MaterialIcons
+                                name={(cat.icon as any) || "label"}
+                                size={18}
+                                color={isSel ? "#000000" : "#22C55E"}
+                              />
+                            </View>
+                            <Text
+                              style={[
+                                styles.catCardText,
+                                isSel && styles.catCardTextActive,
+                              ]}
+                              numberOfLines={2}
+                            >
+                              {cat.name || cat.label}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  )}
+                </View>
+              ) : (
+                /* Exibição por Grupos Temáticos */
+                <View style={{ gap: 14 }}>
+                  {/* Botão Ver Todas / Limpar */}
+                  <Pressable
+                    onPress={() => {
+                      setSelectedPill("todos");
+                      setCurrentPage(1);
+                      setSelectedProviderId(null);
+                      setShowMoreModal(false);
+                    }}
+                    style={[
+                      styles.catCardAll,
+                      selectedPill === "todos" && styles.catCardActive,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.catCardIcon,
+                        selectedPill === "todos" && styles.catCardIconActive,
+                      ]}
+                    >
+                      <MaterialIcons
+                        name="all-inclusive"
+                        size={20}
+                        color={selectedPill === "todos" ? "#000000" : "#22C55E"}
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={[
+                          styles.catCardText,
+                          selectedPill === "todos" && styles.catCardTextActive,
+                        ]}
+                      >
+                        Todas as Categorias
+                      </Text>
+                      <Text style={styles.catCardSubtitle}>
+                        Exibir todos os parceiros e serviços
+                      </Text>
+                    </View>
+                    {selectedPill === "todos" && (
+                      <MaterialIcons name="check" size={20} color="#22C55E" />
+                    )}
+                  </Pressable>
+
+                  {CATEGORY_GROUPS.map((group) => {
+                    return (
+                      <View key={group.id} style={{ marginTop: 2 }}>
+                        <Text style={styles.catGroupTitle}>
+                          {group.title}
+                        </Text>
+                        <View style={styles.catGrid}>
+                          {group.categories.map((cat) => {
+                            const isSel = selectedPill === cat.id;
+                            return (
+                              <Pressable
+                                key={cat.id}
+                                onPress={() => {
+                                  setSelectedPill(cat.id);
+                                  setCurrentPage(1);
+                                  setSelectedProviderId(null);
+                                  setShowMoreModal(false);
+                                }}
+                                style={[
+                                  styles.catCard,
+                                  isSel && styles.catCardActive,
+                                ]}
+                              >
+                                <View
+                                  style={[
+                                    styles.catCardIcon,
+                                    isSel && styles.catCardIconActive,
+                                  ]}
+                                >
+                                  <MaterialIcons
+                                    name={(cat.icon as any) || "label"}
+                                    size={18}
+                                    color={isSel ? "#000000" : "#22C55E"}
+                                  />
+                                </View>
+                                <Text
+                                  style={[
+                                    styles.catCardText,
+                                    isSel && styles.catCardTextActive,
+                                  ]}
+                                  numberOfLines={2}
+                                >
+                                  {cat.name || cat.label}
+                                </Text>
+                              </Pressable>
+                            );
+                          })}
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </ScreenContainer>
   );
 }
@@ -3463,6 +3704,156 @@ function createStyles(colors: ThemeColorPalette) {
     color: colors.muted,
     fontSize: 12,
     fontWeight: "600",
+  },
+  catModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    justifyContent: "flex-end",
+  },
+  catModalContent: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: "88%",
+    borderTopWidth: 1,
+    borderColor: colors.border,
+    paddingBottom: Platform.OS === "ios" ? 34 : 20,
+  },
+  catModalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  catModalTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: colors.foreground,
+  },
+  catModalSubtitle: {
+    fontSize: 12,
+    color: colors.muted,
+    marginTop: 2,
+  },
+  catModalCloseBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  catModalSearchWrapper: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  catModalSearchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    height: 42,
+  },
+  catModalSearchInput: {
+    flex: 1,
+    color: colors.foreground,
+    fontSize: 13,
+    marginLeft: 8,
+  },
+  catModalScroll: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  catGroupTitle: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#22C55E",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 8,
+    marginTop: 10,
+  },
+  catGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    rowGap: 8,
+  },
+  catCard: {
+    width: "48.5%",
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 14,
+    padding: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  catCardActive: {
+    borderColor: "#22C55E",
+    backgroundColor: "rgba(34, 197, 94, 0.1)",
+  },
+  catCardAll: {
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    padding: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  catCardIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  catCardIconActive: {
+    backgroundColor: "#22C55E",
+    borderColor: "#22C55E",
+  },
+  catCardText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: colors.foreground,
+    flex: 1,
+  },
+  catCardTextActive: {
+    color: "#22C55E",
+    fontWeight: "800",
+  },
+  catCardSubtitle: {
+    fontSize: 11,
+    color: colors.muted,
+    marginTop: 1,
+  },
+  emptyCatContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 32,
+    gap: 8,
+  },
+  emptyCatText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: colors.muted,
   },
 });
 }

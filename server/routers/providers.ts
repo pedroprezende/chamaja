@@ -673,11 +673,16 @@ export const providersRouter = router({
 
       // 4. Categoria
       if (categoryId && categoryId !== "todos") {
+        const cleanCat = categoryId.replace(/-/g, " ");
         conditions.push(
           or(
             eq(providers.categoryId, categoryId),
             ilike(providers.category, `%${categoryId}%`),
-            ilike(providers.categoryId, `%${categoryId}%`)
+            ilike(providers.category, `%${cleanCat}%`),
+            ilike(providers.categoryId, `%${categoryId}%`),
+            eq(providers.subcategoryId, categoryId),
+            ilike(providers.subcategoryName, `%${categoryId}%`),
+            ilike(providers.subcategoryName, `%${cleanCat}%`)
           )
         );
       }
