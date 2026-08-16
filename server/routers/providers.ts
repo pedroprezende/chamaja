@@ -18,7 +18,7 @@ import {
   categories,
   services,
 } from "../../drizzle/schema";
-import { eq, or, ilike, and, gte, lte, ne, desc, asc, sql, count } from "drizzle-orm";
+import { eq, or, ilike, and, gte, lte, ne, desc, asc, sql, count, isNull } from "drizzle-orm";
 
 import { geocodeAddress } from "../geocoding";
 import { getProvidersBenefitsMap } from "../../lib/plan-benefits";
@@ -639,9 +639,21 @@ export const providersRouter = router({
 
       // 2. Tipo de Perfil (Comércio vs Profissional)
       if (profileType === "comercio") {
-        conditions.push(eq(providers.categoryId, "comercios"));
+        conditions.push(
+          or(
+            eq(providers.categoryId, "comercios"),
+            eq(providers.businessType, "comercio"),
+            eq(providers.businessType, "alimentacao")
+          )
+        );
       } else if (profileType === "professional") {
-        conditions.push(ne(providers.categoryId, "comercios"));
+        conditions.push(
+          and(
+            or(ne(providers.categoryId, "comercios"), isNull(providers.categoryId)),
+            or(ne(providers.businessType, "comercio"), isNull(providers.businessType)),
+            or(ne(providers.businessType, "alimentacao"), isNull(providers.businessType))
+          )
+        );
       }
 
       // 3. Busca por texto
@@ -661,7 +673,13 @@ export const providersRouter = router({
 
       // 4. Categoria
       if (categoryId && categoryId !== "todos") {
-        conditions.push(eq(providers.categoryId, categoryId));
+        conditions.push(
+          or(
+            eq(providers.categoryId, categoryId),
+            ilike(providers.category, `%${categoryId}%`),
+            ilike(providers.categoryId, `%${categoryId}%`)
+          )
+        );
       }
 
       // 5. Subcategoria
@@ -670,6 +688,7 @@ export const providersRouter = router({
           or(
             eq(providers.subcategoryId, subcategoryId),
             ilike(providers.subcategoryId, `%${subcategoryId}%`),
+            ilike(providers.subcategoryName, `%${subcategoryId}%`)
           ),
         );
       }
@@ -704,10 +723,15 @@ export const providersRouter = router({
         const deltaLng =
           maxDistanceKm / (111.0 * Math.cos((userLatitude * Math.PI) / 180.0));
         conditions.push(
-          gte(providers.latitude, userLatitude - deltaLat),
-          lte(providers.latitude, userLatitude + deltaLat),
-          gte(providers.longitude, userLongitude - deltaLng),
-          lte(providers.longitude, userLongitude + deltaLng),
+          or(
+            isNull(providers.latitude),
+            and(
+              gte(providers.latitude, userLatitude - deltaLat),
+              lte(providers.latitude, userLatitude + deltaLat),
+              gte(providers.longitude, userLongitude - deltaLng),
+              lte(providers.longitude, userLongitude + deltaLng),
+            )
+          )
         );
       }
 

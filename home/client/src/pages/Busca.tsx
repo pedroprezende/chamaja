@@ -188,12 +188,19 @@ export default function Busca() {
     const initialQ = params.get("q") || "";
     const initialCategory = params.get("category") || "todos";
     const initialLoc = params.get("location") || "";
+    const initial24h =
+      params.get("is24Hours") === "true" ||
+      params.get("only24h") === "true" ||
+      params.get("24h") === "true";
 
     if (initialQ) setSearchTerm(initialQ);
     if (initialCategory) setSelectedCategory(initialCategory);
     if (initialLoc) {
       setLocationTerm(initialLoc);
       setCurrentLocationText(initialLoc);
+    }
+    if (initial24h) {
+      setOnly24h(true);
     }
 
     // Tentar inicializar o mapa imediatamente
@@ -280,7 +287,7 @@ export default function Busca() {
             console.error("Nominatim geocoding error:", err);
           }
         }
-        fetchProviders(initialQ, initialCategory, profileType, coords || defaultCoords, 1);
+        fetchProviders(initialQ, initialCategory, profileType, coords || defaultCoords, 1, initial24h);
       };
       geocodeAndFetch();
     } else if (navigator.geolocation) {
@@ -312,16 +319,16 @@ export default function Busca() {
           }
 
           // Initial load sorted by proximity
-          fetchProviders(initialQ, initialCategory, profileType, coords, 1);
+          fetchProviders(initialQ, initialCategory, profileType, coords, 1, initial24h);
         },
         (error) => {
           console.log("[Audit Busca] Geolocalização falhou/negada. Usando padrão Bragança Paulista - SP:", error.message);
-          fetchProviders(initialQ, initialCategory, profileType, defaultCoords, 1);
+          fetchProviders(initialQ, initialCategory, profileType, defaultCoords, 1, initial24h);
         }
       );
     } else {
       console.log("[Audit Busca] Geolocalização não suportada pelo navegador. Usando padrão Bragança Paulista - SP.");
-      fetchProviders(initialQ, initialCategory, profileType, defaultCoords, 1);
+      fetchProviders(initialQ, initialCategory, profileType, defaultCoords, 1, initial24h);
     }
 
     return () => {
@@ -1423,7 +1430,7 @@ export default function Busca() {
                   const center = mapInstance.getCenter();
                   const coords = { latitude: center.lat, longitude: center.lng };
                   setUserCoords(coords);
-                  fetchProviders(searchTerm, selectedCategory, profileType, coords);
+                  fetchProviders(searchTerm, selectedCategory, profileType, coords, 1, only24h, sortBy, minRating, maxDistance);
                 }
               }}
               className="px-4 py-2 bg-zinc-950/90 backdrop-blur-md border border-zinc-800 rounded-full text-xs font-bold text-white hover:border-primary/40 transition-colors shadow-xl"
