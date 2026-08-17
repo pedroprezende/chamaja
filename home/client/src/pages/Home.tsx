@@ -1284,54 +1284,28 @@ export default function Home() {
                 </Button>
               </div>
 
-              {/* Categorias Populares */}
-              <div className="pt-2 w-full max-w-2xl select-none">
-                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 sm:gap-3">
-                  {primaryCategories.map((cat) => (
-                    <button
-                      key={cat.id}
-                      onClick={() => window.location.href = `/busca?category=${cat.id}`}
-                      className="flex flex-col items-center justify-center gap-2 py-3 px-1 bg-zinc-950/60 border border-white/[0.06] hover:bg-[#25D366]/10 hover:border-[#25D366]/50 rounded-2xl transition-all duration-300 group shadow-md"
-                    >
-                      <div className="w-10 h-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 group-hover:text-[#25D366] group-hover:bg-[#25D366]/10 group-hover:scale-110 transition-all duration-300">
-                        <cat.icon className="w-5 h-5" />
-                      </div>
-                      <span className="text-[10px] sm:text-[11px] font-bold text-zinc-400 group-hover:text-white text-center leading-tight">
-                        {cat.name}
-                      </span>
-                    </button>
-                  ))}
-                  
-                  {/* Botão Mais */}
+              {/* Quick Tags */}
+              <div className="flex flex-wrap gap-2 text-xs items-center pt-1 select-none">
+                <span className="text-zinc-500 font-bold uppercase tracking-wider text-[10px] mr-1">Mais buscados:</span>
+                {["Restaurante", "Eletricista", "Salão de Beleza", "Mecânico", "Academia"].map(tag => (
                   <button
-                    onClick={() => setCategoryModalOpen(true)}
-                    className="flex flex-col items-center justify-center gap-2 py-3 px-1 bg-zinc-950/60 border border-white/[0.06] hover:bg-zinc-800 hover:border-zinc-700 rounded-2xl transition-all duration-300 group shadow-md"
+                    key={tag}
+                    onClick={() => {
+                      setSearchQuery(tag);
+                      window.location.href = `/busca?q=${encodeURIComponent(tag)}`;
+                    }}
+                    className="px-3.5 py-1.5 bg-zinc-900/60 border border-white/[0.06] hover:bg-[#25D366] hover:text-black hover:border-[#25D366] text-zinc-300 hover:font-bold rounded-full transition-all duration-200 shadow-md text-xs"
                   >
-                    <div className="w-10 h-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 group-hover:text-white group-hover:bg-zinc-700 group-hover:scale-110 transition-all duration-300">
-                      <Grid className="w-5 h-5" />
-                    </div>
-                    <span className="text-[10px] sm:text-[11px] font-bold text-zinc-400 group-hover:text-white text-center leading-tight">
-                      Mais
-                    </span>
+                    {tag}
                   </button>
-                </div>
-                
-                {/* Serviços 24h & Destaques */}
-                <div className="flex flex-wrap items-center gap-2 mt-4">
-                  <button
-                    onClick={() => window.location.href = `/busca?is24Hours=true`}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-950/80 border border-amber-500/30 hover:bg-amber-500/10 text-amber-500 rounded-full transition-all text-xs font-bold shadow-md"
-                  >
-                    <Zap className="w-3.5 h-3.5" />
-                    <span>Serviços 24h</span>
-                  </button>
-                  <button
-                    onClick={() => window.location.href = `/busca?category=assistencia-tecnica`}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-950/80 border border-white/[0.08] hover:bg-zinc-800 text-zinc-300 rounded-full transition-all text-xs font-semibold shadow-md"
-                  >
-                    <span>Assistência Técnica</span>
-                  </button>
-                </div>
+                ))}
+                <button
+                  onClick={() => window.location.href = "/busca"}
+                  className="px-3.5 py-1.5 bg-zinc-900/60 border border-white/[0.06] hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-full transition-all duration-200 flex items-center gap-1 text-xs"
+                >
+                  <Grid className="w-3.5 h-3.5" />
+                  <span>Ver todas</span>
+                </button>
               </div>
 
               {/* ── CTA PRECISO DE ALGUÉM ── */}
@@ -1859,6 +1833,88 @@ export default function Home() {
                 );
               })
             )}
+          </div>
+        </div>
+      </section>
+
+      {/* ── NOVA SEÇÃO DE BUSCA E CATEGORIAS (Abaixo de Destaques para Você) ── */}
+      <section className="py-16 bg-[#050505] border-b border-zinc-900 select-none">
+        <div className="container mx-auto px-4 max-w-5xl">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl md:text-3xl font-black text-white font-sans tracking-tight mb-3">
+              O que você procura hoje?
+            </h2>
+            <p className="text-zinc-400 text-sm md:text-base font-medium">
+              Pesquise por profissionais, serviços ou explore nossas categorias reais
+            </p>
+          </div>
+
+          {/* Barra de Busca Integrada */}
+          <div className="bg-zinc-950/80 backdrop-blur-xl border border-zinc-800 hover:border-primary/40 p-1.5 rounded-2xl flex flex-col md:flex-row items-stretch shadow-xl mx-auto mb-10 transition-all duration-300 focus-within:border-primary/50 max-w-3xl">
+            <div className="flex-1 flex items-center px-4 py-3 border-b md:border-b-0 md:border-r border-zinc-800 group">
+              <Search className="text-zinc-500 group-focus-within:text-primary h-5 w-5 flex-shrink-0 transition-colors mr-3" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") handleSearchSubmit(); }}
+                className="bg-transparent border-none focus:outline-none focus:ring-0 text-white w-full text-sm py-0 placeholder:text-zinc-600 font-medium"
+                placeholder="O que você precisa?"
+              />
+              {searchQuery && (
+                <button type="button" onClick={() => setSearchQuery("")} className="text-zinc-500 hover:text-white">
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <div className="flex-[0.8] flex items-center px-4 py-3 group">
+              <MapPin className="text-zinc-500 group-focus-within:text-primary h-5 w-5 flex-shrink-0 transition-colors mr-3" />
+              <input
+                type="text"
+                value={searchLocation}
+                onChange={e => setSearchLocation(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") handleSearchSubmit(); }}
+                className="bg-transparent border-none focus:outline-none focus:ring-0 text-white w-full text-sm py-0 placeholder:text-zinc-500 font-medium"
+                placeholder="Cidade, bairro ou CEP"
+              />
+            </div>
+            <Button
+              onClick={handleSearchSubmit}
+              className="bg-primary hover:bg-[#20ba5a] text-black font-extrabold px-8 py-3.5 h-auto rounded-xl transition-all duration-300 shadow-lg shadow-primary/20 w-full md:w-auto text-sm flex items-center justify-center"
+            >
+              Buscar
+            </Button>
+          </div>
+
+          {/* Categorias Populares na Grade */}
+          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-5 gap-3 sm:gap-4 mx-auto max-w-4xl">
+            {primaryCategories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => window.location.href = `/busca?category=${cat.id}`}
+                className="flex flex-col items-center justify-center gap-2.5 p-3 sm:p-4 bg-zinc-950/60 border border-zinc-800/80 hover:bg-primary/10 hover:border-primary/50 rounded-2xl transition-all duration-300 group shadow-md"
+              >
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 group-hover:text-primary group-hover:bg-primary/10 group-hover:scale-110 transition-all duration-300">
+                  <cat.icon className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+                <span className="text-[10px] sm:text-[11px] font-bold text-zinc-400 group-hover:text-white text-center leading-tight">
+                  {cat.name}
+                </span>
+              </button>
+            ))}
+            
+            {/* Botão Mais */}
+            <button
+              onClick={() => setCategoryModalOpen(true)}
+              className="flex flex-col items-center justify-center gap-2.5 p-3 sm:p-4 bg-zinc-950/60 border border-zinc-800/80 hover:bg-zinc-800 hover:border-zinc-700 rounded-2xl transition-all duration-300 group shadow-md"
+            >
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 group-hover:text-white group-hover:bg-zinc-700 group-hover:scale-110 transition-all duration-300">
+                <Grid className="w-5 h-5 sm:w-6 sm:h-6" />
+              </div>
+              <span className="text-[10px] sm:text-[11px] font-bold text-zinc-400 group-hover:text-white text-center leading-tight">
+                Mais
+              </span>
+            </button>
           </div>
         </div>
       </section>
