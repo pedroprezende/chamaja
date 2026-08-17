@@ -37,6 +37,26 @@ import {
   Store,
   Users,
   Megaphone,
+  Dog,
+  Flower2,
+  Shield,
+  Laptop,
+  Brush,
+  Dumbbell,
+  Truck,
+  Package,
+  Scale,
+  Calculator,
+  TrendingUp,
+  Building,
+  Music,
+  Camera,
+  PartyPopper,
+  Plane,
+  Shirt,
+  Palette,
+  Sprout,
+  Layers,
 } from "lucide-react";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { getSessionToken } from "@/lib/supabase";
@@ -165,11 +185,104 @@ const FALLBACK_PLANS = [
 
 // Comparison rows are derived dynamically from plan benefits — no hardcoded list.
 
+const primaryCategories = [
+  { id: "reformas-reparos", name: "Reformas", icon: Hammer },
+  { id: "assistencia-tecnica", name: "Assistência", icon: Wrench },
+  { id: "servicos-domesticos", name: "Casa", icon: HomeIcon },
+  { id: "automotivo", name: "Automotivo", icon: Car },
+  { id: "beleza-estetica", name: "Beleza", icon: Scissors },
+  { id: "saude", name: "Saúde", icon: HeartPulse },
+  { id: "comercios", name: "Comércios", icon: Utensils },
+  { id: "pets", name: "Pet", icon: Dog },
+];
+
+const allCategories = [
+  // ── 1. Construção, Reparos & Manutenção ──
+  { id: "reformas-reparos", name: "Reformas e Reparos", icon: Hammer, group: "reparos", description: "Pedreiros, eletricistas, encanadores, pintores" },
+  { id: "manutencao", name: "Manutenção", icon: Wrench, group: "reparos", description: "Manutenção predial, residencial e industrial" },
+
+  // ── 2. Casa, Limpeza & Jardinagem ──
+  { id: "servicos-domesticos", name: "Serviços Domésticos", icon: HomeIcon, group: "casa", description: "Diaristas, passadeiras, cozinheiras" },
+  { id: "limpeza", name: "Limpeza", icon: Sparkles, group: "casa", description: "Limpeza pós-obra, estofados, especializada" },
+  { id: "jardinagem", name: "Jardinagem", icon: Flower2, group: "casa", description: "Paisagismo, poda, manutenção de jardins" },
+  { id: "seguranca", name: "Segurança", icon: Shield, group: "casa", description: "Câmeras, alarmes, portaria, vigilância" },
+
+  // ── 3. Tecnologia, Informática & Design ──
+  { id: "assistencia-tecnica", name: "Assistência Técnica", icon: Wrench, group: "tech", description: "Celulares, computadores, eletrodomésticos" },
+  { id: "tecnologia", name: "Tecnologia", icon: Laptop, group: "tech", description: "Sistemas, automação, redes e soluções tech" },
+  { id: "informatica", name: "Informática", icon: Laptop, group: "tech", description: "Manutenção de PCs, notebooks, impressoras" },
+  { id: "design", name: "Design", icon: Brush, group: "tech", description: "Design gráfico, branding, UI/UX e criação" },
+  { id: "marketing", name: "Marketing", icon: Megaphone, group: "tech", description: "Marketing digital, redes sociais, tráfego pago" },
+
+  // ── 4. Saúde, Beleza & Fitness ──
+  { id: "saude", name: "Saúde", icon: HeartPulse, group: "saude", description: "Médicos, dentistas, clínicas, fisioterapia" },
+  { id: "beleza-estetica", name: "Beleza e Estética", icon: Scissors, group: "saude", description: "Salões, barbearias, manicures, estética" },
+  { id: "academias", name: "Academias e Fitness", icon: Dumbbell, group: "saude", description: "Personal trainers, academias, pilates" },
+
+  // ── 5. Pets & Animais ──
+  { id: "pets", name: "Pet", icon: Dog, group: "pets", description: "Pet shops, veterinários, banho e tosa" },
+
+  // ── 6. Veículos, Transporte & Logística ──
+  { id: "automotivo", name: "Automotivo", icon: Car, group: "auto", description: "Mecânicas, auto elétricas, lava-rápido" },
+  { id: "transporte", name: "Transporte", icon: Truck, group: "auto", description: "Motoristas particulares, vans, transporte" },
+  { id: "entregas", name: "Entregas", icon: Package, group: "auto", description: "Motoboys, carretos, fretes rápidos" },
+  { id: "logistica", name: "Logística", icon: Package, group: "auto", description: "Mudanças, armazenagem, fretes" },
+
+  // ── 7. Serviços Profissionais & Gestão ──
+  { id: "juridico", name: "Jurídico", icon: Scale, group: "profissionais", description: "Advogados, assessoria jurídica, contratos" },
+  { id: "contabilidade", name: "Contabilidade", icon: Calculator, group: "profissionais", description: "Contadores, abertura de empresas, impostos" },
+  { id: "consultoria", name: "Consultoria", icon: TrendingUp, group: "profissionais", description: "Consultoria empresarial, financeira e gestão" },
+  { id: "imobiliario", name: "Imobiliário", icon: Building, group: "profissionais", description: "Corretores, imobiliárias, administração de imóveis" },
+
+  // ── 8. Educação, Música & Eventos ──
+  { id: "educacao", name: "Aulas Particulares", icon: GraduationCap, group: "educacao", description: "Professores particulares, reforço, idiomas" },
+  { id: "musica", name: "Música", icon: Music, group: "educacao", description: "Aulas de música, bandas, DJs, instrumentos" },
+  { id: "fotografia", name: "Fotografia", icon: Camera, group: "eventos", description: "Fotógrafos, filmagem, ensaios, coberturas" },
+  { id: "eventos", name: "Eventos", icon: PartyPopper, group: "eventos", description: "Festas, buffets, decoração, assessoria" },
+  { id: "turismo", name: "Turismo", icon: Plane, group: "eventos", description: "Agências de viagem, passeios, hospedagem" },
+
+  // ── 9. Comércio, Moda, Artesanato & Agro ──
+  { id: "comercios", name: "Alimentação e Comércios", icon: Utensils, group: "comercio", description: "Restaurantes, lanchonetes, mercados, lojas" },
+  { id: "moda", name: "Moda", icon: Shirt, group: "comercio", description: "Lojas de roupas, calçados, costura" },
+  { id: "artesanato", name: "Artesanato", icon: Palette, group: "comercio", description: "Produtos artesanais, decoração manual" },
+  { id: "agricultura", name: "Agricultura", icon: Sprout, group: "agro", description: "Produtos rurais, insumos agrícolas" },
+  { id: "outros", name: "Outros", icon: MoreHorizontal, group: "outros", description: "Outros serviços e especialidades" },
+];
+
+const categoryGroups = [
+  { id: "reparos", title: "Construção & Reparos", icon: Hammer },
+  { id: "casa", title: "Casa, Limpeza & Segurança", icon: HomeIcon },
+  { id: "tech", title: "Tecnologia, Informática & Design", icon: Laptop },
+  { id: "saude", title: "Saúde, Beleza & Fitness", icon: HeartPulse },
+  { id: "pets", title: "Pets & Animais", icon: Dog },
+  { id: "auto", title: "Veículos, Transporte & Entregas", icon: Car },
+  { id: "profissionais", title: "Serviços Profissionais & Gestão", icon: Scale },
+  { id: "educacao", title: "Aulas, Música & Educação", icon: GraduationCap },
+  { id: "eventos", title: "Eventos, Fotografia & Turismo", icon: PartyPopper },
+  { id: "comercio", title: "Comércios, Moda & Artesanato", icon: Utensils },
+  { id: "outros", title: "Agro & Outras Categorias", icon: MoreHorizontal },
+];
+
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLocation, setSearchLocation] = useState("Bragança Paulista - SP");
   const [userProfile, setUserProfile] = useState<any | null>(null);
+
+  // Category Modal States
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [categorySearchTerm, setCategorySearchTerm] = useState("");
+  
+  const filteredModalCategories = useMemo(() => {
+    if (!categorySearchTerm.trim()) return allCategories;
+    const term = categorySearchTerm.toLowerCase().trim();
+    return allCategories.filter(
+      (c) =>
+        c.name.toLowerCase().includes(term) ||
+        c.description.toLowerCase().includes(term) ||
+        c.id.toLowerCase().includes(term)
+    );
+  }, [categorySearchTerm]);
 
   // Dynamic stats from DB
   const [publicStats, setPublicStats] = useState({
@@ -1171,28 +1284,54 @@ export default function Home() {
                 </Button>
               </div>
 
-              {/* Quick Tags */}
-              <div className="flex flex-wrap gap-2 text-xs items-center pt-1 select-none">
-                <span className="text-zinc-500 font-bold uppercase tracking-wider text-[10px] mr-1">Mais buscados:</span>
-                {["Restaurante", "Eletricista", "Salão de Beleza", "Mecânico", "Academia"].map(tag => (
+              {/* Categorias Populares */}
+              <div className="pt-2 w-full max-w-2xl select-none">
+                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 sm:gap-3">
+                  {primaryCategories.map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => window.location.href = `/busca?category=${cat.id}`}
+                      className="flex flex-col items-center justify-center gap-2 py-3 px-1 bg-zinc-950/60 border border-white/[0.06] hover:bg-[#25D366]/10 hover:border-[#25D366]/50 rounded-2xl transition-all duration-300 group shadow-md"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 group-hover:text-[#25D366] group-hover:bg-[#25D366]/10 group-hover:scale-110 transition-all duration-300">
+                        <cat.icon className="w-5 h-5" />
+                      </div>
+                      <span className="text-[10px] sm:text-[11px] font-bold text-zinc-400 group-hover:text-white text-center leading-tight">
+                        {cat.name}
+                      </span>
+                    </button>
+                  ))}
+                  
+                  {/* Botão Mais */}
                   <button
-                    key={tag}
-                    onClick={() => {
-                      setSearchQuery(tag);
-                      window.location.href = `/busca?q=${encodeURIComponent(tag)}`;
-                    }}
-                    className="px-3.5 py-1.5 bg-zinc-900/60 border border-white/[0.06] hover:bg-[#25D366] hover:text-black hover:border-[#25D366] text-zinc-300 hover:font-bold rounded-full transition-all duration-200 shadow-md text-xs"
+                    onClick={() => setCategoryModalOpen(true)}
+                    className="flex flex-col items-center justify-center gap-2 py-3 px-1 bg-zinc-950/60 border border-white/[0.06] hover:bg-zinc-800 hover:border-zinc-700 rounded-2xl transition-all duration-300 group shadow-md"
                   >
-                    {tag}
+                    <div className="w-10 h-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 group-hover:text-white group-hover:bg-zinc-700 group-hover:scale-110 transition-all duration-300">
+                      <Grid className="w-5 h-5" />
+                    </div>
+                    <span className="text-[10px] sm:text-[11px] font-bold text-zinc-400 group-hover:text-white text-center leading-tight">
+                      Mais
+                    </span>
                   </button>
-                ))}
-                <button
-                  onClick={() => window.location.href = "/busca"}
-                  className="px-3.5 py-1.5 bg-zinc-900/60 border border-white/[0.06] hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-full transition-all duration-200 flex items-center gap-1 text-xs"
-                >
-                  <Grid className="w-3.5 h-3.5" />
-                  <span>Ver todas</span>
-                </button>
+                </div>
+                
+                {/* Serviços 24h & Destaques */}
+                <div className="flex flex-wrap items-center gap-2 mt-4">
+                  <button
+                    onClick={() => window.location.href = `/busca?is24Hours=true`}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-950/80 border border-amber-500/30 hover:bg-amber-500/10 text-amber-500 rounded-full transition-all text-xs font-bold shadow-md"
+                  >
+                    <Zap className="w-3.5 h-3.5" />
+                    <span>Serviços 24h</span>
+                  </button>
+                  <button
+                    onClick={() => window.location.href = `/busca?category=assistencia-tecnica`}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-950/80 border border-white/[0.08] hover:bg-zinc-800 text-zinc-300 rounded-full transition-all text-xs font-semibold shadow-md"
+                  >
+                    <span>Assistência Técnica</span>
+                  </button>
+                </div>
               </div>
 
               {/* ── CTA PRECISO DE ALGUÉM ── */}
@@ -2777,6 +2916,168 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* ── MODAL EXPLORAR CATEGORIAS ── */}
+      {categoryModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          {/* Overlay click para fechar */}
+          <div
+            className="absolute inset-0"
+            onClick={() => setCategoryModalOpen(false)}
+          ></div>
+
+          <div className="relative w-full max-w-4xl max-h-[90vh] bg-[#050505] border border-zinc-800/80 rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+            {/* Modal Header */}
+            <div className="p-5 sm:p-6 border-b border-zinc-800/80 flex flex-col gap-4 bg-zinc-950/50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                    Explorar Categorias
+                  </h2>
+                  <p className="text-xs text-zinc-500 mt-1">
+                    Encontre o serviço ou comércio ideal para você
+                  </p>
+                </div>
+                <button
+                  onClick={() => setCategoryModalOpen(false)}
+                  className="w-8 h-8 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Busca de Categorias */}
+              <div className="relative">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                <input
+                  type="text"
+                  placeholder="Buscar categoria..."
+                  value={categorySearchTerm}
+                  onChange={(e) => setCategorySearchTerm(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-10 pr-10 py-3 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-[#25D366]/50 focus:ring-1 focus:ring-[#25D366]/50 transition-all"
+                />
+                {categorySearchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setCategorySearchTerm("")}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-zinc-500 hover:text-white"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Body / Categorias */}
+            <div className="p-5 sm:p-6 overflow-y-auto flex-1 space-y-6">
+              {categorySearchTerm.trim() ? (
+                /* Busca ativa: Lista em Grade dos Resultados */
+                <div>
+                  <div className="text-xs font-bold text-zinc-400 mb-3 uppercase tracking-wider">
+                    Resultados ({filteredModalCategories.length})
+                  </div>
+                  {filteredModalCategories.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Search className="w-10 h-10 text-zinc-600 mx-auto mb-3 opacity-50" />
+                      <p className="text-sm font-bold text-zinc-400">Nenhuma categoria encontrada</p>
+                      <p className="text-xs text-zinc-600 mt-1">Tente pesquisar com outros termos.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {filteredModalCategories.map((cat) => {
+                        const Icon = cat.icon || MoreHorizontal;
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => window.location.href = `/busca?category=${cat.id}`}
+                            className="p-3.5 rounded-2xl border transition-all text-left flex items-start gap-3.5 group cursor-pointer bg-zinc-950/60 border-zinc-800/80 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900"
+                          >
+                            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors bg-zinc-900 border border-zinc-800 text-zinc-400 group-hover:border-[#25D366]/40 group-hover:text-[#25D366]">
+                              <Icon className="w-5 h-5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-bold truncate text-white group-hover:text-white">
+                                  {cat.name}
+                                </span>
+                              </div>
+                              <p className="text-xs text-zinc-500 line-clamp-1 mt-0.5">
+                                {cat.description}
+                              </p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Sem busca: Exibir por Grupos Temáticos */
+                <div className="space-y-7">
+                  {categoryGroups.map((group) => {
+                    const groupCategories = allCategories.filter(
+                      (c) =>
+                        c.group === group.id ||
+                        (group.id === "outros" && (c.group === "agro" || c.group === "outros"))
+                    );
+                    if (groupCategories.length === 0) return null;
+                    const GroupIcon = group.icon || Layers;
+
+                    return (
+                      <div key={group.id} className="space-y-3">
+                        <div className="flex items-center gap-2 text-xs font-bold text-zinc-400 uppercase tracking-wider">
+                          <GroupIcon className="w-4 h-4 text-[#25D366]" />
+                          <span>{group.title}</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                          {groupCategories.map((cat) => {
+                            const Icon = cat.icon || MoreHorizontal;
+                            return (
+                              <button
+                                key={cat.id}
+                                type="button"
+                                onClick={() => window.location.href = `/busca?category=${cat.id}`}
+                                className="p-3 rounded-2xl border transition-all text-left flex items-start gap-3 group cursor-pointer bg-zinc-950/60 border-zinc-800/80 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900"
+                              >
+                                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors bg-zinc-900 border border-zinc-800 text-zinc-400 group-hover:border-[#25D366]/40 group-hover:text-[#25D366]">
+                                  <Icon className="w-4.5 h-4.5" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold truncate text-zinc-200 group-hover:text-white">
+                                      {cat.name}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-zinc-500 line-clamp-1 mt-0.5">
+                                    {cat.description}
+                                  </p>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-zinc-950 border-t border-zinc-800/80 flex items-center justify-between text-xs text-zinc-500">
+              <span>{allCategories.length} categorias disponíveis</span>
+              <button
+                type="button"
+                onClick={() => setCategoryModalOpen(false)}
+                className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold rounded-xl border border-zinc-800 transition-colors"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
