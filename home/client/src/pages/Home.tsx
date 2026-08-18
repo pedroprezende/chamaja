@@ -444,6 +444,9 @@ export default function Home() {
   // Map Search and filtering states
   const [mapSearchQuery, setMapSearchQuery] = useState("");
   const [mapCategoryFilter, setMapCategoryFilter] = useState("all");
+  const [mapOnlyOnline, setMapOnlyOnline] = useState(false);
+  const [mapOnly24h, setMapOnly24h] = useState(false);
+  const [mapOnlyVerified, setMapOnlyVerified] = useState(false);
 
   // Use refs for Leaflet instances - prevents React re-renders from destroying Leaflet's state
   const mapRef = useRef<any>(null);
@@ -454,20 +457,51 @@ export default function Home() {
   const filteredNearbyProviders = useMemo(() => nearbyProviders.filter((p) => {
     if (mapCategoryFilter !== "all") {
       const isComercio = p.businessType === "comercio" || p.categoryId === "comercios"
-        || p.category?.toLowerCase() === "comércios" || p.category?.toLowerCase() === "comércio";
-      if (mapCategoryFilter === "comercio" && !isComercio) return false;
-      if (mapCategoryFilter === "servico" && isComercio) return false;
+        || p.category?.toLowerCase() === "comércios" || p.category?.toLowerCase() === "comércio"
+        || p.category?.toLowerCase() === "alimentação";
+
+      if (mapCategoryFilter === "comercio") {
+        if (!isComercio) return false;
+      } else if (mapCategoryFilter === "servico") {
+        if (isComercio) return false;
+      } else {
+        const filterNorm = mapCategoryFilter.toLowerCase().replace(/-/g, " ");
+        const catId = (p.categoryId || "").toLowerCase();
+        const catName = (p.category || "").toLowerCase();
+        const subId = (p.subcategoryId || "").toLowerCase();
+        const subName = (p.subcategoryName || "").toLowerCase();
+
+        const matchesCategory = 
+          catId === mapCategoryFilter.toLowerCase() ||
+          catId.includes(mapCategoryFilter.toLowerCase()) ||
+          catName.includes(filterNorm) ||
+          catName.includes(mapCategoryFilter.toLowerCase()) ||
+          subId === mapCategoryFilter.toLowerCase() ||
+          subName.includes(filterNorm);
+
+        if (!matchesCategory) return false;
+      }
     }
+
+    if (mapOnlyOnline && !p.onlineStatus) return false;
+    if (mapOnly24h && !p.is24Hours) return false;
+    if (mapOnlyVerified && !p.isVerified) return false;
+
     if (mapSearchQuery.trim()) {
-      const q = mapSearchQuery.toLowerCase();
-      if (
-        !p.name?.toLowerCase().includes(q) &&
-        !p.description?.toLowerCase().includes(q) &&
-        !p.category?.toLowerCase().includes(q)
-      ) return false;
+      const q = mapSearchQuery.toLowerCase().trim();
+      const matchName = p.name?.toLowerCase().includes(q);
+      const matchDesc = p.description?.toLowerCase().includes(q);
+      const matchCat = p.category?.toLowerCase().includes(q);
+      const matchSub = p.subcategoryName?.toLowerCase().includes(q);
+      const matchNeigh = p.neighborhood?.toLowerCase().includes(q);
+      const matchCity = p.city?.toLowerCase().includes(q);
+
+      if (!matchName && !matchDesc && !matchCat && !matchSub && !matchNeigh && !matchCity) {
+        return false;
+      }
     }
     return true;
-  }), [nearbyProviders, mapCategoryFilter, mapSearchQuery]);
+  }), [nearbyProviders, mapCategoryFilter, mapSearchQuery, mapOnlyOnline, mapOnly24h, mapOnlyVerified]);
 
   const toggleFavorite = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -1837,88 +1871,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── NOVA SEÇÃO DE BUSCA E CATEGORIAS (Abaixo de Destaques para Você) ── */}
-      <section className="py-16 bg-[#050505] border-b border-zinc-900 select-none">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <div className="text-center mb-10">
-            <h2 className="text-2xl md:text-3xl font-black text-white font-sans tracking-tight mb-3">
-              O que você procura hoje?
-            </h2>
-            <p className="text-zinc-400 text-sm md:text-base font-medium">
-              Pesquise por profissionais, serviços ou explore nossas categorias reais
-            </p>
-          </div>
-
-          {/* Barra de Busca Integrada */}
-          <div className="bg-zinc-950/80 backdrop-blur-xl border border-zinc-800 hover:border-primary/40 p-1.5 rounded-2xl flex flex-col md:flex-row items-stretch shadow-xl mx-auto mb-10 transition-all duration-300 focus-within:border-primary/50 max-w-3xl">
-            <div className="flex-1 flex items-center px-4 py-3 border-b md:border-b-0 md:border-r border-zinc-800 group">
-              <Search className="text-zinc-500 group-focus-within:text-primary h-5 w-5 flex-shrink-0 transition-colors mr-3" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter") handleSearchSubmit(); }}
-                className="bg-transparent border-none focus:outline-none focus:ring-0 text-white w-full text-sm py-0 placeholder:text-zinc-600 font-medium"
-                placeholder="O que você precisa?"
-              />
-              {searchQuery && (
-                <button type="button" onClick={() => setSearchQuery("")} className="text-zinc-500 hover:text-white">
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-            <div className="flex-[0.8] flex items-center px-4 py-3 group">
-              <MapPin className="text-zinc-500 group-focus-within:text-primary h-5 w-5 flex-shrink-0 transition-colors mr-3" />
-              <input
-                type="text"
-                value={searchLocation}
-                onChange={e => setSearchLocation(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter") handleSearchSubmit(); }}
-                className="bg-transparent border-none focus:outline-none focus:ring-0 text-white w-full text-sm py-0 placeholder:text-zinc-500 font-medium"
-                placeholder="Cidade, bairro ou CEP"
-              />
-            </div>
-            <Button
-              onClick={handleSearchSubmit}
-              className="bg-primary hover:bg-[#20ba5a] text-black font-extrabold px-8 py-3.5 h-auto rounded-xl transition-all duration-300 shadow-lg shadow-primary/20 w-full md:w-auto text-sm flex items-center justify-center"
-            >
-              Buscar
-            </Button>
-          </div>
-
-          {/* Categorias Populares na Grade */}
-          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-5 gap-3 sm:gap-4 mx-auto max-w-4xl">
-            {primaryCategories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => window.location.href = `/busca?category=${cat.id}`}
-                className="flex flex-col items-center justify-center gap-2.5 p-3 sm:p-4 bg-zinc-950/60 border border-zinc-800/80 hover:bg-primary/10 hover:border-primary/50 rounded-2xl transition-all duration-300 group shadow-md"
-              >
-                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 group-hover:text-primary group-hover:bg-primary/10 group-hover:scale-110 transition-all duration-300">
-                  <cat.icon className="w-5 h-5 sm:w-6 sm:h-6" />
-                </div>
-                <span className="text-[10px] sm:text-[11px] font-bold text-zinc-400 group-hover:text-white text-center leading-tight">
-                  {cat.name}
-                </span>
-              </button>
-            ))}
-            
-            {/* Botão Mais */}
-            <button
-              onClick={() => setCategoryModalOpen(true)}
-              className="flex flex-col items-center justify-center gap-2.5 p-3 sm:p-4 bg-zinc-950/60 border border-zinc-800/80 hover:bg-zinc-800 hover:border-zinc-700 rounded-2xl transition-all duration-300 group shadow-md"
-            >
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 group-hover:text-white group-hover:bg-zinc-700 group-hover:scale-110 transition-all duration-300">
-                <Grid className="w-5 h-5 sm:w-6 sm:h-6" />
-              </div>
-              <span className="text-[10px] sm:text-[11px] font-bold text-zinc-400 group-hover:text-white text-center leading-tight">
-                Mais
-              </span>
-            </button>
-          </div>
-        </div>
-      </section>
-
       {/* ── MAP INTEGRATED SECTION (PROFISSIONAIS PRÓXIMOS) ── */}
       <section className="py-16 bg-[#030303] border-b border-zinc-900">
         <div className="container mx-auto px-4">
@@ -1967,28 +1919,221 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Local Search & Category Filters above split layout */}
-          <div className="mb-8 grid md:grid-cols-3 gap-4 bg-zinc-950/60 p-4 border border-zinc-900 rounded-2xl relative z-20">
-            <div className="md:col-span-2 relative">
-              <span className="absolute left-4 top-3.5 text-zinc-500 text-xs">🔍</span>
-              <input
-                type="text"
-                placeholder="Buscar por nome, especialidade ou descrição..."
-                value={mapSearchQuery}
-                onChange={(e) => setMapSearchQuery(e.target.value)}
-                className="w-full bg-[#09090b] border border-zinc-800 rounded-xl pl-10 pr-4 py-3 text-xs text-white placeholder:text-zinc-650 focus:outline-none focus:border-primary/50 transition-colors"
-              />
+          {/* Search & Comprehensive Category Filter Container */}
+          <div className="mb-6 space-y-4 bg-zinc-950/70 p-4 sm:p-5 border border-zinc-900 rounded-3xl relative z-20 backdrop-blur-md shadow-2xl">
+            {/* Main Input Row: Search bar + Category Select */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+              {/* Search Input */}
+              <div className="md:col-span-7 relative group">
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center pointer-events-none text-zinc-500 group-focus-within:text-primary transition-colors">
+                  <Search className="w-4 h-4" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Buscar por nome, especialidade, bairro ou serviço..."
+                  value={mapSearchQuery}
+                  onChange={(e) => setMapSearchQuery(e.target.value)}
+                  className="w-full bg-[#09090b] border border-zinc-800/90 rounded-2xl pl-10 pr-10 py-3 text-xs sm:text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/40 transition-all shadow-inner"
+                />
+                {mapSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setMapSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-zinc-500 hover:text-white rounded-full bg-zinc-900 border border-zinc-800 transition"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Category Select with comprehensive real categories */}
+              <div className="md:col-span-5 relative group">
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center pointer-events-none text-zinc-500 group-focus-within:text-primary transition-colors">
+                  <Layers className="w-4 h-4" />
+                </div>
+                <select
+                  value={mapCategoryFilter}
+                  onChange={(e) => setMapCategoryFilter(e.target.value)}
+                  className="w-full bg-[#09090b] border border-zinc-800/90 rounded-2xl pl-10 pr-8 py-3 text-xs sm:text-sm text-white font-medium focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/40 transition-all cursor-pointer appearance-none shadow-inner"
+                >
+                  <option value="all">✨ Todas as categorias</option>
+                  <option value="comercio">🏢 Apenas Comércios</option>
+                  <option value="servico">🛠️ Apenas Serviços</option>
+                  
+                  <optgroup label="🔨 Construção & Reparos">
+                    <option value="reformas-reparos">Reformas e Reparos (Pedreiros, Eletricistas, Pintores)</option>
+                    <option value="manutencao">Manutenção Residencial & Predial</option>
+                  </optgroup>
+                  
+                  <optgroup label="🏠 Casa & Limpeza">
+                    <option value="servicos-domesticos">Serviços Domésticos & Diaristas</option>
+                    <option value="limpeza">Limpeza Especializada & Pós-obra</option>
+                    <option value="jardinagem">Jardinagem & Paisagismo</option>
+                    <option value="seguranca">Segurança & Câmeras</option>
+                  </optgroup>
+                  
+                  <optgroup label="💻 Tecnologia & Informática">
+                    <option value="assistencia-tecnica">Assistência Técnica (Celulares, PCs, Eletro)</option>
+                    <option value="tecnologia">Tecnologia, Sistemas & Redes</option>
+                    <option value="informatica">Informática & Suporte</option>
+                    <option value="design">Design, Criação & Gráfica</option>
+                    <option value="marketing">Marketing Digital & Tráfego</option>
+                  </optgroup>
+                  
+                  <optgroup label="🩺 Saúde, Beleza & Fitness">
+                    <option value="saude">Saúde, Clínicas & Dentistas</option>
+                    <option value="beleza-estetica">Beleza, Salões & Barbearias</option>
+                    <option value="academias">Academias, Personal & Fitness</option>
+                  </optgroup>
+                  
+                  <optgroup label="🐶 Pets & Animais">
+                    <option value="pets">Pet Shop, Veterinários & Banho/Tosa</option>
+                  </optgroup>
+                  
+                  <optgroup label="🚗 Veículos, Transporte & Entregas">
+                    <option value="automotivo">Automotivo (Mecânicas, Autoelétrica, Lava-rápido)</option>
+                    <option value="transporte">Transporte & Motoristas</option>
+                    <option value="entregas">Entregas Rápidas & Motoboys</option>
+                    <option value="logistica">Logística, Mudanças & Fretes</option>
+                  </optgroup>
+                  
+                  <optgroup label="⚖️ Serviços Profissionais & Gestão">
+                    <option value="juridico">Jurídico & Advogados</option>
+                    <option value="contabilidade">Contabilidade & Empresas</option>
+                    <option value="consultoria">Consultoria Empresarial & Financeira</option>
+                    <option value="imobiliario">Imobiliário & Corretores</option>
+                  </optgroup>
+                  
+                  <optgroup label="🎓 Educação, Música & Eventos">
+                    <option value="educacao">Aulas Particulares & Reforço</option>
+                    <option value="musica">Música, DJs & Bandas</option>
+                    <option value="fotografia">Fotografia & Filmagem</option>
+                    <option value="eventos">Eventos, Festas & Buffets</option>
+                    <option value="turismo">Turismo & Passeios</option>
+                  </optgroup>
+                  
+                  <optgroup label="🍽️ Comércio, Moda & Agro">
+                    <option value="comercios">Alimentação & Restaurantes</option>
+                    <option value="moda">Moda & Roupas</option>
+                    <option value="artesanato">Artesanato & Feito à Mão</option>
+                    <option value="agricultura">Agro & Produtos Rurais</option>
+                    <option value="outros">Outros Serviços</option>
+                  </optgroup>
+                </select>
+                <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-500">
+                  <ChevronDown className="w-4 h-4" />
+                </div>
+              </div>
             </div>
-            <div>
-              <select
-                value={mapCategoryFilter}
-                onChange={(e) => setMapCategoryFilter(e.target.value)}
-                className="w-full bg-[#09090b] border border-zinc-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-primary/50 transition-colors"
+
+            {/* Interactive Filter Pills Row (Horizontal Scroll) */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none no-scrollbar pt-1">
+              {/* Toggle: Aberto Agora */}
+              <button
+                type="button"
+                onClick={() => setMapOnlyOnline(!mapOnlyOnline)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border ${
+                  mapOnlyOnline
+                    ? "bg-emerald-500/15 border-emerald-500/60 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.2)]"
+                    : "bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
+                }`}
               >
-                <option value="all">Todas as categorias</option>
-                <option value="comercio">Apenas Comércios</option>
-                <option value="servico">Apenas Serviços</option>
-              </select>
+                <span className={`w-2 h-2 rounded-full ${mapOnlyOnline ? "bg-emerald-400 animate-pulse" : "bg-zinc-600"}`} />
+                <span>Aberto agora</span>
+              </button>
+
+              {/* Toggle: 24 Horas */}
+              <button
+                type="button"
+                onClick={() => setMapOnly24h(!mapOnly24h)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border ${
+                  mapOnly24h
+                    ? "bg-amber-500/15 border-amber-500/60 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.2)]"
+                    : "bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
+                }`}
+              >
+                <Zap className={`w-3.5 h-3.5 ${mapOnly24h ? "text-amber-400" : "text-zinc-500"}`} />
+                <span>24 Horas</span>
+              </button>
+
+              {/* Toggle: Verificados */}
+              <button
+                type="button"
+                onClick={() => setMapOnlyVerified(!mapOnlyVerified)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border ${
+                  mapOnlyVerified
+                    ? "bg-primary/15 border-primary/60 text-primary shadow-[0_0_12px_rgba(37,211,102,0.2)]"
+                    : "bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
+                }`}
+              >
+                <BadgeCheck className={`w-3.5 h-3.5 ${mapOnlyVerified ? "text-primary" : "text-zinc-500"}`} />
+                <span>Verificados</span>
+              </button>
+
+              <div className="h-4 w-px bg-zinc-800 mx-1 flex-shrink-0" />
+
+              {/* Quick Category Chips */}
+              {[
+                { id: "all", name: "Todos", icon: Grid },
+                { id: "comercio", name: "Comércios", icon: Store },
+                { id: "servico", name: "Serviços", icon: Wrench },
+                { id: "reformas-reparos", name: "Reformas", icon: Hammer },
+                { id: "assistencia-tecnica", name: "Assistência", icon: Laptop },
+                { id: "servicos-domesticos", name: "Casa & Diaristas", icon: HomeIcon },
+                { id: "automotivo", name: "Automotivo", icon: Car },
+                { id: "beleza-estetica", name: "Beleza", icon: Scissors },
+                { id: "saude", name: "Saúde", icon: HeartPulse },
+                { id: "pets", name: "Pets", icon: Dog },
+                { id: "comercios", name: "Alimentação", icon: Utensils },
+              ].map((chip) => {
+                const Icon = chip.icon;
+                const isSelected = mapCategoryFilter === chip.id;
+                return (
+                  <button
+                    key={chip.id}
+                    type="button"
+                    onClick={() => setMapCategoryFilter(chip.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all border flex-shrink-0 ${
+                      isSelected
+                        ? "bg-primary/15 border-primary/60 text-primary font-bold shadow-[0_0_12px_rgba(37,211,102,0.2)]"
+                        : "bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    <span>{chip.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Active Filters Summary & Results Counter */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-zinc-900/80 text-xs">
+              <div className="flex items-center gap-2 text-zinc-400">
+                <span className="font-bold text-white">
+                  {filteredNearbyProviders.length}
+                </span>
+                <span>{filteredNearbyProviders.length === 1 ? "profissional encontrado" : "profissionais encontrados"}</span>
+                {isLoadingNearby && (
+                  <span className="inline-block w-2.5 h-2.5 border-2 border-primary border-t-transparent rounded-full animate-spin ml-1" />
+                )}
+              </div>
+
+              {(mapCategoryFilter !== "all" || mapSearchQuery || mapOnlyOnline || mapOnly24h || mapOnlyVerified) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMapSearchQuery("");
+                    setMapCategoryFilter("all");
+                    setMapOnlyOnline(false);
+                    setMapOnly24h(false);
+                    setMapOnlyVerified(false);
+                  }}
+                  className="text-primary hover:text-primary/80 font-bold flex items-center gap-1 text-[11px] transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                  <span>Limpar filtros</span>
+                </button>
+              )}
             </div>
           </div>
 
