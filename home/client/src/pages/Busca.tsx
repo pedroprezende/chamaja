@@ -62,6 +62,7 @@ import {
   Check,
 } from "lucide-react";
 import { useState, useEffect, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { getSessionToken } from "@/lib/supabase";
 
 function getDisplayCategory(categoryId?: string | null, categoryName?: string | null): string {
@@ -1574,8 +1575,8 @@ export default function Busca() {
           id="map-container"
           className={`${
             mobileShowMap ? "block w-full h-full" : "hidden"
-          } lg:block lg:w-[45%] xl:w-[42%] h-full bg-zinc-900/40 relative flex-shrink-0`}
-          style={{ height: "100%", minHeight: "500px" }}
+          } lg:block lg:w-[45%] xl:w-[42%] h-full bg-zinc-900/40 relative flex-shrink-0 z-0 isolate`}
+          style={{ height: "100%", minHeight: "500px", isolation: "isolate" }}
         >
           {/* Map header */}
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30">
@@ -1595,7 +1596,11 @@ export default function Busca() {
             </button>
           </div>
 
-          <div id="busca-map" className="w-full h-full bg-[#09090b]" style={{ height: "100%", minHeight: "500px" }}></div>
+          <div
+            id="busca-map"
+            className="w-full h-full bg-[#09090b] relative z-0 isolate"
+            style={{ height: "100%", minHeight: "500px", isolation: "isolate" }}
+          ></div>
 
           {/* CTA: Não encontrou? */}
           <div className="absolute bottom-4 left-4 right-4 z-30">
@@ -1649,241 +1654,249 @@ export default function Busca() {
       </main>
 
       {/* ── MODAL "MAIS CATEGORIAS" ── */}
-      {categoryModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
-          onClick={() => setCategoryModalOpen(false)}
-        >
+      {categoryModalOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
           <div
-            className="relative w-full max-w-4xl max-h-[85vh] bg-[#09090b] border border-zinc-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+            onClick={() => setCategoryModalOpen(false)}
+            style={{ isolation: "isolate" }}
           >
-            {/* Modal Header */}
-            <div className="p-5 sm:p-6 border-b border-zinc-800 flex items-center justify-between bg-zinc-950/80 sticky top-0 z-10 backdrop-blur-sm">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary">
-                  <Grid className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-lg sm:text-xl font-black text-white leading-tight">
-                    Explorar Categorias
-                  </h3>
-                  <p className="text-xs text-zinc-400 mt-0.5">
-                    Selecione uma categoria para filtrar profissionais e comércios
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setCategoryModalOpen(false)}
-                className="w-9 h-9 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 flex items-center justify-center transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Search Input inside Modal */}
-            <div className="px-5 sm:px-6 pt-4 pb-2 bg-[#09090b]">
-              <div className="relative flex items-center bg-zinc-950 border border-zinc-800 rounded-2xl px-4 py-2.5 focus-within:border-primary/50 transition-colors">
-                <Search className="w-4 h-4 text-zinc-500 mr-2.5 flex-shrink-0" />
-                <input
-                  type="text"
-                  placeholder="Buscar categoria ou serviço (ex: fotografia, jurídico, jardinagem...)"
-                  value={categorySearchTerm}
-                  onChange={(e) => setCategorySearchTerm(e.target.value)}
-                  className="w-full bg-transparent text-sm text-white placeholder-zinc-500 focus:outline-none"
-                  autoFocus
-                />
-                {categorySearchTerm && (
-                  <button
-                    type="button"
-                    onClick={() => setCategorySearchTerm("")}
-                    className="p-1 text-zinc-500 hover:text-white"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Modal Body / Categorias */}
-            <div className="p-5 sm:p-6 overflow-y-auto busca-scrollbar flex-1 space-y-6">
-              {categorySearchTerm.trim() ? (
-                /* Busca ativa: Lista em Grade dos Resultados */
-                <div>
-                  <div className="text-xs font-bold text-zinc-400 mb-3 uppercase tracking-wider">
-                    Resultados ({filteredModalCategories.length})
+            <div
+              className="relative w-full max-w-4xl max-h-[85vh] bg-[#09090b] border border-zinc-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 z-10"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="p-5 sm:p-6 border-b border-zinc-800 flex items-center justify-between bg-zinc-950/80 sticky top-0 z-10 backdrop-blur-sm">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary">
+                    <Grid className="w-5 h-5" />
                   </div>
-                  {filteredModalCategories.length === 0 ? (
-                    <div className="text-center py-12">
-                      <Search className="w-10 h-10 text-zinc-600 mx-auto mb-3 opacity-50" />
-                      <p className="text-sm font-bold text-zinc-400">Nenhuma categoria encontrada</p>
-                      <p className="text-xs text-zinc-600 mt-1">Tente pesquisar com outros termos.</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {filteredModalCategories.map((cat) => {
-                        const Icon = cat.icon || MoreHorizontal;
-                        const isSelected = selectedCategory === cat.id;
-                        return (
-                          <button
-                            key={cat.id}
-                            type="button"
-                            onClick={() => handleCategoryClick(cat.id)}
-                            className={`p-3.5 rounded-2xl border transition-all text-left flex items-start gap-3.5 group cursor-pointer ${
-                              isSelected
-                                ? "bg-primary/10 border-primary text-white shadow-[0_0_15px_rgba(37,211,102,0.15)]"
-                                : "bg-zinc-950/60 border-zinc-800/80 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900"
-                            }`}
-                          >
-                            <div
-                              className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
-                                isSelected
-                                  ? "bg-primary text-zinc-950 shadow-sm"
-                                  : "bg-zinc-900 border border-zinc-800 text-zinc-400 group-hover:border-primary/40 group-hover:text-primary"
-                              }`}
-                            >
-                              <Icon className="w-5 h-5" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between">
-                                <span
-                                  className={`text-sm font-bold truncate ${
-                                    isSelected
-                                      ? "text-primary"
-                                      : "text-white group-hover:text-white"
-                                  }`}
-                                >
-                                  {cat.name}
-                                </span>
-                                {isSelected && (
-                                  <span className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
-                                )}
-                              </div>
-                              <p className="text-xs text-zinc-500 line-clamp-1 mt-0.5">
-                                {cat.description}
-                              </p>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
+                  <div>
+                    <h3 className="text-lg sm:text-xl font-black text-white leading-tight">
+                      Explorar Categorias
+                    </h3>
+                    <p className="text-xs text-zinc-400 mt-0.5">
+                      Selecione uma categoria para filtrar profissionais e comércios
+                    </p>
+                  </div>
                 </div>
-              ) : (
-                /* Sem busca: Exibir por Grupos Temáticos */
-                <div className="space-y-7">
-                  {/* Botão "Ver Todos" no topo */}
-                  <div className="flex items-center justify-between bg-zinc-950 border border-zinc-800/80 rounded-2xl p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-primary">
-                        <Grid className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-bold text-white">Todas as Categorias</div>
-                        <div className="text-xs text-zinc-500">Limpar filtro de categoria e exibir tudo</div>
-                      </div>
-                    </div>
+
+                <button
+                  type="button"
+                  onClick={() => setCategoryModalOpen(false)}
+                  className="w-9 h-9 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 flex items-center justify-center transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Search Input inside Modal */}
+              <div className="px-5 sm:px-6 pt-4 pb-2 bg-[#09090b]">
+                <div className="relative flex items-center bg-zinc-950 border border-zinc-800 rounded-2xl px-4 py-2.5 focus-within:border-primary/50 transition-colors">
+                  <Search className="w-4 h-4 text-zinc-500 mr-2.5 flex-shrink-0" />
+                  <input
+                    type="text"
+                    placeholder="Buscar categoria ou serviço (ex: fotografia, jurídico, jardinagem...)"
+                    value={categorySearchTerm}
+                    onChange={(e) => setCategorySearchTerm(e.target.value)}
+                    className="w-full bg-transparent text-sm text-white placeholder-zinc-500 focus:outline-none"
+                    autoFocus
+                  />
+                  {categorySearchTerm && (
                     <button
                       type="button"
-                      onClick={() => handleCategoryClick("todos")}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                        selectedCategory === "todos" || selectedCategory === "all"
-                          ? "bg-primary text-zinc-950 shadow-sm"
-                          : "bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800"
-                      }`}
+                      onClick={() => setCategorySearchTerm("")}
+                      className="p-1 text-zinc-500 hover:text-white"
                     >
-                      {selectedCategory === "todos" || selectedCategory === "all" ? "Selecionado" : "Ver Todos"}
+                      <X className="w-4 h-4" />
                     </button>
-                  </div>
+                  )}
+                </div>
+              </div>
 
-                  {categoryGroups.map((group) => {
-                    const groupCategories = allCategories.filter(
-                      (c) =>
-                        c.group === group.id ||
-                        (group.id === "outros" && (c.group === "agro" || c.group === "outros"))
-                    );
-                    if (groupCategories.length === 0) return null;
-                    const GroupIcon = group.icon || Layers;
-
-                    return (
-                      <div key={group.id} className="space-y-3">
-                        <div className="flex items-center gap-2 text-xs font-bold text-zinc-400 uppercase tracking-wider">
-                          <GroupIcon className="w-4 h-4 text-primary" />
-                          <span>{group.title}</span>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                          {groupCategories.map((cat) => {
-                            const Icon = cat.icon || MoreHorizontal;
-                            const isSelected = selectedCategory === cat.id;
-                            return (
-                              <button
-                                key={cat.id}
-                                type="button"
-                                onClick={() => handleCategoryClick(cat.id)}
-                                className={`p-3 rounded-2xl border transition-all text-left flex items-start gap-3 group cursor-pointer ${
+              {/* Modal Body / Categorias */}
+              <div className="p-5 sm:p-6 overflow-y-auto busca-scrollbar flex-1 space-y-6">
+                {categorySearchTerm.trim() ? (
+                  /* Busca ativa: Lista em Grade dos Resultados */
+                  <div>
+                    <div className="text-xs font-bold text-zinc-400 mb-3 uppercase tracking-wider">
+                      Resultados ({filteredModalCategories.length})
+                    </div>
+                    {filteredModalCategories.length === 0 ? (
+                      <div className="text-center py-12">
+                        <Search className="w-10 h-10 text-zinc-600 mx-auto mb-3 opacity-50" />
+                        <p className="text-sm font-bold text-zinc-400">Nenhuma categoria encontrada</p>
+                        <p className="text-xs text-zinc-600 mt-1">Tente pesquisar com outros termos.</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {filteredModalCategories.map((cat) => {
+                          const Icon = cat.icon || MoreHorizontal;
+                          const isSelected = selectedCategory === cat.id;
+                          return (
+                            <button
+                              key={cat.id}
+                              type="button"
+                              onClick={() => handleCategoryClick(cat.id)}
+                              className={`p-3.5 rounded-2xl border transition-all text-left flex items-start gap-3.5 group cursor-pointer ${
+                                isSelected
+                                  ? "bg-primary/10 border-primary text-white shadow-[0_0_15px_rgba(37,211,102,0.15)]"
+                                  : "bg-zinc-950/60 border-zinc-800/80 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900"
+                              }`}
+                            >
+                              <div
+                                className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
                                   isSelected
-                                    ? "bg-primary/10 border-primary text-white shadow-[0_0_15px_rgba(37,211,102,0.15)]"
-                                    : "bg-zinc-950/60 border-zinc-800/80 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900"
+                                    ? "bg-primary text-zinc-950 shadow-sm"
+                                    : "bg-zinc-900 border border-zinc-800 text-zinc-400 group-hover:border-primary/40 group-hover:text-primary"
                                 }`}
                               >
-                                <div
-                                  className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
-                                    isSelected
-                                      ? "bg-primary text-zinc-950 shadow-sm"
-                                      : "bg-zinc-900 border border-zinc-800 text-zinc-400 group-hover:border-primary/40 group-hover:text-primary"
-                                  }`}
-                                >
-                                  <Icon className="w-4.5 h-4.5" />
+                                <Icon className="w-5 h-5" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between">
+                                  <span
+                                    className={`text-sm font-bold truncate ${
+                                      isSelected
+                                        ? "text-primary"
+                                        : "text-white group-hover:text-white"
+                                    }`}
+                                  >
+                                    {cat.name}
+                                  </span>
+                                  {isSelected && (
+                                    <span className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
+                                  )}
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between">
-                                    <span
-                                      className={`text-xs font-bold truncate ${
-                                        isSelected
-                                          ? "text-primary font-extrabold"
-                                          : "text-zinc-200 group-hover:text-white"
-                                      }`}
-                                    >
-                                      {cat.name}
-                                    </span>
-                                    {isSelected && (
-                                      <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-                                    )}
-                                  </div>
-                                  <p className="text-[11px] text-zinc-500 line-clamp-1 mt-0.5">
-                                    {cat.description}
-                                  </p>
-                                </div>
-                              </button>
-                            );
-                          })}
+                                <p className="text-xs text-zinc-500 line-clamp-1 mt-0.5">
+                                  {cat.description}
+                                </p>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  /* Sem busca: Exibir por Grupos Temáticos */
+                  <div className="space-y-7">
+                    {/* Botão "Ver Todos" no topo */}
+                    <div className="flex items-center justify-between bg-zinc-950 border border-zinc-800/80 rounded-2xl p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-primary">
+                          <Grid className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold text-white">Todas as Categorias</div>
+                          <div className="text-xs text-zinc-500">Limpar filtro de categoria e exibir tudo</div>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+                      <button
+                        type="button"
+                        onClick={() => handleCategoryClick("todos")}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                          selectedCategory === "todos" || selectedCategory === "all"
+                            ? "bg-primary text-zinc-950 shadow-sm"
+                            : "bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800"
+                        }`}
+                      >
+                        {selectedCategory === "todos" || selectedCategory === "all" ? "Selecionado" : "Ver Todos"}
+                      </button>
+                    </div>
 
-            {/* Modal Footer */}
-            <div className="p-4 bg-zinc-950 border-t border-zinc-800/80 flex items-center justify-between text-xs text-zinc-500">
-              <span>{allCategories.length} categorias disponíveis</span>
-              <button
-                type="button"
-                onClick={() => setCategoryModalOpen(false)}
-                className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold rounded-xl border border-zinc-800 transition-colors"
-              >
-                Fechar
-              </button>
+                    {categoryGroups.map((group) => {
+                      const groupCategories = allCategories.filter(
+                        (c) =>
+                          c.group === group.id ||
+                          (group.id === "outros" && (c.group === "agro" || c.group === "outros"))
+                      );
+                      if (groupCategories.length === 0) return null;
+                      const GroupIcon = group.icon || Layers;
+
+                      return (
+                        <div key={group.id} className="space-y-3">
+                          <div className="flex items-center gap-2 text-xs font-bold text-zinc-400 uppercase tracking-wider">
+                            <GroupIcon className="w-4 h-4 text-primary" />
+                            <span>{group.title}</span>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                            {groupCategories.map((cat) => {
+                              const Icon = cat.icon || MoreHorizontal;
+                              const isSelected = selectedCategory === cat.id;
+                              return (
+                                <button
+                                  key={cat.id}
+                                  type="button"
+                                  onClick={() => handleCategoryClick(cat.id)}
+                                  className={`p-3 rounded-2xl border transition-all text-left flex items-start gap-3 group cursor-pointer ${
+                                    isSelected
+                                      ? "bg-primary/10 border-primary text-white shadow-[0_0_15px_rgba(37,211,102,0.15)]"
+                                      : "bg-zinc-950/60 border-zinc-800/80 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900"
+                                  }`}
+                                >
+                                  <div
+                                    className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
+                                      isSelected
+                                        ? "bg-primary text-zinc-950 shadow-sm"
+                                        : "bg-zinc-900 border border-zinc-800 text-zinc-400 group-hover:border-primary/40 group-hover:text-primary"
+                                    }`}
+                                  >
+                                    <Icon className="w-4.5 h-4.5" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between">
+                                      <span
+                                        className={`text-xs font-bold truncate ${
+                                          isSelected
+                                            ? "text-primary font-extrabold"
+                                            : "text-zinc-200 group-hover:text-white"
+                                        }`}
+                                      >
+                                        {cat.name}
+                                      </span>
+                                      {isSelected && (
+                                        <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                                      )}
+                                    </div>
+                                    <p className="text-[11px] text-zinc-500 line-clamp-1 mt-0.5">
+                                      {cat.description}
+                                    </p>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 bg-zinc-950 border-t border-zinc-800/80 flex items-center justify-between text-xs text-zinc-500">
+                <span>{allCategories.length} categorias disponíveis</span>
+                <button
+                  type="button"
+                  onClick={() => setCategoryModalOpen(false)}
+                  className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold rounded-xl border border-zinc-800 transition-colors"
+                >
+                  Fechar
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
 
       {/* Styles for Leaflet customization in dark mode */}
       <style>{`
+        .leaflet-container {
+          isolation: isolate !important;
+          z-index: 0 !important;
+        }
         .leaflet-popup-content-wrapper {
           background: #09090b !important;
           border: 1px solid #18181b !important;
