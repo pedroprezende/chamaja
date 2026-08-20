@@ -21,7 +21,7 @@ import {
 import { eq, or, ilike, and, gte, lte, ne, desc, asc, sql, count, isNull } from "drizzle-orm";
 
 import { geocodeAddress } from "../geocoding";
-import { getProvidersBenefitsMap } from "../../lib/plan-benefits";
+import { getProvidersBenefitsMap } from "../../apps/pwa/lib/plan-benefits";
 
 // Schema for admin provider create/update
 const adminProviderSchema = z.object({

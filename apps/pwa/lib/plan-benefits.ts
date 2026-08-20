@@ -1,4 +1,4 @@
-import { providers, plans, planBenefits } from "../drizzle/schema";
+import { providers, plans, planBenefits } from "../../../drizzle/schema";
 import { eq, inArray, and, lt } from "drizzle-orm";
 
 // ── Canonical benefit keys ─────────────────────────────────────────────────────

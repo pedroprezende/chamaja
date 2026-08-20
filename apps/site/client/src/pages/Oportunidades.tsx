@@ -28,7 +28,7 @@ import {
   Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { categories, subcategoriesByCategory, type Category, type Subcategory } from "../../../../data/mock";
+import { categories, subcategoriesByCategory, type Category, type Subcategory } from "../../../../../data/mock";
 import { supabase, getSessionToken } from "@/lib/supabase";
 
 // Helper to format time ago in Portuguese

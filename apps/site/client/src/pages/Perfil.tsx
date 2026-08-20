@@ -215,7 +215,7 @@ import {
   calculateRealTimeStatus,
   formatDaySchedule,
   DAYS_CONFIG,
-} from "../../../../lib/working-hours";
+} from "../../../../../apps/pwa/lib/working-hours";
 
 const TikTokIcon = () => (
   <svg className="w-4 h-4 text-white fill-current" viewBox="0 0 24 24">

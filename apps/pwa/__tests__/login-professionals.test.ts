@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { adminDB } from "../lib/admin-database";
-import { getProfessionalsByRanking } from "../data/mock";
+import { getProfessionalsByRanking } from "../../data/mock";
 
 describe("Login e Cadastro de Prestadores", () => {
   describe("Fluxo de Login", () => {

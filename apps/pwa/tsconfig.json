@@ -5,7 +5,10 @@
     "types": ["node", "nativewind/types"],
     "paths": {
       "@/*": ["./*"],
-      "@shared/*": ["./shared/*"]
+      "@/server/*": ["../../server/*"],
+      "@/shared/*": ["../../shared/*"],
+      "@/data/*": ["../../data/*"],
+      "@shared/*": ["../../shared/*"]
     }
   },
   "include": [
@@ -15,5 +18,5 @@
     "expo-env.d.ts",
     "nativewind-env.d.ts"
   ],
-  "exclude": ["node_modules", "dist", "apps", "scratch", "tests"]
+  "exclude": ["node_modules", "dist", "__tests__"]
 }

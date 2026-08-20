@@ -23,7 +23,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { categories, subcategoriesByCategory, type Category } from "../../../../data/mock";
+import { categories, subcategoriesByCategory, type Category, type Subcategory } from "../../../../../data/mock";
 import { toast } from "sonner";
 import { supabase, getSessionToken } from "@/lib/supabase";
 

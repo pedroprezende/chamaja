@@ -6,7 +6,7 @@ import {
   getProfessionalsByService,
   getProfessionalById,
   subcategoriesByCategory,
-} from "../data/mock";
+} from "../../data/mock";
 
 describe("Mock Data", () => {
   it("deve ter categorias definidas", () => {

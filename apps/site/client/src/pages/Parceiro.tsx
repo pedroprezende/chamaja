@@ -43,7 +43,7 @@ import {
   DAYS_CONFIG,
   DayKey,
   formatDaySchedule,
-} from "../../../../lib/working-hours";
+} from "../../../../../apps/pwa/lib/working-hours";
 import { AgendaSettingsForm } from "../components/AgendaSettingsForm";
 import { AgendaManager } from "../components/AgendaManager";
 import { supabase, getSessionToken } from "@/lib/supabase";

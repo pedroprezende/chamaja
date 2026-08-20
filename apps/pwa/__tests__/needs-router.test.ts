@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { describe, it, expect, vi } from "vitest";
-import { appRouter } from "../server/routers";
-import type { TrpcContext } from "../server/_core/context";
+import { appRouter } from "../../server/routers";
+import type { TrpcContext } from "../../server/_core/context";
 
 describe("Needs and Applications tRPC Router", () => {
   it("should have all required procedures in appRouter.needs", () => {
@@ -162,7 +162,7 @@ describe("Needs and Applications tRPC Router", () => {
     };
 
     // Ensure user exists in users table (foreign key constraint)
-    const db = await import("../server/db");
+    const db = await import("../../server/db");
     await db.upsertUser({
       openId: pwaUser.openId,
       name: pwaUser.name,
@@ -253,7 +253,7 @@ describe("Needs and Applications tRPC Router", () => {
     };
 
     // Ensure user exists in users table (foreign key constraint)
-    const db = await import("../server/db");
+    const db = await import("../../server/db");
     await db.upsertUser({
       openId: webUser.openId,
       name: webUser.name,
@@ -396,7 +396,7 @@ describe("Needs and Applications tRPC Router", () => {
   });
 
   it("should process professional application (Tenho interesse) and enforce business rules", async () => {
-    const db = await import("../server/db");
+    const db = await import("../../server/db");
 
     // Create contractor user
     const contractorOpenId = `contractor_${Date.now()}`;

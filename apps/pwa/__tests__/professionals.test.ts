@@ -6,7 +6,7 @@ import {
   createProfessional,
   upgradeToPremium,
   getProfessionalById,
-} from "../data/mock";
+} from "../../data/mock";
 
 describe.skip("Professional System", () => {
   describe("getProfessionalsByRanking", () => {

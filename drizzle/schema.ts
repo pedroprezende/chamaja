@@ -187,6 +187,8 @@ export const providers = pgTable(
     whatsapp: varchar("whatsapp", { length: 20 }),
     description: text("description"),
     address: text("address"),
+    addressNumber: varchar("address_number", { length: 50 }),
+    state: varchar("state", { length: 2 }),
     avatarUri: text("avatar_uri"),
     avatarThumbnailUri: text("avatar_thumbnail_uri"),
     gallery: text("gallery").array(),
