@@ -56,12 +56,18 @@ importers:
       cookie:
         specifier: ^1.1.1
         version: 1.1.1
+      cross-env:
+        specifier: ^7.0.3
+        version: 7.0.3
       dotenv:
         specifier: ^16.6.1
         version: 16.6.1
       drizzle-orm:
         specifier: ^0.44.7
         version: 0.44.7(mysql2@3.16.0)(postgres@3.4.9)
+      esbuild:
+        specifier: ^0.25.12
+        version: 0.25.12
       expo:
         specifier: ~54.0.29
         version: 54.0.29(@babel/core@7.29.7)(@expo/metro-runtime@6.1.2)(expo-router@6.0.19)(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
@@ -203,6 +209,15 @@ importers:
       tailwind-merge:
         specifier: ^2.6.0
         version: 2.6.0
+      tailwindcss:
+        specifier: ^3.4.17
+        version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
+      tsx:
+        specifier: ^4.21.0
+        version: 4.21.0
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
       zod:
         specifier: ^4.2.1
         version: 4.2.1
@@ -228,15 +243,9 @@ importers:
       concurrently:
         specifier: ^9.2.1
         version: 9.2.1
-      cross-env:
-        specifier: ^7.0.3
-        version: 7.0.3
       drizzle-kit:
         specifier: ^0.31.8
         version: 0.31.8
-      esbuild:
-        specifier: ^0.25.12
-        version: 0.25.12
       eslint:
         specifier: ^9.39.2
         version: 9.39.2(jiti@2.7.0)
@@ -249,15 +258,6 @@ importers:
       qrcode:
         specifier: ^1.5.4
         version: 1.5.4
-      tailwindcss:
-        specifier: ^3.4.17
-        version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
-      tsx:
-        specifier: ^4.21.0
-        version: 4.21.0
-      typescript:
-        specifier: ~5.9.3
-        version: 5.9.3
       vitest:
         specifier: ^2.1.9
         version: 2.1.9(@types/node@22.19.3)(lightningcss@1.33.0)(terser@5.44.1)
@@ -650,6 +650,12 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.47.10
         version: 2.112.3
+      '@vitejs/plugin-react':
+        specifier: ^5.0.4
+        version: 5.2.0(vite@7.3.6(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.33.0)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2))
+      autoprefixer:
+        specifier: ^10.4.20
+        version: 10.5.4(postcss@8.5.6)
       axios:
         specifier: ^1.12.0
         version: 1.13.2
@@ -665,6 +671,9 @@ importers:
       embla-carousel-react:
         specifier: ^8.6.0
         version: 8.6.0(react@19.2.8)
+      esbuild:
+        specifier: ^0.25.0
+        version: 0.25.12
       express:
         specifier: ^4.21.2
         version: 4.22.1
@@ -683,6 +692,9 @@ importers:
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      postcss:
+        specifier: ^8.4.47
+        version: 8.5.6
       react:
         specifier: ^19.2.1
         version: 19.2.8
@@ -710,12 +722,27 @@ importers:
       tailwind-merge:
         specifier: ^3.3.1
         version: 3.6.0
+      tailwindcss:
+        specifier: ^4.1.14
+        version: 4.3.3
       tailwindcss-animate:
         specifier: ^1.0.7
         version: 1.0.7(tailwindcss@4.3.3)
+      tsx:
+        specifier: ^4.19.1
+        version: 4.21.0
+      typescript:
+        specifier: 5.6.3
+        version: 5.6.3
       vaul:
         specifier: ^1.1.2
         version: 1.1.2(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      vite:
+        specifier: ^7.1.7
+        version: 7.3.6(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.33.0)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2)
+      vite-plugin-manus-runtime:
+        specifier: ^0.0.58
+        version: 0.0.58
       wouter:
         specifier: ^3.3.5
         version: 3.10.0(react@19.2.8)
@@ -747,45 +774,18 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.1
         version: 19.2.4(@types/react@19.2.18)
-      '@vitejs/plugin-react':
-        specifier: ^5.0.4
-        version: 5.2.0(vite@7.3.6(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.33.0)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2))
       add:
         specifier: ^2.0.6
         version: 2.0.9
-      autoprefixer:
-        specifier: ^10.4.20
-        version: 10.5.4(postcss@8.5.6)
-      esbuild:
-        specifier: ^0.25.0
-        version: 0.25.12
       pnpm:
         specifier: ^10.15.1
         version: 10.34.5
-      postcss:
-        specifier: ^8.4.47
-        version: 8.5.6
       prettier:
         specifier: ^3.6.2
         version: 3.7.4
-      tailwindcss:
-        specifier: ^4.1.14
-        version: 4.3.3
-      tsx:
-        specifier: ^4.19.1
-        version: 4.21.0
       tw-animate-css:
         specifier: ^1.4.0
         version: 1.4.0
-      typescript:
-        specifier: 5.6.3
-        version: 5.6.3
-      vite:
-        specifier: ^7.1.7
-        version: 7.3.6(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.33.0)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2)
-      vite-plugin-manus-runtime:
-        specifier: ^0.0.58
-        version: 0.0.58
       vitest:
         specifier: ^2.1.4
         version: 2.1.9(@types/node@24.13.3)(lightningcss@1.33.0)(terser@5.44.1)
@@ -10001,9 +10001,9 @@ snapshots:
 
   '@babel/helper-wrap-function@7.28.3':
     dependencies:
-      '@babel/template': 7.27.2
+      '@babel/template': 7.29.7
       '@babel/traverse': 7.28.5
-      '@babel/types': 7.28.5
+      '@babel/types': 7.29.8
     transitivePeerDependencies:
       - supports-color
 
@@ -18745,7 +18745,7 @@ snapshots:
   metro-source-map@0.83.2:
     dependencies:
       '@babel/traverse': 7.28.5
-      '@babel/traverse--for-generate-function-map': '@babel/traverse@7.28.5'
+      '@babel/traverse--for-generate-function-map': '@babel/traverse@7.29.8'
       '@babel/types': 7.28.5
       flow-enums-runtime: 0.0.6
       invariant: 2.2.4
@@ -18760,7 +18760,7 @@ snapshots:
   metro-source-map@0.83.3:
     dependencies:
       '@babel/traverse': 7.28.5
-      '@babel/traverse--for-generate-function-map': '@babel/traverse@7.28.5'
+      '@babel/traverse--for-generate-function-map': '@babel/traverse@7.29.8'
       '@babel/types': 7.28.5
       flow-enums-runtime: 0.0.6
       invariant: 2.2.4
