@@ -1692,57 +1692,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Categories Horizontal Chips (Redesigned per Reference) */}
-      <section className="bg-black py-6 md:py-8 border-b border-zinc-900 select-none">
-        <div className="container mx-auto px-4 max-w-7xl">
-          <div className="text-center mb-5 md:mb-6">
-            <p className="text-zinc-400 text-xs md:text-sm font-medium tracking-wide">
-              Encontre comércios ou prestadores de serviço por especialidade
-            </p>
-          </div>
 
-          {/* Horizontal scroll chips */}
-          <div className="flex overflow-x-auto gap-2 pb-1 scrollbar-none no-scrollbar justify-center flex-wrap">
-            {[
-              { id: "all", name: "Todos", icon: Grid },
-              { id: "comercios", name: "Alimentação", icon: Utensils },
-              { id: "beleza-estetica", name: "Beleza e Estética", icon: Scissors },
-              { id: "saude", name: "Saúde e Bem-estar", icon: HeartPulse },
-              { id: "reformas-reparos", name: "Reformas e Reparos", icon: Wrench },
-              { id: "servicos-domesticos", name: "Serviços Domésticos", icon: HomeIcon },
-              { id: "construcao", name: "Construção", icon: Hammer },
-              { id: "automotivo", name: "Automotivo", icon: Car },
-              { id: "educacao", name: "Educação", icon: GraduationCap },
-              { id: "mais", name: "Mais", icon: MoreHorizontal },
-            ].map(cat => {
-              const Icon = cat.icon;
-              const isActive = cat.id === "all";
-              return (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => {
-                    if (cat.id === "all" || cat.id === "mais") {
-                      window.location.href = "/busca";
-                    } else {
-                      window.location.href = `/busca?category=${cat.id}`;
-                    }
-                  }}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-full whitespace-nowrap text-sm font-semibold transition-all duration-200 flex-shrink-0 ${
-                    isActive
-                      ? "bg-zinc-900 border border-primary/40 text-primary"
-                      : "bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span>{cat.name}</span>
-                  {cat.id === "mais" && <ChevronDown className="h-3 w-3 ml-0.5" />}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </section>
 
       {/* Destaques para você (from user screenshot) */}
       <section className="py-16 bg-black border-b border-zinc-900">
@@ -1907,8 +1857,8 @@ export default function Home() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <MapPin className="text-primary h-6 w-6" />
-                  <h2 className="text-2xl md:text-3xl font-black text-white font-sans tracking-tight">
+                  <MapPin className="text-primary h-6 w-6 flex-shrink-0" />
+                  <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-white font-sans tracking-tight leading-tight flex-wrap">
                     Profissionais próximos de você
                   </h2>
                 </div>

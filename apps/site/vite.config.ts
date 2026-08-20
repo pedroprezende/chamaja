@@ -221,7 +221,10 @@ const plugins = [
 export default defineConfig({
   plugins,
   resolve: {
+    dedupe: ["react", "react-dom"],
     alias: {
+      "react": path.resolve(import.meta.dirname, "../../node_modules/react"),
+      "react-dom": path.resolve(import.meta.dirname, "../../node_modules/react-dom"),
       "@": path.resolve(import.meta.dirname, "client", "src"),
       "@shared": path.resolve(import.meta.dirname, "shared"),
       "@assets": path.resolve(import.meta.dirname, "attached_assets"),
@@ -251,10 +254,7 @@ export default defineConfig({
         target: "http://127.0.0.1:3000",
         changeOrigin: true,
       },
-      "/assets": {
-        target: "http://127.0.0.1:3000",
-        changeOrigin: true,
-      },
+
       "/politica-de-privacidade": {
         target: "http://127.0.0.1:3000",
         changeOrigin: true,

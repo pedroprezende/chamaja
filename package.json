@@ -4,9 +4,10 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
-    "dev": "concurrently -k \"pnpm dev:server\" \"pnpm dev:metro\"",
+    "dev": "concurrently -k \"pnpm dev:server\" \"pnpm dev:metro\" \"pnpm dev:site\"",
     "dev:server": "cross-env NODE_ENV=development tsx watch server/_core/index.ts",
     "dev:metro": "pnpm --filter pwa dev",
+    "dev:site": "pnpm --filter xamaja-site dev",
     "dev:tunnel": "pnpm --filter pwa dev:tunnel",
     "build": "node scripts/prebuild-web.js && pnpm --filter xamaja-site build && pnpm --filter pwa build && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "cross-env NODE_ENV=production node dist/index.js",
@@ -108,6 +109,8 @@
   "packageManager": "pnpm@9.12.0",
   "pnpm": {
     "overrides": {
+      "react": "19.1.0",
+      "react-dom": "19.1.0",
       "undici": ">=6.27.0",
       "tar": ">=7.4.3",
       "minimatch": ">=9.0.5",
