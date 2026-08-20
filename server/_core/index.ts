@@ -500,14 +500,14 @@ async function startServer() {
   // Servir website institucional (React SPA em home/dist/public ou legado em server/public)
   const rootDir = process.cwd();
 
-  const reactWebsitePath = path.resolve(rootDir, "home", "dist", "public");
+  const reactWebsitePath = path.resolve(rootDir, "apps", "site", "dist", "public");
   const legacyPublicPath = path.resolve(rootDir, "server", "public");
   const publicPath = fs.existsSync(reactWebsitePath)
     ? reactWebsitePath
     : legacyPublicPath;
   app.use(express.static(publicPath));
 
-  const projectAssetsPath = path.resolve(rootDir, "assets");
+  const projectAssetsPath = path.resolve(rootDir, "apps", "site", "dist", "public", "assets");
   app.use("/assets", express.static(projectAssetsPath));
 
   // Servir arquivos do Expo Web a partir da raiz para evitar que requisições retornem 404 e quebrem o app
