@@ -2246,31 +2246,29 @@ export default function Home() {
                 title: "Você busca",
                 description:
                   "Encontre o serviço ou comércio que precisa perto de você.",
-                icon: Search,
+                image: "/assets/images/mockup2/site-step-01-buscar-site-transparent.png",
               },
               {
                 step: 2,
                 title: "Encontre e escolha",
                 description:
                   "Veja avaliações, localização e escolha a melhor para você.",
-                icon: MapPin,
+                image: "/assets/images/mockup2/site-step-02-escolher-site-transparent.png",
               },
               {
                 step: 3,
                 title: "Fale direto no WhatsApp",
                 description:
                   "Chame no WhatsApp e resolva tudo de forma rápida.",
-                icon: MessageSquare,
+                image: "/assets/images/mockup2/site-step-03-whatsapp-site-transparent.png",
               },
               {
                 step: 4,
                 title: "Problema resolvido!",
                 description: "Tudo que você precisa, em um só lugar.",
-                icon: PartyPopper,
+                image: "/assets/images/mockup2/site-step-04-resolvido-site-transparent.png",
               },
-            ].map(item => {
-              const Icon = item.icon;
-              return (
+            ].map(item => (
               <div key={item.step} className="text-center group cursor-default">
                 <div className="mb-6 flex justify-center relative z-10">
                   <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-black text-lg shadow-[0_0_20px_rgba(132,204,22,0.4)] group-hover:scale-110 transition-transform duration-300">
@@ -2278,12 +2276,8 @@ export default function Home() {
                   </div>
                 </div>
                 
-                <div className="w-full aspect-[4/5] bg-zinc-950 border border-zinc-900 rounded-3xl mb-8 flex flex-col items-center justify-center text-zinc-500 transition-all duration-500 group-hover:bg-zinc-900 group-hover:border-primary/40 group-hover:text-primary group-hover:shadow-[0_0_40px_rgba(132,204,22,0.1)] relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                  
-                  <Icon className="w-20 h-20 mb-6 transform group-hover:-translate-y-2 group-hover:scale-110 transition-all duration-500 ease-out" strokeWidth={1} />
-                  
-                  <div className="w-16 h-1.5 rounded-full bg-zinc-800 group-hover:bg-primary/40 transition-colors duration-500" />
+                <div className="w-full mb-8 flex flex-col items-center justify-center transition-all duration-500 group-hover:-translate-y-2 relative">
+                  <img src={item.image} alt={item.title} className="w-full h-auto object-contain transition-transform duration-700 group-hover:scale-105" />
                 </div>
                 
                 <h3 className="text-xl font-bold mb-3 text-white">{item.title}</h3>
@@ -2291,7 +2285,7 @@ export default function Home() {
                   {item.description}
                 </p>
               </div>
-            )})}
+            ))}
           </div>
         </div>
       </section>
