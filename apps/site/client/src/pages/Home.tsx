@@ -545,7 +545,7 @@ export default function Home() {
     loadNearby();
   }, []);
 
-  const DEFAULT_MASCOT = "https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/mascote-parrot-WdeTpQk76sVEPj2emyYAPr.webp";
+  const DEFAULT_MASCOT = "/assets/images/mockup2/xara-mascote.png";
 
   // Helper: build marker icon HTML
   const buildIcon = useCallback((L: any, photoUrl: string, isSelected: boolean) => {
@@ -2336,7 +2336,7 @@ export default function Home() {
 
             <div className="flex justify-center">
               <img
-                src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-service-provider-Md5EygbsDPWs42ZSrzGGp6.webp"
+                src="/assets/images/mockup2/site-illustration-prestadores.png"
                 alt="Para Prestadores"
                 className="max-w-sm w-full h-auto"
               />
@@ -2350,7 +2350,7 @@ export default function Home() {
           >
             <div className="flex justify-center order-2 md:order-1">
               <img
-                src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/phone-commerce-kCETcfMaD2NsM9wbVS6gvi.webp"
+                src="/assets/images/mockup2/site-illustration-comercios.png"
                 alt="Para Comércios"
                 className="max-w-sm w-full h-auto"
               />
@@ -2904,7 +2904,7 @@ export default function Home() {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="flex justify-center">
               <img
-                src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/mascote-parrot-WdeTpQk76sVEPj2emyYAPr.webp"
+                src="/assets/images/mockup2/xara-mascote.png"
                 alt="Mascote XamaJá"
                 className="max-w-sm w-full h-auto"
               />

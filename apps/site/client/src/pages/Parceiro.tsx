@@ -1051,7 +1051,7 @@ export default function Parceiro() {
                 <div className="relative z-10 mt-12">
                   <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-4 flex items-center gap-3">
                     <img
-                      src="https://d2xsxph8kpxj0f.cloudfront.net/310519663596077010/YfEX4Z3YNEgNHNWGECNatQ/mascote-parrot-WdeTpQk76sVEPj2emyYAPr.webp"
+                      src="/assets/images/mockup2/xara-mascote.png"
                       alt="XamaJá"
                       className="w-10 h-10 object-contain flex-shrink-0"
                     />
