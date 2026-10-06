@@ -612,9 +612,9 @@ export default function Home() {
 
       try {
         const map = L.map("nearby-map", { zoomControl: false });
-        L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-          attribution: "&copy; CartoDB",
-          subdomains: "abcd",
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          subdomains: "abc",
           maxZoom: 20,
         }).addTo(map);
         L.control.zoom({ position: "bottomright" }).addTo(map);

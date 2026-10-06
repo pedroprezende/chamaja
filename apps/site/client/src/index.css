@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *, .dark, .dark *));
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
@@ -43,39 +43,39 @@
 }
 
 :root {
+  --background: #ffffff;
+  --foreground: #09090b;
+  --card: #ffffff;
+  --card-foreground: #09090b;
+  --popover: #ffffff;
+  --popover-foreground: #09090b;
   --primary: #84cc16;
   --primary-foreground: #ffffff;
-  --sidebar-primary: #84cc16;
-  --sidebar-primary-foreground: #ffffff;
-  --chart-1: #84cc16;
-  --chart-2: #27272a;
-  --chart-3: #18181b;
-  --chart-4: #84cc16;
-  --chart-5: #27272a;
-  --radius: 0.65rem;
-  --background: #000000;
-  --foreground: #F5F5F5;
-  --card: #0c0c0e;
-  --card-foreground: #F5F5F5;
-  --popover: #0c0c0e;
-  --popover-foreground: #F5F5F5;
-  --secondary: #27272a;
-  --secondary-foreground: #F5F5F5;
-  --muted: #18181b;
-  --muted-foreground: #A1A1A1;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
   --accent: #84cc16;
   --accent-foreground: #ffffff;
-  --destructive: #ff4444;
-  --destructive-foreground: #ffffff;
-  --border: #1c1c1e;
-  --input: #0e0e10;
+  --destructive: #ef4444;
+  --destructive-foreground: #f8fafc;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
   --ring: #84cc16;
-  --sidebar: #000000;
-  --sidebar-foreground: #F5F5F5;
-  --sidebar-accent: #84cc16;
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #1c1c1e;
+  --chart-1: #84cc16;
+  --chart-2: #e4e4e7;
+  --chart-3: #f4f4f5;
+  --chart-4: #84cc16;
+  --chart-5: #e4e4e7;
+  --sidebar: #f8fafc;
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #84cc16;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #0f172a;
+  --sidebar-border: #e2e8f0;
   --sidebar-ring: #84cc16;
+  --radius: 0.65rem;
 }
 
 .dark {
@@ -419,4 +419,195 @@ input[type="range"].busca-range::-moz-range-thumb {
   border: solid #000;
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   LIGHT THEME GLOBAL OVERRIDES (when html does not have .dark)
+   Preserves brand green accents (#84cc16 / #25D366) while making
+   all backgrounds, cards, typography, and borders clean & light.
+───────────────────────────────────────────────────────────── */
+
+html:not(.dark) {
+  color-scheme: light;
+  background-color: #f8f9fa;
+}
+
+html:not(.dark) body {
+  background-color: #f8f9fa !important;
+  color: #0f172a !important;
+}
+
+/* 1. Page Backgrounds & Large Section Surfaces */
+html:not(.dark) .min-h-screen,
+html:not(.dark) main,
+html:not(.dark) section,
+html:not(.dark) .bg-black,
+html:not(.dark) .bg-\[\#020203\],
+html:not(.dark) .bg-\[\#030303\],
+html:not(.dark) .bg-\[\#030508\],
+html:not(.dark) .bg-\[\#050505\],
+html:not(.dark) .bg-\[\#060607\],
+html:not(.dark) .bg-\[\#070708\],
+html:not(.dark) .bg-\[\#0a0a0b\],
+html:not(.dark) .bg-\[\#0a0a0c\],
+html:not(.dark) .bg-\[\#0b0b0d\],
+html:not(.dark) .bg-\[\#0c0c0e\] {
+  background-color: #f8f9fa !important;
+}
+
+/* 2. Cards, Modals, Panels, Menus & Dropdowns */
+html:not(.dark) .bg-card,
+html:not(.dark) .bg-popover,
+html:not(.dark) .bg-zinc-950,
+html:not(.dark) .bg-zinc-900,
+html:not(.dark) [class*="bg-zinc-950"],
+html:not(.dark) [class*="bg-zinc-900"],
+html:not(.dark) .bg-\[\#08090d\],
+html:not(.dark) .bg-\[\#09090b\] {
+  background-color: #ffffff !important;
+}
+
+/* 3. Subtle sub-panels, chips, badges with secondary background */
+html:not(.dark) [class*="bg-zinc-800"],
+html:not(.dark) [class*="bg-white\/[0.02]"],
+html:not(.dark) [class*="bg-white\/[0.03]"],
+html:not(.dark) [class*="bg-white\/[0.04]"],
+html:not(.dark) [class*="bg-white\/[0.05]"],
+html:not(.dark) [class*="bg-white\/[0.06]"],
+html:not(.dark) [class*="bg-white\/[0.08]"] {
+  background-color: #f1f5f9 !important;
+}
+
+/* 4. Soft shadows for cards in light mode to give clean depth */
+html:not(.dark) div[class*="rounded-2xl"][class*="border"],
+html:not(.dark) div[class*="rounded-3xl"][class*="border"],
+html:not(.dark) div[class*="rounded-xl"][class*="border"],
+html:not(.dark) .bg-card {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04) !important;
+}
+
+/* 5. Headers & Sticky Bars */
+html:not(.dark) header,
+html:not(.dark) [class*="sticky"][class*="bg-"] {
+  background-color: rgba(255, 255, 255, 0.98) !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+html:not(.dark) header a,
+html:not(.dark) header button,
+html:not(.dark) header span {
+  color: #0f172a;
+}
+
+html:not(.dark) header .text-muted-foreground {
+  color: #64748b !important;
+}
+
+html:not(.dark) header a:hover,
+html:not(.dark) header button:hover {
+  color: #000000 !important;
+}
+
+html:not(.dark) header button.bg-primary,
+html:not(.dark) header button.bg-primary * {
+  background-color: #84cc16 !important;
+  color: #ffffff !important;
+}
+
+/* 6. Borders */
+html:not(.dark) [class*="border-zinc-800"],
+html:not(.dark) [class*="border-zinc-700"],
+html:not(.dark) [class*="border-zinc-900"],
+html:not(.dark) [class*="border-white\/"],
+html:not(.dark) .border-border {
+  border-color: #e2e8f0 !important;
+}
+
+/* 7. Typography (Headings, titles, labels) */
+html:not(.dark) h1, 
+html:not(.dark) h2, 
+html:not(.dark) h3, 
+html:not(.dark) h4, 
+html:not(.dark) h5, 
+html:not(.dark) h6 {
+  color: #0f172a !important;
+}
+
+/* Base text-white on light mode - except when inside colorful badges / buttons */
+html:not(.dark) .text-white:not([class*="bg-[#25D366]"]):not([class*="bg-[#84cc16]"]):not([class*="bg-primary"]):not([class*="bg-blue"]):not([class*="bg-green"]):not([class*="bg-emerald"]):not([class*="bg-red"]):not([class*="bg-amber"]):not([class*="bg-purple"]):not([class*="bg-violet"]):not([class*="bg-gradient"]):not([class*="badge"]):not(span[class*="bg-"]):not(button[class*="bg-primary"]):not(button[class*="bg-[#25D366]"]) {
+  color: #0f172a !important;
+}
+
+/* Muted / Subtitle text colors */
+html:not(.dark) .text-zinc-100,
+html:not(.dark) .text-zinc-200,
+html:not(.dark) .text-zinc-300 {
+  color: #1e293b !important;
+}
+
+html:not(.dark) .text-zinc-400,
+html:not(.dark) .text-zinc-500,
+html:not(.dark) .text-muted-foreground {
+  color: #64748b !important;
+}
+
+/* Hover text */
+html:not(.dark) .hover\:text-white:hover {
+  color: #09090b !important;
+}
+
+html:not(.dark) .hover\:bg-zinc-900:hover,
+html:not(.dark) .hover\:bg-zinc-800:hover {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* 8. Form Inputs, Textareas, Selects */
+html:not(.dark) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html:not(.dark) textarea,
+html:not(.dark) select {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+html:not(.dark) input::placeholder,
+html:not(.dark) textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* 9. Hero Tech Grid in light mode */
+html:not(.dark) .tech-grid-overlay {
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(37, 211, 102, 0.12) 0%, transparent 65%),
+    linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px) !important;
+}
+
+/* 10. Nav buttons: "Entrar" button in header */
+html:not(.dark) header button.border-zinc-800,
+html:not(.dark) header .border-zinc-800 {
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+  background-color: #ffffff !important;
+}
+
+html:not(.dark) header button.border-zinc-800:hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* 11. Modal Backdrop & Dialogs */
+html:not(.dark) .bg-black\/80,
+html:not(.dark) .bg-black\/70,
+html:not(.dark) .bg-black\/60 {
+  background-color: rgba(15, 23, 42, 0.5) !important;
+  backdrop-filter: blur(4px);
+}
+
+/* 12. Leaflet Popups in light mode */
+html:not(.dark) .leaflet-popup-content-wrapper,
+html:not(.dark) .leaflet-popup-tip {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12) !important;
 }
